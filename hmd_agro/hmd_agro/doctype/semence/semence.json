@@ -1,0 +1,130 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:SEM-{taureau}-{####}",
+ "creation": "2026-02-02 02:00:31.350459",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_identification",
+  "taureau",
+  "type_semence",
+  "column_break_id",
+  "date_reception",
+  "date_expiration",
+  "section_stock",
+  "quantite_recue",
+  "quantite_restante",
+  "column_break_stock",
+  "prix_unitaire",
+  "section_notes",
+  "observations"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_identification",
+   "fieldtype": "Section Break",
+   "label": "Identification"
+  },
+  {
+   "fieldname": "taureau",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Taureau",
+   "options": "Taureau",
+   "reqd": 1
+  },
+  {
+   "default": "CONVENTIONNELLE",
+   "fieldname": "type_semence",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type de Semence",
+   "options": "CONVENTIONNELLE\nSEXEE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_id",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date_reception",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date de R\u00e9ception",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date_expiration",
+   "fieldtype": "Date",
+   "label": "Date d'Expiration"
+  },
+  {
+   "fieldname": "section_stock",
+   "fieldtype": "Section Break",
+   "label": "Stock"
+  },
+  {
+   "fieldname": "quantite_recue",
+   "fieldtype": "Int",
+   "label": "Quantit\u00e9 Re\u00e7ue",
+   "reqd": 1
+  },
+  {
+   "fieldname": "quantite_restante",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Quantit\u00e9 Restante",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_stock",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "prix_unitaire",
+   "fieldtype": "Currency",
+   "label": "Prix Unitaire (DT)"
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "observations",
+   "fieldtype": "Small Text",
+   "label": "Observations"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-19 15:54:07.563494",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Semence",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "taureau",
+ "track_changes": 1
+}

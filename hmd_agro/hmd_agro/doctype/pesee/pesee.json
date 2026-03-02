@@ -1,0 +1,131 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:PES-{animal}-{#####}",
+ "naming_rule": "Expression (old style)",
+ "creation": "2026-02-11 19:12:39.620357",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "module": "HMD AGRO",
+ "name": "Pesee",
+ "owner": "Administrator",
+ "modified": "2026-02-11 19:30:00.000000",
+ "modified_by": "Administrator",
+ "title_field": "animal",
+ "search_fields": "animal, type_pesee, date_pesee",
+ "track_changes": 1,
+ "index_web_pages_for_search": 1,
+ "grid_page_length": 50,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "date_pesee",
+ "sort_order": "DESC",
+ "field_order": [
+  "section_info",
+  "animal",
+  "type_pesee",
+  "column_break_info",
+  "date_pesee",
+  "poids_kg",
+  "section_calculs",
+  "age_jours",
+  "column_break_calculs",
+  "gain_quotidien_moyen",
+  "section_observations",
+  "observations"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_info",
+   "fieldtype": "Section Break",
+   "label": "Information"
+  },
+  {
+   "fieldname": "animal",
+   "fieldtype": "Link",
+   "label": "Animal",
+   "options": "Animal",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "type_pesee",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "\nNAISSANCE\nMENSUELLE\nSEVRAGE\nVENTE",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_info",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date_pesee",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "poids_kg",
+   "fieldtype": "Float",
+   "label": "Poids (kg)",
+   "precision": "2",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_calculs",
+   "fieldtype": "Section Break",
+   "label": "Calculs"
+  },
+  {
+   "fieldname": "age_jours",
+   "fieldtype": "Int",
+   "label": "Âge (jours)",
+   "read_only": 1,
+   "description": "Calculé automatiquement"
+  },
+  {
+   "fieldname": "column_break_calculs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gain_quotidien_moyen",
+   "fieldtype": "Float",
+   "label": "GMQ (g/jour)",
+   "precision": "3",
+   "read_only": 1,
+   "description": "Gain moyen quotidien depuis la dernière pesée"
+  },
+  {
+   "fieldname": "section_observations",
+   "fieldtype": "Section Break",
+   "label": "Observations"
+  },
+  {
+   "fieldname": "observations",
+   "fieldtype": "Small Text",
+   "label": "Observations"
+  }
+ ],
+ "links": [],
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "states": []
+}

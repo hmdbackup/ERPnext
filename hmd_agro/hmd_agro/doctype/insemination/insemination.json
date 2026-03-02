@@ -1,0 +1,147 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:INS-{animal}-{#####}",
+ "creation": "2026-02-02 01:52:05.441673",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_info",
+  "animal",
+  "date_ia",
+  "column_break_info",
+  "taureau",
+  "type_semence",
+  "numero_ia",
+  "lactation",
+  "section_resultat",
+  "resultat",
+  "date_confirmation",
+  "column_break_resultat",
+  "methode_confirmation",
+  "observations"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_info",
+   "fieldtype": "Section Break",
+   "label": "Information"
+  },
+  {
+   "fieldname": "animal",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Animal",
+   "options": "Animal",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date_ia",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date IA",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_info",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "taureau",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Taureau",
+   "options": "Taureau",
+   "reqd": 1
+  },
+  {
+   "default": "CONVENTIONNELLE",
+   "fieldname": "type_semence",
+   "fieldtype": "Select",
+   "label": "Type de Semence",
+   "options": "CONVENTIONNELLE\nSEXEE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "numero_ia",
+   "fieldtype": "Int",
+   "label": "N\u00b0 IA",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lactation",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Lactation",
+   "options": "Lactation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_resultat",
+   "fieldtype": "Section Break",
+   "label": "R\u00e9sultat"
+  },
+  {
+   "default": "EN_ATTENTE",
+   "fieldname": "resultat",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "R\u00e9sultat",
+   "options": "\nEN_ATTENTE\nREUSSIE\nECHOUEE",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.resultat && doc.resultat !== 'EN_ATTENTE'",
+   "fieldname": "date_confirmation",
+   "fieldtype": "Date",
+   "label": "Date Confirmation"
+  },
+  {
+   "fieldname": "column_break_resultat",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.resultat && doc.resultat !== 'EN_ATTENTE'",
+   "fieldname": "methode_confirmation",
+   "fieldtype": "Select",
+   "label": "M\u00e9thode Confirmation",
+   "options": "\nPALPATION\nECHOGRAPHIE"
+  },
+  {
+   "fieldname": "observations",
+   "fieldtype": "Small Text",
+   "label": "Observations"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-20 14:38:54.068130",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Insemination",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "animal, date_ia, resultat",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "animal",
+ "track_changes": 1
+}

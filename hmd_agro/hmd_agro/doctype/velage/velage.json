@@ -1,0 +1,243 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:VEL-{animal}-{#####}",
+ "naming_rule": "Expression (name)",
+ "creation": "2026-02-02 02:02:39.294895",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "module": "HMD AGRO",
+ "name": "Velage",
+ "owner": "Administrator",
+ "modified": "2026-02-11 20:00:00.000000",
+ "modified_by": "Administrator",
+ "title_field": "animal",
+ "search_fields": "animal, date_velage, type_velage",
+ "track_changes": 1,
+ "index_web_pages_for_search": 1,
+ "grid_page_length": 50,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "field_order": [
+  "section_mere",
+  "animal",
+  "insemination",
+  "column_break_mere",
+  "lactation",
+  "section_details",
+  "date_velage",
+  "heure_velage",
+  "column_break_details",
+  "type_velage",
+  "nombre_veaux",
+  "complications",
+  "section_veau1",
+  "sexe_veau1",
+  "vivant_veau1",
+  "identification_veau1",
+  "column_break_veau1",
+  "poids_veau1",
+  "id_veau1",
+  "section_veau2",
+  "sexe_veau2",
+  "vivant_veau2",
+  "identification_veau2",
+  "column_break_veau2",
+  "poids_veau2",
+  "id_veau2",
+  "section_observations",
+  "observations"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_mere",
+   "fieldtype": "Section Break",
+   "label": "M\u00e8re"
+  },
+  {
+   "fieldname": "animal",
+   "fieldtype": "Link",
+   "label": "Animal (m\u00e8re)",
+   "options": "Animal",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "insemination",
+   "fieldtype": "Link",
+   "label": "IA F\u00e9condante",
+   "options": "Insemination",
+   "read_only": 1,
+   "description": "Auto-rempli depuis Animal"
+  },
+  {
+   "fieldname": "column_break_mere",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "lactation",
+   "fieldtype": "Link",
+   "label": "Lactation",
+   "options": "Lactation",
+   "read_only": 1,
+   "description": "Lactation ouverte par ce v\u00ealage"
+  },
+  {
+   "fieldname": "section_details",
+   "fieldtype": "Section Break",
+   "label": "D\u00e9tails du v\u00ealage"
+  },
+  {
+   "fieldname": "date_velage",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "heure_velage",
+   "fieldtype": "Time",
+   "label": "Heure"
+  },
+  {
+   "fieldname": "column_break_details",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "type_velage",
+   "fieldtype": "Select",
+   "label": "Type de v\u00ealage",
+   "options": "\nFACILE\nDIFFICILE\nCESARIENNE",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "nombre_veaux",
+   "fieldtype": "Select",
+   "label": "Nombre de veaux",
+   "options": "1\n2",
+   "default": "1",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "complications",
+   "fieldtype": "Small Text",
+   "label": "Complications"
+  },
+  {
+   "fieldname": "section_veau1",
+   "fieldtype": "Section Break",
+   "label": "Veau 1"
+  },
+  {
+   "fieldname": "sexe_veau1",
+   "fieldtype": "Select",
+   "label": "Sexe",
+   "options": "\nM\nF",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vivant_veau1",
+   "fieldtype": "Check",
+   "label": "N\u00e9 vivant",
+   "default": "1"
+  },
+  {
+   "fieldname": "identification_veau1",
+   "fieldtype": "Data",
+   "label": "Identification TN",
+   "depends_on": "eval:doc.vivant_veau1",
+   "description": "Laisser vide pour g\u00e9n\u00e9rer un ID temporaire"
+  },
+  {
+   "fieldname": "column_break_veau1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "poids_veau1",
+   "fieldtype": "Float",
+   "label": "Poids (kg)",
+   "precision": "1"
+  },
+  {
+   "fieldname": "id_veau1",
+   "fieldtype": "Link",
+   "label": "Animal cr\u00e9\u00e9",
+   "options": "Animal",
+   "read_only": 1,
+   "description": "Rempli automatiquement si n\u00e9 vivant"
+  },
+  {
+   "fieldname": "section_veau2",
+   "fieldtype": "Section Break",
+   "label": "Veau 2 (jumeaux)"
+  },
+  {
+   "fieldname": "sexe_veau2",
+   "fieldtype": "Select",
+   "label": "Sexe",
+   "options": "\nM\nF"
+  },
+  {
+   "fieldname": "vivant_veau2",
+   "fieldtype": "Check",
+   "label": "N\u00e9 vivant",
+   "default": "1"
+  },
+  {
+   "fieldname": "identification_veau2",
+   "fieldtype": "Data",
+   "label": "Identification TN",
+   "depends_on": "eval:doc.vivant_veau2 && doc.nombre_veaux=='2'",
+   "description": "Laisser vide pour g\u00e9n\u00e9rer un ID temporaire"
+  },
+  {
+   "fieldname": "column_break_veau2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "poids_veau2",
+   "fieldtype": "Float",
+   "label": "Poids (kg)",
+   "precision": "1"
+  },
+  {
+   "fieldname": "id_veau2",
+   "fieldtype": "Link",
+   "label": "Animal cr\u00e9\u00e9",
+   "options": "Animal",
+   "read_only": 1,
+   "description": "Rempli automatiquement si n\u00e9 vivant"
+  },
+  {
+   "fieldname": "section_observations",
+   "fieldtype": "Section Break",
+   "label": "Observations"
+  },
+  {
+   "fieldname": "observations",
+   "fieldtype": "Small Text",
+   "label": "Observations"
+  }
+ ],
+ "links": [],
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "states": []
+}

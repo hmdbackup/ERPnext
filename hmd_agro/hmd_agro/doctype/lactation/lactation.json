@@ -1,0 +1,180 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:LAC-{animal}-{#####}",
+ "naming_rule": "Expression (name)",
+ "creation": "2026-02-08 22:33:19.033205",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "module": "HMD AGRO",
+ "name": "Lactation",
+ "owner": "Administrator",
+ "modified": "2026-02-08 22:40:00.000000",
+ "modified_by": "Administrator",
+ "title_field": "animal",
+ "search_fields": "animal, numero_lactation, statut",
+ "track_changes": 1,
+ "index_web_pages_for_search": 1,
+ "grid_page_length": 50,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "field_order": [
+  "section_info",
+  "animal",
+  "numero_lactation",
+  "statut",
+  "column_break_info",
+  "velage_debut",
+  "date_debut",
+  "date_fin",
+  "date_tarissement",
+  "section_production",
+  "jours_lactation",
+  "production_initiale",
+  "pic_production",
+  "column_break_production",
+  "production_totale",
+  "lactation_305j",
+  "nb_inseminations",
+  "section_observations",
+  "observations"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_info",
+   "fieldtype": "Section Break",
+   "label": "Information"
+  },
+  {
+   "fieldname": "animal",
+   "fieldtype": "Link",
+   "label": "Animal",
+   "options": "Animal",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "numero_lactation",
+   "fieldtype": "Int",
+   "label": "N\u00b0 Lactation",
+   "reqd": 1,
+   "in_list_view": 1  },
+  {
+   "fieldname": "statut",
+   "fieldtype": "Select",
+   "label": "Statut",
+   "options": "\nEN_COURS\nTARIE\nINTERROMPUE",
+   "default": "EN_COURS",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_info",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "velage_debut",
+   "fieldtype": "Link",
+   "label": "V\u00ealage D\u00e9but",
+   "options": "Velage"  },
+  {
+   "fieldname": "date_debut",
+   "fieldtype": "Date",
+   "label": "Date D\u00e9but",
+   "reqd": 1,
+   "in_list_view": 1  },
+  {
+   "fieldname": "date_fin",
+   "fieldtype": "Date",
+   "label": "Date Fin",
+   "description": "NULL si en cours"
+  },
+  {
+   "fieldname": "date_tarissement",
+   "fieldtype": "Date",
+   "label": "Date Tarissement"
+  },
+  {
+   "fieldname": "section_production",
+   "fieldtype": "Section Break",
+   "label": "Production"
+  },
+  {
+   "fieldname": "jours_lactation",
+   "fieldtype": "Int",
+   "label": "Jours en Lactation (DIM)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "production_initiale",
+   "fieldtype": "Float",
+   "label": "Production Initiale (L)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "pic_production",
+   "fieldtype": "Float",
+   "label": "Pic Production (L)",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_production",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "production_totale",
+   "fieldtype": "Float",
+   "label": "Production Totale (L)",
+   "precision": "2",
+   "read_only": 1 
+  },
+  {
+   "fieldname": "lactation_305j",
+   "fieldtype": "Float",
+   "label": "Production 305j (L)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "nb_inseminations",
+   "fieldtype": "Int",
+   "label": "Nombre IA",
+   "read_only": 1  },
+  {
+   "fieldname": "section_observations",
+   "fieldtype": "Section Break",
+   "label": "Observations"
+  },
+  {
+   "fieldname": "observations",
+   "fieldtype": "Small Text",
+   "label": "Observations"
+  }
+ ],
+ "links": [
+  {
+   "group": "Reproduction",
+   "link_doctype": "Insemination",
+   "link_fieldname": "lactation"
+  }
+ ],
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "states": []
+}

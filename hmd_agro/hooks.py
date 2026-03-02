@@ -148,13 +148,14 @@ app_license = "mit"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
+scheduler_events = {
 # 	"all": [
 # 		"hmd_agro.tasks.all"
 # 	],
-# 	"daily": [
+ 	"daily": [
 # 		"hmd_agro.tasks.daily"
-# 	],
+        "hmd_agro.hmd_agro.doctype.alerte.alerte.generate_alerts"
+ 	],
 # 	"hourly": [
 # 		"hmd_agro.tasks.hourly"
 # 	],
@@ -164,7 +165,7 @@ app_license = "mit"
 # 	"monthly": [
 # 		"hmd_agro.tasks.monthly"
 # 	],
-# }
+ }
 
 # Testing
 # -------

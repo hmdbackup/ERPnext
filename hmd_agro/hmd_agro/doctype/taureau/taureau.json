@@ -1,0 +1,118 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:nom_taureau",
+ "creation": "2026-02-02 01:59:53.355774",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_identification",
+  "nom_taureau",
+  "code_taureau",
+  "column_break_1",
+  "race",
+  "origine",
+  "section_break_genetique",
+  "izu",
+  "lait",
+  "column_break_2",
+  "tp",
+  "tb"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_identification",
+   "fieldtype": "Section Break",
+   "label": "Identification"
+  },
+  {
+   "fieldname": "nom_taureau",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nom du Taureau",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "code_taureau",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Code Taureau",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "race",
+   "fieldtype": "Data",
+   "label": "Race",
+   "reqd": 1
+  },
+  {
+   "fieldname": "origine",
+   "fieldtype": "Data",
+   "label": "Origine"
+  },
+  {
+   "fieldname": "section_break_genetique",
+   "fieldtype": "Section Break",
+   "label": "Indices G\u00e9n\u00e9tiques"
+  },
+  {
+   "fieldname": "izu",
+   "fieldtype": "Int",
+   "label": "ISU (Index Zootechnique)"
+  },
+  {
+   "description": "Production lait filles",
+   "fieldname": "lait",
+   "fieldtype": "Int",
+   "label": "Potentiel Lait (kg)"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tp",
+   "fieldtype": "Float",
+   "label": "Taux Prot\u00e9ique (%)"
+  },
+  {
+   "fieldname": "tb",
+   "fieldtype": "Float",
+   "label": "Taux Butyreux (%)"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-08 20:16:41.667256",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Taureau",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

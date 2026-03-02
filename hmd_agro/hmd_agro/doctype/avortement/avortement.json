@@ -1,0 +1,115 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:AVO-{animal}-{#####}",
+ "creation": "2026-03-02 15:46:04.264667",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_info",
+  "animal",
+  "date_avortement",
+  "column_break_info",
+  "insemination",
+  "stade_gestation",
+  "section_details",
+  "cause",
+  "column_break_details",
+  "observations"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_info",
+   "fieldtype": "Section Break",
+   "label": "Information"
+  },
+  {
+   "fieldname": "animal",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Animal",
+   "options": "Animal",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date_avortement",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date Avortement",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_info",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "insemination",
+   "fieldtype": "Link",
+   "label": "Ins\u00e9mination F\u00e9condante",
+   "options": "Insemination",
+   "read_only": 1
+  },
+  {
+   "description": "Jours de gestation au moment de l'avortement",
+   "fieldname": "stade_gestation",
+   "fieldtype": "Int",
+   "label": "Stade de Gestation (jours)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_details",
+   "fieldtype": "Section Break",
+   "label": "D\u00e9tails"
+  },
+  {
+   "default": "INCONNUE",
+   "fieldname": "cause",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Cause",
+   "options": "INCONNUE\nMALADIE\nACCIDENT\nSTRESS\nALIMENTATION\nAUTRE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_details",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "observations",
+   "fieldtype": "Small Text",
+   "label": "Observations"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-02 15:46:04.264667",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Avortement",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "search_fields": "animal, cause",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "animal",
+ "track_changes": 1
+}

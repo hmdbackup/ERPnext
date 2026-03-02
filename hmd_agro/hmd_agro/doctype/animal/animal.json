@@ -1,0 +1,339 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:identification_tn",
+ "creation": "2026-02-01 23:54:15.446761",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_dashboard_repro",
+  "dashboard_repro",
+  "section_identification",
+  "identification_tn",
+  "nom_metier",
+  "identification_fr",
+  "column_break_id",
+  "race",
+  "nom",
+  "section_naissance",
+  "date_naissance",
+  "sexe",
+  "column_break_naiss",
+  "categorie",
+  "section_origine",
+  "est_achat",
+  "date_entree",
+  "prix_achat",
+  "column_break_origine",
+  "id_mere",
+  "id_mere_externe",
+  "id_pere",
+  "section_etat",
+  "statut",
+  "date_sortie",
+  "id_lot",
+  "column_break_etat2",
+  "etat_lactation",
+  "etat_gestation",
+  "column_break_etat",
+  "etat_corporel",
+  "dernier_poids",
+  "section_reproduction",
+  "id_ia_fecondante",
+  "date_velage_prevue",
+  "column_break_repro",
+  "date_premier_velage",
+  "id_velage_naissance",
+  "date_tarissement"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_dashboard_repro",
+   "fieldtype": "Section Break",
+   "label": "Tableau de Bord Reproduction"
+  },
+  {
+   "fieldname": "dashboard_repro",
+   "fieldtype": "HTML",
+   "label": "Dashboard Reproduction"
+  },
+  {
+   "fieldname": "section_identification",
+   "fieldtype": "Section Break",
+   "label": "Identification"
+  },
+  {
+   "fieldname": "identification_tn",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Identification TN",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "nom_metier",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "N\u00b0 M\u00e9tier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "identification_fr",
+   "fieldtype": "Data",
+   "label": "Identification FR",
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_id",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Montb\u00e9liarde",
+   "fieldname": "race",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Race",
+   "options": "Montb\u00e9liarde\nHolstein\nTarentaise\nCrois\u00e9e",
+   "reqd": 1
+  },
+  {
+   "fieldname": "nom",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nom"
+  },
+  {
+   "fieldname": "section_naissance",
+   "fieldtype": "Section Break",
+   "label": "Naissance"
+  },
+  {
+   "fieldname": "date_naissance",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date de Naissance",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sexe",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sexe",
+   "options": "M\nF",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_naiss",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "categorie",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Cat\u00e9gorie",
+   "options": "VELLE\nVEAU\nGENISSE\nVACHE\nTAURILLON",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_origine",
+   "fieldtype": "Section Break",
+   "label": "Origine"
+  },
+  {
+   "default": "0",
+   "description": "Cocher si l'animal a \u00e9t\u00e9 achet\u00e9",
+   "fieldname": "est_achat",
+   "fieldtype": "Check",
+   "label": "Entr\u00e9e Externe (Achat)"
+  },
+  {
+   "depends_on": "eval:doc.est_achat",
+   "description": "Laisser vide si n\u00e9 sur place",
+   "fieldname": "date_entree",
+   "fieldtype": "Date",
+   "label": "Date d'Entr\u00e9e"
+  },
+  {
+   "depends_on": "eval:doc.est_achat",
+   "fieldname": "prix_achat",
+   "fieldtype": "Currency",
+   "label": "Prix d'Achat",
+   "options": "TND"
+  },
+  {
+   "fieldname": "column_break_origine",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:!doc.est_achat",
+   "description": "M\u00e8re interne (n\u00e9 sur place)",
+   "fieldname": "id_mere",
+   "fieldtype": "Link",
+   "label": "M\u00e8re",
+   "mandatory_depends_on": "eval:!doc.est_achat",
+   "options": "Animal"
+  },
+  {
+   "depends_on": "eval:doc.est_achat",
+   "description": "M\u00e8re d'origine (animal achet\u00e9)",
+   "fieldname": "id_mere_externe",
+   "fieldtype": "Link",
+   "label": "M\u00e8re Externe",
+   "mandatory_depends_on": "eval:doc.est_achat",
+   "options": "Mere externe"
+  },
+  {
+   "fieldname": "id_pere",
+   "fieldtype": "Link",
+   "label": "P\u00e8re",
+   "options": "Taureau",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_etat",
+   "fieldtype": "Section Break",
+   "label": "\u00c9tat Actuel"
+  },
+  {
+   "fieldname": "id_lot",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Lot",
+   "options": "Lot",
+   "reqd": 1
+  },
+  {
+   "default": "ACTIF",
+   "fieldname": "statut",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Statut",
+   "options": "ACTIF\nVENDU\nMORT\nREFORME\nA_VENDRE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_etat",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.statut !== 'ACTIF'",
+   "fieldname": "date_sortie",
+   "fieldtype": "Date",
+   "label": "Date de Sortie"
+  },
+  {
+   "depends_on": "eval:['VACHE', 'GENISSE'].includes(doc.categorie)",
+   "description": "G\u00e9r\u00e9 automatiquement par Ins\u00e9mination et V\u00ealage",
+   "fieldname": "etat_gestation",
+   "fieldtype": "Select",
+   "label": "\u00c9tat Gestation",
+   "options": "\nGESTANTE\nVIDE",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_etat2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.categorie === 'VACHE'",
+   "description": "G\u00e9r\u00e9 automatiquement par Lactation",
+   "fieldname": "etat_lactation",
+   "fieldtype": "Select",
+   "label": "\u00c9tat Lactation",
+   "options": "\nEN_PRODUCTION\nTARIE",
+   "read_only": 1
+  },
+  {
+   "description": "Score de 1 \u00e0 5",
+   "fieldname": "etat_corporel",
+   "fieldtype": "Int",
+   "label": "\u00c9tat Corporel",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dernier_poids",
+   "fieldtype": "Float",
+   "label": "Dernier Poids (kg)",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_reproduction",
+   "fieldtype": "Section Break",
+   "label": "Reproduction"
+  },
+  {
+   "fieldname": "id_ia_fecondante",
+   "fieldtype": "Link",
+   "label": "IA F\u00e9condante",
+   "options": "Insemination",
+   "read_only": 1
+  },
+  {
+   "fieldname": "date_velage_prevue",
+   "fieldtype": "Date",
+   "label": "Date V\u00ealage Pr\u00e9vue",
+   "read_only": 1
+  },
+  {
+   "fieldname": "date_tarissement",
+   "fieldtype": "Date",
+   "label": "Date Tarissement",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_repro",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date_premier_velage",
+   "fieldtype": "Date",
+   "label": "Date Premier V\u00ealage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "id_velage_naissance",
+   "fieldtype": "Link",
+   "label": "V\u00ealage de Naissance",
+   "options": "Velage",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-24 17:13:08.799840",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Animal",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "nom_metier",
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "nom_metier",
+ "track_changes": 1
+}

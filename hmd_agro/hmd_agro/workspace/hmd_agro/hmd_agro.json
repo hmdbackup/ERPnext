@@ -1,0 +1,89 @@
+{
+ "charts": [],
+ "content": "[{\"id\": \"head1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"s1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Animal\", \"col\": 4}}, {\"id\": \"s2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Insemination\", \"col\": 4}}, {\"id\": \"s3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Velage\", \"col\": 4}}, {\"id\": \"s4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Lactation\", \"col\": 4}}, {\"id\": \"s5\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Pesee\", \"col\": 4}}, {\"id\": \"s6\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Alerte\", \"col\": 4}}, {\"id\": \"s7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Lot\", \"col\": 4}}, {\"id\": \"s8\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Taureau\", \"col\": 4}}, {\"id\": \"s9\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Traite\", \"col\": 4}}]",
+ "creation": "2026-02-13 20:13:25.049330",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "agriculture",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "HMD AGRO",
+ "links": [],
+ "modified": "2026-02-22 18:07:17.514415",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "HMD AGRO",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 0.0,
+ "shortcuts": [
+  {
+   "doc_view": "",
+   "label": "Animal",
+   "link_to": "Animal",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Insemination",
+   "link_to": "Insemination",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Velage",
+   "link_to": "Velage",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Lactation",
+   "link_to": "Lactation",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Pesee",
+   "link_to": "Pesee",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Alerte",
+   "link_to": "Alerte",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Lot",
+   "link_to": "Lot",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Taureau",
+   "link_to": "Taureau",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Traite",
+   "link_to": "Traite",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Centre Alertes",
+   "link_to": "centre-alertes",
+   "type": "Page",
+   "url": "/app/centre-alertes"
+  }
+ ],
+ "title": "HMD AGRO"
+}

@@ -1,0 +1,97 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:EC-{animal}-{date}-{####}",
+ "creation": "2026-02-24 16:03:44.196839",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_lq1y",
+  "animal",
+  "column_break_info",
+  "date",
+  "section_break_score",
+  "score",
+  "column_break_score",
+  "remarques"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_lq1y",
+   "fieldtype": "Section Break",
+   "label": "Informations"
+  },
+  {
+   "fieldname": "animal",
+   "fieldtype": "Link",
+   "label": "Animal",
+   "options": "Animal",
+   "reqd": 1,
+   "in_list_settings": 1,
+   "in_standard_filter": 1
+  },
+
+  {
+   "fieldname": "column_break_info",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1,
+   "default": "Today",
+   "in_list_settings": 1
+  },
+  
+  {
+   "fieldname": "section_break_score",
+   "fieldtype": "Section Break",
+   "label": "Évaluation"
+  },
+    {
+    "fieldname": "score",
+    "fieldtype": "Select",
+    "label": "Score",
+    "options": "\n1\n2\n3\n4\n5",
+    "reqd": 1,
+    "in_list_settings": 1
+    },
+  {
+   "fieldname": "column_break_score",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "remarques",
+   "fieldtype": "Small Text",
+   "label": "Remarques"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-24 16:03:44.196839",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Etat Corporel",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "date",
+ "sort_order": "DESC",
+ "states": []
+}
