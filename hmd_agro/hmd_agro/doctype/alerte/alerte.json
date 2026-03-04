@@ -13,6 +13,7 @@
   "raison",
   "statut",
   "insemination",
+  "raison_report",
   "section_actions",
   "date_traitement",
   "observations"
@@ -69,7 +70,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Statut",
-   "options": "NOUVELLE\nCONFIRMEE\nNON_CONFIRMEE\nRETOUR_CHALEUR\nGESTANTE_PROBABLE\nGESTANTE_CONFIRMEE\nTRAITEE",
+   "options": "NOUVELLE\nCONFIRMEE\nNON_CONFIRMEE\nREPORTEE\nRETOUR_CHALEUR\nGESTANTE_PROBABLE\nGESTANTE_CONFIRMEE\nTRAITEE",
    "read_only": 1,
    "reqd": 1
   },
@@ -79,6 +80,14 @@
    "fieldtype": "Link",
    "label": "Ins\u00e9mination",
    "options": "Insemination",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.statut=='REPORTEE'",
+   "fieldname": "raison_report",
+   "fieldtype": "Select",
+   "label": "Raison Report",
+   "options": "\nMALADE\nBOITERIE\nCONDITION_CORPORELLE_INSUFFISANTE\nAUTRE",
    "read_only": 1
   },
   {

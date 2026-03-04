@@ -6,7 +6,10 @@ from frappe.utils import today
 def get_alerts():
     """Get all actionable alerts grouped by type"""
     alerts = frappe.get_all("Alerte",
-        filters={"statut": ["in", ["NOUVELLE", "CONFIRMEE"]]},
+        filters={
+            "statut": ["in", ["NOUVELLE", "CONFIRMEE"]],
+            "date_alerte": ["<=", today()]
+        },
         fields=["name", "animal", "type_alerte", "date_alerte", "raison", "insemination", "statut"],
         order_by="date_alerte asc"
     )
@@ -24,7 +27,7 @@ def get_alerts():
         "CHALEUR_POST_VELAGE": {"label": "Chaleurs Post-Velage", "alerts": []},
         "CONFIRMEE": {"label": "Chaleurs Confirmees - En attente IA", "alerts": []},
         "VERIFICATION_J21": {"label": "Vérification IA J+21", "alerts": []},
-        "VERIFICATION_J50": {"label": "Vérification IA J+50", "alerts": []}
+        "VERIFICATION_J50": {"label": "Vérifications Programmées", "alerts": []}
     }
 
     for a in alerts:

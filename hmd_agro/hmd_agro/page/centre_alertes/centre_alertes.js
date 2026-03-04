@@ -68,7 +68,6 @@ function render_alerts(page, groups) {
         return;
     }
 
-    // Filter bar - Frappe style
     // Filter bar
     var filter_bar = $(
         '<div style="display:flex; align-items:flex-end; gap:15px; margin-bottom:20px; flex-wrap:wrap;">' +
@@ -150,7 +149,7 @@ function render_alerts(page, groups) {
         }
 
         // Bulk actions bar - always present but hidden until selection
-        var actions_div = $('<div class="group-actions" data-actions-type="' + type + '" style="margin-top:10px; display:none; padding:10px 12px; background:var(--bg-light-gray); border-radius:6px; display:none;">' +
+        var actions_div = $('<div class="group-actions" data-actions-type="' + type + '" style="margin-top:10px; display:none; padding:10px 12px; background:var(--bg-light-gray); border-radius:6px;">' +
             '<span class="bulk-count text-muted" style="margin-right:10px; font-size:13px;"></span>' +
             get_bulk_buttons(type) +
             '</div>');
@@ -257,9 +256,111 @@ function render_alerts(page, groups) {
         }
 
         if (action === "non_confirmer") {
-            frappe.confirm("Marquer cette chaleur comme non confirmee ?", function() {
-                do_alert_action(btn, alert_name, action);
+            frappe.confirm(
+                "Marquer cette chaleur comme non confirmée ?<br><small class='text-muted'>Une nouvelle alerte sera générée dans 21 jours (prochain cycle).</small>",
+                function() {
+                    do_alert_action(btn, alert_name, action);
+                }
+            );
+            return;
+        }
+
+        if (action === "reporter") {
+            var d = new frappe.ui.Dialog({
+                title: "Reporter la chaleur",
+                fields: [
+                    {
+                        fieldname: "raison_report",
+                        fieldtype: "Select",
+                        label: "Raison du report",
+                        options: "MALADE\nBOITERIE\nCONDITION_CORPORELLE_INSUFFISANTE\nAUTRE",
+                        reqd: 1
+                    },
+                    {
+                        fieldname: "observations",
+                        fieldtype: "Small Text",
+                        label: "Observations (optionnel)"
+                    }
+                ],
+                primary_action_label: "Reporter",
+                primary_action: function(values) {
+                    d.disable_primary_action();
+                    frappe.call({
+                        method: "hmd_agro.hmd_agro.doctype.alerte.alerte.reporter_alerte",
+                        args: {
+                            alert_name: alert_name,
+                            raison_report: values.raison_report,
+                            observations: values.observations || ""
+                        },
+                        callback: function(r) {
+                            if (r.message && r.message.status === "ok") {
+                                d.hide();
+                                frappe.show_alert({
+                                    message: "Chaleur reportée. Nouvelle alerte dans 21 jours.",
+                                    indicator: "green"
+                                });
+                                btn.closest(".alert-row").fadeOut(300, function() {
+                                    $(this).remove();
+                                    load_alerts(wrapper_ref);
+                                });
+                            }
+                        }
+                    });
+                }
             });
+            d.show();
+            return;
+        }
+
+        if (action === "a_revoir") {
+            var d2 = new frappe.ui.Dialog({
+                title: "À revoir — Programmer le prochain contrôle",
+                fields: [
+                    {
+                        fieldname: "nb_jours",
+                        fieldtype: "Int",
+                        label: "Nombre de jours avant le prochain contrôle",
+                        default: 29,
+                        reqd: 1,
+                        description: "Par défaut 29 jours (J+50 depuis l'IA). Saisissez le nombre de jours à partir d'aujourd'hui."
+                    },
+                    {
+                        fieldname: "observations",
+                        fieldtype: "Small Text",
+                        label: "Observations (optionnel)"
+                    }
+                ],
+                primary_action_label: "Confirmer",
+                primary_action: function(values) {
+                    if (values.nb_jours < 1 || values.nb_jours > 120) {
+                        frappe.msgprint("Le nombre de jours doit être entre 1 et 120");
+                        return;
+                    }
+                    d2.disable_primary_action();
+                    frappe.call({
+                        method: "hmd_agro.hmd_agro.doctype.alerte.alerte.a_revoir_alerte",
+                        args: {
+                            alert_name: alert_name,
+                            nb_jours: values.nb_jours,
+                            observations: values.observations || ""
+                        },
+                        callback: function(r) {
+                            if (r.message && r.message.status === "ok") {
+                                d2.hide();
+                                frappe.show_alert({
+                                    message: "Prochain contrôle programmé dans " + values.nb_jours + " jours (" + r.message.date_controle + ")",
+                                    indicator: "green"
+                                });
+                                btn.closest(".alert-row").fadeOut(300, function() {
+                                    $(this).remove();
+                                    load_alerts(wrapper_ref);
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+            d2.show();
             return;
         }
 
@@ -287,6 +388,103 @@ function render_alerts(page, groups) {
         var checked = container.find('.alert-check[data-type="' + type + '"]:checked');
 
         if (!checked.length) return;
+
+        // Bulk À revoir: open a single dialog, apply to all selected
+        if (action === "a_revoir") {
+            var d_bulk = new frappe.ui.Dialog({
+                title: "À revoir — " + checked.length + " alerte(s) sélectionnée(s)",
+                fields: [
+                    {
+                        fieldname: "nb_jours",
+                        fieldtype: "Int",
+                        label: "Nombre de jours avant le prochain contrôle",
+                        default: 29,
+                        reqd: 1,
+                        description: "Le même délai sera appliqué à toutes les alertes sélectionnées."
+                    },
+                    {
+                        fieldname: "observations",
+                        fieldtype: "Small Text",
+                        label: "Observations (optionnel)"
+                    }
+                ],
+                primary_action_label: "Confirmer",
+                primary_action: function(values) {
+                    if (values.nb_jours < 1 || values.nb_jours > 120) {
+                        frappe.msgprint("Le nombre de jours doit être entre 1 et 120");
+                        return;
+                    }
+                    d_bulk.disable_primary_action();
+                    d_bulk.hide();
+                    var promises = [];
+                    checked.each(function() {
+                        var name = $(this).data("name");
+                        promises.push(
+                            frappe.xcall("hmd_agro.hmd_agro.doctype.alerte.alerte.a_revoir_alerte", {
+                                alert_name: name,
+                                nb_jours: values.nb_jours,
+                                observations: values.observations || ""
+                            })
+                        );
+                    });
+                    Promise.all(promises).then(function() {
+                        frappe.show_alert({
+                            message: checked.length + " alerte(s) programmée(s) dans " + values.nb_jours + " jours",
+                            indicator: "green"
+                        });
+                        load_alerts(wrapper_ref);
+                    });
+                }
+            });
+            d_bulk.show();
+            return;
+        }
+
+        // Bulk Reporter: open a single dialog, apply to all selected
+        if (action === "reporter") {
+            var d_report = new frappe.ui.Dialog({
+                title: "Reporter — " + checked.length + " alerte(s) sélectionnée(s)",
+                fields: [
+                    {
+                        fieldname: "raison_report",
+                        fieldtype: "Select",
+                        label: "Raison du report",
+                        options: "MALADE\nBOITERIE\nCONDITION_CORPORELLE_INSUFFISANTE\nAUTRE",
+                        reqd: 1
+                    },
+                    {
+                        fieldname: "observations",
+                        fieldtype: "Small Text",
+                        label: "Observations (optionnel)"
+                    }
+                ],
+                primary_action_label: "Reporter",
+                primary_action: function(values) {
+                    d_report.disable_primary_action();
+                    d_report.hide();
+                    var promises = [];
+                    checked.each(function() {
+                        var name = $(this).data("name");
+                        promises.push(
+                            frappe.xcall("hmd_agro.hmd_agro.doctype.alerte.alerte.reporter_alerte", {
+                                alert_name: name,
+                                raison_report: values.raison_report,
+                                observations: values.observations || ""
+                            })
+                        );
+                    });
+                    Promise.all(promises).then(function() {
+                        frappe.show_alert({
+                            message: checked.length + " chaleur(s) reportée(s). Nouvelles alertes dans 21 jours.",
+                            indicator: "green"
+                        });
+                        load_alerts(wrapper_ref);
+                    });
+                }
+            });
+            d_report.show();
+            return;
+        }
 
         var msg = "Appliquer sur " + checked.length + " alerte(s) ?";
         if (action === "retour_chaleur") {
@@ -337,15 +535,17 @@ function get_row_buttons(type, alert) {
             '<button class="btn btn-xs btn-default btn-alert-action" data-alert="' + alert.name + '" data-action="non_confirmer">Non confirmee</button>';
     }
     if (type === "CONFIRMEE") {
-        return '<button class="btn btn-xs btn-primary btn-alert-action" data-alert="' + alert.name + '" data-action="creer_ia" data-animal="' + alert.animal + '">Creer IA</button>';
+        return '<button class="btn btn-xs btn-primary btn-alert-action" data-alert="' + alert.name + '" data-action="creer_ia" data-animal="' + alert.animal + '">Creer IA</button>' +
+            '<button class="btn btn-xs btn-warning btn-alert-action" data-alert="' + alert.name + '" data-action="reporter" data-animal="' + alert.animal + '">Reporter</button>';
     }
     if (type === "VERIFICATION_J21") {
-        return '<button class="btn btn-xs btn-primary btn-alert-action" data-alert="' + alert.name + '" data-action="gestante_probable">À revoir</button>' +
+        return '<button class="btn btn-xs btn-primary btn-alert-action" data-alert="' + alert.name + '" data-action="a_revoir" data-animal="' + alert.animal + '">À revoir</button>' +
             '<button class="btn btn-xs btn-success btn-alert-action" data-alert="' + alert.name + '" data-action="gestante_confirmee">Pleine</button>' +
             '<button class="btn btn-xs btn-danger btn-alert-action" data-alert="' + alert.name + '" data-action="retour_chaleur">Vide</button>';
     }
     if (type === "VERIFICATION_J50") {
-        return '<button class="btn btn-xs btn-primary btn-alert-action" data-alert="' + alert.name + '" data-action="gestante_confirmee">Pleine</button>' +
+        return '<button class="btn btn-xs btn-primary btn-alert-action" data-alert="' + alert.name + '" data-action="a_revoir" data-animal="' + alert.animal + '">À revoir</button>' +
+            '<button class="btn btn-xs btn-success btn-alert-action" data-alert="' + alert.name + '" data-action="gestante_confirmee">Pleine</button>' +
             '<button class="btn btn-xs btn-danger btn-alert-action" data-alert="' + alert.name + '" data-action="retour_chaleur">Vide</button>';
     }
     return "";
@@ -357,15 +557,17 @@ function get_bulk_buttons(type) {
             '<button class="btn btn-sm btn-default btn-bulk-action" data-action="non_confirmer" data-type="' + type + '" style="margin-left:6px;">Toutes Non Confirmees</button>';
     }
     if (type === "CONFIRMEE") {
-        return '<span class="text-muted" style="font-size:12px;">Selection: utiliser les boutons individuels pour creer les IA</span>';
+        return '<button class="btn btn-sm btn-warning btn-bulk-action" data-action="reporter" data-type="' + type + '">Toutes Reporter</button>' +
+            '<span class="text-muted" style="font-size:12px; margin-left:10px;">Créer IA : utiliser les boutons individuels</span>';
     }
     if (type === "VERIFICATION_J21") {
-        return '<button class="btn btn-sm btn-primary btn-bulk-action" data-action="gestante_probable" data-type="' + type + '">Toutes à revoir</button>' +
+        return '<button class="btn btn-sm btn-primary btn-bulk-action" data-action="a_revoir" data-type="' + type + '">Toutes à revoir</button>' +
             '<button class="btn btn-sm btn-success btn-bulk-action" data-action="gestante_confirmee" data-type="' + type + '" style="margin-left:6px;">Toutes pleine</button>' +
             '<button class="btn btn-sm btn-danger btn-bulk-action" data-action="retour_chaleur" data-type="' + type + '" style="margin-left:6px;">Toutes vide</button>';
     }
     if (type === "VERIFICATION_J50") {
-        return '<button class="btn btn-sm btn-primary btn-bulk-action" data-action="gestante_confirmee" data-type="' + type + '">Toutes pleine</button>' +
+        return '<button class="btn btn-sm btn-primary btn-bulk-action" data-action="a_revoir" data-type="' + type + '">Toutes à revoir</button>' +
+            '<button class="btn btn-sm btn-success btn-bulk-action" data-action="gestante_confirmee" data-type="' + type + '" style="margin-left:6px;">Toutes pleine</button>' +
             '<button class="btn btn-sm btn-danger btn-bulk-action" data-action="retour_chaleur" data-type="' + type + '" style="margin-left:6px;">Toutes vide</button>';
     }
     return "";
@@ -397,7 +599,7 @@ function toggle_bulk_actions(container, type) {
 }
 function get_actions_width(type) {
     if (type === "CHALEUR_GENISSE" || type === "CHALEUR_POST_VELAGE") return 300;
-    if (type === "CONFIRMEE") return 80;
+    if (type === "CONFIRMEE") return 180;
     if (type === "VERIFICATION_J21") return 500;
     if (type === "VERIFICATION_J50") return 500;
     return 100;

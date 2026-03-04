@@ -251,9 +251,9 @@
    "read_only": 1
   },
   {
-   "description": "Score de 1 \u00e0 5",
+   "description": "Score de 1 \u00e0 5 (par pas de 0.5)",
    "fieldname": "etat_corporel",
-   "fieldtype": "Int",
+   "fieldtype": "Float",
    "label": "\u00c9tat Corporel",
    "read_only": 1
   },

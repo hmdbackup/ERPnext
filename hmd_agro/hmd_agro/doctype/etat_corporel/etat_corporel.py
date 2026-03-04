@@ -3,7 +3,7 @@ from frappe import _
 from frappe.model.document import Document
 
 
-VALID_SCORES = [1, 2, 3, 4, 5]
+VALID_SCORES = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
 
 
 class EtatCorporel(Document):
@@ -56,4 +56,4 @@ class EtatCorporel(Document):
             fieldname="score",
             order_by="date desc, creation desc"
         )
-        frappe.db.set_value("Animal", self.animal, "etat_corporel", latest or 0)
+        frappe.db.set_value("Animal", self.animal, "etat_corporel", latest or None)

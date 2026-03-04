@@ -69,4 +69,4 @@ class Pesee(Document):
             fieldname="poids_kg",
             order_by="date_pesee desc, creation desc"
         )
-        frappe.db.set_value("Animal", self.animal, "dernier_poids", latest or 0)
+        frappe.db.set_value("Animal", self.animal, "dernier_poids", latest or None)

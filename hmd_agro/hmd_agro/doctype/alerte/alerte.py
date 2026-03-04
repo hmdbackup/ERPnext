@@ -173,11 +173,11 @@ def _generate_j50_alerts():
         if getdate(ia.date_ia) > cutoff_date:
             continue
 
-        # Skip if J+50 alert already exists for this IA
+        # Skip if J+50 alert already exists for this IA (active or future-dated)
         existing = frappe.db.exists("Alerte", {
             "insemination": ia.name,
             "type_alerte": "VERIFICATION_J50",
-            "statut": "NOUVELLE"
+            "statut": ["in", ["NOUVELLE", "GESTANTE_PROBABLE"]]
         })
         if existing:
             continue
@@ -216,8 +216,6 @@ def mark_alert(alert_name, action):
         doc.statut = "NON_CONFIRMEE"
     elif action == "retour_chaleur":
         doc.statut = "RETOUR_CHALEUR"
-    elif action == "gestante_probable":
-        doc.statut = "GESTANTE_PROBABLE"
     elif action == "gestante_confirmee":
         doc.statut = "GESTANTE_CONFIRMEE"
 
@@ -237,4 +235,116 @@ def mark_alert(alert_name, action):
         ia.resultat = "REUSSIE"
         ia.save()
 
+    # Non confirmée: regenerate a chaleur alert in 21 days (next estrous cycle)
+    if action == "non_confirmer" and doc.type_alerte in ("CHALEUR_GENISSE", "CHALEUR_POST_VELAGE"):
+        _create_follow_up_chaleur(doc)
+
     return doc.statut
+
+
+@frappe.whitelist()
+def reporter_alerte(alert_name, raison_report, observations=None):
+    """Reporter (postpone) a confirmed heat alert.
+    Creates a new chaleur alert in 21 days for the same animal."""
+    doc = frappe.get_doc("Alerte", alert_name)
+
+    if doc.statut != "CONFIRMEE":
+        frappe.throw("Seule une alerte CONFIRMEE peut être reportée")
+
+    # Mark current alert as REPORTEE
+    doc.statut = "REPORTEE"
+    doc.raison_report = raison_report
+    doc.observations = observations or ""
+    doc.date_traitement = today()
+    doc.save(ignore_permissions=True)
+
+    # Determine original chaleur type for the follow-up
+    # CONFIRMEE alerts were originally CHALEUR_GENISSE or CHALEUR_POST_VELAGE
+    original_type = doc.type_alerte
+    if original_type not in ("CHALEUR_GENISSE", "CHALEUR_POST_VELAGE"):
+        # Guess from animal categorie
+        categorie = frappe.db.get_value("Animal", doc.animal, "categorie")
+        original_type = "CHALEUR_GENISSE" if categorie == "GENISSE" else "CHALEUR_POST_VELAGE"
+
+    # Create follow-up chaleur alert in 21 days
+    raison_labels = {
+        "MALADE": "Animal malade",
+        "BOITERIE": "Boiterie",
+        "CONDITION_CORPORELLE_INSUFFISANTE": "Condition corporelle insuffisante",
+        "AUTRE": "Autre raison"
+    }
+    raison_text = raison_labels.get(raison_report, raison_report)
+
+    new_alert = frappe.get_doc({
+        "doctype": "Alerte",
+        "animal": doc.animal,
+        "type_alerte": original_type,
+        "date_alerte": add_days(getdate(today()), 21),
+        "raison": f"Suivi report - {raison_text}",
+        "statut": "NOUVELLE"
+    })
+    new_alert.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "ok", "new_alert": new_alert.name}
+
+
+@frappe.whitelist()
+def a_revoir_alerte(alert_name, nb_jours, observations=None):
+    """Handle 'À revoir' on a verification alert with configurable days.
+    Works for both VERIFICATION_J21 and VERIFICATION_J50.
+    Marks current alert as GESTANTE_PROBABLE and creates a new
+    verification alert in nb_jours days (shown 2 days early)."""
+    nb_jours = int(nb_jours)
+    if nb_jours < 1 or nb_jours > 120:
+        frappe.throw("Le nombre de jours doit être entre 1 et 120")
+
+    doc = frappe.get_doc("Alerte", alert_name)
+    if doc.type_alerte not in ("VERIFICATION_J21", "VERIFICATION_J50"):
+        frappe.throw("Cette action est réservée aux alertes de vérification")
+
+    # Mark current alert as GESTANTE_PROBABLE (handled, follow-up created)
+    doc.statut = "GESTANTE_PROBABLE"
+    doc.observations = observations or ""
+    doc.date_traitement = today()
+    doc.save(ignore_permissions=True)
+
+    # Create new verification alert scheduled in nb_jours days
+    # Show 2 days early so the farmer can prepare
+    target_date = add_days(getdate(today()), nb_jours)
+    display_date = add_days(getdate(today()), max(nb_jours - 2, 0))
+
+    # Calculate days since IA for the raison label
+    ia_date_str = ""
+    if doc.insemination:
+        ia_date = frappe.db.get_value("Insemination", doc.insemination, "date_ia")
+        if ia_date:
+            days_since_ia = date_diff(target_date, ia_date)
+            ia_date_str = f"IA du {ia_date} - J+{days_since_ia}"
+
+    new_alert = frappe.get_doc({
+        "doctype": "Alerte",
+        "animal": doc.animal,
+        "type_alerte": "VERIFICATION_J50",
+        "insemination": doc.insemination,
+        "date_alerte": display_date,
+        "raison": f"{ia_date_str} - Contrôle programmé (+{nb_jours}j)",
+        "statut": "NOUVELLE"
+    })
+    new_alert.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "ok", "new_alert": new_alert.name, "date_controle": str(target_date)}
+
+
+def _create_follow_up_chaleur(original_alert):
+    """Create a follow-up chaleur alert in 21 days after non-confirmation."""
+    new_alert = frappe.get_doc({
+        "doctype": "Alerte",
+        "animal": original_alert.animal,
+        "type_alerte": original_alert.type_alerte,
+        "date_alerte": add_days(getdate(today()), 21),
+        "raison": f"Suivi - Chaleur non confirmée du {today()}",
+        "statut": "NOUVELLE"
+    })
+    new_alert.insert(ignore_permissions=True)
