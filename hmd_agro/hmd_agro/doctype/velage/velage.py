@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Mouhib Bouzamita and contributors
 # For license information, please see license.txt
-
+# i can edit
 import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate, today
@@ -232,15 +232,15 @@ class Velage(Document):
         frappe.msgprint(f"Animal {display_name}: gestation terminée, statut VIDE.")
 
     def close_open_alerts(self):
-        """Close any remaining open alerts for this animal"""
+        """Close any remaining open alerts for this animal after velage"""
         open_alerts = frappe.get_all("Alerte", filters={
             "animal": self.animal,
-            "statut": "NOUVELLE"
+            "statut": ["in", ["NOUVELLE", "CONFIRMEE"]]
         }, pluck="name")
 
         for alert in open_alerts:
             frappe.db.set_value("Alerte", alert, {
-                "statut": "CONFIRMEE",
+                "statut": "TRAITEE",
                 "date_traitement": frappe.utils.today()
             })
 
