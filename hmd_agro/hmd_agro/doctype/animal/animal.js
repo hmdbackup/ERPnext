@@ -91,6 +91,40 @@ frappe.ui.form.on("Animal", {
     },
     statut(frm) {
         frm.trigger("toggle_fields_visibility");
+
+        // RG04: Confirm closure of active records when animal exits
+        if (!frm.is_new() && ["VENDU", "MORT", "REFORME"].includes(frm.doc.statut)) {
+            frappe.call({
+                method: "hmd_agro.hmd_agro.doctype.animal.animal.check_active_records",
+                args: { animal: frm.doc.name },
+                callback: function(r) {
+                    if (r.message && r.message.has_active) {
+                        let details = r.message;
+                        let warnings = [];
+                        if (details.lactation) warnings.push(__("Lactation en cours → INTERROMPUE"));
+                        if (details.insemination) warnings.push(__("Insémination en attente → ECHOUEE"));
+                        if (details.gestation) warnings.push(__("Gestation → annulée"));
+                        if (details.alertes > 0) warnings.push(__("{0} alerte(s) ouverte(s) → fermée(s)", [details.alertes]));
+
+                        let msg = __("Cet animal a des enregistrements actifs. Changer le statut entraînera :") +
+                            "<br><br><ul><li>" + warnings.join("</li><li>") + "</li></ul><br>" +
+                            __("Voulez-vous continuer ?");
+
+                        frappe.confirm(
+                            msg,
+                            function() {
+                                // User confirmed — allow save to proceed
+                            },
+                            function() {
+                                // User cancelled — revert statut
+                                let old_doc = frm.get_doc_before_save && frm.get_doc_before_save();
+                                frm.set_value("statut", old_doc ? old_doc.statut : "ACTIF");
+                            }
+                        );
+                    }
+                }
+            });
+        }
     },
 
     toggle_fields_visibility(frm) {

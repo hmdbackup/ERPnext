@@ -88,24 +88,54 @@ class Traite(Document):
         if not self.lactation:
             return
 
-        # Total production
+        date_debut = frappe.db.get_value("Lactation", self.lactation, "date_debut")
+
+        # Production Totale: sum of ALL traites
         total = frappe.db.sql("""
             SELECT SUM(quantite_litres)
             FROM `tabTraite`
             WHERE lactation = %s
         """, self.lactation)[0][0] or 0
 
-        # Peak daily production
+        # Pic Production: best daily total within first 150 DIM
         pic = frappe.db.sql("""
             SELECT MAX(daily_total) FROM (
                 SELECT SUM(quantite_litres) as daily_total
                 FROM `tabTraite`
                 WHERE lactation = %s
+                  AND DATEDIFF(date_traite, %s) <= 150
                 GROUP BY date_traite
             ) as daily
-        """, self.lactation)[0][0] or 0
+        """, (self.lactation, date_debut))[0][0] or 0
 
-        frappe.db.set_value("Lactation", self.lactation, {
+        updates = {
             "production_totale": total,
             "pic_production": pic
-        })
+        }
+
+        if date_debut:
+            # Lactation 305j: actual sum of traites within first 305 days only
+            total_305 = frappe.db.sql("""
+                SELECT SUM(quantite_litres)
+                FROM `tabTraite`
+                WHERE lactation = %s
+                  AND DATEDIFF(date_traite, %s) <= 305
+            """, (self.lactation, date_debut))[0][0] or 0
+            updates["lactation_305j"] = round(total_305, 2)
+
+            # Production Initiale: sum of traites within first 60 days
+            prod_init = frappe.db.sql("""
+                SELECT SUM(quantite_litres)
+                FROM `tabTraite`
+                WHERE lactation = %s
+                  AND DATEDIFF(date_traite, %s) <= 60
+            """, (self.lactation, date_debut))[0][0] or 0
+            updates["production_initiale"] = round(prod_init, 2)
+
+            # Moyenne Production: average daily production
+            from frappe.utils import date_diff, today as today_fn
+            jours = date_diff(today_fn(), date_debut)
+            if jours > 0:
+                updates["moyenne_production"] = round(total / jours, 2)
+
+        frappe.db.set_value("Lactation", self.lactation, updates)

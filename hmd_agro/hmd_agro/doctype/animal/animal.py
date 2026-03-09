@@ -5,6 +5,13 @@ import frappe
 from frappe.model.document import Document
 import re
 
+
+def is_valid_identification_tn(value):
+    """Check if identification_tn is valid: 10 digits or TEMP-XX"""
+    if not value:
+        return True
+    return bool(re.match(r'^TEMP-\d{2}$', value, re.IGNORECASE) or re.match(r'^\d{10}$', value))
+
 class Animal(Document):
     def validate(self):
         self.set_nom_metier()
@@ -55,12 +62,8 @@ class Animal(Document):
 
     def validate_identification_tn(self):
         """ERR-01: Identification TN must be TEMP-XX or 10 digits"""
-        if self.identification_tn:
-            is_temp = re.match(r'^TEMP-\d{2}$', self.identification_tn, re.IGNORECASE)
-            is_10_digits = re.match(r'^\d{10}$', self.identification_tn)
-            
-            if not is_temp and not is_10_digits:
-                frappe.throw("L'identification TN doit être au format TEMP-XX (ex: TEMP-01) ou 10 chiffres (ex: 1234567890).")
+        if self.identification_tn and not is_valid_identification_tn(self.identification_tn):
+            frappe.throw("L'identification TN doit être au format TEMP-XX (ex: TEMP-01) ou 10 chiffres (ex: 1234567890).")
 
     def set_default_gestation(self):
         """Default etat_gestation = VIDE for females"""
@@ -135,10 +138,63 @@ class Animal(Document):
         pass
 
     def on_update(self):
+        self._close_active_records_on_exit()
         self._update_lot_counts()
 
     def on_trash(self):
         self._update_lot_counts(is_delete=True)
+
+    def _close_active_records_on_exit(self):
+        """RG04: Auto-close all active records when animal leaves (VENDU/MORT/REFORME)"""
+        if not self.has_value_changed("statut"):
+            return
+        if self.statut not in ("VENDU", "MORT", "REFORME"):
+            return
+
+        from frappe.utils import today
+
+        # 1. Close EN_COURS lactation → INTERROMPUE
+        lactation = frappe.db.get_value("Lactation", {
+            "animal": self.name,
+            "statut": "EN_COURS"
+        }, "name")
+        if lactation:
+            frappe.db.set_value("Lactation", lactation, {
+                "statut": "INTERROMPUE",
+                "date_tarissement": today()
+            })
+            frappe.db.set_value("Animal", self.name, "etat_lactation", "")
+
+        # 2. Close EN_ATTENTE insemination → ECHOUEE (triggers update_animal_on_resultat which resets gestation)
+        pending_ia = frappe.db.get_value("Insemination", {
+            "animal": self.name,
+            "resultat": "EN_ATTENTE"
+        }, "name")
+        if pending_ia:
+            ia_doc = frappe.get_doc("Insemination", pending_ia)
+            ia_doc.resultat = "ECHOUEE"
+            ia_doc.flags.ignore_validate = True
+            ia_doc.save()
+
+        # 3. If GESTANTE but no pending IA handled above, reset gestation directly
+        if not pending_ia and self.etat_gestation == "GESTANTE":
+            frappe.db.set_value("Animal", self.name, {
+                "etat_gestation": "VIDE",
+                "id_ia_fecondante": None,
+                "date_velage_prevue": None,
+                "date_tarissement": None,
+            })
+
+        # 4. Close all open alertes for this animal
+        open_alerts = frappe.get_all("Alerte", filters={
+            "animal": self.name,
+            "statut": ["in", ["NOUVELLE", "CONFIRMEE", "GESTANTE_PROBABLE"]]
+        }, pluck="name")
+        for alert in open_alerts:
+            frappe.db.set_value("Alerte", alert, {
+                "statut": "NON_CONFIRMEE",
+                "date_traitement": today()
+            })
 
     def _update_lot_counts(self, is_delete=False):
         """Update nb_animaux on current and previous lot"""
@@ -160,6 +216,29 @@ class Animal(Document):
 
 
 @frappe.whitelist()
+def check_active_records(animal):
+    """Check if animal has any active records that would be affected by status change"""
+    has_lactation = frappe.db.exists("Lactation", {"animal": animal, "statut": "EN_COURS"})
+    has_ia = frappe.db.exists("Insemination", {"animal": animal, "resultat": "EN_ATTENTE"})
+    etat_gestation = frappe.db.get_value("Animal", animal, "etat_gestation")
+    is_gestante = etat_gestation == "GESTANTE"
+    nb_alertes = frappe.db.count("Alerte", {
+        "animal": animal,
+        "statut": ["in", ["NOUVELLE", "CONFIRMEE", "GESTANTE_PROBABLE"]]
+    })
+
+    has_active = bool(has_lactation or has_ia or is_gestante or nb_alertes > 0)
+
+    return {
+        "has_active": has_active,
+        "lactation": bool(has_lactation),
+        "insemination": bool(has_ia),
+        "gestation": is_gestante,
+        "alertes": nb_alertes
+    }
+
+
+@frappe.whitelist()
 def get_reproduction_dashboard(animal):
     """Get all reproduction data for the animal dashboard"""
     
@@ -168,13 +247,24 @@ def get_reproduction_dashboard(animal):
         "animal": animal,
         "statut": "EN_COURS"
     }, ["name", "numero_lactation", "date_debut", "jours_lactation", "nb_inseminations"], as_dict=True)
-    
+
+    # Live DIM calculation for current lactation
+    if current_lactation and current_lactation.date_debut:
+        from frappe.utils import date_diff, today as today_fn
+        current_lactation.jours_lactation = date_diff(today_fn(), current_lactation.date_debut)
+
     # All lactations summary
-    lactations = frappe.db.get_all("Lactation", 
+    lactations = frappe.db.get_all("Lactation",
         filters={"animal": animal},
-        fields=["name", "numero_lactation", "date_debut", "date_fin", "statut", "nb_inseminations", "jours_lactation"],
+        fields=["name", "numero_lactation", "date_debut", "date_tarissement", "statut", "nb_inseminations", "jours_lactation"],
         order_by="numero_lactation desc"
     )
+
+    # Live DIM for active lactations in history table
+    for lac in lactations:
+        if lac.statut == "EN_COURS" and lac.date_debut:
+            from frappe.utils import date_diff, today as today_fn
+            lac.jours_lactation = date_diff(today_fn(), lac.date_debut)
     
     # Pending insemination
     pending_ia = frappe.db.get_value("Insemination", {

@@ -15,6 +15,11 @@ frappe.ui.form.on("Insemination", {
         if (frm.doc.animal) {
             frm.set_df_property("animal", "read_only", 1);
         }
+
+        // Ensure animal link shows nom_metier (title) after being set via frappe.new_doc
+        if (frm.doc.animal && !frm.fields_dict.animal.$input.val()) {
+            frm.fields_dict.animal.set_value(frm.doc.animal);
+        }
     },
 
     set_filters(frm) {

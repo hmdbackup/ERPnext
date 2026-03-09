@@ -82,11 +82,15 @@ class Insemination(Document):
         self.update_lactation_count()
     
     def validate_animal_eligible(self):
-        """Only VACHE/GENISSE can be inseminated"""
+        """Only VACHE/GENISSE can be inseminated, and not if already GESTANTE"""
         if self.animal:
-            categorie = frappe.db.get_value("Animal", self.animal, "categorie")
+            categorie, etat_gestation = frappe.db.get_value(
+                "Animal", self.animal, ["categorie", "etat_gestation"]
+            )
             if categorie not in ["VACHE", "GENISSE"]:
                 frappe.throw("ERR-IA-01: Seules les vaches et génisses peuvent être inséminées.")
+            if self.is_new() and etat_gestation == "GESTANTE":
+                frappe.throw("ERR-IA-06: Cet animal est déjà gestant. Insémination impossible.")
     
     def validate_date_ia(self):
         """Date IA cannot be in the future and must respect chronology"""

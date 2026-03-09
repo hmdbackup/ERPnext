@@ -21,6 +21,10 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "field_order": [
+  "section_chart",
+  "chart_production",
+  "section_traite_grid",
+  "traite_grid",
   "section_info",
   "animal",
   "numero_lactation",
@@ -28,7 +32,6 @@
   "column_break_info",
   "velage_debut",
   "date_debut",
-  "date_fin",
   "date_tarissement",
   "section_production",
   "jours_lactation",
@@ -37,11 +40,32 @@
   "column_break_production",
   "production_totale",
   "lactation_305j",
+  "moyenne_production",
   "nb_inseminations",
   "section_observations",
   "observations"
  ],
  "fields": [
+  {
+   "fieldname": "section_chart",
+   "fieldtype": "Section Break",
+   "label": "Courbe de Production"
+  },
+  {
+   "fieldname": "chart_production",
+   "fieldtype": "HTML",
+   "label": "Graphique Production"
+  },
+  {
+   "fieldname": "section_traite_grid",
+   "fieldtype": "Section Break",
+   "label": "D\u00e9tail des Traites"
+  },
+  {
+   "fieldname": "traite_grid",
+   "fieldtype": "HTML",
+   "label": "Grille Traites"
+  },
   {
    "fieldname": "section_info",
    "fieldtype": "Section Break",
@@ -60,7 +84,7 @@
    "fieldname": "numero_lactation",
    "fieldtype": "Int",
    "label": "N\u00b0 Lactation",
-   "reqd": 1,
+   "read_only": 1,
    "in_list_view": 1  },
   {
    "fieldname": "statut",
@@ -88,15 +112,10 @@
    "reqd": 1,
    "in_list_view": 1  },
   {
-   "fieldname": "date_fin",
-   "fieldtype": "Date",
-   "label": "Date Fin",
-   "description": "NULL si en cours"
-  },
-  {
    "fieldname": "date_tarissement",
    "fieldtype": "Date",
-   "label": "Date Tarissement"
+   "label": "Date Tarissement",
+   "description": "Date de fin de lactation (arr\u00eat de la traite)"
   },
   {
    "fieldname": "section_production",
@@ -112,8 +131,10 @@
   {
    "fieldname": "production_initiale",
    "fieldtype": "Float",
-   "label": "Production Initiale (L)",
-   "precision": "2"
+   "label": "Production Initiale 60j (L)",
+   "precision": "2",
+   "read_only": 1,
+   "description": "Somme des traites dans les 60 premiers jours"
   },
   {
    "fieldname": "pic_production",
@@ -137,7 +158,17 @@
    "fieldname": "lactation_305j",
    "fieldtype": "Float",
    "label": "Production 305j (L)",
-   "precision": "2"
+   "precision": "2",
+   "read_only": 1,
+   "description": "Somme des traites dans les 305 premiers jours"
+  },
+  {
+   "fieldname": "moyenne_production",
+   "fieldtype": "Float",
+   "label": "Moyenne Production (L/jour)",
+   "precision": "2",
+   "read_only": 1,
+   "description": "Production totale / jours en lactation"
   },
   {
    "fieldname": "nb_inseminations",
@@ -156,6 +187,11 @@
   }
  ],
  "links": [
+  {
+   "group": "Production",
+   "link_doctype": "Traite",
+   "link_fieldname": "lactation"
+  },
   {
    "group": "Reproduction",
    "link_doctype": "Insemination",

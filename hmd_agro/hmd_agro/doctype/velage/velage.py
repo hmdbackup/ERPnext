@@ -37,14 +37,14 @@ class Velage(Document):
         self.close_open_alerts()
 
     def validate_animal_gestante(self):
-        """CF-VEL-01 & CF-VEL-02"""
+        """CF-VEL-01 & CF-VEL-02: Only check gestation on creation"""
         if self.animal:
             categorie, sexe, etat = frappe.db.get_value(
                 "Animal", self.animal, ["categorie", "sexe", "etat_gestation"]
             )
             if sexe != "F" or categorie not in ["VACHE", "GENISSE"]:
                 frappe.throw("ERR-VEL-01: Seules les vaches et génisses peuvent vêler.")
-            if etat != "GESTANTE":
+            if self.is_new() and etat != "GESTANTE":
                 frappe.throw("ERR-VEL-02: L'animal n'est pas gestante.")
 
     def validate_date_velage(self):
@@ -79,6 +79,16 @@ class Velage(Document):
 
         if self.nombre_veaux == "2" and not self.sexe_veau2:
             frappe.throw("ERR-VEL-07: Le sexe du veau 2 est obligatoire pour des jumeaux.")
+
+        # Validate identification format (reuses Animal's validation)
+        from hmd_agro.hmd_agro.doctype.animal.animal import is_valid_identification_tn
+        for field, label in [("identification_veau1", "Veau 1"), ("identification_veau2", "Veau 2")]:
+            val = self.get(field)
+            if val and not is_valid_identification_tn(val):
+                frappe.throw(
+                    f"Identification TN du {label}: format invalide. "
+                    f"Doit être 10 chiffres (ex: 1234567890) ou TEMP-XX."
+                )
 
     def clear_veau2_if_single(self):
         """CF-VEL-05: Clear veau2 fields if single birth"""
@@ -189,7 +199,7 @@ class Velage(Document):
         if prev_lactation:
             lac = frappe.get_doc("Lactation", prev_lactation)
             lac.statut = "TARIE"
-            lac.date_fin = self.date_velage
+            lac.date_tarissement = self.date_velage
             lac.flags.ignore_validate = True
             lac.save()
             frappe.msgprint(f"Lactation précédente #{lac.numero_lactation} clôturée automatiquement (TARIE).")
