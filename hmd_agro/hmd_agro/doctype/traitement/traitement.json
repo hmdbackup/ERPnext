@@ -1,0 +1,113 @@
+{
+ "actions": [],
+ "autoname": "format:TRT-{YYYY}-{#####}",
+ "creation": "2026-03-10 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_info",
+  "animal",
+  "date_traitement",
+  "column_break_info",
+  "type_traitement",
+  "praticien",
+  "section_medicaments",
+  "medicaments",
+  "section_notes",
+  "observations"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_info",
+   "fieldtype": "Section Break",
+   "label": "Information"
+  },
+  {
+   "fieldname": "animal",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Animal",
+   "options": "Animal",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "date_traitement",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date Traitement",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_info",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "TRAITEMENT_MEDICAL",
+   "fieldname": "type_traitement",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Type de Traitement",
+   "options": "TRAITEMENT_MEDICAL\nPARAGE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "praticien",
+   "fieldtype": "Data",
+   "label": "Praticien"
+  },
+  {
+   "depends_on": "eval:doc.type_traitement === 'TRAITEMENT_MEDICAL'",
+   "fieldname": "section_medicaments",
+   "fieldtype": "Section Break",
+   "label": "Medicaments"
+  },
+  {
+   "fieldname": "medicaments",
+   "fieldtype": "Table",
+   "label": "Medicaments",
+   "options": "Traitement Medicale"
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "observations",
+   "fieldtype": "Small Text",
+   "label": "Observations"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-10 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Traitement",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "animal, date_traitement, type_traitement",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "animal",
+ "track_changes": 1
+}

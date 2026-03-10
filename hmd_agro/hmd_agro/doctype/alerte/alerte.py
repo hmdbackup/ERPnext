@@ -32,7 +32,7 @@ def _generate_genisse_alerts():
         existing = frappe.db.exists("Alerte", {
             "animal": g.name,
             "type_alerte": "CHALEUR_GENISSE",
-            "statut": ["in", ["NOUVELLE", "CONFIRMEE"]]
+            "statut": ["in", ["NOUVELLE", "CONFIRMEE", "REPORTEE"]]
         })
         if existing:
             continue
@@ -80,7 +80,7 @@ def _generate_post_velage_alerts():
         existing = frappe.db.exists("Alerte", {
             "animal": v.animal,
             "type_alerte": "CHALEUR_POST_VELAGE",
-            "statut": ["in", ["NOUVELLE", "CONFIRMEE"]]
+            "statut": ["in", ["NOUVELLE", "CONFIRMEE", "REPORTEE"]]
         })
         if existing:
             continue
@@ -235,10 +235,6 @@ def mark_alert(alert_name, action):
         ia.resultat = "REUSSIE"
         ia.save()
 
-    # Non confirmée: regenerate a chaleur alert in 21 days (next estrous cycle)
-    if action == "non_confirmer" and doc.type_alerte in ("CHALEUR_GENISSE", "CHALEUR_POST_VELAGE"):
-        _create_follow_up_chaleur(doc)
-
     return doc.statut
 
 
@@ -337,14 +333,3 @@ def a_revoir_alerte(alert_name, nb_jours, observations=None):
     return {"status": "ok", "new_alert": new_alert.name, "date_controle": str(target_date)}
 
 
-def _create_follow_up_chaleur(original_alert):
-    """Create a follow-up chaleur alert in 21 days after non-confirmation."""
-    new_alert = frappe.get_doc({
-        "doctype": "Alerte",
-        "animal": original_alert.animal,
-        "type_alerte": original_alert.type_alerte,
-        "date_alerte": add_days(getdate(today()), 21),
-        "raison": f"Suivi - Chaleur non confirmée du {today()}",
-        "statut": "NOUVELLE"
-    })
-    new_alert.insert(ignore_permissions=True)

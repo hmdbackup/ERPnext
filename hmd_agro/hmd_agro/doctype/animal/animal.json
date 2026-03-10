@@ -44,7 +44,10 @@
   "column_break_repro",
   "date_premier_velage",
   "id_velage_naissance",
-  "date_tarissement"
+  "date_tarissement",
+  "section_traitement",
+  "attente_lait_active",
+  "date_fin_attente_lait"
  ],
  "fields": [
   {
@@ -303,6 +306,28 @@
    "fieldtype": "Link",
    "label": "V\u00ealage de Naissance",
    "options": "Velage",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_traitement",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "Traitement"
+  },
+  {
+   "default": "0",
+   "fieldname": "attente_lait_active",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Attente Lait Active",
+   "read_only": 1
+  },
+  {
+   "fieldname": "date_fin_attente_lait",
+   "fieldtype": "Date",
+   "hidden": 1,
+   "label": "Date Fin Attente Lait",
    "read_only": 1
   }
  ],

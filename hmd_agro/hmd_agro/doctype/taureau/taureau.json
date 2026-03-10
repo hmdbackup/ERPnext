@@ -28,7 +28,6 @@
   {
    "fieldname": "nom_taureau",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Nom du Taureau",
    "reqd": 1,
    "unique": 1

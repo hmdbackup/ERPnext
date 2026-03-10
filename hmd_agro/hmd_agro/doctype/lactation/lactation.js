@@ -8,6 +8,11 @@ frappe.ui.form.on("Lactation", {
         frm.trigger("render_production_chart");
         frm.trigger("render_traite_grid");
 
+        // Lock animal field when pre-filled or already saved
+        if (frm.doc.animal) {
+            frm.set_df_property("animal", "read_only", 1);
+        }
+
         if (["TARIE", "INTERROMPUE"].includes(frm.doc.statut)) {
             frm.set_intro(__("Lactation clôturée — modification limitée."), "yellow");
         }

@@ -105,7 +105,9 @@ class Animal(Document):
             "date_velage_prevue",
             "date_premier_velage",
             "date_tarissement",
-            "id_velage_naissance"
+            "id_velage_naissance",
+            "attente_lait_active",
+            "date_fin_attente_lait"
         ]
         for field in protected:
             if self.get(field) != db_doc.get(field):

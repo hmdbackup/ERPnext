@@ -1,0 +1,107 @@
+{
+ "actions": [],
+ "autoname": "field:nom_medicament",
+ "creation": "2026-03-10 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_identification",
+  "nom_medicament",
+  "type_medicament",
+  "column_break_id",
+  "delai_attente_lait",
+  "delai_attente_viande",
+  "section_stock",
+  "stock_actuel",
+  "section_notes",
+  "observations"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_identification",
+   "fieldtype": "Section Break",
+   "label": "Identification"
+  },
+  {
+   "fieldname": "nom_medicament",
+   "fieldtype": "Data",
+   "label": "Nom du Medicament",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "type_medicament",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type de Medicament",
+   "options": "ANTIBIOTIQUE\nANTI_INFLAMMATOIRE\nANTIPARASITAIRE\nVACCIN\nHORMONE\nVITAMINE\nAUTRE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_id",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "delai_attente_lait",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Delai d'attente lait (jours)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "delai_attente_viande",
+   "fieldtype": "Int",
+   "label": "Delai d'attente viande (jours)"
+  },
+  {
+   "fieldname": "section_stock",
+   "fieldtype": "Section Break",
+   "label": "Stock"
+  },
+  {
+   "default": "0",
+   "fieldname": "stock_actuel",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Stock Actuel",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "observations",
+   "fieldtype": "Small Text",
+   "label": "Observations"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-10 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Medicament",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

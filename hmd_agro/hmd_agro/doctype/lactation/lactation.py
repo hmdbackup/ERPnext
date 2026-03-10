@@ -8,12 +8,26 @@ from frappe.utils import getdate, today, date_diff
 
 class Lactation(Document):
     def validate(self):
+        self.lock_identity_fields()
         self.auto_set_numero_lactation()
         self.validate_animal_eligible()
         self.validate_no_active_lactation()
         self.validate_statut_transition()
         self.validate_dates()
         self.calculate_jours_lactation()
+
+    def lock_identity_fields(self):
+        """Prevent editing animal after creation"""
+        if self.is_new() or self.flags.ignore_validate:
+            return
+        db_doc = self.get_doc_before_save()
+        if not db_doc:
+            return
+        if str(self.animal or "") != str(db_doc.animal or ""):
+            frappe.throw(
+                "Le champ 'Animal' ne peut pas être modifié après création. "
+                "Supprimez cette lactation et créez-en une nouvelle."
+            )
 
     def auto_set_numero_lactation(self):
         """Auto-calculate lactation number for this animal"""

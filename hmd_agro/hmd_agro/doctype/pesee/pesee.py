@@ -8,10 +8,24 @@ from frappe.utils import getdate, date_diff
 
 class Pesee(Document):
     def validate(self):
+        self.lock_identity_fields()
         self.validate_animal()
         self.validate_date()
         self.calculate_age()
         self.calculate_gmq()
+
+    def lock_identity_fields(self):
+        """Prevent editing animal after creation"""
+        if self.is_new() or self.flags.ignore_validate:
+            return
+        db_doc = self.get_doc_before_save()
+        if not db_doc:
+            return
+        if str(self.animal or "") != str(db_doc.animal or ""):
+            frappe.throw(
+                "Le champ 'Animal' ne peut pas être modifié après création. "
+                "Supprimez cette pesée et créez-en une nouvelle."
+            )
 
 
     def validate_animal(self):

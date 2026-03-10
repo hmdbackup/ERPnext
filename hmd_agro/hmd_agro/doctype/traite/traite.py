@@ -8,12 +8,27 @@ from frappe.utils import getdate, today
 
 class Traite(Document):
     def validate(self):
+        self.lock_identity_fields()
         self.auto_link_lactation()
         self.validate_lactation_en_cours()
         self.validate_date()
         self.validate_quantite()
         self.validate_unique_session()
         self.validate_taux()
+        self.warn_attente_lait()
+
+    def lock_identity_fields(self):
+        """Prevent editing animal after creation"""
+        if self.is_new() or self.flags.ignore_validate:
+            return
+        db_doc = self.get_doc_before_save()
+        if not db_doc:
+            return
+        if str(self.animal or "") != str(db_doc.animal or ""):
+            frappe.throw(
+                "Le champ 'Animal' ne peut pas être modifié après création. "
+                "Supprimez cette traite et créez-en une nouvelle."
+            )
 
     def auto_link_lactation(self):
         """Auto-link to animal's active lactation"""
@@ -73,6 +88,19 @@ class Traite(Document):
         if self.taux_tp is not None and self.taux_tp > 0:
             if self.taux_tp > 10:
                 frappe.throw("Le taux protéique ne peut pas dépasser 10%.")
+
+    def warn_attente_lait(self):
+        """CF-TMD-03: Warn if animal is under milk withdrawal period"""
+        if self.animal:
+            attente = frappe.db.get_value("Animal", self.animal,
+                ["attente_lait_active", "date_fin_attente_lait"], as_dict=True)
+            if attente and attente.attente_lait_active:
+                frappe.msgprint(
+                    f"Attention: Cet animal est sous délai d'attente lait jusqu'au {attente.date_fin_attente_lait}. "
+                    f"Le lait ne doit pas être collecté.",
+                    indicator="red",
+                    alert=True
+                )
 
     def after_insert(self):
         self.update_lactation_production()

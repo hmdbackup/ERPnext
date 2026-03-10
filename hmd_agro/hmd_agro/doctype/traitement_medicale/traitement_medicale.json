@@ -1,0 +1,81 @@
+{
+ "actions": [],
+ "creation": "2026-03-10 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "medicament",
+  "dose",
+  "unite_dose",
+  "voie_administration",
+  "diagnostic",
+  "delai_attente_lait",
+  "date_fin_attente_lait"
+ ],
+ "fields": [
+  {
+   "fieldname": "medicament",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Medicament",
+   "options": "Medicament",
+   "reqd": 1
+  },
+  {
+   "fieldname": "dose",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Dose",
+   "reqd": 1
+  },
+  {
+   "default": "ml",
+   "fieldname": "unite_dose",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Unite",
+   "options": "ml\nmg\ng\ncomprime\ndose",
+   "reqd": 1
+  },
+  {
+   "fieldname": "voie_administration",
+   "fieldtype": "Select",
+   "label": "Voie d'Administration",
+   "options": "\nORALE\nINJECTABLE_IM\nINJECTABLE_SC\nINJECTABLE_IV\nTOPIQUE\nINTRAMAMMAIRE"
+  },
+  {
+   "fieldname": "diagnostic",
+   "fieldtype": "Small Text",
+   "label": "Diagnostic"
+  },
+  {
+   "fetch_from": "medicament.delai_attente_lait",
+   "fieldname": "delai_attente_lait",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Delai Attente Lait (jours)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "date_fin_attente_lait",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fin Attente Lait",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-03-10 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Traitement Medicale",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

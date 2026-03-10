@@ -2,7 +2,16 @@ frappe.ui.form.on("Animal", {
     refresh(frm) {
         frm.trigger("toggle_fields_visibility");
         frm.trigger("set_link_filters");
-        
+
+        // Milk withdrawal warning banner
+        if (frm.doc.attente_lait_active && frm.doc.date_fin_attente_lait) {
+            frm.dashboard.set_headline(
+                __("Lait non collectible - Delai d'attente jusqu'au {0}",
+                    [frappe.datetime.str_to_user(frm.doc.date_fin_attente_lait)]),
+                "red"
+            );
+        }
+
         // Activity buttons
         if (!frm.is_new() && ["VACHE", "GENISSE"].includes(frm.doc.categorie)) {
             // Insémination button with validation
@@ -50,6 +59,12 @@ frappe.ui.form.on("Animal", {
             }, __("Activité"));
             // Load reproduction dashboard
             frm.trigger("load_repro_dashboard");
+        }
+        if (!frm.is_new() && frm.doc.statut === "ACTIF") {
+            frm.add_custom_button(__("Traitement"), function() {
+                frappe.route_options = { animal: frm.doc.name };
+                frappe.new_doc("Traitement");
+            }, __("Activité"));
         }
         if (!frm.is_new()) {
             frm.add_custom_button(__("Pesée"), function() {

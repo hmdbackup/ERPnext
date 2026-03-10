@@ -8,9 +8,23 @@ VALID_SCORES = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
 
 class EtatCorporel(Document):
     def validate(self):
+        self.lock_identity_fields()
         self.validate_score()
         self.validate_animal()
         self.validate_date()
+
+    def lock_identity_fields(self):
+        """Prevent editing animal after creation"""
+        if self.is_new() or self.flags.ignore_validate:
+            return
+        db_doc = self.get_doc_before_save()
+        if not db_doc:
+            return
+        if str(self.animal or "") != str(db_doc.animal or ""):
+            frappe.throw(
+                _("Le champ 'Animal' ne peut pas être modifié après création. "
+                "Supprimez cet état corporel et créez-en un nouveau.")
+            )
 
     def validate_score(self):
         try:

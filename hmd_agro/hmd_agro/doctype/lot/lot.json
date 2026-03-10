@@ -86,7 +86,6 @@
   {
    "fieldname": "nom",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Nom",
    "reqd": 1,
    "unique": 1

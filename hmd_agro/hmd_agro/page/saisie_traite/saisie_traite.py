@@ -23,6 +23,7 @@ def get_lactating_animals(date):
                 ORDER BY l2.numero_lactation DESC LIMIT 1
             )
         WHERE a.statut NOT IN ('VENDU', 'MORT', 'REFORME')
+          AND IFNULL(a.attente_lait_active, 0) = 0
         ORDER BY a.nom_metier DESC
     """, as_dict=True)
 
