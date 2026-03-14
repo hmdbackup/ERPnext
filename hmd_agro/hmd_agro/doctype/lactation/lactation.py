@@ -101,6 +101,7 @@ class Lactation(Document):
     def on_update(self):
         self.auto_fill_date_tarissement()
         self.sync_animal_etat()
+        self.close_tarissement_alerts()
 
     def auto_fill_date_tarissement(self):
         """Auto-fill date_tarissement when statut changes to TARIE"""
@@ -121,6 +122,22 @@ class Lactation(Document):
                 frappe.db.set_value("Animal", self.animal, "etat_lactation", "")
             elif self.statut == "EN_COURS":
                 frappe.db.set_value("Animal", self.animal, "etat_lactation", "EN_PRODUCTION")
+
+    def close_tarissement_alerts(self):
+        """Close TARISSEMENT alerts when lactation is no longer EN_COURS"""
+        if not self.has_value_changed("statut"):
+            return
+        if self.statut in ("TARIE", "INTERROMPUE") and self.animal:
+            open_alerts = frappe.get_all("Alerte", filters={
+                "animal": self.animal,
+                "type_alerte": "TARISSEMENT",
+                "statut": "NOUVELLE"
+            }, pluck="name")
+            for alert in open_alerts:
+                frappe.db.set_value("Alerte", alert, {
+                    "statut": "TRAITEE",
+                    "date_traitement": today()
+                })
 
     def on_trash(self):
         """Fix 6: Block deletion if linked records exist, otherwise reset animal"""
@@ -154,10 +171,12 @@ def get_production_chart_data(lactation):
         return None
 
     labels = [d.date_traite.strftime("%d/%m") for d in data]
+    dates = [str(d.date_traite) for d in data]
     values = [float(d.daily_total or 0) for d in data]
 
     return {
         "labels": labels,
+        "dates": dates,
         "datasets": [{"values": values}],
         "date_debut": str(lac.date_debut) if lac.date_debut else None
     }

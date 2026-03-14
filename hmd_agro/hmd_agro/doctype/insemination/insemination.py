@@ -200,6 +200,10 @@ class Insemination(Document):
                     "date_traitement": frappe.utils.today()
                 })
 
+            # Close tarissement/velage alerts (linked by animal, not IA)
+            if animal.id_ia_fecondante is None:
+                self._close_gestation_alerts()
+
     def update_lactation_count(self):
         """Update nb_inseminations on linked lactation"""
         if self.lactation:
@@ -243,6 +247,19 @@ class Insemination(Document):
                 "date_traitement": frappe.utils.today()
             })
 
+    def _close_gestation_alerts(self):
+        """Close tarissement/velage alerts when animal is no longer gestante"""
+        open_alerts = frappe.get_all("Alerte", filters={
+            "animal": self.animal,
+            "type_alerte": ["in", ["TARISSEMENT", "VELAGE_IMMINENT"]],
+            "statut": "NOUVELLE"
+        }, pluck="name")
+        for alert in open_alerts:
+            frappe.db.set_value("Alerte", alert, {
+                "statut": "NON_CONFIRMEE",
+                "date_traitement": frappe.utils.today()
+            })
+
     def after_insert(self):
         self.decrement_semence_stock()
         self.close_chaleur_alerts()
@@ -267,6 +284,7 @@ class Insemination(Document):
                 animal.etat_gestation = "VIDE"
                 animal.flags.ignore_validate = True
                 animal.save()
+                self._close_gestation_alerts()
 
         # Delete all alerts linked to this IA (auto-generated, no reason to keep orphaned)
         linked_alerts = frappe.get_all("Alerte", filters={

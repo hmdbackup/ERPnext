@@ -9,11 +9,14 @@ class Alerte(Document):
 
 @frappe.whitelist()
 def generate_alerts():
-    """Run daily to create heat alerts, J+21 and J+50 verification alerts"""
+    """Run daily to create heat alerts, J+21 and J+50 verification alerts,
+    tarissement and velage imminent alerts"""
     _generate_genisse_alerts()
     _generate_post_velage_alerts()
     _generate_j21_alerts()
     _generate_j50_alerts()
+    _generate_tarissement_alerts()
+    _generate_velage_alerts()
     frappe.db.commit()
 
 
@@ -205,6 +208,122 @@ def _generate_j50_alerts():
         doc.insert(ignore_permissions=True)
 
 
+def _generate_tarissement_alerts():
+    """TARISSEMENT: Gestating cow with EN_COURS lactation approaching dry-off date (7 days before)"""
+    cutoff_date = add_days(getdate(today()), 7)
+
+    animals = frappe.db.get_all("Animal", filters=[
+        ["statut", "=", "ACTIF"],
+        ["etat_gestation", "=", "GESTANTE"],
+        ["date_tarissement", "is", "set"],
+        ["date_tarissement", "<=", cutoff_date]
+    ], fields=["name", "nom_metier", "date_tarissement"])
+
+    for a in animals:
+        # Must have an active lactation to need tarissement
+        has_lactation = frappe.db.exists("Lactation", {
+            "animal": a.name,
+            "statut": "EN_COURS"
+        })
+        if not has_lactation:
+            continue
+
+        existing = frappe.db.exists("Alerte", {
+            "animal": a.name,
+            "type_alerte": "TARISSEMENT",
+            "statut": ["in", ["NOUVELLE", "TRAITEE"]]
+        })
+        if existing:
+            continue
+
+        days_until = date_diff(a.date_tarissement, getdate(today()))
+        if days_until > 0:
+            raison = f"Tarissement prevu dans {days_until} jour(s) ({a.date_tarissement})"
+        elif days_until == 0:
+            raison = f"Tarissement prevu aujourd'hui ({a.date_tarissement})"
+        else:
+            raison = f"Tarissement en retard de {abs(days_until)} jour(s) ({a.date_tarissement})"
+
+        doc = frappe.get_doc({
+            "doctype": "Alerte",
+            "animal": a.name,
+            "type_alerte": "TARISSEMENT",
+            "date_alerte": today(),
+            "raison": raison,
+            "statut": "NOUVELLE"
+        })
+        doc.insert(ignore_permissions=True)
+
+
+def _generate_velage_alerts():
+    """VELAGE_IMMINENT: Gestating animal approaching expected calving date (15 days before)"""
+    cutoff_date = add_days(getdate(today()), 15)
+
+    animals = frappe.db.get_all("Animal", filters=[
+        ["statut", "=", "ACTIF"],
+        ["etat_gestation", "=", "GESTANTE"],
+        ["date_velage_prevue", "is", "set"],
+        ["date_velage_prevue", "<=", cutoff_date]
+    ], fields=["name", "nom_metier", "date_velage_prevue"])
+
+    for a in animals:
+        existing = frappe.db.exists("Alerte", {
+            "animal": a.name,
+            "type_alerte": "VELAGE_IMMINENT",
+            "statut": ["in", ["NOUVELLE", "TRAITEE"]]
+        })
+        if existing:
+            continue
+
+        days_until = date_diff(a.date_velage_prevue, getdate(today()))
+        if days_until > 0:
+            raison = f"Velage prevu dans {days_until} jour(s) ({a.date_velage_prevue})"
+        elif days_until == 0:
+            raison = f"Velage prevu aujourd'hui ({a.date_velage_prevue})"
+        else:
+            raison = f"Velage en retard de {abs(days_until)} jour(s) ({a.date_velage_prevue})"
+
+        doc = frappe.get_doc({
+            "doctype": "Alerte",
+            "animal": a.name,
+            "type_alerte": "VELAGE_IMMINENT",
+            "date_alerte": today(),
+            "raison": raison,
+            "statut": "NOUVELLE"
+        })
+        doc.insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def tarir_animal(alert_name):
+    """Close EN_COURS lactation as TARIE and mark alert as TRAITEE"""
+    doc = frappe.get_doc("Alerte", alert_name)
+    if doc.type_alerte != "TARISSEMENT":
+        frappe.throw("Cette action est reservee aux alertes de tarissement")
+
+    # Find EN_COURS lactation
+    lactation_name = frappe.db.get_value("Lactation", {
+        "animal": doc.animal,
+        "statut": "EN_COURS"
+    })
+    if not lactation_name:
+        frappe.throw("Aucune lactation EN_COURS trouvee pour cet animal")
+
+    # Close lactation as TARIE
+    lactation = frappe.get_doc("Lactation", lactation_name)
+    lactation.statut = "TARIE"
+    lactation.date_tarissement = today()
+    lactation.save(ignore_permissions=True)
+
+    # Mark alert as treated
+    doc.statut = "TRAITEE"
+    doc.date_traitement = today()
+    doc.save(ignore_permissions=True)
+
+    animal_name = frappe.db.get_value("Animal", doc.animal, "nom_metier") or doc.animal
+    return {"status": "ok", "animal": animal_name, "lactation": lactation_name}
+
+
 @frappe.whitelist()
 def mark_alert(alert_name, action):
     """Mark alert based on farmer/vet decision"""
@@ -218,6 +337,8 @@ def mark_alert(alert_name, action):
         doc.statut = "RETOUR_CHALEUR"
     elif action == "gestante_confirmee":
         doc.statut = "GESTANTE_CONFIRMEE"
+    elif action == "traiter":
+        doc.statut = "TRAITEE"
 
     doc.date_traitement = today()
     doc.save(ignore_permissions=True)

@@ -27,7 +27,9 @@ def get_alerts():
         "CHALEUR_POST_VELAGE": {"label": "Chaleurs Post-Velage", "alerts": []},
         "CONFIRMEE": {"label": "Chaleurs Confirmees - En attente IA", "alerts": []},
         "VERIFICATION_J21": {"label": "Vérification IA J+21", "alerts": []},
-        "VERIFICATION_J50": {"label": "Vérifications Programmées", "alerts": []}
+        "VERIFICATION_J50": {"label": "Vérifications Programmées", "alerts": []},
+        "TARISSEMENT": {"label": "Tarissement", "alerts": []},
+        "VELAGE_IMMINENT": {"label": "Vêlage Imminent", "alerts": []}
     }
 
     for a in alerts:

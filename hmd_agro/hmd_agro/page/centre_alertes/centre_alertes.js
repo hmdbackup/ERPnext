@@ -243,6 +243,44 @@ function render_alerts(page, groups) {
         var alert_name = btn.data("alert");
         var action = btn.data("action");
 
+        if (action === "tarir") {
+            frappe.confirm(
+                "Confirmer le tarissement ? La lactation sera clôturée comme TARIE.",
+                function() {
+                    frappe.call({
+                        method: "hmd_agro.hmd_agro.doctype.alerte.alerte.tarir_animal",
+                        args: { alert_name: alert_name },
+                        callback: function(r) {
+                            if (r.message && r.message.status === "ok") {
+                                frappe.show_alert({
+                                    message: "Lactation de " + r.message.animal + " clôturée (TARIE)",
+                                    indicator: "green"
+                                });
+                                btn.closest(".alert-row").fadeOut(300, function() {
+                                    $(this).remove();
+                                    load_alerts(wrapper_ref);
+                                });
+                            }
+                        }
+                    });
+                }
+            );
+            return;
+        }
+
+        if (action === "creer_velage") {
+            var animal = btn.data("animal");
+            frappe.call({
+                method: "hmd_agro.hmd_agro.doctype.alerte.alerte.mark_alert",
+                args: { alert_name: alert_name, action: "traiter" },
+                callback: function() {
+                    frappe.route_options = { animal: animal };
+                    frappe.new_doc("Velage");
+                }
+            });
+            return;
+        }
+
         if (action === "creer_ia") {
             var animal = btn.data("animal");
             frappe.call({
@@ -548,6 +586,14 @@ function get_row_buttons(type, alert) {
             '<button class="btn btn-xs btn-success btn-alert-action" data-alert="' + alert.name + '" data-action="gestante_confirmee">Pleine</button>' +
             '<button class="btn btn-xs btn-danger btn-alert-action" data-alert="' + alert.name + '" data-action="retour_chaleur">Vide</button>';
     }
+    if (type === "TARISSEMENT") {
+        return '<button class="btn btn-xs btn-primary btn-alert-action" data-alert="' + alert.name + '" data-action="tarir" data-animal="' + alert.animal + '">Tarir</button>' +
+            '<button class="btn btn-xs btn-default btn-alert-action" data-alert="' + alert.name + '" data-action="traiter">Confirmer</button>';
+    }
+    if (type === "VELAGE_IMMINENT") {
+        return '<button class="btn btn-xs btn-primary btn-alert-action" data-alert="' + alert.name + '" data-action="creer_velage" data-animal="' + alert.animal + '">Créer Vêlage</button>' +
+            '<button class="btn btn-xs btn-default btn-alert-action" data-alert="' + alert.name + '" data-action="traiter">Confirmer</button>';
+    }
     return "";
 }
 
@@ -570,6 +616,12 @@ function get_bulk_buttons(type) {
             '<button class="btn btn-sm btn-success btn-bulk-action" data-action="gestante_confirmee" data-type="' + type + '" style="margin-left:6px;">Toutes pleine</button>' +
             '<button class="btn btn-sm btn-danger btn-bulk-action" data-action="retour_chaleur" data-type="' + type + '" style="margin-left:6px;">Toutes vide</button>';
     }
+    if (type === "TARISSEMENT") {
+        return '<button class="btn btn-sm btn-default btn-bulk-action" data-action="traiter" data-type="' + type + '">Toutes Confirmer</button>';
+    }
+    if (type === "VELAGE_IMMINENT") {
+        return '<button class="btn btn-sm btn-default btn-bulk-action" data-action="traiter" data-type="' + type + '">Toutes Confirmer</button>';
+    }
     return "";
 }
 
@@ -578,6 +630,8 @@ function get_indicator_color(type) {
     if (type === "CONFIRMEE") return "green";
     if (type === "VERIFICATION_J21") return "orange";
     if (type === "VERIFICATION_J50") return "blue";
+    if (type === "TARISSEMENT") return "yellow";
+    if (type === "VELAGE_IMMINENT") return "purple";
     return "grey";
 }
 
@@ -602,5 +656,7 @@ function get_actions_width(type) {
     if (type === "CONFIRMEE") return 180;
     if (type === "VERIFICATION_J21") return 500;
     if (type === "VERIFICATION_J50") return 500;
+    if (type === "TARISSEMENT") return 180;
+    if (type === "VELAGE_IMMINENT") return 200;
     return 100;
 }
