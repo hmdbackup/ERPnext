@@ -152,3 +152,44 @@ def refresh_attente_lait():
         })
     if expired:
         frappe.db.commit()
+
+
+@frappe.whitelist()
+def create_bulk_traitement(animaux, date_traitement, type_traitement, praticien="", observations="", medicaments=None):
+    """Create individual Traitement docs for multiple animals"""
+    import json
+    if isinstance(animaux, str):
+        animaux = json.loads(animaux)
+    if isinstance(medicaments, str):
+        medicaments = json.loads(medicaments)
+
+    created = 0
+    errors = []
+
+    for animal in animaux:
+        try:
+            doc = frappe.get_doc({
+                "doctype": "Traitement",
+                "animal": animal,
+                "date_traitement": date_traitement,
+                "type_traitement": type_traitement,
+                "praticien": praticien,
+                "observations": observations,
+                "medicaments": [
+                    {
+                        "medicament": m.get("medicament"),
+                        "dose": m.get("dose"),
+                        "unite_dose": m.get("unite_dose"),
+                        "voie_administration": m.get("voie_administration")
+                    }
+                    for m in (medicaments or [])
+                ] if type_traitement == "TRAITEMENT_MEDICAL" else []
+            })
+            doc.insert()
+            created += 1
+        except Exception as e:
+            nom = frappe.db.get_value("Animal", animal, "nom_metier") or animal
+            errors.append({"animal": nom, "error": str(e)})
+
+    frappe.db.commit()
+    return {"created": created, "errors": errors}

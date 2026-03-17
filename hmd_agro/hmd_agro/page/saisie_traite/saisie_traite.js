@@ -137,7 +137,7 @@ function render_table(page, data, date) {
         '<tr style="background:var(--bg-color);">' +
         '<th style="width:40px; text-align:center;">#</th>' +
         '<th style="min-width:80px;">Nom</th>' +
-        '<th style="min-width:110px;">ID TN</th>' +
+        '<th style="min-width:80px;">Lot</th>' +
         '<th style="width:110px; text-align:center;">MATIN</th>' +
         '<th style="width:110px; text-align:center;">SOIR</th>' +
         '<th style="width:80px; text-align:center;">Total</th>' +
@@ -167,7 +167,7 @@ function render_table(page, data, date) {
             '<tr data-animal="' + d.animal + '" data-prev-total="' + d.prev_total + '">' +
             '<td style="text-align:center; color:var(--text-muted);">' + (i + 1) + '</td>' +
             '<td><a href="/app/animal/' + d.animal + '" style="font-weight:600;">' + d.nom_metier + '</a></td>' +
-            '<td style="color:var(--text-muted); font-size:12px;">' + d.identification_tn + '</td>' +
+            '<td style="color:var(--text-muted); font-size:13px;">' + (d.lot && d.lot !== "Individuel" ? d.lot : "") + '</td>' +
             '<td style="text-align:center;">' + make_input(d, "MATIN") + '</td>' +
             '<td style="text-align:center;">' + make_input(d, "SOIR") + '</td>' +
             '<td class="st-row-total" style="text-align:center; font-weight:600;">0</td>' +
@@ -364,7 +364,7 @@ function print_table(page) {
     html += '<p>Date: <strong>' + date_val + '</strong></p>';
 
     html += '<table><thead><tr>' +
-        '<th>#</th><th class="text-left">Nom</th><th class="text-left">ID TN</th>' +
+        '<th>#</th><th class="text-left">Nom</th><th class="text-left">Lot</th>' +
         '<th>MATIN</th><th>SOIR</th><th>Total</th><th>Alerte</th>' +
         '</tr></thead><tbody>';
 
@@ -373,7 +373,7 @@ function print_table(page) {
     container.find("tbody tr").each(function(idx) {
         var row = $(this);
         var nom = row.find("td:eq(1)").text();
-        var id_tn = row.find("td:eq(2)").text();
+        var lot = row.find("td:eq(2)").text();
         var inputs = row.find(".st-qty-input");
         var m = parseFloat(inputs.eq(0).val()) || 0;
         var s = parseFloat(inputs.eq(1).val()) || 0;
@@ -385,7 +385,7 @@ function print_table(page) {
         html += '<tr>' +
             '<td>' + (idx + 1) + '</td>' +
             '<td class="text-left">' + nom + '</td>' +
-            '<td class="text-left">' + id_tn + '</td>' +
+            '<td class="text-left">' + lot + '</td>' +
             '<td>' + (m || '') + '</td>' +
             '<td>' + (s || '') + '</td>' +
             '<td>' + (t ? t.toFixed(1) : '') + '</td>' +

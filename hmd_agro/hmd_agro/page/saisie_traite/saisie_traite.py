@@ -14,6 +14,7 @@ def get_lactating_animals(date):
             a.name as animal,
             a.nom_metier,
             a.identification_tn,
+            a.id_lot as lot,
             l.name as lactation
         FROM `tabAnimal` a
         INNER JOIN `tabLactation` l ON l.animal = a.name AND l.statut = 'EN_COURS'
@@ -24,7 +25,7 @@ def get_lactating_animals(date):
             )
         WHERE a.statut NOT IN ('VENDU', 'MORT', 'REFORME')
           AND IFNULL(a.attente_lait_active, 0) = 0
-        ORDER BY a.nom_metier DESC
+        ORDER BY a.id_lot ASC, a.nom_metier DESC
     """, as_dict=True)
 
     if not animals:
@@ -64,6 +65,7 @@ def get_lactating_animals(date):
             "animal": a.animal,
             "nom_metier": a.nom_metier or a.animal,
             "identification_tn": a.identification_tn or "",
+            "lot": a.lot or "",
             "lactation": a.lactation,
             "matin": at.get("MATIN"),
             "soir": at.get("SOIR"),
