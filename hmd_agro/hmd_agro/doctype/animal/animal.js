@@ -254,36 +254,65 @@ function render_repro_dashboard(frm, data) {
     }
     html += `</div>`;
     
-    // ── Card 3: Lactation History ──
+    // ── Card 3: Lactation History (enriched) ──
+    let ivv_avg = data.ivv_list && data.ivv_list.length > 0
+        ? Math.round(data.ivv_list.reduce((a, b) => a + b, 0) / data.ivv_list.length)
+        : null;
+
     html += `
-    <div class="repro-card" style="flex:1; min-width:200px; border:1px solid var(--border-color); border-radius:8px; padding:15px; background:var(--card-bg);">
-        <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">Historique Lactations</div>
-        <div style="font-size:22px; font-weight:600;">${data.lactations.length}</div>
-        <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">lactation(s)</div>`;
-    
+    <div class="repro-card" style="flex:2; min-width:350px; border:1px solid var(--border-color); border-radius:8px; padding:15px; background:var(--card-bg);">
+        <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">Performances</div>
+        <div style="display:flex; gap:20px; margin-bottom:12px; font-size:13px; flex-wrap:wrap;">
+            <div><span style="color:var(--text-muted);">Lactations:</span> <strong>${data.lactations.length}</strong></div>
+            ${data.age_premier_velage ? '<div><span style="color:var(--text-muted);">Age V1:</span> <strong>' + data.age_premier_velage + ' mois</strong></div>' : ''}
+            ${ivv_avg ? '<div><span style="color:var(--text-muted);">IVV moy:</span> <strong>' + ivv_avg + 'j</strong></div>' : ''}
+            ${data.production_totale_vie ? '<div><span style="color:var(--text-muted);">Prod. vie:</span> <strong>' + Math.round(data.production_totale_vie).toLocaleString() + ' L</strong></div>' : ''}
+        </div>`;
+
     if (data.lactations.length > 0) {
         html += `<table style="width:100%; font-size:12px; border-collapse:collapse;">
             <tr style="border-bottom:1px solid var(--border-color);">
-                <th style="padding:4px 0; text-align:left;">N°</th>
-                <th style="padding:4px 0; text-align:left;">IA</th>
-                <th style="padding:4px 0; text-align:left;">Jours</th>
-                <th style="padding:4px 0; text-align:left;">Statut</th>
+                <th style="padding:4px 2px; text-align:left;">N°</th>
+                <th style="padding:4px 2px; text-align:right;">Prod (L)</th>
+                <th style="padding:4px 2px; text-align:right;">305j</th>
+                <th style="padding:4px 2px; text-align:right;">Jours</th>
+                <th style="padding:4px 2px; text-align:center;">IA</th>
+                <th style="padding:4px 2px; text-align:right;">IVV</th>
+                <th style="padding:4px 2px; text-align:left;">Statut</th>
             </tr>`;
-        
-        data.lactations.forEach(function(lac) {
+
+        data.lactations.forEach(function(lac, idx) {
             let statut_color = lac.statut === "EN_COURS" ? "green" : "gray";
+            // IVV: lactation N (N>1) gets the interval velage(N) - velage(N-1)
+            // ivv_list is ordered oldest→newest: [ivv between V1-V2, ivv between V2-V3, ...]
+            // lactations are sorted newest→oldest: [L3, L2, L1]
+            // So L(numero_lactation) gets ivv_list[numero_lactation - 2] (L2→index 0, L3→index 1)
+            let ivv_val = "";
+            if (lac.numero_lactation > 1 && data.ivv_list && data.ivv_list.length > 0) {
+                let ivv_idx = lac.numero_lactation - 2;
+                if (ivv_idx >= 0 && ivv_idx < data.ivv_list.length) {
+                    ivv_val = data.ivv_list[ivv_idx] + "j";
+                }
+            }
+
+            let prod = lac.production_totale ? Math.round(lac.production_totale).toLocaleString() : "-";
+            let p305 = lac.lactation_305j ? Math.round(lac.lactation_305j).toLocaleString() : "-";
+
             html += `
             <tr style="border-bottom:1px solid var(--light-border-color);">
-                <td style="padding:4px 0;"><a href="/app/lactation/${lac.name}">${lac.numero_lactation}</a></td>
-                <td style="padding:4px 0;">${lac.nb_inseminations || 0}</td>
-                <td style="padding:4px 0;">${lac.jours_lactation || '-'}</td>
-                <td style="padding:4px 0;"><span class="indicator-pill ${statut_color}" style="font-size:10px;">${lac.statut}</span></td>
+                <td style="padding:4px 2px;"><a href="/app/lactation/${lac.name}">${lac.numero_lactation}</a></td>
+                <td style="padding:4px 2px; text-align:right;">${prod}</td>
+                <td style="padding:4px 2px; text-align:right;">${p305}</td>
+                <td style="padding:4px 2px; text-align:right;">${lac.jours_lactation || '-'}</td>
+                <td style="padding:4px 2px; text-align:center;">${lac.nb_inseminations || 0}</td>
+                <td style="padding:4px 2px; text-align:right;">${ivv_val}</td>
+                <td style="padding:4px 2px;"><span class="indicator-pill ${statut_color}" style="font-size:10px;">${lac.statut}</span></td>
             </tr>`;
         });
-        
+
         html += `</table>`;
     }
-    
+
     html += `</div>`;
     
     html += `</div>`; // close .repro-dashboard

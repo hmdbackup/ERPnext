@@ -5,6 +5,14 @@ frappe.listview_settings["Traitement"] = {
         listview.page.add_button(__("Traitement en Lot"), function() {
             open_bulk_traitement_dialog();
         });
+        listview.page.add_button(__("Rafraichir Attente Lait"), function() {
+            frappe.call({
+                method: "hmd_agro.hmd_agro.doctype.traitement.traitement.refresh_attente_lait",
+                callback: function() {
+                    frappe.show_alert({ message: "Delais d'attente lait mis a jour", indicator: "green" });
+                }
+            });
+        });
     }
 };
 
@@ -37,15 +45,18 @@ function open_bulk_traitement_dialog() {
                         },
                         callback: function(r) {
                             if (r.message) {
-                                d.fields_dict.animaux.df.data = [];
-                                d.fields_dict.animaux.grid.grid_rows = [];
-                                d.fields_dict.animaux.grid.refresh();
-                                for (var i = 0; i < r.message.length; i++) {
-                                    var row = d.fields_dict.animaux.df.data[i] = {};
-                                    row.animal = r.message[i].name;
-                                    row.nom_metier = r.message[i].nom_metier || r.message[i].name;
-                                }
-                                d.fields_dict.animaux.grid.refresh();
+                                var grid = d.fields_dict.animaux.grid;
+                                // Remove all existing rows
+                                grid.df.data = [];
+                                grid.refresh();
+                                // Add animals
+                                r.message.forEach(function(a) {
+                                    grid.df.data.push({
+                                        animal: a.name,
+                                        nom_metier: a.nom_metier || a.name
+                                    });
+                                });
+                                grid.refresh();
                             }
                         }
                     });

@@ -200,6 +200,10 @@ class Velage(Document):
             lac = frappe.get_doc("Lactation", prev_lactation)
             lac.statut = "TARIE"
             lac.date_tarissement = self.date_velage
+            # Calculate jours_lactation before saving (since ignore_validate skips it)
+            if lac.date_debut:
+                from frappe.utils import date_diff
+                lac.jours_lactation = date_diff(getdate(self.date_velage), getdate(lac.date_debut))
             lac.flags.ignore_validate = True
             lac.save()
             frappe.msgprint(f"Lactation précédente #{lac.numero_lactation} clôturée automatiquement (TARIE).")

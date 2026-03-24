@@ -89,9 +89,12 @@ class Animal(Document):
         db_doc = self.get_doc_before_save()
         if not db_doc:
             return
-        if self.etat_gestation != db_doc.etat_gestation:
+        old_gest = db_doc.etat_gestation or ""
+        new_gest = self.etat_gestation or ""
+        # Allow default initialization (empty → VIDE) but block other manual changes
+        if new_gest != old_gest and not (old_gest == "" and new_gest == "VIDE"):
             frappe.throw("L'état de gestation est géré automatiquement par Insémination et Vêlage.")
-        if self.etat_lactation != db_doc.etat_lactation:
+        if (self.etat_lactation or "") != (db_doc.etat_lactation or ""):
             frappe.throw("L'état de lactation est géré automatiquement par Lactation.")
 
     def protect_reproduction_fields(self):
@@ -110,7 +113,9 @@ class Animal(Document):
             "date_fin_attente_lait"
         ]
         for field in protected:
-            if self.get(field) != db_doc.get(field):
+            new_val = str(self.get(field) or "")
+            old_val = str(db_doc.get(field) or "")
+            if new_val != old_val:
                 frappe.throw(
                     f"Le champ '{self.meta.get_field(field).label}' ne peut être modifié manuellement."
                 )
@@ -161,9 +166,16 @@ class Animal(Document):
             "statut": "EN_COURS"
         }, "name")
         if lactation:
+            # Calculate jours_lactation before closing
+            date_debut = frappe.db.get_value("Lactation", lactation, "date_debut")
+            jours = 0
+            if date_debut:
+                from frappe.utils import date_diff
+                jours = date_diff(today(), date_debut)
             frappe.db.set_value("Lactation", lactation, {
                 "statut": "INTERROMPUE",
-                "date_tarissement": today()
+                "date_tarissement": today(),
+                "jours_lactation": jours
             })
             frappe.db.set_value("Animal", self.name, "etat_lactation", "")
 
@@ -255,19 +267,45 @@ def get_reproduction_dashboard(animal):
         from frappe.utils import date_diff, today as today_fn
         current_lactation.jours_lactation = date_diff(today_fn(), current_lactation.date_debut)
 
-    # All lactations summary
+    # All lactations summary with production
     lactations = frappe.db.get_all("Lactation",
         filters={"animal": animal},
-        fields=["name", "numero_lactation", "date_debut", "date_tarissement", "statut", "nb_inseminations", "jours_lactation"],
+        fields=["name", "numero_lactation", "date_debut", "date_tarissement", "statut",
+                "nb_inseminations", "jours_lactation", "production_totale", "lactation_305j"],
         order_by="numero_lactation desc"
     )
 
-    # Live DIM for active lactations in history table
+    # Live DIM for active lactations + velage dates for IVV
+    velages = frappe.db.get_all("Velage",
+        filters={"animal": animal},
+        fields=["date_velage"],
+        order_by="date_velage asc"
+    )
+    velage_dates = [v.date_velage for v in velages]
+
     for lac in lactations:
         if lac.statut == "EN_COURS" and lac.date_debut:
             from frappe.utils import date_diff, today as today_fn
             lac.jours_lactation = date_diff(today_fn(), lac.date_debut)
-    
+
+    # Calculate IVV for each lactation (based on velage dates)
+    ivv_list = []
+    for i in range(1, len(velage_dates)):
+        from frappe.utils import date_diff
+        ivv = date_diff(velage_dates[i], velage_dates[i - 1])
+        ivv_list.append(ivv)
+
+    # Age au premier velage
+    animal_data = frappe.db.get_value("Animal", animal,
+        ["date_naissance", "date_premier_velage"], as_dict=True)
+    age_premier_velage = None
+    if animal_data and animal_data.date_naissance and animal_data.date_premier_velage:
+        from frappe.utils import date_diff
+        age_premier_velage = round(date_diff(animal_data.date_premier_velage, animal_data.date_naissance) / 30, 1)
+
+    # Production lifetime
+    production_totale_vie = sum(lac.production_totale or 0 for lac in lactations)
+
     # Pending insemination
     pending_ia = frappe.db.get_value("Insemination", {
         "animal": animal,
@@ -288,5 +326,8 @@ def get_reproduction_dashboard(animal):
         "lactations": lactations,
         "pending_ia": pending_ia,
         "last_ia": last_ia,
-        "total_ia": total_ia
+        "total_ia": total_ia,
+        "ivv_list": ivv_list,
+        "age_premier_velage": age_premier_velage,
+        "production_totale_vie": round(production_totale_vie, 1)
     }
