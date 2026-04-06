@@ -138,7 +138,16 @@ def _process_import(file_url, keep_original, user):
 
             for i, date in enumerate(dates):
                 value = row["values"][i] if i < len(row["values"]) else 0
-                value = value or 0
+                try:
+                    value = float(value) if value else 0
+                except (ValueError, TypeError):
+                    summary["errors"].append({
+                        "animal": nom,
+                        "date": str(date),
+                        "reason": f"Valeur non numerique: {value}"
+                    })
+                    processed += 1
+                    continue
 
                 # Find which lactation covers this date
                 lactation = find_lactation_for_date(lactations, date)

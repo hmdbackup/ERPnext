@@ -5,6 +5,23 @@ app_description = "Custom dairy farm management system for HMD AGRO - animal"
 app_email = "mouhibbouzamita@gmail.com"
 app_license = "mit"
 
+# Fixtures
+# --------
+# Exported via `bench export-fixtures --app hmd_agro`
+# Imported automatically when the app is installed on a fresh site
+HMD_DOCTYPES = [
+	"Animal", "Lactation", "Traite", "Insemination", "Velage", "Avortement",
+	"Alerte", "Lot", "Batiment", "Pesee", "Etat Corporel", "Semence", "Taureau",
+	"Mere Externe", "Traitement", "Traitement Medicale", "Medicament",
+	"Aliment", "Ration", "Composition Ration"
+]
+
+fixtures = [
+	{"dt": "Workspace", "filters": [["module", "=", "HMD AGRO"]]},
+	{"dt": "Property Setter", "filters": [["doc_type", "in", HMD_DOCTYPES]]},
+	{"dt": "Custom Field", "filters": [["dt", "in", HMD_DOCTYPES]]},
+]
+
 # Apps
 # ------------------
 
