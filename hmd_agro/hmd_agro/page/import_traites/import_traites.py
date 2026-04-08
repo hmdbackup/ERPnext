@@ -22,15 +22,28 @@ def preview_import(file_url):
     matched = []
     unmatched = []
     duplicates = []
+    seen_duplicates = set()
 
     for row in animals_data:
         nom = str(row["nom_metier"]).zfill(4)
         if nom in duplicate_noms:
-            duplicates.append(nom)
+            if nom not in seen_duplicates:
+                duplicates.append(nom)
+                seen_duplicates.add(nom)
         elif nom in animal_map:
             matched.append({"nom_metier": nom, "animal": animal_map[nom]})
         else:
             unmatched.append(nom)
+
+    # Build candidate list for each duplicate nom_metier
+    duplicate_candidates = {}
+    for nom in duplicates:
+        candidates = frappe.db.get_all("Animal",
+            filters={"nom_metier": nom},
+            fields=["name", "identification_tn", "identification_fr",
+                    "id_lot", "statut", "categorie"]
+        )
+        duplicate_candidates[nom] = candidates
 
     # Build lactation info for matched animals
     lactation_info = {}
@@ -61,15 +74,21 @@ def preview_import(file_url):
         "matched": len(matched),
         "unmatched": unmatched,
         "duplicates": duplicates,
+        "duplicate_candidates": duplicate_candidates,
         "estimated_traites": len(matched) * len(dates) * 2,
         "lactation_info": lactation_info
     }
 
 
 @frappe.whitelist()
-def run_import(file_url, keep_original=1):
+def run_import(file_url, keep_original=1, resolutions=None):
     """Enqueue the import as a background job"""
+    import json
     keep_original = int(keep_original)
+    if isinstance(resolutions, str):
+        resolutions = json.loads(resolutions) if resolutions else {}
+    resolutions = resolutions or {}
+
     job_id = f"import_traites::{file_url}"
 
     if is_job_enqueued(job_id):
@@ -83,6 +102,7 @@ def run_import(file_url, keep_original=1):
         job_id=job_id,
         file_url=file_url,
         keep_original=keep_original,
+        resolutions=resolutions,
         user=frappe.session.user,
         now=frappe.conf.developer_mode,
     )
@@ -90,9 +110,10 @@ def run_import(file_url, keep_original=1):
     return {"status": "started"}
 
 
-def _process_import(file_url, keep_original, user):
+def _process_import(file_url, keep_original, user, resolutions=None):
     """Background job: parse Excel and create Traite records"""
     frappe.set_user(user)
+    resolutions = resolutions or {}
 
     try:
         dates, animals_data = parse_excel(file_url)
@@ -104,6 +125,12 @@ def _process_import(file_url, keep_original, user):
             return
 
         animal_map, duplicate_noms = build_animal_mapping()
+
+        # Apply user resolutions for ambiguous nom_metier
+        for nom, animal_name in resolutions.items():
+            if animal_name:
+                animal_map[nom] = animal_name
+                duplicate_noms.discard(nom)
 
         summary = {
             "created": 0,

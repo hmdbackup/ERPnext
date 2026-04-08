@@ -76,6 +76,11 @@ frappe.ui.form.on("Animal", {
                 frappe.route_options = { animal: frm.doc.name };
                 frappe.new_doc("Etat Corporel");
             }, __("Activité"));
+
+            frm.add_custom_button(__("Note Mobilité"), function() {
+                frappe.route_options = { animal: frm.doc.name };
+                frappe.new_doc("Note Mobilite");
+            }, __("Activité"));
         }
         
     },

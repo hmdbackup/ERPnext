@@ -38,7 +38,7 @@
     "parenttype": "Workspace"
    },
    {
-    "label": "Attente Lait",
+    "label": "Sous Traitement",
     "number_card_name": "Attente Lait",
     "parent": "HMD AGRO",
     "parentfield": "number_cards",

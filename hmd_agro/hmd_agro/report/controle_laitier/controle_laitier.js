@@ -22,6 +22,34 @@ frappe.query_reports["Controle Laitier"] = {
         }
     ],
 
+    formatter(value, row, column, data, default_formatter) {
+        if (value == null || value === "") {
+            return default_formatter(value, row, column, data);
+        }
+        if (column.fieldname === "total" || column.fieldname === "moyenne") {
+            return `<b>${default_formatter(value, row, column, data)}</b>`;
+        }
+        if (column.fieldname === "delta") {
+            const pct = Number(value);
+            let color = "gray";
+            let bold = false;
+            if (pct > 0) {
+                color = "green";
+            } else if (pct < 0) {
+                if (pct <= -30) {
+                    color = "red";
+                    bold = true;
+                } else {
+                    color = "orange";
+                }
+            }
+            const sign = pct > 0 ? "+" : "";
+            const style = `color:${color};${bold ? "font-weight:bold;" : ""}`;
+            return `<span style="${style}">${sign}${pct}%</span>`;
+        }
+        return default_formatter(value, row, column, data);
+    },
+
     after_datatable_render(datatable) {
         if (datatable.wrapper.querySelector(".sticky-col-style")) return;
         let style = document.createElement("style");

@@ -89,7 +89,7 @@
    "fieldname": "nom_metier",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "N\u00b0 M\u00e9tier",
+   "label": "N\u00b0 Travail",
    "read_only": 1
   },
   {

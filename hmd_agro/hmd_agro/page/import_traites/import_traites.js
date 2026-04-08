@@ -78,6 +78,16 @@ frappe.pages["import-traites"].on_page_load = function (wrapper) {
             return;
         }
 
+        // Collect duplicate-resolution selections
+        let resolutions = {};
+        page.main.find(".duplicate-resolution-select").each(function () {
+            let nom = $(this).data("nom");
+            let val = $(this).val();
+            if (val) {
+                resolutions[nom] = val;
+            }
+        });
+
         let keep_original = page.main.find(".chk-keep-original").is(":checked");
         let confirm_msg = "Lancer l'import ? Cette operation va creer les traites pour tous les animaux trouves.";
         if (!keep_original) {
@@ -134,7 +144,11 @@ frappe.pages["import-traites"].on_page_load = function (wrapper) {
                 // Start import
                 frappe.call({
                     method: "hmd_agro.hmd_agro.page.import_traites.import_traites.run_import",
-                    args: { file_url: file_url, keep_original: keep_original ? 1 : 0 },
+                    args: {
+                        file_url: file_url,
+                        keep_original: keep_original ? 1 : 0,
+                        resolutions: JSON.stringify(resolutions)
+                    },
                 });
             }
         );
@@ -178,10 +192,43 @@ function render_preview(page, data) {
 
     if (data.duplicates.length > 0) {
         html += `
-        <div style="background:var(--alert-bg-danger); border:1px solid var(--alert-text-danger); border-radius:6px; padding:10px; margin-bottom:15px;">
-            <strong>Nom metier en double dans la base (${data.duplicates.length}):</strong>
-            ${data.duplicates.join(", ")}
-        </div>`;
+        <div style="background:var(--alert-bg-warning); border:1px solid var(--alert-text-warning); border-radius:6px; padding:12px; margin-bottom:15px;">
+            <strong>N° Travail ambigu (${data.duplicates.length}) — plusieurs animaux partagent ces 4 derniers chiffres :</strong>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+                Choisissez l'animal a utiliser pour chaque ligne. Les noms non resolus seront ignores.
+            </div>
+            <table style="width:100%; font-size:12px; border-collapse:collapse; margin-top:10px;" class="duplicate-resolution-table">
+                <tr style="border-bottom:1px solid var(--border-color);">
+                    <th style="padding:6px 4px; text-align:left;">N° Travail</th>
+                    <th style="padding:6px 4px; text-align:left;">Animal a utiliser</th>
+                </tr>`;
+
+        data.duplicates.forEach(function (nom) {
+            let candidates = data.duplicate_candidates[nom] || [];
+            let options = `<option value="">-- Ignorer --</option>`;
+            candidates.forEach(function (c) {
+                let label_parts = [c.name];
+                if (c.identification_fr) label_parts.push("FR:" + c.identification_fr);
+                if (c.id_lot) label_parts.push("Lot:" + c.id_lot);
+                if (c.categorie) label_parts.push(c.categorie);
+                if (c.statut && c.statut !== "ACTIF") label_parts.push("[" + c.statut + "]");
+                options += `<option value="${c.name}">${label_parts.join(" — ")}</option>`;
+            });
+
+            html += `
+            <tr style="border-bottom:1px solid var(--light-border-color);">
+                <td style="padding:6px 4px; font-weight:600;">${nom}</td>
+                <td style="padding:6px 4px;">
+                    <select class="form-control input-xs duplicate-resolution-select"
+                            data-nom="${nom}"
+                            style="font-size:12px; height:28px;">
+                        ${options}
+                    </select>
+                </td>
+            </tr>`;
+        });
+
+        html += `</table></div>`;
     }
 
     // Matched animals with lactation info
@@ -190,7 +237,7 @@ function render_preview(page, data) {
         <h6>Animaux trouves avec leurs lactations</h6>
         <table style="width:100%; font-size:12px; border-collapse:collapse;">
             <tr style="border-bottom:1px solid var(--border-color);">
-                <th style="padding:6px 4px; text-align:left;">Nom Metier</th>
+                <th style="padding:6px 4px; text-align:left;">N° Travail</th>
                 <th style="padding:6px 4px; text-align:left;">ID Animal</th>
                 <th style="padding:6px 4px; text-align:center;">Lactations</th>
                 <th style="padding:6px 4px; text-align:left;">Periodes</th>

@@ -28,10 +28,9 @@ def execute(filters=None):
             "width": 65,
         })
     columns.extend([
-        {"fieldname": "separator", "label": "", "fieldtype": "Data", "width": 10},
-        {"fieldname": "total", "label": "Total", "fieldtype": "Data", "width": 80},
-        {"fieldname": "moyenne", "label": "Moy/j", "fieldtype": "Data", "width": 70},
-        {"fieldname": "delta", "label": "Delta", "fieldtype": "Data", "width": 80},
+        {"fieldname": "total", "label": "Total", "fieldtype": "Float", "precision": 1, "width": 80},
+        {"fieldname": "moyenne", "label": "Moy/j", "fieldtype": "Float", "precision": 1, "width": 70},
+        {"fieldname": "delta", "label": "Delta", "fieldtype": "Percent", "precision": 0, "width": 80},
     ])
 
     # Get all active cows
@@ -80,9 +79,8 @@ def execute(filters=None):
             if val > 0:
                 days_with_data += 1
 
-        row["separator"] = ""
-        row["total"] = f"<b>{round(row_total, 1)}</b>" if row_total else None
-        row["moyenne"] = f"<b>{round(row_total / days_with_data, 1)}</b>" if days_with_data else None
+        row["total"] = round(row_total, 1) if row_total else None
+        row["moyenne"] = round(row_total / days_with_data, 1) if days_with_data else None
 
         # Delta: find last two days WITH data (not just last two calendar days)
         animal_dates = traite_map.get(a.name, {})
@@ -91,16 +89,7 @@ def execute(filters=None):
         if len(filled_days) >= 2:
             last_val = animal_dates[str(filled_days[0])]
             prev_val = animal_dates[str(filled_days[1])]
-            pct = round(((last_val - prev_val) / prev_val) * 100)
-            if pct > 0:
-                row["delta"] = f'<span style="color:green;">+{pct}%</span>'
-            elif pct < 0:
-                if pct <= -30:
-                    row["delta"] = f'<span style="color:red; font-weight:bold;">{pct}%</span>'
-                else:
-                    row["delta"] = f'<span style="color:orange;">{pct}%</span>'
-            else:
-                row["delta"] = '<span style="color:gray;">0%</span>'
+            row["delta"] = round(((last_val - prev_val) / prev_val) * 100)
         else:
             row["delta"] = None
 

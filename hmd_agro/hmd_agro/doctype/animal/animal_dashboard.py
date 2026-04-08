@@ -16,7 +16,7 @@ def get_data():
             },
             {
                 "label": _("Suivi"),
-                "items": ["Pesee", "Etat Corporel"]
+                "items": ["Pesee", "Etat Corporel", "Note Mobilite"]
             },
             {
                 "label": _("Santé"),
