@@ -11,9 +11,9 @@ def preview_import(file_url):
     dates, animals_data = parse_excel(file_url)
 
     if not dates:
-        frappe.throw("Aucune date trouvee dans le fichier (ligne 6, colonnes G+).")
+        frappe.throw("Aucune date trouvee dans le fichier (ligne 1, colonnes B+).")
     if not animals_data:
-        frappe.throw("Aucun animal trouve dans le fichier (colonne F).")
+        frappe.throw("Aucun animal trouve dans le fichier (colonne A).")
 
     # Build animal mapping: nom_metier -> animal name
     animal_map, duplicate_noms = build_animal_mapping()
@@ -343,10 +343,10 @@ def parse_excel(file_url):
     wb = openpyxl.load_workbook(BytesIO(content), data_only=True)
     ws = wb.active
 
-    # Row 6: date headers starting at col G (index 7)
+    # Row 1: date headers starting at col B (index 2)
     dates = []
-    for col in range(7, ws.max_column + 1):
-        val = ws.cell(6, col).value
+    for col in range(2, ws.max_column + 1):
+        val = ws.cell(1, col).value
         if val and hasattr(val, 'date'):
             dates.append(val.date())
         elif val and isinstance(val, str):
@@ -357,15 +357,15 @@ def parse_excel(file_url):
         else:
             break
 
-    # Rows 7+: col F = nom_metier, cols G+ = daily values
+    # Rows 2+: col A = nom_metier, cols B+ = daily values
     animals_data = []
-    for row in range(7, ws.max_row + 1):
-        nom_metier = ws.cell(row, 6).value
+    for row in range(2, ws.max_row + 1):
+        nom_metier = ws.cell(row, 1).value
         if nom_metier is None:
             continue
 
         values = []
-        for col_idx in range(7, 7 + len(dates)):
+        for col_idx in range(2, 2 + len(dates)):
             val = ws.cell(row, col_idx).value
             values.append(val if val is not None else 0)
 

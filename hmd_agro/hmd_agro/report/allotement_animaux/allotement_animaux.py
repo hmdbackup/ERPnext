@@ -159,15 +159,15 @@ def _apply_suggestions(data, reference_date):
 
 
 def _get_suggestion(row, reference_date, find_lot):
-    # Gestante close to calving → tarissement (priority over tarie)
+    # Tarie → lot tarie (already dried off, waiting for vêlage)
+    if row.get("etat_lactation") == "TARIE":
+        return find_lot("TARIE")
+
+    # Gestante close to calving → tarissement (dry-off needed)
     if row.get("etat_gestation") == "GESTANTE" and row.get("date_velage_prevue"):
         days_to_calving = cint(date_diff(row["date_velage_prevue"], reference_date))
         if 0 < days_to_calving <= 60:
             return find_lot("TARISSEMENT")
-
-    # Tarie → lot tarie
-    if row.get("etat_lactation") == "TARIE":
-        return find_lot("TARIE")
 
     # 3. DIM-based
     dim = row.get("dim")

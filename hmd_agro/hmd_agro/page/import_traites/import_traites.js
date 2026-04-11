@@ -10,7 +10,7 @@ frappe.pages["import-traites"].on_page_load = function (wrapper) {
             <div class="upload-section" style="border:1px solid var(--border-color); border-radius:8px; padding:20px; background:var(--card-bg);">
                 <h5>1. Charger le fichier Excel</h5>
                 <p style="color:var(--text-muted); font-size:13px;">
-                    Format attendu: Ligne 6 = dates (colonnes G+), Colonne F = nom metier, cellules = production journaliere (litres)
+                    Format attendu: Ligne 1 = dates (colonnes B+), Colonne A = nom metier, cellules = production journaliere (litres)
                 </p>
                 <div class="file-upload-area"></div>
                 <div style="margin-top:15px;">
