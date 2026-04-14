@@ -11,6 +11,7 @@
   "column_break_id",
   "unite",
   "prix_unitaire",
+  "ms_pct",
   "section_notes",
   "observations"
  ],
@@ -56,6 +57,13 @@
    "label": "Prix Unitaire",
    "options": "TND",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "ms_pct",
+   "fieldtype": "Percent",
+   "label": "Matière Sèche (MS%)",
+   "description": "Pourcentage de matière sèche (0-100)"
   },
   {
    "fieldname": "section_notes",

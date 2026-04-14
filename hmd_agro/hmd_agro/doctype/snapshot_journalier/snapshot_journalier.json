@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "autoname": "format:SNAP-{date_snapshot}",
+ "creation": "2026-04-14 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "date_snapshot",
+  "frozen",
+  "section_data",
+  "aggregates_json",
+  "animals_json",
+  "events_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "date_snapshot",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "frozen",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Figé"
+  },
+  {
+   "fieldname": "section_data",
+   "fieldtype": "Section Break",
+   "label": "Données"
+  },
+  {
+   "fieldname": "aggregates_json",
+   "fieldtype": "Long Text",
+   "label": "Agrégats (JSON)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "animals_json",
+   "fieldtype": "Long Text",
+   "label": "Animaux (JSON)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "events_json",
+   "fieldtype": "Long Text",
+   "label": "Événements (JSON)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-04-14 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Snapshot Journalier",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "date_snapshot",
+ "sort_order": "DESC",
+ "states": []
+}

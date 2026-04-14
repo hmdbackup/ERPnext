@@ -113,42 +113,34 @@ def test_columns(results):
     check(f"{PREFIX}HP" in col_names, "Has HP lot", f"Cols: {col_names}", results)
     check(f"{PREFIX}MP" in col_names, "Has MP lot", f"Cols: {col_names}", results)
     check("total" in col_names, "Has total", "Missing total", results)
-    check("moy_vl" in col_names, "Has moy_vl", "Missing moy_vl", results)
 
-def test_day1(results):
-    log("Day 1 — HP=30, MP=15, Total=45", "HEAD")
-    _, data = _production_lot(CTX)
-    row = _find_row(data, "1")
-    check(row[f"{PREFIX}HP"] == 30, "HP=30", f"Got {row[f'{PREFIX}HP']}", results)
-    check(row[f"{PREFIX}MP"] == 15, "MP=15", f"Got {row[f'{PREFIX}MP']}", results)
-    check(row["total"] == 45, "Total=45", f"Got {row['total']}", results)
-    check(row["moy_vl"] is not None, "Moy/VL calculated", f"Got {row['moy_vl']}", results)
+def test_default_shows_last_2_days(results):
+    log("Default (no jour) — shows last 2 days of month", "HEAD")
+    _, data = _production_lot(CTX)  # CTX has jour=0, nb_jours=31
+    jours = [r["jour"] for r in data]
+    check("30/03" in jours, "Shows 30/03", f"Got {jours}", results)
+    check("31/03" in jours, "Shows 31/03", f"Got {jours}", results)
 
-def test_day2(results):
-    log("Day 2 — HP=33, MP=16, Total=49", "HEAD")
-    _, data = _production_lot(CTX)
-    row = _find_row(data, "2")
-    check(row[f"{PREFIX}HP"] == 33, "HP=33", f"Got {row[f'{PREFIX}HP']}", results)
-    check(row[f"{PREFIX}MP"] == 16, "MP=16", f"Got {row[f'{PREFIX}MP']}", results)
-    check(row["total"] == 49, "Total=49", f"Got {row['total']}", results)
+def test_jour_filter(results):
+    log("Jour=2 — shows 01/03 + 02/03", "HEAD")
+    ctx = {**CTX, "jour": 2}
+    _, data = _production_lot(ctx)
+    row1 = _find_row(data, "01/03")
+    row2 = _find_row(data, "02/03")
+    check(row1 is not None and row1[f"{PREFIX}HP"] == 30, "Day 01/03 HP=30", f"{row1}", results)
+    check(row2 is not None and row2[f"{PREFIX}HP"] == 33, "Day 02/03 HP=33", f"{row2}", results)
 
-def test_day3_partial(results):
-    log("Day 3 — HP=27, MP=None (no data)", "HEAD")
-    _, data = _production_lot(CTX)
-    row = _find_row(data, "3")
-    check(row[f"{PREFIX}HP"] == 27, "HP=27", f"Got {row[f'{PREFIX}HP']}", results)
-    check(row[f"{PREFIX}MP"] is None, "MP=None", f"Got {row[f'{PREFIX}MP']}", results)
-    check(row["total"] == 27, "Total=27", f"Got {row['total']}", results)
-
-def test_empty_day(results):
-    log("Day 4 — no data, all None", "HEAD")
-    _, data = _production_lot(CTX)
-    row = _find_row(data, "4")
-    check(row[f"{PREFIX}HP"] is None, "HP=None", f"Got {row[f'{PREFIX}HP']}", results)
-    check(row["total"] is None, "Total=None", f"Got {row['total']}", results)
+def test_jour_1(results):
+    log("Jour=1 — shows only 01/03 (no previous day)", "HEAD")
+    ctx = {**CTX, "jour": 1}
+    _, data = _production_lot(ctx)
+    jours = [r["jour"] for r in data]
+    check("01/03" in jours, "Has 01/03", f"Got {jours}", results)
+    # Should not have day 0 or previous month
+    check(not any(j.startswith("0/") or j.startswith("29/02") for j in jours), "No day 0", f"Got {jours}", results)
 
 def test_effectif_row(results):
-    log("Effectif row — HP=3, MP=2, Total=5", "HEAD")
+    log("Effectif row — HP=3, MP=2", "HEAD")
     _, data = _production_lot(CTX)
     row = _find_row(data, "Effectif")
     check(row[f"{PREFIX}HP"] == 3, "HP=3", f"Got {row[f'{PREFIX}HP']}", results)
@@ -156,18 +148,18 @@ def test_effectif_row(results):
     check(row["total"] >= 5, "Total>=5 (includes real data)", f"Got {row['total']}", results)
 
 def test_moyenne_row(results):
-    log("Moyenne row — per cow per day", "HEAD")
+    log("Moyenne/lot — per cow across whole month", "HEAD")
     _, data = _production_lot(CTX)
     row = _find_row(data, "Moyenne/lot")
-    # HP: (30+33+27)/(3 cows * 3 days) = 90/9 = 10.0
+    # HP: (30+33+27)/(3 cows * 3 days with data) = 10.0
     check(row[f"{PREFIX}HP"] == 10.0, "HP moy=10.0", f"Got {row[f'{PREFIX}HP']}", results)
-    # MP: (15+16)/(2 cows * 3 days) = 31/6 = 5.2
+    # MP: (15+16)/(2 cows * 3 days) = 5.2
     check(row[f"{PREFIX}MP"] == 5.2, "MP moy=5.2", f"Got {row[f'{PREFIX}MP']}", results)
 
-def test_row_count(results):
-    log("31 day rows + effectif + moyenne = 33", "HEAD")
+def test_compact_format(results):
+    log("Compact format — 4 rows (effectif + 2 days + moyenne)", "HEAD")
     _, data = _production_lot(CTX)
-    check(len(data) == 33, "33 rows", f"Got {len(data)}", results)
+    check(len(data) == 4, "4 rows", f"Got {len(data)}", results)
 
 
 # ─── Runner ───
@@ -181,13 +173,12 @@ def run_all_tests():
     try:
         _setup()
         test_columns(results)
-        test_day1(results)
-        test_day2(results)
-        test_day3_partial(results)
-        test_empty_day(results)
+        test_default_shows_last_2_days(results)
+        test_jour_filter(results)
+        test_jour_1(results)
         test_effectif_row(results)
         test_moyenne_row(results)
-        test_row_count(results)
+        test_compact_format(results)
     finally:
         _cleanup()
 

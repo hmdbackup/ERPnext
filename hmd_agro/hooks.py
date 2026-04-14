@@ -173,7 +173,7 @@ scheduler_events = {
 # 		"hmd_agro.tasks.daily"
         "hmd_agro.hmd_agro.doctype.alerte.alerte.generate_alerts",
         "hmd_agro.hmd_agro.doctype.traitement.traitement.refresh_attente_lait",
-        "hmd_agro.hmd_agro.doctype.snapshot_mensuel.snapshot_mensuel.take_snapshot"
+        "hmd_agro.hmd_agro.utils.snapshot.freeze_yesterday"
  	],
  }
 

@@ -1,48 +1,23 @@
 import frappe
-import json
-from frappe.utils import getdate, today, cint
+from frappe.utils import getdate, today, add_days
 from calendar import monthrange
 
-MOIS_FR = {
-    "Janvier": 1, "Février": 2, "Mars": 3, "Avril": 4,
-    "Mai": 5, "Juin": 6, "Juillet": 7, "Août": 8,
-    "Septembre": 9, "Octobre": 10, "Novembre": 11, "Décembre": 12
-}
-
-CATEGORIES = [
-    "Vaches - Lact.", "Vaches - Tarie", "Gén. - Vide", "Gén. - Pleine",
-    "Veaux", "Engraiss.", "Velles", "Total"
-]
-
-# Maps report columns to snapshot JSON keys and Animal filters
-CAT_CONFIG = {
-    "Vaches - Lact.": {"key": "vaches_lactantes", "filters": {"categorie": "VACHE", "etat_lactation": "EN_PRODUCTION"}},
-    "Vaches - Tarie": {"key": "vaches_taries", "filters": {"categorie": "VACHE", "etat_lactation": "TARIE"}},
-    "Gén. - Vide": {"key": "genisses_vides", "filters": {"categorie": "GENISSE", "etat_gestation": "VIDE"}},
-    "Gén. - Pleine": {"key": "genisses_pleines", "filters": {"categorie": "GENISSE", "etat_gestation": "GESTANTE"}},
-    "Veaux": {"key": "veaux", "filters": {"categorie": "VEAU"}},
-    "Engraiss.": {"key": "engraissement", "filters": {"categorie": "TAURILLON"}},
-    "Velles": {"key": "velles", "filters": {"categorie": "VELLE"}},
-}
+from hmd_agro.hmd_agro.utils.snapshot import (
+    CATEGORIES, empty_row, set_total, get_day_state, diff_day, capture_events,
+)
 
 
 def execute(filters=None):
     filters = filters or {}
-    mois_nom = filters.get("mois") or "Janvier"
-    mois = MOIS_FR.get(mois_nom, 1)
-    annee = int(filters.get("annee") or today()[:4])
-    jour = cint(filters.get("jour")) or 0
+    date = getdate(filters.get("date") or today())
     section = filters.get("section") or "Tout"
 
-    nb_jours = monthrange(annee, mois)[1]
-    if jour:
-        jour = min(jour, nb_jours)
-        date_debut = date_fin = getdate(f"{annee}-{mois:02d}-{jour:02d}")
-    else:
-        date_debut = getdate(f"{annee}-{mois:02d}-01")
-        date_fin = getdate(f"{annee}-{mois:02d}-{nb_jours}")
+    nb_jours = monthrange(date.year, date.month)[1]
+    date_debut = getdate(f"{date.year}-{date.month:02d}-01")
+    date_fin = getdate(f"{date.year}-{date.month:02d}-{nb_jours}")
 
-    ctx = {"date_debut": date_debut, "date_fin": date_fin, "nb_jours": nb_jours, "mois": mois, "annee": annee, "jour": jour}
+    ctx = {"date_filter": date, "date_debut": date_debut,
+           "date_fin": date_fin, "nb_jours": nb_jours}
 
     builders = {
         "Effectif": _effectif,
@@ -51,264 +26,63 @@ def execute(filters=None):
         "Alimentation": _alimentation,
         "Indicateurs": _indicateurs,
     }
-
-    if section in builders:
-        return builders[section](ctx)
-    return _tout(ctx)
+    return builders.get(section, _tout)(ctx)
 
 
-# ─── Effectif ───
+# ─── Effectif ────────────────────────────────────────────────────────────────
 
 def _effectif(ctx):
+    """Per-day Effectif table: Initial (D-1 aggregates) → changes → Final (D aggregates)."""
     columns = [{"fieldname": "ligne", "label": "", "fieldtype": "Data", "width": 180}]
     for cat in CATEGORIES:
         columns.append({"fieldname": cat, "label": cat, "fieldtype": "Int", "width": 100})
 
-    date_debut, date_fin = ctx["date_debut"], ctx["date_fin"]
-    now = getdate(today())
-    is_today = (date_fin >= now)
-    snap = _read_snapshot(date_debut)
+    date = ctx["date_filter"]
+    prev = get_day_state(add_days(date, -1))
+    if not prev:
+        return columns, [_gap_row(f"Snapshot initial manquant ({add_days(date, -1)}). Importer les données.")]
+    curr = get_day_state(date)
+    if not curr:
+        return columns, [_gap_row(f"Pas de données pour le {date} (jour futur ou non figé).")]
 
-    # No snapshot and not today → can't show data
-    if not snap and not is_today:
-        is_past = date_fin < now
-        msg = "Pas de snapshot pour cette période." if is_past else "Période future."
-        row = {"ligne": f"{msg} Données non disponibles.", "is_total": True}
-        for cat in CATEGORIES:
-            row[cat] = None
-        return columns, [row]
+    d = diff_day(prev["animals"], curr["animals"])
+    ev = capture_events(date)
 
-    # Events during period
-    naissances, mort_nes = _count_naissances(date_debut, date_fin)
-    achats = _count_achats(date_debut, date_fin)
-    cat_plus, cat_minus, mortalite, ventes, reformes = _parse_version_logs(date_debut, date_fin)
-    velage_row = _count_velages(date_debut, date_fin)
-    prix_vente = _sum_prix_vente(date_debut, date_fin)
+    naissances = empty_row()
+    naissances["Veaux"] = ev["naissances_m"]
+    naissances["Velles"] = ev["naissances_f"]
+    set_total(naissances)
 
-    avort_row = _empty_row()
-    for cat in CATEGORIES[:-1]:
-        avort_row[cat] = mort_nes.get(cat, 0)
-    avort_row["Total"] = mort_nes["Total"] + frappe.db.count("Avortement", {"date_avortement": ["between", [date_debut, date_fin]]})
+    avortements = empty_row()
+    avortements["Total"] = ev["avortements"] + ev["mort_nes"]
 
-    # Calculate entrees/sorties per category
-    entrees, sorties = _empty_row(), _empty_row()
-    for cat in CATEGORIES[:-1]:
-        entrees[cat] = naissances.get(cat, 0) + achats.get(cat, 0) + cat_plus.get(cat, 0)
-        sorties[cat] = mortalite.get(cat, 0) + ventes.get(cat, 0) + reformes.get(cat, 0) + cat_minus.get(cat, 0)
-
-    if snap:
-        # Forward: snapshot → Final
-        effectif_init = snap
-        effectif_fin = _empty_row()
-        for cat in CATEGORIES[:-1]:
-            effectif_fin[cat] = max(effectif_init[cat] + entrees[cat] - sorties[cat], 0)
-    else:
-        # Backward: live count (= Final) → Init
-        effectif_fin = _live_count()
-        effectif_init = _empty_row()
-        for cat in CATEGORIES[:-1]:
-            effectif_init[cat] = max(effectif_fin[cat] + sorties[cat] - entrees[cat], 0)
-
-    _set_total(effectif_init)
-    _set_total(effectif_fin)
-
-    data = [
-        _make_row("Effectif Initial", effectif_init, is_total=True),
-        _make_row("Changement Catégorie (+)", cat_plus),
-        _make_row("Changement Catégorie (-)", cat_minus),
-        _make_row("Vêlage", velage_row),
-        _make_row("Naissance", naissances),
-        _make_row("Avortement / Mort-né", avort_row),
-        _make_row("Vente (Quantité)", ventes),
-        _make_row("Vente (Prix DT)", prix_vente),
-        _make_row("Mortalité", mortalite),
-        _make_row("Réforme", reformes),
-        _make_row("Effectif Final", effectif_fin, is_total=True),
+    rows = [
+        ("Effectif Initial",         prev["aggregates"], True),
+        ("Changement Catégorie (+)", d["cat_plus"],      False),
+        ("Changement Catégorie (-)", d["cat_minus"],     False),
+        ("Vêlage",                   d["velage"],        False),
+        ("Naissance",                naissances,         False),
+        ("Avortement / Mort-né",     avortements,        False),
+        ("Achat",                    d["achats"],        False),
+        ("Vente (Quantité)",         d["ventes"],        False),
+        ("Vente (Prix DT)",          d["prix_vente"],    False),
+        ("Mortalité",                d["mortalite"],     False),
+        ("Réforme",                  d["reformes"],      False),
+        ("Effectif Final",           curr["aggregates"], True),
     ]
-
-    return columns, data
-
-
-def _read_snapshot(date):
-    """Read snapshot for a specific date. Returns None if not found."""
-    data = frappe.db.get_value("Snapshot Mensuel", {"date_snapshot": str(date)}, "data")
-    if not data:
-        return None
-    raw = json.loads(data)
-    result = _empty_row()
-    for cat, cfg in CAT_CONFIG.items():
-        result[cat] = raw.get(cfg["key"], 0)
-    _set_total(result)
-    return result
+    return columns, [_row(label, values, is_total) for label, values, is_total in rows]
 
 
-def _live_count():
-    result = _empty_row()
-    for cat, cfg in CAT_CONFIG.items():
-        result[cat] = frappe.db.count("Animal", {"statut": "ACTIF", **cfg["filters"]})
-    _set_total(result)
-    return result
+def _row(label, values, is_total):
+    return {"ligne": label, "is_total": is_total,
+            **{cat: values.get(cat, 0) for cat in CATEGORIES}}
 
 
-def _count_velages(date_debut, date_fin):
-    result = _empty_row()
-    velages = frappe.db.sql("""
-        SELECT v.animal, a.etat_lactation
-        FROM `tabVelage` v JOIN `tabAnimal` a ON v.animal = a.name
-        WHERE v.date_velage BETWEEN %s AND %s
-    """, (date_debut, date_fin), as_dict=True)
-    for v in velages:
-        col = "Vaches - Tarie" if v.etat_lactation == "TARIE" else "Vaches - Lact."
-        result[col] += 1
-    _set_total(result)
-    return result
+def _gap_row(msg):
+    return {"ligne": msg, "is_total": True, **{cat: None for cat in CATEGORIES}}
 
 
-def _count_naissances(date_debut, date_fin):
-    naissances = _empty_row()
-    mort_nes = _empty_row()
-
-    vel_data = frappe.db.sql("""
-        SELECT sexe_veau1, vivant_veau1, sexe_veau2, vivant_veau2, nombre_veaux
-        FROM `tabVelage` WHERE date_velage BETWEEN %s AND %s
-    """, (date_debut, date_fin), as_dict=True)
-
-    for v in vel_data:
-        for suffix in ["1", "2"]:
-            if suffix == "2" and cint(v.nombre_veaux) < 2:
-                continue
-            sexe = v.get(f"sexe_veau{suffix}")
-            vivant = v.get(f"vivant_veau{suffix}")
-            col = "Veaux" if sexe == "M" else "Velles" if sexe == "F" else None
-            if col:
-                if vivant:
-                    naissances[col] += 1
-                else:
-                    mort_nes[col] += 1
-
-    for d in (naissances, mort_nes):
-        _set_total(d)
-    return naissances, mort_nes
-
-
-def _count_achats(date_debut, date_fin):
-    result = _empty_row()
-    for cat, cfg in CAT_CONFIG.items():
-        result[cat] = frappe.db.count("Animal", {
-            **cfg["filters"], "est_achat": 1,
-            "date_entree": ["between", [date_debut, date_fin]]
-        })
-    _set_total(result)
-    return result
-
-
-_CAT_TO_COL = {
-    "VACHE": "Vaches - Lact.", "GENISSE": "Gén. - Vide",
-    "VEAU": "Veaux", "TAURILLON": "Engraiss.", "VELLE": "Velles",
-}
-
-def _parse_version_logs(date_debut, date_fin):
-    """Single pass over Version logs: returns cat_plus, cat_minus, mortalite, ventes, reformes."""
-    cat_plus, cat_minus = _empty_row(), _empty_row()
-    mortalite, ventes, reformes = _empty_row(), _empty_row(), _empty_row()
-
-    versions = frappe.db.sql("""
-        SELECT data, docname FROM `tabVersion`
-        WHERE ref_doctype = 'Animal' AND creation BETWEEN %s AND %s
-    """, (date_debut, date_fin), as_dict=True)
-
-    for ver in versions:
-        try:
-            changes = json.loads(ver.data).get("changed", [])
-        except (json.JSONDecodeError, TypeError):
-            continue
-
-        for field, old_val, new_val in changes:
-            if field == "categorie":
-                old_col = _CAT_TO_COL.get(old_val)
-                new_col = _CAT_TO_COL.get(new_val)
-                if old_col:
-                    cat_minus[old_col] += 1
-                if new_col:
-                    cat_plus[new_col] += 1
-            elif field == "etat_lactation":
-                if old_val == "EN_PRODUCTION" and new_val == "TARIE":
-                    cat_minus["Vaches - Lact."] += 1
-                    cat_plus["Vaches - Tarie"] += 1
-                elif old_val == "TARIE" and new_val == "EN_PRODUCTION":
-                    cat_minus["Vaches - Tarie"] += 1
-                    cat_plus["Vaches - Lact."] += 1
-            elif field == "etat_gestation":
-                if old_val == "VIDE" and new_val == "GESTANTE":
-                    cat_minus["Gén. - Vide"] += 1
-                    cat_plus["Gén. - Pleine"] += 1
-                elif old_val == "GESTANTE" and new_val == "VIDE":
-                    cat_minus["Gén. - Pleine"] += 1
-                    cat_plus["Gén. - Vide"] += 1
-            elif field == "statut" and new_val in ("MORT", "VENDU", "REFORME"):
-                # Find column from categorie change in same version, or query DB
-                col = None
-                for f2, o2, _ in changes:
-                    if f2 == "categorie" and o2:
-                        col = _CAT_TO_COL.get(o2)
-                        break
-                if not col:
-                    animal = frappe.db.get_value("Animal", ver.docname,
-                        ["categorie", "etat_lactation", "etat_gestation"], as_dict=True)
-                    if animal:
-                        col = _resolve_col(animal.categorie, animal.etat_lactation, animal.etat_gestation)
-                if col:
-                    target = {"MORT": mortalite, "VENDU": ventes, "REFORME": reformes}[new_val]
-                    target[col] += 1
-                    target["Total"] += 1
-
-    for d in (cat_plus, cat_minus):
-        _set_total(d)
-    return cat_plus, cat_minus, mortalite, ventes, reformes
-
-
-def _sum_prix_vente(date_debut, date_fin):
-    result = _empty_row()
-    animals = frappe.db.sql("""
-        SELECT categorie, etat_lactation, etat_gestation, prix_vente
-        FROM `tabAnimal`
-        WHERE statut IN ('VENDU', 'REFORME')
-        AND date_sortie BETWEEN %s AND %s
-        AND prix_vente > 0
-    """, (date_debut, date_fin), as_dict=True)
-
-    for a in animals:
-        col = _resolve_col(a.categorie, a.etat_lactation, a.etat_gestation)
-        if col:
-            result[col] += int(a.prix_vente)
-    _set_total(result)
-    return result
-
-
-def _resolve_col(categorie, etat_lactation=None, etat_gestation=None):
-    if categorie == "VACHE":
-        return "Vaches - Tarie" if etat_lactation == "TARIE" else "Vaches - Lact."
-    if categorie == "GENISSE":
-        return "Gén. - Pleine" if etat_gestation == "GESTANTE" else "Gén. - Vide"
-    return _CAT_TO_COL.get(categorie)
-
-
-def _set_total(row):
-    row["Total"] = sum(v for k, v in row.items() if k != "Total")
-
-
-def _empty_row():
-    return {c: 0 for c in CATEGORIES}
-
-
-def _make_row(label, values, is_total=False):
-    row = {"ligne": label, "is_total": is_total}
-    for cat in CATEGORIES:
-        row[cat] = values.get(cat, 0)
-    return row
-
-
-# ─── Production ───
+# ─── Production ──────────────────────────────────────────────────────────────
 
 def _production(ctx):
     columns = [
@@ -368,137 +142,174 @@ def _production(ctx):
     return columns, data, None, chart
 
 
-# ─── Production par Lot ───
+# ─── Production par Lot ──────────────────────────────────────────────────────
 
 def _production_lot(ctx):
-    date_debut, date_fin = ctx["date_debut"], ctx["date_fin"]
+    """
+    4-row table for the selected day (D) and previous day (D-1):
+      Effectif       — lactantes per lot on day D (from snapshot lot membership)
+      <D-1 date>     — production per lot on D-1
+      <D date>       — production per lot on D
+      Moyenne / lot  — prod(D) / effectif(D) per lot  (Excel: C24/C22)
 
-    # Get active lots with lactating cows
+    Uses the same snapshot state used by Effectif, so past days attribute
+    production to each cow's lot *as of that day*, not its current lot.
+    """
+    columns_msg = [{"fieldname": "msg", "label": "", "fieldtype": "Data", "width": 300}]
+    date = ctx["date_filter"]
+    prev_date = add_days(date, -1)
+
+    curr = get_day_state(date)
+    prev = get_day_state(prev_date)
+    if not curr or not prev:
+        missing = prev_date if not prev else date
+        return columns_msg, [{"msg": f"Snapshot manquant pour le {missing}."}]
+
+    eff_curr = _lactantes_by_lot(curr["animals"])
+    eff_prev = _lactantes_by_lot(prev["animals"])
+    lots = sorted(set(eff_curr) | set(eff_prev))
+    if not lots:
+        return columns_msg, [{"msg": "Aucune vache lactante sur la période."}]
+
+    prod_curr = _prod_by_lot(date, curr["animals"])
+    prod_prev = _prod_by_lot(prev_date, prev["animals"])
+
+    columns = [{"fieldname": "jour", "label": "", "fieldtype": "Data", "width": 100}]
+    for lot in lots:
+        columns.append({"fieldname": lot, "label": lot, "fieldtype": "Float", "precision": 1, "width": 100})
+    columns.append({"fieldname": "total", "label": "Total", "fieldtype": "Float", "precision": 1, "width": 100})
+
+    total_eff = sum(eff_curr.values())
+    total_prod = sum(prod_curr.values())
+
+    rows = [
+        {"jour": "Effectif", "is_total": True, "total": total_eff,
+         **{lot: eff_curr.get(lot, 0) for lot in lots}},
+        _day_row(prev_date.strftime("%d/%m"), lots, prod_prev),
+        _day_row(date.strftime("%d/%m"), lots, prod_curr),
+        {"jour": "Moyenne / lot", "is_total": True,
+         **{lot: _safe_div(prod_curr.get(lot, 0), eff_curr.get(lot, 0)) for lot in lots},
+         "total": _safe_div(total_prod, total_eff)},
+    ]
+    return columns, rows
+
+
+def _lactantes_by_lot(animals):
+    out = {}
+    for a in animals.values():
+        if (a["statut"] == "ACTIF" and a["cat"] == "VACHE"
+                and a["lact"] == "EN_PRODUCTION" and a["lot"]):
+            out[a["lot"]] = out.get(a["lot"], 0) + 1
+    return out
+
+
+def _prod_by_lot(date, animals):
+    """Sum Traite litres for `date` grouped by each cow's lot *on that day*."""
+    rows = frappe.db.sql("""
+        SELECT animal, SUM(quantite_litres) AS q
+        FROM `tabTraite` WHERE date_traite = %s GROUP BY animal
+    """, str(date), as_dict=True)
+    out = {}
+    for r in rows:
+        lot = (animals.get(r.animal) or {}).get("lot")
+        if lot:
+            out[lot] = out.get(lot, 0) + float(r.q or 0)
+    return out
+
+
+def _day_row(label, lots, prod_map):
+    row = {"jour": label}
+    total = 0
+    for lot in lots:
+        v = prod_map.get(lot, 0)
+        row[lot] = round(v, 1) or None
+        total += v
+    row["total"] = round(total, 1) or None
+    return row
+
+
+def _safe_div(num, den):
+    return round(num / den, 1) if den else None
+
+
+# ─── Alimentation ────────────────────────────────────────────────────────────
+
+def _alimentation(ctx):
     lots = frappe.db.sql("""
-        SELECT a.id_lot, COUNT(*) as effectif
-        FROM `tabAnimal` a
-        WHERE a.statut = 'ACTIF' AND a.categorie = 'VACHE' AND a.etat_lactation = 'EN_PRODUCTION'
-        AND a.id_lot IS NOT NULL AND a.id_lot != '' AND a.id_lot != 'Individuel'
-        GROUP BY a.id_lot ORDER BY a.id_lot
+        SELECT l.name, l.id_ration_actuelle, l.nb_animaux
+        FROM `tabLot` l
+        WHERE l.actif = 1 AND l.id_ration_actuelle IS NOT NULL AND l.id_ration_actuelle != ''
+        ORDER BY l.name
     """, as_dict=True)
 
     if not lots:
         return [{"fieldname": "msg", "label": "", "fieldtype": "Data", "width": 300}], \
-               [{"msg": "Aucun lot actif avec des vaches lactantes."}]
+               [{"msg": "Aucun lot actif avec ration assignée."}]
 
-    lot_names = [l.id_lot for l in lots]
-    lot_effectif = {l.id_lot: l.effectif for l in lots}
+    lot_names = [l.name for l in lots]
+    lot_nb = {l.name: l.nb_animaux or 0 for l in lots}
 
-    # Columns: Jour + one per lot + Total + Moy/VL
-    columns = [{"fieldname": "jour", "label": "Jour", "fieldtype": "Data", "width": 80}]
+    columns = [
+        {"fieldname": "aliment", "label": "Aliment", "fieldtype": "Data", "width": 180},
+        {"fieldname": "ms_pct", "label": "MS%", "fieldtype": "Percent", "width": 80},
+    ]
     for lot in lot_names:
-        columns.append({"fieldname": lot, "label": lot, "fieldtype": "Float", "precision": 1, "width": 100})
-    columns.append({"fieldname": "total", "label": "Total", "fieldtype": "Float", "precision": 1, "width": 100})
-    columns.append({"fieldname": "moy_vl", "label": "Moy/VL", "fieldtype": "Float", "precision": 1, "width": 80})
+        columns.append({"fieldname": lot, "label": lot, "fieldtype": "Float", "precision": 2, "width": 100})
 
-    # Query: production per lot per day
-    prod_data = frappe.db.sql("""
-        SELECT t.date_traite, a.id_lot, SUM(t.quantite_litres) as prod
-        FROM `tabTraite` t JOIN `tabAnimal` a ON t.animal = a.name
-        WHERE t.date_traite BETWEEN %s AND %s
-        AND a.id_lot IN %s
-        GROUP BY t.date_traite, a.id_lot
-    """, (date_debut, date_fin, lot_names), as_dict=True)
+    aliments = {}
+    for l in lots:
+        comps = frappe.db.sql("""
+            SELECT c.aliment, c.quantite, a.ms_pct
+            FROM `tabComposition Ration` c JOIN `tabAliment` a ON c.aliment = a.name
+            WHERE c.parent = %s
+        """, l.id_ration_actuelle, as_dict=True)
+        for c in comps:
+            if c.aliment not in aliments:
+                aliments[c.aliment] = {"ms_pct": float(c.ms_pct or 0), "qty": {}}
+            aliments[c.aliment]["qty"][l.name] = float(c.quantite or 0)
 
-    # Build lookup: {date: {lot: prod}}
-    prod_map = {}
-    for p in prod_data:
-        prod_map.setdefault(str(p.date_traite), {})[p.id_lot] = float(p.prod or 0)
-
-    # Build rows — one per day
     data = []
-    nb_vl_total = sum(lot_effectif.values())
-    lot_totals = {lot: 0 for lot in lot_names}
-    grand_total = 0
+    ms_total_per_lot = {lot: 0 for lot in lot_names}
 
-    for j in range(1, ctx["nb_jours"] + 1):
-        date_str = str(getdate(f"{ctx['annee']}-{ctx['mois']:02d}-{j:02d}"))
-        day_lots = prod_map.get(date_str, {})
-        day_total = sum(day_lots.values())
-
-        row = {"jour": str(j)}
+    for aliment_name, info in aliments.items():
+        row = {"aliment": aliment_name, "ms_pct": info["ms_pct"]}
         for lot in lot_names:
-            val = day_lots.get(lot, 0)
-            row[lot] = round(val, 1) if val else None
-            lot_totals[lot] += val
-        row["total"] = round(day_total, 1) if day_total else None
-        row["moy_vl"] = round(day_total / nb_vl_total, 1) if nb_vl_total and day_total else None
-        grand_total += day_total
+            qty_per_animal = info["qty"].get(lot, 0)
+            qty_total = qty_per_animal * lot_nb[lot]
+            row[lot] = round(qty_total, 2) if qty_total else None
+            ms_total_per_lot[lot] += qty_total * (info["ms_pct"] / 100.0)
         data.append(row)
 
-    # Effectif row
-    eff_row = {"jour": "Effectif", "is_total": True}
+    ms_total_row = {"aliment": "MS Total Distribué", "ms_pct": None, "is_total": True}
     for lot in lot_names:
-        eff_row[lot] = lot_effectif.get(lot, 0)
-    eff_row["total"] = nb_vl_total
+        ms_total_row[lot] = round(ms_total_per_lot[lot], 2) if ms_total_per_lot[lot] else None
+    data.append(ms_total_row)
+
+    ms_tete_row = {"aliment": "MS Distribué/Tête", "ms_pct": None, "is_total": True}
+    for lot in lot_names:
+        nb = lot_nb[lot]
+        ms_tete_row[lot] = round(ms_total_per_lot[lot] / nb, 2) if nb else None
+    data.append(ms_tete_row)
+
+    prod = frappe.db.sql("""
+        SELECT a.id_lot, SUM(t.quantite_litres) as total_prod
+        FROM `tabTraite` t JOIN `tabAnimal` a ON t.animal = a.name
+        WHERE t.date_traite BETWEEN %s AND %s AND a.id_lot IN %s
+        GROUP BY a.id_lot
+    """, (ctx["date_debut"], ctx["date_fin"], lot_names), as_dict=True)
+    prod_per_lot = {p.id_lot: float(p.total_prod or 0) for p in prod}
+
+    eff_row = {"aliment": "Efficacité alimentaire L/Kg MS", "ms_pct": None, "is_total": True}
+    for lot in lot_names:
+        monthly_ms = ms_total_per_lot[lot] * ctx["nb_jours"]
+        total_milk = prod_per_lot.get(lot, 0)
+        eff_row[lot] = round(total_milk / monthly_ms, 2) if monthly_ms else None
     data.append(eff_row)
 
-    # Moyenne row
-    days_with_data = len(prod_map)
-    moy_row = {"jour": "Moyenne/lot", "is_total": True}
-    for lot in lot_names:
-        eff = lot_effectif.get(lot, 0)
-        moy_row[lot] = round(lot_totals[lot] / (eff * days_with_data), 1) if eff and days_with_data else None
-    moy_row["total"] = round(grand_total / (nb_vl_total * days_with_data), 1) if nb_vl_total and days_with_data else None
-    data.append(moy_row)
-
     return columns, data
 
 
-# ─── Alimentation ───
-
-def _alimentation(ctx):
-    columns = [
-        {"fieldname": "aliment", "label": "Aliment", "fieldtype": "Data", "width": 160},
-        {"fieldname": "prix_unitaire", "label": "Prix Unit. (DT)", "fieldtype": "Currency", "width": 110},
-        {"fieldname": "quantite_jour", "label": "Qté/jour (Total)", "fieldtype": "Float", "precision": 1, "width": 120},
-        {"fieldname": "cout_jour", "label": "Coût/jour (DT)", "fieldtype": "Currency", "width": 110},
-        {"fieldname": "cout_mois", "label": "Coût/mois (DT)", "fieldtype": "Currency", "width": 110},
-    ]
-
-    lots = frappe.get_all("Lot", filters={"actif": 1, "id_ration_actuelle": ["is", "set"]},
-                          fields=["name", "id_ration_actuelle", "nb_animaux"])
-
-    aliment_totals = {}
-    for lot in lots:
-        ration = frappe.get_doc("Ration", lot.id_ration_actuelle)
-        for comp in ration.composition:
-            aliment_doc = frappe.get_doc("Aliment", comp.aliment)
-            key = aliment_doc.nom_aliment
-            qty = float(comp.quantite or 0) * (lot.nb_animaux or 0)
-            if key not in aliment_totals:
-                aliment_totals[key] = {"prix": float(aliment_doc.prix_unitaire or 0), "qty": 0}
-            aliment_totals[key]["qty"] += qty
-
-    data = []
-    total_cout_jour = 0
-    for nom, info in aliment_totals.items():
-        cout_jour = round(info["qty"] * info["prix"], 2)
-        total_cout_jour += cout_jour
-        data.append({
-            "aliment": nom,
-            "prix_unitaire": info["prix"],
-            "quantite_jour": round(info["qty"], 1),
-            "cout_jour": cout_jour,
-            "cout_mois": round(cout_jour * ctx["nb_jours"], 2),
-        })
-
-    data.append({
-        "aliment": "TOTAL", "is_total": 1,
-        "quantite_jour": round(sum(r["quantite_jour"] for r in data), 1),
-        "cout_jour": round(total_cout_jour, 2),
-        "cout_mois": round(total_cout_jour * ctx["nb_jours"], 2),
-    })
-
-    return columns, data
-
-
-# ─── Indicateurs ───
+# ─── Indicateurs ─────────────────────────────────────────────────────────────
 
 def _indicateurs(ctx):
     columns = [
@@ -558,7 +369,7 @@ def _total_concentre(nb_jours):
     return total
 
 
-# ─── Tout ───
+# ─── Tout ────────────────────────────────────────────────────────────────────
 
 def _tout(ctx):
     columns = [

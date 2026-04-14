@@ -1,29 +1,11 @@
 frappe.query_reports["Rapport Mensuel"] = {
     filters: [
         {
-            fieldname: "mois",
-            label: __("Mois"),
-            fieldtype: "Select",
-            options: "Janvier\nFévrier\nMars\nAvril\nMai\nJuin\nJuillet\nAoût\nSeptembre\nOctobre\nNovembre\nDécembre",
-            default: (() => {
-                const m = new Date().getMonth(); // 0-11
-                const names = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-                return names[m === 0 ? 11 : m - 1]; // previous month
-            })(),
+            fieldname: "date",
+            label: __("Date"),
+            fieldtype: "Date",
+            default: frappe.datetime.get_today(),
             reqd: 1
-        },
-        {
-            fieldname: "annee",
-            label: __("Année"),
-            fieldtype: "Int",
-            default: new Date().getFullYear(),
-            reqd: 1
-        },
-        {
-            fieldname: "jour",
-            label: __("Jour"),
-            fieldtype: "Int",
-            description: "Laisser vide pour le mois entier"
         },
         {
             fieldname: "section",
