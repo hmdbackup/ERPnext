@@ -3,11 +3,12 @@ from frappe.utils import getdate, today, add_days
 from calendar import monthrange
 
 from hmd_agro.hmd_agro.utils.live_state import (
-    CATEGORIES, empty_row, set_total, effectif_on_date,
+    CATEGORIES, effectif_on_date,
     count_velages, count_naissances, count_avortements_mort_nes,
     count_achats, count_exits, count_changements_cat,
 )
 from hmd_agro.hmd_agro.utils.import_rapport import read_imported
+from hmd_agro.hmd_agro.utils.lot_utils import lot_sort_key
 from hmd_agro.hmd_agro.doctype.allotement_history.allotement_history import lot_population_on_date
 
 
@@ -190,7 +191,7 @@ def _render_imported_lot(imp, date, prev_date):
     prev_imp = read_imported(prev_date)
     prev_prod = (prev_imp or {}).get("production_lot") or {}
 
-    lots = sorted(set(lot_data) | set(prev_prod))
+    lots = sorted(set(lot_data) | set(prev_prod), key=lot_sort_key)
     columns = _lot_columns(lots)
     total_eff = sum(lot_data.get(lot, {}).get("effectif", 0) for lot in lots)
     total_prod = sum(lot_data.get(lot, {}).get("production", 0) for lot in lots)
@@ -218,8 +219,10 @@ def _render_live_lot(date, prev_date):
     eff_curr = _lactantes_by_lot_on_date(date)
 
     # Always include all currently-lactating lots, plus any historical lots
-    # that appear in D-1/D data (handles renamed lots gracefully).
-    lots = sorted(set(_active_lactating_lots()) | set(prod_curr) | set(prod_prev) | set(eff_curr))
+    # that appear in D-1/D data (handles renamed lots gracefully). prod_curr
+    # and eff_curr share the same Traite filters, so their key sets match.
+    lots = sorted(set(_active_lactating_lots()) | set(prod_curr) | set(prod_prev),
+                  key=lot_sort_key)
     columns = _lot_columns(lots)
     total_eff = sum(eff_curr.values())
     total_prod = sum(prod_curr.values())
@@ -289,22 +292,32 @@ def _safe_div(num, den):
 
 # ─── Alimentation ────────────────────────────────────────────────────────────
 
-def _alimentation(ctx):
-    # Per-day historical reconstruction: for each day in the month and each lot,
-    # look up the ration that was assigned and the population, then accumulate
-    # monthly totals. Handles mid-month ration switches and population changes.
+def _aliment_data_per_lot(date_debut, date_filter):
+    """Per-day per-lot historical reconstruction shared by _alimentation and
+    _indicateurs. Walks each day from date_debut → date_filter and returns:
+        active_lots:                   list of all active lot names
+        daily_qty:                     {(aliment, lot): kg distributed on date_filter}
+        daily_ms:                      {lot: kg MS on date_filter}
+        daily_pop:                     {lot: pop on date_filter}
+        cumulative_qty:                {aliment: cheptel-wide kg over period}
+        cumulative_concentre_cheptel:  kg of CONCENTRE-type aliments over period
+        cumulative_ms_cheptel:         kg MS over period
+        cumulative_cow_days_cheptel:   cow-days over period
+        aliment_ms_pct:                {aliment: ms_pct fraction}
+        aliment_type:                  {aliment: type_aliment string}
+        lots_with_data:                lots with data on date_filter
+    Returns None if no active lots.
+    """
     active_lots = frappe.get_all("Lot", filters={"actif": 1},
                                  fields=["name"], order_by="name")
     if not active_lots:
-        return [{"fieldname": "msg", "label": "", "fieldtype": "Data", "width": 300}], \
-               [{"msg": "Aucun lot actif."}]
+        return None
 
-    date_debut, date_fin, nb_jours = ctx["date_debut"], ctx["date_fin"], ctx["nb_jours"]
-    days = [add_days(date_debut, i) for i in range(nb_jours)]
     lot_names_all = [l.name for l in active_lots]
+    days_in_period = (date_filter - date_debut).days + 1
+    days = [add_days(date_debut, i) for i in range(days_in_period)]
 
-    # Pre-fetch all ration history for active lots (1 query) so the per-day
-    # lookup is in-memory instead of N×D SQL calls.
+    # Pre-fetch all ration history for active lots (1 query).
     history = {}
     for r in frappe.db.sql("""
         SELECT lot, to_ration, DATE(creation) AS dt
@@ -314,7 +327,6 @@ def _alimentation(ctx):
     """, (lot_names_all,), as_dict=True):
         history.setdefault(r.lot, []).append((r.dt, r.to_ration))
 
-    # Fallback when no history exists for a lot — use the current ration.
     current_ration = {l.name: frappe.db.get_value("Lot", l.name, "id_ration_actuelle")
                       for l in active_lots}
 
@@ -329,27 +341,32 @@ def _alimentation(ctx):
         if ration in comp_cache:
             return comp_cache[ration]
         rows = frappe.db.sql("""
-            SELECT c.aliment, c.quantite, a.ms_pct
+            SELECT c.aliment, c.quantite, a.ms_pct, a.type_aliment
             FROM `tabComposition Ration` c JOIN `tabAliment` a ON c.aliment = a.name
             WHERE c.parent = %s
         """, ration, as_dict=True) if ration else []
         comp_cache[ration] = rows
         return rows
 
-    # Walk each day, accumulate per-lot monthly totals.
-    monthly_qty = {}      # {(aliment, lot): kg total over month}
-    monthly_ms = {}       # {lot: kg MS total over month}
-    cow_days = {}         # {lot: sum(daily_pop) — cow-days for /tête division}
-    aliment_ms_pct = {}   # {aliment: ms_pct fraction}
+    daily_qty = {}
+    daily_ms = {}
+    daily_pop = {}
+    cumulative_qty = {}
+    cumulative_concentre_cheptel = 0
+    cumulative_ms_cheptel = 0
+    cumulative_cow_days_cheptel = 0
+    aliment_ms_pct = {}
+    aliment_type = {}
     lots_with_data = set()
 
     for day in days:
         pop = lot_population_on_date(day)
+        is_filter_day = (day == date_filter)
         for lot in lot_names_all:
             n_pop = pop.get(lot, 0)
             if n_pop == 0:
                 continue
-            cow_days[lot] = cow_days.get(lot, 0) + n_pop
+            cumulative_cow_days_cheptel += n_pop
             ration = ration_for(lot, day)
             if not ration:
                 continue
@@ -357,59 +374,106 @@ def _alimentation(ctx):
                 aliment = c.aliment
                 ms_pct = float(c.ms_pct or 0)
                 aliment_ms_pct[aliment] = ms_pct
+                aliment_type[aliment] = c.type_aliment
                 day_qty = float(c.quantite or 0) * n_pop
-                monthly_qty[(aliment, lot)] = monthly_qty.get((aliment, lot), 0) + day_qty
-                monthly_ms[lot] = monthly_ms.get(lot, 0) + day_qty * ms_pct
-                lots_with_data.add(lot)
+                day_ms = day_qty * ms_pct
+                cumulative_qty[aliment] = cumulative_qty.get(aliment, 0) + day_qty
+                cumulative_ms_cheptel += day_ms
+                if c.type_aliment == "CONCENTRE":
+                    cumulative_concentre_cheptel += day_qty
+                if is_filter_day:
+                    daily_qty[(aliment, lot)] = daily_qty.get((aliment, lot), 0) + day_qty
+                    daily_ms[lot] = daily_ms.get(lot, 0) + day_ms
+                    daily_pop[lot] = n_pop
+                    lots_with_data.add(lot)
 
-    if not lots_with_data:
+    return {
+        "active_lots": lot_names_all,
+        "daily_qty": daily_qty,
+        "daily_ms": daily_ms,
+        "daily_pop": daily_pop,
+        "cumulative_qty": cumulative_qty,
+        "cumulative_concentre_cheptel": cumulative_concentre_cheptel,
+        "cumulative_ms_cheptel": cumulative_ms_cheptel,
+        "cumulative_cow_days_cheptel": cumulative_cow_days_cheptel,
+        "aliment_ms_pct": aliment_ms_pct,
+        "aliment_type": aliment_type,
+        "lots_with_data": lots_with_data,
+    }
+
+
+def _alimentation(ctx):
+    # Cells = daily snapshot at date_filter (kg distributed today).
+    # Cumulé column = cheptel-wide running total per aliment, date_debut → date_filter.
+    date_debut = ctx["date_debut"]
+    date_filter = min(ctx["date_filter"], ctx["date_fin"])
+    d = _aliment_data_per_lot(date_debut, date_filter)
+    if d is None:
         return [{"fieldname": "msg", "label": "", "fieldtype": "Data", "width": 300}], \
-               [{"msg": "Aucun lot avec ration assignée pour ce mois."}]
+               [{"msg": "Aucun lot actif."}]
+    if not d["lots_with_data"]:
+        return [{"fieldname": "msg", "label": "", "fieldtype": "Data", "width": 300}], \
+               [{"msg": "Aucun lot avec ration assignée à cette date."}]
 
-    lot_names = sorted(lots_with_data)
+    lot_names = sorted(d["lots_with_data"], key=lot_sort_key)
+    period_label = f"Cumulé {date_debut.strftime('%d/%m')} → {date_filter.strftime('%d/%m')}"
+
     columns = [
         {"fieldname": "aliment", "label": "Aliment", "fieldtype": "Data", "width": 180},
         {"fieldname": "ms_pct", "label": "MS%", "fieldtype": "Percent", "width": 80},
     ]
     for lot in lot_names:
         columns.append({"fieldname": lot, "label": lot, "fieldtype": "Float", "precision": 2, "width": 100})
+    columns.append({"fieldname": "cumule", "label": period_label, "fieldtype": "Float", "precision": 2, "width": 160})
 
     data = []
-    for aliment in sorted(set(a for a, _ in monthly_qty)):
+    for aliment in sorted(set(a for a, _ in d["daily_qty"]) | set(d["cumulative_qty"])):
         # ms_pct stored as fraction (0.86) — multiply by 100 for the % column display.
-        row = {"aliment": aliment, "ms_pct": aliment_ms_pct.get(aliment, 0) * 100}
+        row = {"aliment": aliment, "ms_pct": d["aliment_ms_pct"].get(aliment, 0) * 100}
         for lot in lot_names:
-            v = monthly_qty.get((aliment, lot), 0)
+            v = d["daily_qty"].get((aliment, lot), 0)
             row[lot] = round(v, 2) if v else None
+        cum = d["cumulative_qty"].get(aliment, 0)
+        row["cumule"] = round(cum, 2) if cum else None
         data.append(row)
 
     ms_total_row = {"aliment": "MS Total Distribué", "ms_pct": None, "is_total": True}
     for lot in lot_names:
-        v = monthly_ms.get(lot, 0)
+        v = d["daily_ms"].get(lot, 0)
         ms_total_row[lot] = round(v, 2) if v else None
+    ms_total_row["cumule"] = round(d["cumulative_ms_cheptel"], 2) if d["cumulative_ms_cheptel"] else None
     data.append(ms_total_row)
 
-    # MS per cow-day: monthly_MS / sum(daily_pop) — robust to mid-month population changes.
     ms_tete_row = {"aliment": "MS Distribué/Tête", "ms_pct": None, "is_total": True}
     for lot in lot_names:
-        cd = cow_days.get(lot, 0)
-        ms_tete_row[lot] = round(monthly_ms.get(lot, 0) / cd, 2) if cd else None
+        nb = d["daily_pop"].get(lot, 0)
+        ms_tete_row[lot] = round(d["daily_ms"].get(lot, 0) / nb, 2) if nb else None
+    ms_tete_row["cumule"] = (round(d["cumulative_ms_cheptel"] / d["cumulative_cow_days_cheptel"], 2)
+                             if d["cumulative_cow_days_cheptel"] else None)
     data.append(ms_tete_row)
 
-    # Production attributed to the historically-stamped lot (Traite.id_lot frozen at save).
-    prod = frappe.db.sql("""
-        SELECT id_lot, SUM(quantite_litres) AS total_prod
+    # Production: cells use date_filter only; cumulé uses date_debut → date_filter cheptel-wide.
+    prod_daily = frappe.db.sql("""
+        SELECT id_lot, SUM(quantite_litres) AS prod
         FROM `tabTraite`
-        WHERE date_traite BETWEEN %s AND %s AND id_lot IN %s
+        WHERE date_traite = %s AND id_lot IN %s
         GROUP BY id_lot
-    """, (date_debut, date_fin, lot_names), as_dict=True)
-    prod_per_lot = {p.id_lot: float(p.total_prod or 0) for p in prod}
+    """, (date_filter, lot_names), as_dict=True)
+    prod_per_lot_daily = {p.id_lot: float(p.prod or 0) for p in prod_daily}
+
+    cum_milk = frappe.db.sql("""
+        SELECT SUM(quantite_litres) FROM `tabTraite`
+        WHERE date_traite BETWEEN %s AND %s
+    """, (date_debut, date_filter))[0][0] or 0
+    cumulative_milk_cheptel = float(cum_milk)
 
     eff_row = {"aliment": "Efficacité alimentaire L/Kg MS", "ms_pct": None, "is_total": True}
     for lot in lot_names:
-        ms = monthly_ms.get(lot, 0)
-        milk = prod_per_lot.get(lot, 0)
+        ms = d["daily_ms"].get(lot, 0)
+        milk = prod_per_lot_daily.get(lot, 0)
         eff_row[lot] = round(milk / ms, 2) if ms else None
+    eff_row["cumule"] = (round(cumulative_milk_cheptel / d["cumulative_ms_cheptel"], 2)
+                         if d["cumulative_ms_cheptel"] else None)
     data.append(eff_row)
 
     return columns, data
@@ -418,63 +482,73 @@ def _alimentation(ctx):
 # ─── Indicateurs ─────────────────────────────────────────────────────────────
 
 def _indicateurs(ctx):
+    """Flat KPI list. Vache counts = snapshot @ date_filter (reconstructed from
+    events). Production / Concentré / MS = cumulative date_debut → date_filter
+    (per-day historical reconstruction; no phantom future days). Reproduction
+    metrics (IA, vêlages) live in their own report. Cost metrics deferred until
+    Stock/Finance integration."""
     columns = [
         {"fieldname": "indicateur", "label": "Indicateur", "fieldtype": "Data", "width": 280},
-        {"fieldname": "valeur", "label": "Valeur", "fieldtype": "Float", "precision": 1, "width": 120},
-        {"fieldname": "unite", "label": "Unité", "fieldtype": "Data", "width": 100},
+        {"fieldname": "valeur", "label": "Valeur", "fieldtype": "Float", "precision": 2, "width": 120},
+        {"fieldname": "unite", "label": "Unité", "fieldtype": "Data", "width": 140},
     ]
 
-    date_debut, date_fin = ctx["date_debut"], ctx["date_fin"]
+    date_debut = ctx["date_debut"]
+    date_filter = min(ctx["date_filter"], ctx["date_fin"])
 
-    # End-of-month historical herd composition (reconstructed from events)
-    eff = effectif_on_date(date_fin)
+    # End-of-period reconstructed snapshot
+    eff = effectif_on_date(date_filter)
     vl = eff["Vaches - Lact."]
     vt = eff["Vaches - Tarie"]
     vp = vl + vt
 
-    prod = frappe.db.sql("""
+    # Cumulative production (cap at date_filter, no phantom future days)
+    prod = float(frappe.db.sql("""
         SELECT SUM(quantite_litres) FROM `tabTraite`
         WHERE date_traite BETWEEN %s AND %s
-    """, (date_debut, date_fin))[0][0] or 0
+    """, (date_debut, date_filter))[0][0] or 0)
 
-    concentre = _total_concentre(ctx["nb_jours"])
-    nb_ia = frappe.db.count("Insemination", {"date_ia": ["between", [date_debut, date_fin]]})
-    ia_ok = frappe.db.count("Insemination", {"date_ia": ["between", [date_debut, date_fin]], "resultat": "REUSSIE"})
-    nb_vel = frappe.db.count("Velage", {"date_velage": ["between", [date_debut, date_fin]]})
+    # Reuse per-day historical reconstruction for concentré + MS
+    d = _aliment_data_per_lot(date_debut, date_filter)
+    concentre = d["cumulative_concentre_cheptel"] if d else 0
+    ms_total = d["cumulative_ms_cheptel"] if d else 0
+
+    period = f"{date_debut.strftime('%d/%m')} → {date_filter.strftime('%d/%m')}"
 
     data = [
-        {"indicateur": "Vaches Présentes", "valeur": vp, "unite": "têtes"},
-        {"indicateur": "Vaches Lactantes", "valeur": vl, "unite": "têtes"},
-        {"indicateur": "Vaches Taries", "valeur": vt, "unite": "têtes"},
-        {"indicateur": "Production Totale", "valeur": round(prod, 1), "unite": "litres"},
-        {"indicateur": "Moy. Production/VL/Jour", "valeur": round(prod / (vl * ctx["nb_jours"]), 1) if vl else 0, "unite": "L/tête"},
-        {"indicateur": "Concentré Total", "valeur": round(concentre, 1), "unite": "kg"},
-        {"indicateur": "Concentré/Tête", "valeur": round(concentre / vp, 1) if vp else 0, "unite": "kg/tête"},
-        {"indicateur": "L/C (Efficacité)", "valeur": round(prod / concentre, 2) if concentre else 0, "unite": "L/kg"},
-        {"indicateur": "Nombre IA", "valeur": nb_ia, "unite": ""},
-        {"indicateur": "Taux Réussite IA", "valeur": round(ia_ok / nb_ia * 100, 1) if nb_ia else 0, "unite": "%"},
-        {"indicateur": "Nombre Vêlages", "valeur": nb_vel, "unite": ""},
+        {"indicateur": f"Vaches Présentes (au {date_filter.strftime('%d/%m')})",
+         "valeur": vp, "unite": "têtes"},
+        {"indicateur": f"Vaches Lactantes (au {date_filter.strftime('%d/%m')})",
+         "valeur": vl, "unite": "têtes"},
+        {"indicateur": f"Vaches Taries (au {date_filter.strftime('%d/%m')})",
+         "valeur": vt, "unite": "têtes"},
+        {"indicateur": f"Production Totale ({period})",
+         "valeur": round(prod, 1), "unite": "L"},
+        {"indicateur": "Moyenne Production / Vache Présente",
+         "valeur": round(prod / vp, 1) if vp else 0, "unite": "L/tête"},
+        {"indicateur": "Moyenne Production / Vache Lactante",
+         "valeur": round(prod / vl, 1) if vl else 0, "unite": "L/tête"},
+        {"indicateur": f"Concentré Total ({period})",
+         "valeur": round(concentre, 1), "unite": "kg"},
+        {"indicateur": "Concentré / Vache Présente",
+         "valeur": round(concentre / vp, 2) if vp else 0, "unite": "kg/tête"},
+        {"indicateur": "Concentré / Vache Lactante",
+         "valeur": round(concentre / vl, 2) if vl else 0, "unite": "kg/tête"},
+        {"indicateur": "L/C (Efficacité production)",
+         "valeur": round(prod / concentre, 2) if concentre else 0, "unite": "L/kg"},
+        {"indicateur": "C/L (Concentré par L)",
+         "valeur": round(concentre / prod, 3) if prod else 0, "unite": "kg/L"},
+        {"indicateur": "Efficacité Alimentaire (sur MS)",
+         "valeur": round(prod / ms_total, 2) if ms_total else 0, "unite": "L/kg MS"},
+        # Cost section deferred until Stock/Finance integration
         {"indicateur": "Frais Concentré", "valeur": None, "unite": "DT (à intégrer)"},
         {"indicateur": "Frais Fourrage", "valeur": None, "unite": "DT (à intégrer)"},
-        {"indicateur": "Coût Alimentaire/L", "valeur": None, "unite": "DT/L (à intégrer)"},
-        {"indicateur": "Main d'Oeuvre", "valeur": None, "unite": "DT (à intégrer)"},
+        {"indicateur": "Coût Alimentaire / L", "valeur": None, "unite": "DT/L (à intégrer)"},
+        {"indicateur": "Main d'Œuvre", "valeur": None, "unite": "DT (à intégrer)"},
         {"indicateur": "Chiffre d'Affaires Lait", "valeur": None, "unite": "DT (à intégrer)"},
     ]
 
     return columns, data
-
-
-def _total_concentre(nb_jours):
-    lots = frappe.get_all("Lot", filters={"actif": 1, "id_ration_actuelle": ["is", "set"]},
-                          fields=["id_ration_actuelle", "nb_animaux"])
-    total = 0
-    for lot in lots:
-        comps = frappe.get_all("Composition Ration",
-            filters={"parent": lot.id_ration_actuelle}, fields=["aliment", "quantite"])
-        for c in comps:
-            if frappe.db.get_value("Aliment", c.aliment, "type_aliment") == "CONCENTRE":
-                total += float(c.quantite or 0) * (lot.nb_animaux or 0) * nb_jours
-    return total
 
 
 # ─── Tout ────────────────────────────────────────────────────────────────────

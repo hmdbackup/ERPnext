@@ -5,6 +5,10 @@ Convention: ms_pct stored as fraction (0.86 = 86%); the report multiplies by 100
 for display. Ration composition is immutable — to change a ration, create a new
 Ration. Mid-month switches are tracked via Lot Ration History.
 
+Each cell shows the daily snapshot AT date_filter (kg distributed that day).
+The "Cumulé" column is cheptel-wide cumulative per aliment from date_debut →
+date_filter (inclusive).
+
 Run: bench execute hmd_agro.hmd_agro.tests.test_alimentation_report.run_all_tests
 """
 import frappe
@@ -13,8 +17,16 @@ from frappe.utils import getdate
 from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _alimentation
 
 PREFIX = "TEST-ALI-"
-CTX = {"date_debut": getdate("2099-03-01"), "date_fin": getdate("2099-03-31"),
-       "nb_jours": 31, "mois": 3, "annee": 2099, "jour": 1}
+
+def _ctx(date_filter_str):
+    return {
+        "date_filter": getdate(date_filter_str),
+        "date_debut": getdate("2099-03-01"),
+        "date_fin": getdate("2099-03-31"),
+        "nb_jours": 31, "mois": 3, "annee": 2099,
+    }
+
+CTX_END = _ctx("2099-03-31")  # default — full month covered
 
 
 def log(msg, level="INFO"):
@@ -152,7 +164,6 @@ def _setup_baseline():
     hp1 = _animal("HP1", lot_hp); hp2 = _animal("HP2", lot_hp); hp3 = _animal("HP3", lot_hp)
     mp1 = _animal("MP1", lot_mp); mp2 = _animal("MP2", lot_mp)
 
-    # 31 days × 10L per HP cow, 5L per MP cow
     for day in range(1, 32):
         date_str = f"2099-03-{day:02d}"
         for a in (hp1, hp2, hp3): _traite(a.name, date_str, 10, lot_hp)
@@ -163,68 +174,100 @@ def _setup_baseline():
 # ─── Tests against baseline ─────────────────────────────────────────────────
 
 def test_columns(results):
-    log("Columns — Aliment + MS% + lots", "HEAD")
-    cols, _ = _alimentation(CTX)
+    log("Columns — Aliment + MS% + lots + Cumulé", "HEAD")
+    cols, _ = _alimentation(CTX_END)
     col_names = [c["fieldname"] for c in cols]
     check("aliment" in col_names, "Has aliment", "Missing aliment", results)
     check("ms_pct" in col_names, "Has ms_pct", "Missing ms_pct", results)
     check(f"{PREFIX}HP" in col_names, "Has HP lot", f"Cols: {col_names}", results)
     check(f"{PREFIX}MP" in col_names, "Has MP lot", f"Cols: {col_names}", results)
+    check("cumule" in col_names, "Has Cumulé", f"Cols: {col_names}", results)
+    cum_label = next(c["label"] for c in cols if c["fieldname"] == "cumule")
+    check("01/03" in cum_label and "31/03" in cum_label,
+          f"Cumulé label spans period: {cum_label}", f"Got {cum_label}", results)
 
-def test_aliment_monthly_totals(results):
-    log("Monthly totals — HP: Soja=186, Mais=465; MP: Soja=62, Mais=186 (×31 days)", "HEAD")
-    _, data = _alimentation(CTX)
+def test_aliment_daily_cells(results):
+    log("Cells = daily snapshot at date_filter (constant pop/ration)", "HEAD")
+    _, data = _alimentation(CTX_END)
     soja = _find_row(data, f"{PREFIX}SOJA")
     mais = _find_row(data, f"{PREFIX}MAIS")
-    # HP: 3 cows × 2kg Soja × 31 days = 186; 3 × 5 × 31 = 465
-    check(soja[f"{PREFIX}HP"] == 186, "HP Soja = 186kg/mois", f"Got {soja[f'{PREFIX}HP']}", results)
-    check(mais[f"{PREFIX}HP"] == 465, "HP Mais = 465kg/mois", f"Got {mais[f'{PREFIX}HP']}", results)
-    # MP: 2 × 1 × 31 = 62; 2 × 3 × 31 = 186
-    check(soja[f"{PREFIX}MP"] == 62, "MP Soja = 62kg/mois", f"Got {soja[f'{PREFIX}MP']}", results)
-    check(mais[f"{PREFIX}MP"] == 186, "MP Mais = 186kg/mois", f"Got {mais[f'{PREFIX}MP']}", results)
+    # HP daily: 3 cows × 2kg Soja = 6; 3 × 5 = 15
+    check(soja[f"{PREFIX}HP"] == 6, "HP Soja jour = 6kg", f"Got {soja[f'{PREFIX}HP']}", results)
+    check(mais[f"{PREFIX}HP"] == 15, "HP Mais jour = 15kg", f"Got {mais[f'{PREFIX}HP']}", results)
+    # MP daily: 2 × 1 = 2; 2 × 3 = 6
+    check(soja[f"{PREFIX}MP"] == 2, "MP Soja jour = 2kg", f"Got {soja[f'{PREFIX}MP']}", results)
+    check(mais[f"{PREFIX}MP"] == 6, "MP Mais jour = 6kg", f"Got {mais[f'{PREFIX}MP']}", results)
+
+def test_aliment_cumule_cheptel(results):
+    log("Cumulé column = cheptel-wide kg × 31 days", "HEAD")
+    _, data = _alimentation(CTX_END)
+    soja = _find_row(data, f"{PREFIX}SOJA")
+    mais = _find_row(data, f"{PREFIX}MAIS")
+    # Soja cheptel: HP (2×3×31=186) + MP (1×2×31=62) = 248
+    check(soja["cumule"] == 248, "Soja cumulé = 248kg cheptel",
+          f"Got {soja['cumule']}", results)
+    # Mais cheptel: HP (5×3×31=465) + MP (3×2×31=186) = 651
+    check(mais["cumule"] == 651, "Mais cumulé = 651kg cheptel",
+          f"Got {mais['cumule']}", results)
 
 def test_ms_pct(results):
     log("MS% — Soja=90, Mais=88 (fraction × 100 for display)", "HEAD")
-    _, data = _alimentation(CTX)
+    _, data = _alimentation(CTX_END)
     soja = _find_row(data, f"{PREFIX}SOJA")
     mais = _find_row(data, f"{PREFIX}MAIS")
     check(soja["ms_pct"] == 90.0, "Soja MS% = 90", f"Got {soja['ms_pct']}", results)
     check(mais["ms_pct"] == 88.0, "Mais MS% = 88", f"Got {mais['ms_pct']}", results)
 
-def test_ms_total(results):
-    log("MS Total Distribué (kg/mois)", "HEAD")
-    _, data = _alimentation(CTX)
+def test_ms_total(results, baseline_ms_cum):
+    # Cumulé is cheptel-wide (includes real DB data); assert delta added by fixtures.
+    log("MS Total Distribué — daily per lot, cumulative cheptel (delta)", "HEAD")
+    _, data = _alimentation(CTX_END)
     row = _find_row(data, "MS Total Distribué")
-    # HP: (186 × 0.9) + (465 × 0.88) = 167.4 + 409.2 = 576.6
-    check(row[f"{PREFIX}HP"] == 576.6, "HP MS Total = 576.6", f"Got {row[f'{PREFIX}HP']}", results)
-    # MP: (62 × 0.9) + (186 × 0.88) = 55.8 + 163.68 = 219.48
-    check(row[f"{PREFIX}MP"] == 219.48, "MP MS Total = 219.48", f"Got {row[f'{PREFIX}MP']}", results)
+    # HP daily: (2×0.9 + 5×0.88) × 3 = 6.2 × 3 = 18.6
+    check(row[f"{PREFIX}HP"] == 18.6, "HP MS daily = 18.6", f"Got {row[f'{PREFIX}HP']}", results)
+    # MP daily: (1×0.9 + 3×0.88) × 2 = 3.54 × 2 = 7.08
+    check(row[f"{PREFIX}MP"] == 7.08, "MP MS daily = 7.08", f"Got {row[f'{PREFIX}MP']}", results)
+    # Delta added by fixtures: (18.6 + 7.08) × 31 = 796.08
+    delta = round((row["cumule"] or 0) - (baseline_ms_cum or 0), 2)
+    check(delta == 796.08, "Δ MS cumulé cheptel = 796.08",
+          f"Got Δ={delta} (cumulé={row['cumule']}, baseline={baseline_ms_cum})", results)
 
 def test_ms_tete(results):
-    log("MS Distribué/Tête (kg per cow-day) — HP: 6.2, MP: 3.54", "HEAD")
-    _, data = _alimentation(CTX)
+    log("MS/Tête — daily per lot (cumulative is cheptel-wide, not asserted)", "HEAD")
+    _, data = _alimentation(CTX_END)
     row = _find_row(data, "MS Distribué/Tête")
-    # HP: 576.6 / (3 × 31) = 6.2
-    check(row[f"{PREFIX}HP"] == 6.2, "HP MS/cow-day = 6.2", f"Got {row[f'{PREFIX}HP']}", results)
-    # MP: 219.48 / (2 × 31) = 3.54
-    check(row[f"{PREFIX}MP"] == 3.54, "MP MS/cow-day = 3.54", f"Got {row[f'{PREFIX}MP']}", results)
+    # HP daily: 18.6 / 3 = 6.2; MP daily: 7.08 / 2 = 3.54
+    check(row[f"{PREFIX}HP"] == 6.2, "HP MS/cow daily = 6.2", f"Got {row[f'{PREFIX}HP']}", results)
+    check(row[f"{PREFIX}MP"] == 3.54, "MP MS/cow daily = 3.54", f"Got {row[f'{PREFIX}MP']}", results)
+    # Cheptel cumulé MS/cow-day depends on the whole DB, not just fixtures — sanity check it's positive.
+    check((row["cumule"] or 0) > 0, "MS/cow-day cumulé > 0", f"Got {row['cumule']}", results)
 
 def test_efficacite(results):
-    log("Efficacité — monthly milk / monthly MS", "HEAD")
-    _, data = _alimentation(CTX)
+    log("Efficacité — daily per lot (cumulative is cheptel-wide, not asserted)", "HEAD")
+    _, data = _alimentation(CTX_END)
     row = _find_row(data, "Efficacité alimentaire L/Kg MS")
-    # HP: milk = 3 × 10 × 31 = 930 L; MS = 576.6; eff = 930/576.6 = 1.61
-    check(row[f"{PREFIX}HP"] == 1.61, "HP eff = 1.61", f"Got {row[f'{PREFIX}HP']}", results)
-    # MP: milk = 2 × 5 × 31 = 310 L; MS = 219.48; eff = 310/219.48 = 1.41
-    check(row[f"{PREFIX}MP"] == 1.41, "MP eff = 1.41", f"Got {row[f'{PREFIX}MP']}", results)
+    # HP daily: 30L / 18.6 = 1.61; MP daily: 10L / 7.08 = 1.41
+    check(row[f"{PREFIX}HP"] == 1.61, "HP eff daily = 1.61", f"Got {row[f'{PREFIX}HP']}", results)
+    check(row[f"{PREFIX}MP"] == 1.41, "MP eff daily = 1.41", f"Got {row[f'{PREFIX}MP']}", results)
+    # Cheptel cumulé Eff depends on whole DB; sanity check it's a non-negative ratio.
+    check((row["cumule"] or 0) >= 0, "Eff cumulé cheptel >= 0", f"Got {row['cumule']}", results)
+
+def test_midmonth_filter_caps_cumule(results):
+    log("date_filter = 15/03 → Cumulé only sums days 1-15", "HEAD")
+    _, data = _alimentation(_ctx("2099-03-15"))
+    mais = _find_row(data, f"{PREFIX}MAIS")
+    # Cells stay daily (constant): HP=15, MP=6
+    check(mais[f"{PREFIX}HP"] == 15, "HP Mais cell still daily = 15",
+          f"Got {mais[f'{PREFIX}HP']}", results)
+    # Cumulé only over 15 days: HP (5×3×15=225) + MP (3×2×15=90) = 315
+    check(mais["cumule"] == 315, "Mais cumulé 15j = 315kg",
+          f"Got {mais['cumule']}", results)
 
 
 # ─── Setup B: population grows mid-month (day 15) ──────────────────────────
 
 def _setup_population_change():
     _setup_baseline()
-    # Add 2 more HP cows that "join" lot HP on day 15 via Allotement History.
-    # They start in lot MP so they don't count as HP for days 1-14.
     extra1 = _animal("HP-EXTRA1", f"{PREFIX}MP")
     extra2 = _animal("HP-EXTRA2", f"{PREFIX}MP")
     _allotement_history(extra1.name, f"{PREFIX}MP", f"{PREFIX}HP", "2099-03-15 12:00:00")
@@ -232,39 +275,44 @@ def _setup_population_change():
     frappe.db.commit()
 
 def test_population_change_midmonth(results):
-    log("Mid-month pop change — HP: 3 cows days 1-14, 5 cows days 15-31", "HEAD")
-    _, data = _alimentation(CTX)
+    log("Mid-month pop change — HP 3→5, MP 4→2 on day 15", "HEAD")
+    _, data = _alimentation(CTX_END)
     mais = _find_row(data, f"{PREFIX}MAIS")
-    # HP Mais: 5kg × (3 cows × 14 days + 5 cows × 17 days) = 5 × (42 + 85) = 5 × 127 = 635
-    check(mais[f"{PREFIX}HP"] == 635, "HP Mais = 635kg/mois (pop-weighted)",
+    # Daily cells on March 31 (post-change): HP=5×5=25, MP=3×2=6
+    check(mais[f"{PREFIX}HP"] == 25, "HP Mais cell = 25 (5 cows × 5kg)",
           f"Got {mais[f'{PREFIX}HP']}", results)
-    # MP loses the 2 extras after day 14 — they were in MP days 1-14 only.
-    # MP Mais: 3kg × (2 base + 2 extras) × 14 + 3kg × 2 × 17 = 168 + 102 = 270
-    check(mais[f"{PREFIX}MP"] == 270, "MP Mais = 270kg/mois",
+    check(mais[f"{PREFIX}MP"] == 6, "MP Mais cell = 6 (2 cows × 3kg)",
           f"Got {mais[f'{PREFIX}MP']}", results)
+    # Cumulé cheptel-wide: HP (5×(3×14+5×17)=635) + MP (3×(4×14+2×17)=270) = 905
+    check(mais["cumule"] == 905, "Mais cumulé cheptel = 905kg",
+          f"Got {mais['cumule']}", results)
 
 
 # ─── Setup C: lot switches ration mid-month (day 15) ───────────────────────
 
 def _setup_ration_switch():
     _setup_baseline()
-    # Create a 3rd ration and switch HP from RATION-HP to RATION-NEW on day 15.
     soja = f"{PREFIX}SOJA"; mais = f"{PREFIX}MAIS"
-    ration_new = _ration("RATION-NEW", [(soja, 4), (mais, 8)])  # heavier than RATION-HP
+    ration_new = _ration("RATION-NEW", [(soja, 4), (mais, 8)])
     _ration_history(f"{PREFIX}HP", f"{PREFIX}RATION-HP", ration_new, "2099-03-15 12:00:00")
     frappe.db.commit()
 
 def test_ration_switch_midmonth(results):
-    log("Mid-month ration switch — HP: RATION-HP days 1-14, RATION-NEW days 15-31", "HEAD")
-    _, data = _alimentation(CTX)
+    log("Mid-month ration switch — HP RATION-HP → RATION-NEW on day 15", "HEAD")
+    _, data = _alimentation(CTX_END)
     soja = _find_row(data, f"{PREFIX}SOJA")
     mais = _find_row(data, f"{PREFIX}MAIS")
-    # HP Soja: 2kg × 3 × 14 (RATION-HP) + 4kg × 3 × 17 (RATION-NEW) = 84 + 204 = 288
-    check(soja[f"{PREFIX}HP"] == 288, "HP Soja = 288kg/mois",
+    # Daily cells on March 31 (post-switch): HP uses RATION-NEW (4 Soja, 8 Mais)
+    check(soja[f"{PREFIX}HP"] == 12, "HP Soja cell = 12 (3 cows × 4kg)",
           f"Got {soja[f'{PREFIX}HP']}", results)
-    # HP Mais: 5kg × 3 × 14 + 8kg × 3 × 17 = 210 + 408 = 618
-    check(mais[f"{PREFIX}HP"] == 618, "HP Mais = 618kg/mois",
+    check(mais[f"{PREFIX}HP"] == 24, "HP Mais cell = 24 (3 cows × 8kg)",
           f"Got {mais[f'{PREFIX}HP']}", results)
+    # Cumulé cheptel: Soja: HP (2×3×14 + 4×3×17 = 288) + MP (62) = 350
+    check(soja["cumule"] == 350, "Soja cumulé cheptel = 350kg",
+          f"Got {soja['cumule']}", results)
+    # Mais: HP (5×3×14 + 8×3×17 = 618) + MP (186) = 804
+    check(mais["cumule"] == 804, "Mais cumulé cheptel = 804kg",
+          f"Got {mais['cumule']}", results)
 
 
 # ─── Runner ───
@@ -276,14 +324,21 @@ def run_all_tests():
     results = {"pass": 0, "fail": 0}
 
     print("\n  [Setup A: baseline]")
+    # Capture cheptel-wide MS cumulé BEFORE fixtures so we can assert the delta.
+    _cleanup()
+    _, baseline_data = _alimentation(CTX_END)
+    baseline_row = next((r for r in baseline_data if r.get("aliment") == "MS Total Distribué"), None)
+    baseline_ms_cum = (baseline_row or {}).get("cumule") or 0
     try:
         _setup_baseline()
         test_columns(results)
-        test_aliment_monthly_totals(results)
+        test_aliment_daily_cells(results)
+        test_aliment_cumule_cheptel(results)
         test_ms_pct(results)
-        test_ms_total(results)
+        test_ms_total(results, baseline_ms_cum)
         test_ms_tete(results)
         test_efficacite(results)
+        test_midmonth_filter_caps_cumule(results)
     finally:
         _cleanup()
 

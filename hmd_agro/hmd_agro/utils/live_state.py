@@ -278,16 +278,20 @@ def count_achats(date):
 
 
 def count_changements_cat(date):
-    """Cat changes from events on D:
+    """Cat changes from events on D — symmetric ledger (Cat+ destinations,
+    Cat- sources):
     - Tarissement (Vache Lact → Tarie)
     - IA REUSSIE on a Genisse (Gén. Vide → Pleine) — IAs on Vaches don't shift columns
-    - Vêlage source-column loss (the destination column is shown by the Vêlage row,
-      so we only subtract the source here to avoid double-counting)."""
+    - Vêlage (source → destination): both sides counted so (Cat+) − (Cat-)
+      always balances column movements. The Vêlage row remains as an event
+      counter; the destination value will match the velage's destination cell.
+    """
     date = getdate(date)
     d = str(date)
     cat_plus, cat_minus = empty_row(), empty_row()
 
-    # Tarissement (excludes vêlage-induced same-day closes)
+    # Tarissement (excludes vêlage-induced same-day closes — those are
+    # captured by the velage loop below to avoid double-counting).
     tarissements = frappe.db.sql("""
         SELECT animal FROM `tabLactation`
         WHERE date_tarissement = %s AND statut = 'TARIE'
@@ -299,21 +303,34 @@ def count_changements_cat(date):
     cat_minus["Vaches - Lact."] += len(tarissements)
     cat_plus["Vaches - Tarie"] += len(tarissements)
 
-    # IA REUSSIE — only counts when the cow was a Genisse before the IA
+    # IA REUSSIE — only counts as Vide→Pleine if the cow was actually Vide
+    # (a Genisse Pleine getting another REUSSIE IA is a data anomaly; ignore it
+    # for column-shift purposes since no real movement happened).
     ia_animals = [r[0] for r in frappe.db.sql(
         "SELECT animal FROM `tabInsemination` WHERE date_ia = %s AND resultat = 'REUSSIE'", d)]
-    for name, (cat, _, _) in states_on_date(ia_animals, add_days(date, -1)).items():
-        if cat == "GENISSE":
+    for name, (cat, _, gest) in states_on_date(ia_animals, add_days(date, -1)).items():
+        if cat == "GENISSE" and gest == "VIDE":
             cat_minus["Gén. - Vide"] += 1
             cat_plus["Gén. - Pleine"] += 1
 
-    # Vêlage source-column loss (Gén. Pleine for 1st velage, Vache Tarie for subsequent-from-Tarie)
-    velage_animals = [r[0] for r in frappe.db.sql(
-        "SELECT animal FROM `tabVelage` WHERE date_velage = %s", d)]
-    for name, (cat, lact, gest) in states_on_date(velage_animals, add_days(date, -1)).items():
-        col = resolve_col(cat, lact, gest)
-        if col and col != "Vaches - Lact.":
-            cat_minus[col] += 1
+    # Vêlage: source loss + destination gain (skip if no movement, e.g. multipare Lact→Lact)
+    velage_rows = frappe.db.sql("""
+        SELECT v.animal, l.statut AS lact_statut, l.date_tarissement
+        FROM `tabVelage` v
+        LEFT JOIN `tabLactation` l ON l.animal = v.animal AND l.date_debut = v.date_velage
+        WHERE v.date_velage = %s
+    """, d, as_dict=True)
+    velage_animals = [r.animal for r in velage_rows]
+    pre_states = states_on_date(velage_animals, add_days(date, -1))
+    for r in velage_rows:
+        src_col = resolve_col(*pre_states.get(r.animal, (None, "", "")))
+        if r.lact_statut == "TARIE" and r.date_tarissement and str(r.date_tarissement) == d:
+            dst_col = "Vaches - Tarie"
+        else:
+            dst_col = "Vaches - Lact."
+        if src_col and src_col != dst_col:
+            cat_minus[src_col] += 1
+            cat_plus[dst_col] += 1
 
     set_total(cat_plus)
     set_total(cat_minus)
