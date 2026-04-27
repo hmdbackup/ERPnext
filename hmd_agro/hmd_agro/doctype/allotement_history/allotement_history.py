@@ -26,31 +26,6 @@ def lot_on_date(animal, date):
     return frappe.db.get_value("Animal", animal, "id_lot")
 
 
-def lot_population_on_date(date):
-    """Count of animals per lot on date D. For each animal present on D, takes
-    her most recent Allotement History entry ≤ D, falling back to current
-    Animal.id_lot when no entry exists (i.e. dates before tracking started).
-    Returns {lot_name: count}."""
-    d = str(getdate(date))
-    rows = frappe.db.sql("""
-        SELECT lot, COUNT(*) AS n FROM (
-            SELECT
-                COALESCE(
-                    (SELECT h.to_lot FROM `tabAllotement History` h
-                     WHERE h.animal = a.name AND DATE(h.creation) <= %s
-                     ORDER BY h.creation DESC LIMIT 1),
-                    a.id_lot
-                ) AS lot
-            FROM `tabAnimal` a
-            WHERE (CASE WHEN a.est_achat = 1 THEN a.date_entree ELSE a.date_naissance END) <= %s
-              AND (a.statut = 'ACTIF' OR (a.date_sortie IS NOT NULL AND a.date_sortie > %s))
-        ) AS x
-        WHERE x.lot IS NOT NULL AND x.lot != ''
-        GROUP BY lot
-    """, (d, d, d), as_dict=True)
-    return {r.lot: int(r.n) for r in rows}
-
-
 @frappe.whitelist()
 def baseline_all_animals():
     """One-shot: insert a BASELINE history row for every animal that has a lot

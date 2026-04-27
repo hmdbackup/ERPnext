@@ -39,6 +39,10 @@ def _reproduction(ctx):
     date_filter = ctx["date_filter"]
     columns = _reproduction_columns()
 
+    if date_filter > getdate(today()):
+        return columns, [{"nom_metier": "Pas encore de données pour cette date.",
+                          "is_total": True}]
+
     # 1. Cohort — every cow/génisse present on date_filter
     animals = frappe.db.sql("""
         SELECT name, nom_metier, categorie, sexe,
@@ -63,13 +67,13 @@ def _reproduction(ctx):
     """, (date_filter, animal_names), as_dict=True):
         velages_by_cow.setdefault(r.animal, []).append(getdate(r.date_velage))
 
-    # 3. Latest lactation + nb lactations + production lifetime
+    # 3. Latest lactation + nb lactations + production lifetime (incl. PIC)
     latest_lact = {}
     nb_lactations = {}
     prod_vie = {}
     for r in frappe.db.sql("""
         SELECT animal, name, numero_lactation, date_debut, date_tarissement,
-               statut, production_totale, lactation_305j
+               statut, production_totale, lactation_305j, pic_production
         FROM `tabLactation`
         WHERE date_debut <= %s AND animal IN %s
         ORDER BY date_debut DESC
@@ -94,7 +98,21 @@ def _reproduction(ctx):
             last_reussie[r.animal] = r
         ia_dates_by_cow.setdefault(r.animal, []).append(getdate(r.date_ia))
 
-    # 5. Last avortement (invalidates a REUSSIE IA before it)
+    # 5. Latest vêlage's calf info (sex + alive flag, twin-aware)
+    last_calf = {}
+    for r in frappe.db.sql("""
+        SELECT v.animal, v.nombre_veaux, v.sexe_veau1, v.vivant_veau1,
+               v.sexe_veau2, v.vivant_veau2
+        FROM `tabVelage` v
+        INNER JOIN (
+            SELECT animal, MAX(date_velage) AS max_d FROM `tabVelage`
+            WHERE date_velage <= %s GROUP BY animal
+        ) m ON v.animal = m.animal AND v.date_velage = m.max_d
+        WHERE v.animal IN %s
+    """, (date_filter, animal_names), as_dict=True):
+        last_calf[r.animal] = r
+
+    # 6. Last avortement (invalidates a REUSSIE IA before it)
     last_avortement = {}
     for r in frappe.db.sql("""
         SELECT animal, MAX(date_avortement) AS d FROM `tabAvortement`
@@ -102,7 +120,7 @@ def _reproduction(ctx):
     """, (date_filter, animal_names), as_dict=True):
         last_avortement[r.animal] = getdate(r.d)
 
-    # 6. Père names (id_pere → Taureau.nom)
+    # 7. Père names (id_pere → Taureau.nom)
     pere_ids = list({a.id_pere for a in animals if a.id_pere})
     pere_names = {}
     if pere_ids:
@@ -113,7 +131,7 @@ def _reproduction(ctx):
 
     rows = [_build_row(a, date_filter, velages_by_cow, latest_lact, nb_lactations,
                        prod_vie, last_ia, last_reussie, ia_dates_by_cow,
-                       last_avortement, pere_names) for a in animals]
+                       last_avortement, pere_names, last_calf) for a in animals]
 
     # Sort by catégorie (VACHE first, then GENISSE) then nom_metier
     rows.sort(key=lambda r: (0 if r["categorie"] == "VACHE" else 1, r["nom_metier"] or ""))
@@ -122,7 +140,7 @@ def _reproduction(ctx):
 
 def _build_row(a, date_filter, velages_by_cow, latest_lact, nb_lactations,
                prod_vie, last_ia, last_reussie, ia_dates_by_cow,
-               last_avortement, pere_names):
+               last_avortement, pere_names, last_calf):
     velages = velages_by_cow.get(a.name, [])
     last_vel = velages[-1] if velages else None
     first_vel = velages[0] if velages else None
@@ -183,6 +201,19 @@ def _build_row(a, date_filter, velages_by_cow, latest_lact, nb_lactations,
     statut_repro = _statut_repro(cat_now, etat_lact, etat_gest, jours_gest,
                                  last_vel, date_filter, last_ia.get(a.name))
 
+    # Compact "Dernier né" label: "F ✓" / "M ✗" / "Twins F+M ✓✗" etc.
+    dernier_ne = ""
+    cf = last_calf.get(a.name)
+    if cf:
+        s1 = "F" if cf.sexe_veau1 == "F" else ("M" if cf.sexe_veau1 == "M" else "?")
+        m1 = "✓" if cf.vivant_veau1 else "✗"
+        if str(cf.nombre_veaux) == "2" and cf.sexe_veau2:
+            s2 = "F" if cf.sexe_veau2 == "F" else "M"
+            m2 = "✓" if cf.vivant_veau2 else "✗"
+            dernier_ne = f"{s1}+{s2} {m1}{m2}"
+        else:
+            dernier_ne = f"{s1} {m1}"
+
     li = last_ia.get(a.name)
     return {
         "nom_metier": a.nom_metier or a.name[-4:],
@@ -211,7 +242,9 @@ def _build_row(a, date_filter, velages_by_cow, latest_lact, nb_lactations,
         "dernier_ivv": last_ivv,
         "production_lact_actuelle": round(float(lact.production_totale or 0), 1) if lact else None,
         "production_305j": round(float(lact.lactation_305j or 0), 1) if lact else None,
+        "pic_production": round(float(lact.pic_production or 0), 1) if lact and lact.pic_production else None,
         "production_totale_vie": round(prod_vie.get(a.name, 0), 1),
+        "dernier_ne": dernier_ne,
         "pere": pere_names.get(a.id_pere, "") if a.id_pere else "",
         "statut_repro": statut_repro,
     }
@@ -261,7 +294,9 @@ def _reproduction_columns():
         {"fieldname": "dernier_ivv", "label": "Dernier IVV", "fieldtype": "Int", "width": 90},
         {"fieldname": "production_lact_actuelle", "label": "Prod Lact° (L)", "fieldtype": "Float", "precision": 0, "width": 105},
         {"fieldname": "production_305j", "label": "Prod 305j (L)", "fieldtype": "Float", "precision": 0, "width": 100},
+        {"fieldname": "pic_production", "label": "PIC (L)", "fieldtype": "Float", "precision": 1, "width": 80},
         {"fieldname": "production_totale_vie", "label": "Prod Vie (L)", "fieldtype": "Float", "precision": 0, "width": 100},
+        {"fieldname": "dernier_ne", "label": "Dernier né", "fieldtype": "Data", "width": 100},
         {"fieldname": "pere", "label": "Père", "fieldtype": "Data", "width": 110},
         {"fieldname": "statut_repro", "label": "Statut Reproduction", "fieldtype": "Data", "width": 180},
     ]
@@ -276,6 +311,11 @@ def _performance_ia(ctx):
     """
     annee = ctx["date_filter"].year
     columns = _performance_ia_columns()
+
+    if annee > getdate(today()).year:
+        return columns, [{"mois": "Pas encore de données pour cette année.",
+                          "is_total": True}], None, None, []
+
     rows = [_performance_ia_row(m, annee) for m in range(1, 13)]
     rows.append(_performance_ia_total(rows))
 
@@ -452,7 +492,8 @@ def _bilan_annuel(ctx):
     from hmd_agro.hmd_agro.utils.live_state import effectif_on_date
     from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _aliment_data_per_lot
 
-    date_filter = ctx["date_filter"]
+    # Cap at today so future date_filter doesn't produce phantom future-year rows
+    date_filter = min(ctx["date_filter"], getdate(today()))
     current_year = date_filter.year
 
     # Earliest year that has any reproductive event in the system

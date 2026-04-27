@@ -1,5 +1,27 @@
+function add_date_arrows(report, fieldname) {
+    setTimeout(function() {
+        var f = report.get_filter(fieldname);
+        if (!f || !f.$wrapper || f.$wrapper.find(".date-nav-arrows").length) return;
+        var arrows = $('<div class="date-nav-arrows" style="display:inline-block; margin-left:6px; vertical-align:middle;">' +
+            '<button class="btn btn-default btn-xs" title="Jour précédent" style="padding:2px 8px;">&lsaquo;</button>' +
+            '<button class="btn btn-default btn-xs" title="Jour suivant" style="padding:2px 8px; margin-left:4px;">&rsaquo;</button>' +
+            '</div>');
+        f.$wrapper.append(arrows);
+        var btns = arrows.find("button");
+        $(btns[0]).on("click", function() {
+            var cur = f.get_value();
+            if (cur) { report.set_filter_value(fieldname, frappe.datetime.add_days(cur, -1)); }
+        });
+        $(btns[1]).on("click", function() {
+            var cur = f.get_value();
+            if (cur) { report.set_filter_value(fieldname, frappe.datetime.add_days(cur, 1)); }
+        });
+    }, 100);
+}
+
 frappe.query_reports["Rapport Mensuel"] = {
     onload(report) {
+        add_date_arrows(report, "date");
         if (report.__import_btn_added) return;
         report.__import_btn_added = true;
 

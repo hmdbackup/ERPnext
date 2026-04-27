@@ -9,7 +9,6 @@ from hmd_agro.hmd_agro.utils.live_state import (
 )
 from hmd_agro.hmd_agro.utils.import_rapport import read_imported
 from hmd_agro.hmd_agro.utils.lot_utils import lot_sort_key
-from hmd_agro.hmd_agro.doctype.allotement_history.allotement_history import lot_population_on_date
 
 
 # Row label → key mapping for imported days. Ordered to match the live report.
@@ -102,6 +101,21 @@ def _gap_row(msg):
     return {"ligne": msg, "is_total": True, **{cat: None for cat in CATEGORIES}}
 
 
+def _is_future(ctx):
+    """True if the report's date is strictly after today."""
+    return getdate(ctx["date_filter"]) > getdate(today())
+
+
+def _future_stub(extras=()):
+    """Standard 'no data — future date' return for any section.
+    Returns (columns, rows[, *extras]) with extras as None/[] padding so
+    sections that include chart/summary still get a valid tuple shape."""
+    cols = [{"fieldname": "msg", "label": "Information",
+             "fieldtype": "Data", "width": 400}]
+    rows = [{"msg": "Pas encore de données pour cette date."}]
+    return (cols, rows) + tuple(extras)
+
+
 # ─── Production ──────────────────────────────────────────────────────────────
 
 def _production(ctx):
@@ -114,6 +128,9 @@ def _production(ctx):
         {"fieldname": "taux_tp", "label": "TP (%)", "fieldtype": "Float", "precision": 2, "width": 80},
         {"fieldname": "commercialise", "label": "Commercialisé (L)", "fieldtype": "Float", "precision": 1, "width": 120},
     ]
+
+    if _is_future(ctx):
+        return _future_stub((None, None))
 
     daily = frappe.db.sql("""
         SELECT DAY(date_traite) AS jour,
@@ -176,6 +193,9 @@ def _production_lot(ctx):
     """4-row table: Effectif (D), D-1 production, D production, Moyenne (D).
     Effectif and production are historical (frozen via Traite.id_lot at save time).
     Sources: Rapport Journalier Importe (imported) or Traite.id_lot (live)."""
+    if _is_future(ctx):
+        return _future_stub()
+
     date = ctx["date_filter"]
     prev_date = add_days(date, -1)
 
@@ -348,6 +368,46 @@ def _aliment_data_per_lot(date_debut, date_filter):
         comp_cache[ration] = rows
         return rows
 
+    # Pre-fetch population data: animals + Allotement History in 2 SQL calls.
+    # Lets us compute lot population per day in pure Python (was 1 SQL per day —
+    # too slow at year scale, e.g. 365 calls/year × 7 years for Bilan Annuel).
+    animal_rows = frappe.db.sql("""
+        SELECT name, est_achat, date_naissance, date_entree, statut, date_sortie, id_lot
+        FROM `tabAnimal`
+        WHERE (CASE WHEN est_achat=1 THEN date_entree ELSE date_naissance END) <= %s
+    """, (date_filter,), as_dict=True)
+    for a in animal_rows:
+        e = a.date_entree if a.est_achat else a.date_naissance
+        a["entry_date"] = getdate(e) if e else None
+        a["exit_date"] = getdate(a.date_sortie) if a.date_sortie else None
+    allot_history = {}
+    if animal_rows:
+        names = [a.name for a in animal_rows]
+        for r in frappe.db.sql("""
+            SELECT animal, to_lot, DATE(creation) AS dt
+            FROM `tabAllotement History`
+            WHERE animal IN %s AND DATE(creation) <= %s
+            ORDER BY animal, creation ASC
+        """, (names, date_filter), as_dict=True):
+            allot_history.setdefault(r.animal, []).append((getdate(r.dt), r.to_lot))
+
+    def populations_on_date(day):
+        """Returns {lot: count} for `day` using pre-fetched in-memory data — no SQL."""
+        per_lot = {}
+        for a in animal_rows:
+            if not a.entry_date or a.entry_date > day:
+                continue
+            if a.statut != "ACTIF" and (not a.exit_date or a.exit_date <= day):
+                continue
+            lot = a.id_lot
+            for h_dt, h_to in reversed(allot_history.get(a.name, [])):
+                if h_dt <= day:
+                    lot = h_to
+                    break
+            if lot:
+                per_lot[lot] = per_lot.get(lot, 0) + 1
+        return per_lot
+
     daily_qty = {}
     daily_ms = {}
     daily_pop = {}
@@ -360,7 +420,7 @@ def _aliment_data_per_lot(date_debut, date_filter):
     lots_with_data = set()
 
     for day in days:
-        pop = lot_population_on_date(day)
+        pop = populations_on_date(day)
         is_filter_day = (day == date_filter)
         for lot in lot_names_all:
             n_pop = pop.get(lot, 0)
@@ -405,6 +465,9 @@ def _aliment_data_per_lot(date_debut, date_filter):
 def _alimentation(ctx):
     # Cells = daily snapshot at date_filter (kg distributed today).
     # Cumulé column = cheptel-wide running total per aliment, date_debut → date_filter.
+    if _is_future(ctx):
+        return _future_stub()
+
     date_debut = ctx["date_debut"]
     date_filter = min(ctx["date_filter"], ctx["date_fin"])
     d = _aliment_data_per_lot(date_debut, date_filter)
@@ -487,6 +550,9 @@ def _indicateurs(ctx):
     (per-day historical reconstruction; no phantom future days). Reproduction
     metrics (IA, vêlages) live in their own report. Cost metrics deferred until
     Stock/Finance integration."""
+    if _is_future(ctx):
+        return _future_stub()
+
     columns = [
         {"fieldname": "indicateur", "label": "Indicateur", "fieldtype": "Data", "width": 280},
         {"fieldname": "valeur", "label": "Valeur", "fieldtype": "Float", "precision": 2, "width": 120},

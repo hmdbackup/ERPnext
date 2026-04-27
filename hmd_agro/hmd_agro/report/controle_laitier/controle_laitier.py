@@ -58,6 +58,9 @@ def _execute_conversion(filters):
         {"fieldname": "moyenne_3j", "label": "Moy 3j", "fieldtype": "Float", "precision": 1, "width": 80},
     ]
 
+    if ref > getdate(today()):
+        return columns, [{"nom_metier": "Pas encore de données pour cette date."}]
+
     cohort = _cohort()
     if not cohort:
         return columns, []
@@ -95,6 +98,9 @@ def _execute_cl(filters):
     to_date   = getdate(filters.get("to_date")   or add_days(today(), -1))
     if from_date > to_date:
         frappe.throw("La date de début doit être avant ou égale à la date de fin.")
+    if from_date > getdate(today()):
+        cols = [{"fieldname": "nom_metier", "label": "N° Travail", "fieldtype": "Data", "width": 200}]
+        return cols, [{"nom_metier": "Pas encore de données pour cette période."}], None, None, []
 
     dates = []
     d = from_date

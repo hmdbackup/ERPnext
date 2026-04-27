@@ -21,12 +21,12 @@ PREFIX = "TEST-ALI-"
 def _ctx(date_filter_str):
     return {
         "date_filter": getdate(date_filter_str),
-        "date_debut": getdate("2099-03-01"),
-        "date_fin": getdate("2099-03-31"),
-        "nb_jours": 31, "mois": 3, "annee": 2099,
+        "date_debut": getdate("2024-03-01"),
+        "date_fin": getdate("2024-03-31"),
+        "nb_jours": 31, "mois": 3, "annee": 2024,
     }
 
-CTX_END = _ctx("2099-03-31")  # default — full month covered
+CTX_END = _ctx("2024-03-31")  # default — full month covered
 
 
 def log(msg, level="INFO"):
@@ -84,12 +84,12 @@ def _lot(suffix, ration, nb_animaux):
     _created.append(("Lot", name))
     return name
 
-def _animal(suffix, lot, date_naissance="2095-01-01"):
+def _animal(suffix, lot, date_naissance="2020-01-01"):
     doc = frappe.get_doc({
         "doctype": "Animal", "identification_tn": f"{PREFIX}{suffix}",
         "nom_metier": f"{PREFIX}{suffix}", "categorie": "VACHE", "sexe": "F",
         "statut": "ACTIF", "etat_lactation": "EN_PRODUCTION", "etat_gestation": "VIDE",
-        "date_naissance": date_naissance, "date_entree": "2099-01-01", "id_lot": lot,
+        "date_naissance": date_naissance, "date_entree": "2024-01-01", "id_lot": lot,
     })
     doc.name = f"{PREFIX}{suffix}"
     doc.db_insert()
@@ -165,7 +165,7 @@ def _setup_baseline():
     mp1 = _animal("MP1", lot_mp); mp2 = _animal("MP2", lot_mp)
 
     for day in range(1, 32):
-        date_str = f"2099-03-{day:02d}"
+        date_str = f"2024-03-{day:02d}"
         for a in (hp1, hp2, hp3): _traite(a.name, date_str, 10, lot_hp)
         for a in (mp1, mp2):     _traite(a.name, date_str, 5,  lot_mp)
     frappe.db.commit()
@@ -254,7 +254,7 @@ def test_efficacite(results):
 
 def test_midmonth_filter_caps_cumule(results):
     log("date_filter = 15/03 → Cumulé only sums days 1-15", "HEAD")
-    _, data = _alimentation(_ctx("2099-03-15"))
+    _, data = _alimentation(_ctx("2024-03-15"))
     mais = _find_row(data, f"{PREFIX}MAIS")
     # Cells stay daily (constant): HP=15, MP=6
     check(mais[f"{PREFIX}HP"] == 15, "HP Mais cell still daily = 15",
@@ -270,8 +270,8 @@ def _setup_population_change():
     _setup_baseline()
     extra1 = _animal("HP-EXTRA1", f"{PREFIX}MP")
     extra2 = _animal("HP-EXTRA2", f"{PREFIX}MP")
-    _allotement_history(extra1.name, f"{PREFIX}MP", f"{PREFIX}HP", "2099-03-15 12:00:00")
-    _allotement_history(extra2.name, f"{PREFIX}MP", f"{PREFIX}HP", "2099-03-15 12:00:00")
+    _allotement_history(extra1.name, f"{PREFIX}MP", f"{PREFIX}HP", "2024-03-15 12:00:00")
+    _allotement_history(extra2.name, f"{PREFIX}MP", f"{PREFIX}HP", "2024-03-15 12:00:00")
     frappe.db.commit()
 
 def test_population_change_midmonth(results):
@@ -294,7 +294,7 @@ def _setup_ration_switch():
     _setup_baseline()
     soja = f"{PREFIX}SOJA"; mais = f"{PREFIX}MAIS"
     ration_new = _ration("RATION-NEW", [(soja, 4), (mais, 8)])
-    _ration_history(f"{PREFIX}HP", f"{PREFIX}RATION-HP", ration_new, "2099-03-15 12:00:00")
+    _ration_history(f"{PREFIX}HP", f"{PREFIX}RATION-HP", ration_new, "2024-03-15 12:00:00")
     frappe.db.commit()
 
 def test_ration_switch_midmonth(results):

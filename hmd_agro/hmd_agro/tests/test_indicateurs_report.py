@@ -17,12 +17,12 @@ PREFIX = "TEST-IND-"
 def _ctx(date_filter_str):
     return {
         "date_filter": getdate(date_filter_str),
-        "date_debut": getdate("2099-03-01"),
-        "date_fin": getdate("2099-03-31"),
-        "nb_jours": 31, "mois": 3, "annee": 2099,
+        "date_debut": getdate("2024-03-01"),
+        "date_fin": getdate("2024-03-31"),
+        "nb_jours": 31, "mois": 3, "annee": 2024,
     }
 
-CTX_END = _ctx("2099-03-31")
+CTX_END = _ctx("2024-03-31")
 
 
 def log(msg, level="INFO"):
@@ -85,7 +85,7 @@ def _animal(suffix, lot):
         "doctype": "Animal", "identification_tn": f"{PREFIX}{suffix}",
         "nom_metier": f"{PREFIX}{suffix}", "categorie": "VACHE", "sexe": "F",
         "statut": "ACTIF", "etat_lactation": "EN_PRODUCTION", "etat_gestation": "VIDE",
-        "date_naissance": "2095-01-01", "date_entree": "2099-01-01", "id_lot": lot,
+        "date_naissance": "2020-01-01", "date_entree": "2024-01-01", "id_lot": lot,
     })
     doc.name = f"{PREFIX}{suffix}"
     doc.db_insert()
@@ -93,7 +93,7 @@ def _animal(suffix, lot):
     # Velage so reconstruction sees her as VACHE
     vel = frappe.get_doc({
         "doctype": "Velage", "animal": doc.name,
-        "date_velage": "2098-01-01", "type_velage": "FACILE",
+        "date_velage": "2023-06-01", "type_velage": "FACILE",
         "nombre_veaux": "1", "sexe_veau1": "F", "vivant_veau1": 0,
     })
     vel.flags.ignore_validate = True
@@ -139,7 +139,7 @@ def _setup():
 
     cows = [_animal(f"C{i}", lot) for i in range(1, 5)]
     for day in range(1, 32):
-        date_str = f"2099-03-{day:02d}"
+        date_str = f"2024-03-{day:02d}"
         for c in cows:
             _traite(c.name, date_str, 25, lot)
     frappe.db.commit()
@@ -206,7 +206,7 @@ def test_ratios(results):
 
 def test_midmonth_caps(results):
     log("date_filter mid-month → cumulatives respect the cutoff", "HEAD")
-    _, rows_mid = _indicateurs(_ctx("2099-03-15"))
+    _, rows_mid = _indicateurs(_ctx("2024-03-15"))
     _, rows_end = _indicateurs(CTX_END)
     prod_mid = _find(rows_mid, "Production Totale")["valeur"]
     prod_end = _find(rows_end, "Production Totale")["valeur"]
