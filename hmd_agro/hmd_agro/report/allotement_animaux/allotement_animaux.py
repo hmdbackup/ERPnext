@@ -175,17 +175,38 @@ def get_data(reference_date, date_j_1, date_j_2, filters):
 
 @frappe.whitelist()
 def get_lots_capacity():
-    """Active lots with capacity + HP-adapted flag — used by the dialog
-    capacity preview table. Sorted: LOT1..LOTn first (numeric), then
-    TARISSEMENT, then TARIE, then the rest alphabetically."""
+    """Active lots with capacity + HP-adapted flag + seuil prod 3j —
+    used by the dialog capacity preview table. Sorted: LOT1..LOTn first
+    (numeric), then TARISSEMENT, then TARIE, then the rest alphabetically."""
     lots = frappe.get_all(
         "Lot",
         filters={"actif": 1},
         fields=["name", "lot_type", "nb_animaux",
                 "capacite_optimale", "capacite_maximale",
-                "adapte_hautes_performances"],
+                "adapte_hautes_performances", "seuil_production_3j"],
     )
     return sorted(lots, key=lambda l: lot_sort_key(l.get("name")))
+
+
+@frappe.whitelist()
+def update_lot_seuils(seuils):
+    """Persist edited seuils from the Suggestions dialog. `seuils` is a
+    JSON dict {lot_name: value}. Empty / invalid → stored as 0 (treated as
+    "no seuil" by the consideration logic)."""
+    import json
+    if isinstance(seuils, str):
+        seuils = json.loads(seuils)
+    for lot_name, val in seuils.items():
+        try:
+            v = float(val) if val not in (None, "") else 0.0
+        except (TypeError, ValueError):
+            v = 0.0
+        if v < 0:
+            v = 0.0
+        frappe.db.set_value("Lot", lot_name, "seuil_production_3j",
+                            v, update_modified=False)
+    frappe.db.commit()
+    return {"updated": len(seuils)}
 
 
 def _apply_suggestions(data, reference_date):

@@ -19,6 +19,7 @@
   "column_break_2",
   "capacite_maximale",
   "nb_animaux",
+  "seuil_production_3j",
   "section_alimentation",
     "id_ration_actuelle",
     "adapte_hautes_performances"
@@ -94,6 +95,13 @@
    "fieldtype": "Int",
    "label": "Nombre d'Animaux",
    "read_only": 1
+  },
+  {
+   "fieldname": "seuil_production_3j",
+   "fieldtype": "Float",
+   "label": "Seuil prod. moy 3j (L)",
+   "precision": "1",
+   "description": "Seuil utilisé par le panneau Suggestions d'allotement pour signaler les animaux à garder (production ≥ seuil) ou à démettre tôt (production < seuil + fin de stage). Laisser vide pour désactiver l'indicateur sur ce lot."
   },
   {
    "fieldname": "nom",

@@ -7,9 +7,9 @@ frappe.query_reports["Allotement Animaux"] = {
 
         report.page.add_inner_button(__("Panneau Suggestions"), () => {
             if (is_session_mode(report)) return;
-            const rows = (frappe.query_report.data || []).filter((r) => r.suggestion_lot);
+            const rows = (frappe.query_report.data || []).filter((r) => r.animal);
             if (!rows.length) {
-                frappe.msgprint(__("Aucune suggestion disponible pour le moment."));
+                frappe.msgprint(__("Aucune ligne disponible."));
                 return;
             }
             open_suggestion_dialog(report, rows);
@@ -164,18 +164,153 @@ const MOVE_TABLE_FIELDS = [
       label: __("Lot destination"), in_list_view: 1, columns: 2 }
 ];
 
+// DIM stage boundaries — must mirror Python `_get_suggestion`.
+// Used only for the Consideration column to detect "last third of stage".
+const LOT_DIM_RANGE_MULTI = {
+    FV: [0, 30], THP: [30, 120], HP: [120, 240], MP: [240, 305], FP: [305, 9999]
+};
+const LOT_DIM_RANGE_PRIMI = { FV: [0, 300], FP: [300, 9999] };
+const LOT_DEMOTE_NEXT_MULTI = { FV: "THP", THP: "HP", HP: "MP", MP: "FP" };
+const LOT_DEMOTE_NEXT_PRIMI = { FV: "FP" };
+// Stage progression rank: cows advance through these stages with DIM.
+// Used to distinguish demote (target rank > current) from promote (target rank < current).
+// TARISSEMENT/TARIE are after FP in the lifecycle; included here so the rank
+// comparison classifies FP→TARISSEMENT as "demote" (always shown, never suppressed).
+const LOT_RANK = { FV: 1, THP: 2, HP: 3, MP: 4, FP: 5, TARISSEMENT: 6, TARIE: 7 };
 
-function open_suggestion_dialog(report, rows) {
-    const table_data = rows.map((r) => ({
-        animal: r.animal,
-        nom_metier: r.nom_metier,
-        lot_actuel: r.lot_actuel,
-        lot_destination: r.suggestion_lot || ""
+function get_lot_dim_range(lot_type, numero_lactation) {
+    const map = (numero_lactation === 1) ? LOT_DIM_RANGE_PRIMI : LOT_DIM_RANGE_MULTI;
+    return map[lot_type] || null;
+}
+
+function get_next_lot_type(lot_type, numero_lactation) {
+    const map = (numero_lactation === 1) ? LOT_DEMOTE_NEXT_PRIMI : LOT_DEMOTE_NEXT_MULTI;
+    return map[lot_type] || null;
+}
+
+function compute_consideration(row, lots_by_name, current_seuils) {
+    // Consideration = production OVERRIDES the DIM rule.
+    // No flag when DIM and production agree.
+    const cur_lot = lots_by_name[row.lot_actuel];
+    if (!cur_lot) return { color: "", text: "", sortKey: 2 };
+    const seuil_cur = current_seuils[row.lot_actuel] || cur_lot.seuil_production_3j || 0;
+    const prod = Number(row.moyenne_3j || 0);
+    if (!prod) return { color: "", text: "", sortKey: 2 };
+
+    const dim_says_move = !!(row.suggestion_lot && row.suggestion_lot !== row.lot_actuel);
+
+    // ── DIM-mismatch row: green if production wants to KEEP (override DIM move) ──
+    if (dim_says_move) {
+        if (!seuil_cur) return { color: "", text: "", sortKey: 2 };
+        const tgt_lot = lots_by_name[row.suggestion_lot];
+        const seuil_tgt = tgt_lot
+            ? (current_seuils[row.suggestion_lot] || tgt_lot.seuil_production_3j || 0)
+            : 0;
+        const cur_rank = LOT_RANK[cur_lot.lot_type] || 0;
+        const tgt_rank = tgt_lot ? (LOT_RANK[tgt_lot.lot_type] || 0) : 0;
+
+        // Demote (DIM advances cow to next stage): override = production justifies CURRENT
+        if (tgt_rank > cur_rank && prod >= seuil_cur) {
+            return {
+                color: "green",
+                subType: "demote_keep",
+                text: `Peut rester (${prod.toFixed(1)} ≥ ${seuil_cur.toFixed(1)} en ${cur_lot.lot_type})`,
+                sortKey: 1,
+            };
+        }
+        // Promote (cow placed in lower-tier than DIM says): override = not ready for TARGET.
+        // build_suggestion_items SUPPRESSES this case entirely (production is ratchet:
+        // a cow whose prod fell below seuil rarely climbs back, so DIM-driven re-promotion
+        // would just nag forever).
+        if (tgt_rank < cur_rank && seuil_tgt && prod < seuil_tgt) {
+            return {
+                color: "green",
+                subType: "promote_not_ready",
+                text: `Pas prête pour ${tgt_lot.lot_type} (${prod.toFixed(1)} < ${seuil_tgt.toFixed(1)}), garder en ${cur_lot.lot_type}`,
+                sortKey: 1,
+            };
+        }
+        // DIM and production agree → no consideration
+        return { color: "", text: "", sortKey: 2 };
+    }
+
+    // ── DIM says stay: yellow if production wants to DEMOTE early ──
+    if (!seuil_cur) return { color: "", text: "", sortKey: 2 };
+    if (prod < seuil_cur) {
+        const range = get_lot_dim_range(cur_lot.lot_type, row.numero_lactation);
+        if (range && row.dim != null) {
+            const [lo, hi] = range;
+            const last_third_start = lo + (2 / 3) * (hi - lo);
+            if (Number(row.dim) >= last_third_start) {
+                return {
+                    color: "yellow",
+                    subType: "yellow_demote",
+                    text: `Démettre tôt (${prod.toFixed(1)} < ${seuil_cur.toFixed(1)}, fin de stage)`,
+                    sortKey: 0,
+                };
+            }
+        }
+    }
+
+    return { color: "", text: "", sortKey: 2 };
+}
+
+
+// Build the rows that should appear in the Suggestions dialog table.
+// Inclusion rule: include if DIM rule wants to move OR consideration is yellow.
+// Sort: yellow first, green next, neutral last.
+function build_suggestion_items(allRows, lots, lots_by_name, current_seuils) {
+    const items = [];
+    allRows.forEach((row) => {
+        const cons = compute_consideration(row, lots_by_name, current_seuils);
+        const dim_moves = !!(row.suggestion_lot && row.suggestion_lot !== row.lot_actuel);
+        if (dim_moves) {
+            // Production ratchet: a DIM-promote suggestion the cow can't fulfill is futile.
+            if (cons.subType === "promote_not_ready") return;
+            items.push({ row, lot_destination: row.suggestion_lot, cons, source: "dim" });
+        } else if (cons.color === "yellow") {
+            const cur_type = (lots_by_name[row.lot_actuel] || {}).lot_type;
+            const next_type = get_next_lot_type(cur_type, row.numero_lactation);
+            const next_lot = next_type
+                ? (lots.find((l) => l.lot_type === next_type) || {}).name || ""
+                : "";
+            items.push({ row, lot_destination: next_lot, cons, source: "prod" });
+        }
+    });
+    items.sort((a, b) => a.cons.sortKey - b.cons.sortKey);
+    return items.map((it) => ({
+        animal: it.row.animal,
+        nom_metier: it.row.nom_metier,
+        lot_actuel: it.row.lot_actuel,
+        lot_destination: it.lot_destination,
+        consideration: it.cons.text,
+        _source: it.source,
+        _cons_color: it.cons.color,
     }));
-    _open_moves_dialog(report, {
-        title: __("Suggestions de mouvements"),
-        help: __("Cochez les animaux à déplacer, puis confirmez. Utilisez 'Appliquer lot commun' pour changer la destination des animaux cochés."),
-        table_data
+}
+
+
+function open_suggestion_dialog(report, allRows) {
+    frappe.call({
+        method: "hmd_agro.hmd_agro.report.allotement_animaux.allotement_animaux.get_lots_capacity",
+        callback(r) {
+            const lots = r.message || [];
+            const lots_by_name = Object.fromEntries(lots.map((l) => [l.name, l]));
+            const table_data = build_suggestion_items(allRows, lots, lots_by_name, {});
+
+            if (!table_data.length) {
+                frappe.msgprint(__("Aucune suggestion disponible pour le moment."));
+                return;
+            }
+
+            _build_moves_dialog(report, {
+                title: __("Suggestions de mouvements"),
+                help: __("<b>Jaune</b> : suggestion de la production. <b>Rouge</b> : suggestion du DIM, mais la production veut garder l'animal. <b>Blanc</b> : suggestion du DIM seul."),
+                table_data,
+                lots,
+                with_consideration: true,
+            });
+        }
     });
 }
 
@@ -200,42 +335,51 @@ function _open_moves_dialog(report, { title, help, table_data }) {
         method: "hmd_agro.hmd_agro.report.allotement_animaux.allotement_animaux.get_lots_capacity",
         callback(r) {
             const lots = r.message || [];
-            _build_moves_dialog(report, { title, help, table_data, lots });
+            _build_moves_dialog(report, { title, help, table_data, lots, with_consideration: false });
         }
     });
 }
 
 
-function _build_moves_dialog(report, { title, help, table_data, lots }) {
+function _build_moves_dialog(report, { title, help, table_data, lots, with_consideration }) {
+    const fields_for_grid = with_consideration
+        ? [...MOVE_TABLE_FIELDS, {
+            fieldname: "consideration", fieldtype: "Data",
+            label: __("Considération"), in_list_view: 1, read_only: 1, columns: 4
+          }]
+        : MOVE_TABLE_FIELDS;
+
     const d = new frappe.ui.Dialog({
         title,
         size: "extra-large",
         fields: [
             { fieldname: "capacity_preview", fieldtype: "HTML",
-              options: render_capacity_table(lots, new Map()) },
+              options: render_capacity_table(lots, new Map(), {}, with_consideration) },
             { fieldname: "btn_refresh", fieldtype: "Button",
               label: __("Actualiser capacité"),
-              click() { refresh_capacity(d, lots); } },
+              click() { actualiser(d); } },
             { fieldname: "help", fieldtype: "HTML",
               options: `<div style="margin:8px 0;color:var(--text-muted);font-size:13px;">${help}</div>` },
             { fieldname: "lot_destination_bulk", fieldtype: "Link",
               label: __("Lot commun"), options: "Lot" },
             { fieldname: "btn_apply_bulk", fieldtype: "Button",
               label: __("Appliquer lot commun"),
-              click() { apply_common_lot(d, lots); } },
+              click() { apply_common_lot(d); } },
             { fieldname: "moves", fieldtype: "Table",
               label: __("Mouvements"),
               cannot_add_rows: true, cannot_delete_rows: true, in_place_edit: true, reqd: 1,
-              fields: MOVE_TABLE_FIELDS, data: table_data }
+              fields: fields_for_grid, data: table_data }
         ],
         primary_action_label: __("Confirmer transfert"),
         primary_action() { confirm_transfer(d, report); }
     });
+    d.user_data = { lots, with_consideration };
     d.show();
+    if (with_consideration) apply_row_colors(d);
 }
 
 
-function apply_common_lot(d, lots) {
+function apply_common_lot(d) {
     const lot = d.get_value("lot_destination_bulk");
     if (!lot) { frappe.msgprint(__("Sélectionnez un lot commun.")); return; }
     const checked = checked_rows(d);
@@ -247,7 +391,7 @@ function apply_common_lot(d, lots) {
             row.refresh_field("lot_destination");
         }
     });
-    refresh_capacity(d, lots);
+    refresh_capacity(d);
 }
 
 
@@ -264,8 +408,7 @@ function confirm_transfer(d, report) {
 
 
 function checked_rows(d) {
-    // Force-commit any in-flight cell edit (e.g. user picked a value but hasn't blurred),
-    // then use Frappe's built-in selection API. Single source of truth.
+    // blur() commits any in-flight cell edit before reading selection.
     if (document.activeElement) document.activeElement.blur();
     return d.fields_dict.moves.grid.get_selected_children() || [];
 }
@@ -284,14 +427,112 @@ function compute_pending_deltas(d) {
 }
 
 
-function refresh_capacity(d, lots) {
+// Read current seuil DOM values — used to preserve user edits across re-renders.
+function read_seuil_inputs(d) {
+    const seuils = {};
+    d.fields_dict.capacity_preview.$wrapper.find("input.lot-seuil-input").each(function () {
+        const lot = $(this).data("lot");
+        const val = parseFloat($(this).val());
+        seuils[lot] = isNaN(val) ? 0 : val;
+    });
+    return seuils;
+}
+
+
+// Re-render capacity preview without saving. Used after pending-deltas change.
+function refresh_capacity(d) {
+    const lots = (d.user_data || {}).lots || [];
+    const with_consideration = (d.user_data || {}).with_consideration || false;
+    const current_seuils = read_seuil_inputs(d);
     const deltas = compute_pending_deltas(d);
-    const html = render_capacity_table(lots, deltas);
+    const html = render_capacity_table(lots, deltas, current_seuils, with_consideration);
     d.fields_dict.capacity_preview.$wrapper.html(html);
 }
 
 
-function render_capacity_table(lots, deltas) {
+// Save edited seuils to DB → re-fetch lots → re-render capacity preview
+// AND fully rebuild the Suggestions grid (rows can appear/disappear when
+// seuils change, so just updating the consideration text isn't enough).
+function actualiser(d) {
+    const with_consideration = (d.user_data || {}).with_consideration || false;
+    const seuils = read_seuil_inputs(d);
+
+    const after_save = () => {
+        frappe.call({
+            method: "hmd_agro.hmd_agro.report.allotement_animaux.allotement_animaux.get_lots_capacity",
+            callback(r) {
+                const lots = r.message || [];
+                d.user_data.lots = lots;
+                refresh_capacity(d);
+                if (with_consideration) {
+                    rebuild_suggestion_grid(d, lots);
+                }
+            }
+        });
+    };
+
+    if (with_consideration && Object.keys(seuils).length) {
+        frappe.call({
+            method: "hmd_agro.hmd_agro.report.allotement_animaux.allotement_animaux.update_lot_seuils",
+            args: { seuils: JSON.stringify(seuils) },
+            callback() { after_save(); }
+        });
+    } else {
+        after_save();
+    }
+}
+
+
+// Rebuild the Suggestions grid from scratch using current lots/seuils.
+// Preserves checkbox selections for animals that still appear in the new grid:
+// Frappe's grid reads `doc.__checked` to render the checkbox state, so we set
+// it on the new data BEFORE refresh — no DOM manipulation, no timing hacks.
+function rebuild_suggestion_grid(d, lots) {
+    const field = d.fields_dict.moves;
+    const checked_animals = new Set(
+        (field.grid.get_selected_children() || []).map((row) => row.animal)
+    );
+
+    const lots_by_name = Object.fromEntries(lots.map((l) => [l.name, l]));
+    const allRows = (frappe.query_report.data || []).filter((r) => r.animal);
+    const table_data = build_suggestion_items(allRows, lots, lots_by_name, {});
+
+    table_data.forEach((row) => {
+        if (checked_animals.has(row.animal)) row.__checked = 1;
+    });
+
+    field.df.data = table_data;
+    field.grid.df.data = table_data;
+    field.grid.refresh();
+    apply_row_colors(d);
+}
+
+
+// Color the considération + destination cells based on signal source.
+// Tone: red = production says "garder" (overrides DIM move).
+//       yellow = production says "demote" OR destination came from production.
+function apply_row_colors(d) {
+    const field = d.fields_dict.moves;
+    if (!field || !field.grid) return;
+    setTimeout(() => {
+        (field.grid.grid_rows || []).forEach((gr) => {
+            if (!gr.doc || !gr.wrapper) return;
+            const cons_color = gr.doc._cons_color || "";
+            const source = gr.doc._source || "";
+            const cons_bg = cons_color === "green" ? "#f8d7da"
+                          : cons_color === "yellow" ? "#fff3cd"
+                          : "";
+            const dest_bg = source === "prod" ? "#fff3cd" : "";
+            const consCell = gr.wrapper.find('[data-fieldname="consideration"]');
+            const destCell = gr.wrapper.find('[data-fieldname="lot_destination"]');
+            if (consCell.length) consCell.css("background-color", cons_bg);
+            if (destCell.length) destCell.css("background-color", dest_bg);
+        });
+    }, 30);
+}
+
+
+function render_capacity_table(lots, deltas, current_seuils, show_seuil_row) {
     if (!lots.length) {
         return '<div style="color:var(--text-muted);font-size:13px;">Aucun lot actif.</div>';
     }
@@ -329,6 +570,23 @@ function render_capacity_table(lots, deltas) {
         return `<td style="${cellStyle}">${flag}</td>`;
     }).join("");
 
+    // Seuil row: editable, only rendered in the Suggestions dialog.
+    let seuilRow = "";
+    if (show_seuil_row) {
+        const seuilCells = lots.map((l) => {
+            const edited = (current_seuils || {})[l.name];
+            const stored = l.seuil_production_3j;
+            const val = (edited !== undefined && edited !== null) ? edited : (stored || "");
+            const display = (val === "" || val === 0) ? "" : String(val);
+            return `<td style="${cellStyle}padding:2px 4px;">
+                <input type="number" data-lot="${l.name}" class="lot-seuil-input"
+                    value="${display}" step="0.5" min="0"
+                    style="width:60px;padding:3px 5px;font-size:12px;text-align:right;border:1px solid var(--border-color);border-radius:3px;">
+            </td>`;
+        }).join("");
+        seuilRow = `<tr><td style="${rowLabel}">Seuil prod. 3j (L)</td>${seuilCells}</tr>`;
+    }
+
     return `
         <div style="overflow-x:auto;margin-bottom:6px;">
         <table style="border-collapse:collapse;width:100%;">
@@ -337,6 +595,7 @@ function render_capacity_table(lots, deltas) {
             <tr><td style="${rowLabel}">Effectif</td>${effectifCells}</tr>
             <tr><td style="${rowLabel}">Capacité (opt / max)</td>${capacityCells}</tr>
             <tr><td style="${rowLabel}">Hautes perf.</td>${hpCells}</tr>
+            ${seuilRow}
           </tbody>
         </table>
         </div>`;
@@ -363,8 +622,7 @@ function apply_moves(dialog, report, toMove) {
             const failedNames = new Set(failed.map((f) => f.name || f.docname));
             const succeeded = toMove.filter((r) => !failedNames.has(r.animal));
 
-            // Build the snapshot from the report's full grid + the moves we just applied.
-            // Session dates itself to today — the moment the decision was committed.
+            // Snapshot = full report grid + the moves just applied. Session dates to today.
             const sessionDate = frappe.datetime.get_today();
             const allRows = (frappe.query_report.data || []).filter((r) => r.animal);
             const movedMap = new Map(succeeded.map((r) => [r.animal, r.lot_destination]));
