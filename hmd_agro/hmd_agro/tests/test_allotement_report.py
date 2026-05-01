@@ -50,6 +50,7 @@ def run_all_tests():
     test_execute(results)
     test_seuil_persistence(results)
     test_get_lots_capacity_includes_seuil(results)
+    test_dim_boundaries_read_from_config(results)
 
     total = results["pass"] + results["fail"]
     print(f"\n  RESULTATS: {results['pass']}/{total} passés, {results['fail']} échoués\n")
@@ -191,6 +192,42 @@ def test_seuil_persistence(results):
             check(val == expected, label, f"{label}: got {val!r}", results)
     finally:
         _cleanup_test_lot()
+
+
+def test_dim_boundaries_read_from_config(results):
+    """Modify HMD Configuration → verify _get_suggestion picks up the new value.
+    Catches typos in field names and broken get_config() wiring."""
+    log("DIM boundaries lues depuis la config (intégration)", "HEAD")
+
+    base = {"numero_lactation": 3, "etat_lactation": "EN_PRODUCTION", "etat_gestation": "VIDE"}
+
+    # Sanity baseline: DIM 110 multipare → THP with default thp_max=120
+    r = _get_suggestion({**base, "dim": 110}, REF, _find_lot)
+    check(r == "THP", "Baseline: DIM 110 → THP (config defaults)",
+          f"Got {r}", results)
+
+    cfg = frappe.get_single("HMD Configuration")
+    original = cfg.dim_thp_max
+    try:
+        # Lower THP cap so DIM 110 now falls in HP range
+        cfg.dim_thp_max = 100
+        cfg.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        r = _get_suggestion({**base, "dim": 110}, REF, _find_lot)
+        check(r == "HP", "Après dim_thp_max=100: DIM 110 → HP",
+              f"Got {r} (config wiring cassée?)", results)
+
+        # And DIM 90 still THP (under new boundary)
+        r = _get_suggestion({**base, "dim": 90}, REF, _find_lot)
+        check(r == "THP", "Après dim_thp_max=100: DIM 90 → THP",
+              f"Got {r}", results)
+    finally:
+        frappe.db.rollback()
+        cfg2 = frappe.get_single("HMD Configuration")
+        cfg2.dim_thp_max = original
+        cfg2.save(ignore_permissions=True)
+        frappe.db.commit()
 
 
 def test_get_lots_capacity_includes_seuil(results):

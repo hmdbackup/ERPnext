@@ -264,7 +264,8 @@ function update_totals(container) {
 
         if (prev > 0 && row_total > 0) {
             var drop_pct = ((row_total - prev) / prev) * 100;
-            if (drop_pct <= -30) {
+            var drop_threshold = (frappe.boot.hmd_config || {}).production_drop_alert_pct || -15;
+            if (drop_pct <= drop_threshold) {
                 alert_cell.html(
                     '<span class="indicator-pill red" style="font-size:11px;">' +
                     Math.round(drop_pct) + '%</span>'

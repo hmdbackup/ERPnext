@@ -2,6 +2,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate, today, add_months, add_days, date_diff
 
+from hmd_agro.hmd_agro.utils.config import get_config
+
 
 class Alerte(Document):
     pass
@@ -22,8 +24,9 @@ def generate_alerts():
 
 
 def _generate_genisse_alerts():
-    """CHALEUR_GENISSE: Genisse reaches 14 months of age"""
-    cutoff_date = add_months(getdate(today()), -14)
+    """CHALEUR_GENISSE: Genisse reaches configured age (default 14 months)"""
+    n_months = get_config("chaleur_genisse_age_mois", default=14)
+    cutoff_date = add_months(getdate(today()), -n_months)
 
     genisses = frappe.db.get_all("Animal", filters={
         "categorie": "GENISSE",
@@ -62,8 +65,9 @@ def _generate_genisse_alerts():
 
 
 def _generate_post_velage_alerts():
-    """CHALEUR_POST_VELAGE: Vache 45 days after last velage"""
-    cutoff_date = add_days(getdate(today()), -45)
+    """CHALEUR_POST_VELAGE: Vache N days after last velage (default 45)"""
+    n_days = get_config("chaleur_post_velage_jours", default=45)
+    cutoff_date = add_days(getdate(today()), -n_days)
 
     velages = frappe.db.sql("""
         SELECT v.animal, v.date_velage, a.nom_metier
@@ -110,8 +114,9 @@ def _generate_post_velage_alerts():
 
 
 def _generate_j21_alerts():
-    """VERIFICATION_J21: IA pending for 18+ days"""
-    cutoff_date = add_days(getdate(today()), -18)
+    """VERIFICATION_J21: IA pending for N+ days (default 18)"""
+    n_days = get_config("verification_j21_jours", default=18)
+    cutoff_date = add_days(getdate(today()), -n_days)
 
     pending_ias = frappe.db.get_all("Insemination", filters={
         "resultat": "EN_ATTENTE",
@@ -156,8 +161,9 @@ def _generate_j21_alerts():
 
 
 def _generate_j50_alerts():
-    """VERIFICATION_J50: IA marked GESTANTE_PROBABLE at J+21, now 50+ days old"""
-    cutoff_date = add_days(getdate(today()), -50)
+    """VERIFICATION_J50: IA marked GESTANTE_PROBABLE at J+21, now N+ days old (default 50)"""
+    n_days = get_config("verification_j50_jours", default=50)
+    cutoff_date = add_days(getdate(today()), -n_days)
 
     # Find IAs that have a GESTANTE_PROBABLE J+21 alert and are 50+ days old
     j21_probable = frappe.db.get_all("Alerte", filters={
@@ -210,8 +216,9 @@ def _generate_j50_alerts():
 
 
 def _generate_tarissement_alerts():
-    """TARISSEMENT: Gestating cow with EN_COURS lactation approaching dry-off date (7 days before)"""
-    cutoff_date = add_days(getdate(today()), 7)
+    """TARISSEMENT: Gestating cow with EN_COURS lactation approaching dry-off date (default 7 days before)"""
+    n_days = get_config("tarissement_advance_jours", default=7)
+    cutoff_date = add_days(getdate(today()), n_days)
 
     animals = frappe.db.get_all("Animal", filters=[
         ["statut", "=", "ACTIF"],
@@ -257,8 +264,9 @@ def _generate_tarissement_alerts():
 
 
 def _generate_velage_alerts():
-    """VELAGE_IMMINENT: Gestating animal approaching expected calving date (15 days before)"""
-    cutoff_date = add_days(getdate(today()), 15)
+    """VELAGE_IMMINENT: Gestating animal approaching expected calving date (default 15 days before)"""
+    n_days = get_config("velage_advance_jours", default=15)
+    cutoff_date = add_days(getdate(today()), n_days)
 
     animals = frappe.db.get_all("Animal", filters=[
         ["statut", "=", "ACTIF"],
@@ -296,8 +304,9 @@ def _generate_velage_alerts():
 
 
 def _generate_delvo_alerts():
-    """DELVO: Alert 1 day before milk withdrawal ends — remind farmer to test milk"""
-    tomorrow = add_days(getdate(today()), 1)
+    """DELVO: Alert N day(s) before milk withdrawal ends — remind farmer to test milk (default 1)"""
+    n_days = get_config("delvo_advance_jours", default=1)
+    tomorrow = add_days(getdate(today()), n_days)
 
     animals = frappe.db.get_all("Animal", filters=[
         ["statut", "=", "ACTIF"],
@@ -475,11 +484,12 @@ def reporter_alerte(alert_name, raison_report, observations=None):
     }
     raison_text = raison_labels.get(raison_report, raison_report)
 
+    cycle_days = get_config("chaleur_cycle_jours", default=21)
     new_alert = frappe.get_doc({
         "doctype": "Alerte",
         "animal": doc.animal,
         "type_alerte": original_type,
-        "date_alerte": add_days(getdate(today()), 21),
+        "date_alerte": add_days(getdate(today()), cycle_days),
         "raison": f"Suivi report - {raison_text}",
         "statut": "NOUVELLE"
     })
@@ -510,9 +520,10 @@ def a_revoir_alerte(alert_name, nb_jours, observations=None):
     doc.save(ignore_permissions=True)
 
     # Create new verification alert scheduled in nb_jours days
-    # Show 2 days early so the farmer can prepare
+    # Show `alerte_lead_jours` days early so the farmer can prepare (default 2)
+    lead_days = get_config("alerte_lead_jours", default=2)
     target_date = add_days(getdate(today()), nb_jours)
-    display_date = add_days(getdate(today()), max(nb_jours - 2, 0))
+    display_date = add_days(getdate(today()), max(nb_jours - lead_days, 0))
 
     # Calculate days since IA for the raison label
     ia_date_str = ""

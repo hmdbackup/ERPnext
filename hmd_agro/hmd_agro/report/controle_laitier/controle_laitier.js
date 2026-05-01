@@ -68,12 +68,13 @@ frappe.query_reports["Controle Laitier"] = {
         }
         if (column.fieldname === "delta") {
             const pct = Number(value);
+            const drop_threshold = (frappe.boot.hmd_config || {}).production_drop_alert_pct || -15;
             let color = "gray";
             let bold = false;
             if (pct > 0) {
                 color = "green";
             } else if (pct < 0) {
-                if (pct <= -30) { color = "red"; bold = true; }
+                if (pct <= drop_threshold) { color = "red"; bold = true; }
                 else color = "orange";
             }
             const sign = pct > 0 ? "+" : "";

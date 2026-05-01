@@ -3,7 +3,9 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import getdate, today
+from frappe.utils import cint, getdate, today
+
+from hmd_agro.hmd_agro.utils.config import get_config
 
 
 class Traite(Document):
@@ -69,8 +71,9 @@ class Traite(Document):
         """Quantity must be >= 0 and reasonable"""
         if self.quantite_litres is not None and self.quantite_litres < 0:
             frappe.throw("La quantité ne peut pas être négative.")
-        if self.quantite_litres is not None and self.quantite_litres > 60:
-            frappe.throw("La quantité ne peut pas dépasser 60 litres par traite.")
+        max_litres = get_config("traite_max_litres", default=60)
+        if self.quantite_litres is not None and self.quantite_litres > max_litres:
+            frappe.throw(f"La quantité ne peut pas dépasser {max_litres} litres par traite.")
 
     def validate_unique_session(self):
         """CF-TRA-03: Unique combination of animal + date + session"""
@@ -88,12 +91,14 @@ class Traite(Document):
 
     def validate_taux(self):
         """Validate quality rates if provided"""
+        max_tb = get_config("taux_tb_max_pct", default=10)
+        max_tp = get_config("taux_tp_max_pct", default=10)
         if self.taux_tb is not None and self.taux_tb > 0:
-            if self.taux_tb > 10:
-                frappe.throw("Le taux butyreux ne peut pas dépasser 10%.")
+            if self.taux_tb > max_tb:
+                frappe.throw(f"Le taux butyreux ne peut pas dépasser {max_tb}%.")
         if self.taux_tp is not None and self.taux_tp > 0:
-            if self.taux_tp > 10:
-                frappe.throw("Le taux protéique ne peut pas dépasser 10%.")
+            if self.taux_tp > max_tp:
+                frappe.throw(f"Le taux protéique ne peut pas dépasser {max_tp}%.")
 
     def warn_attente_lait(self):
         """CF-TMD-03: Warn if animal is under milk withdrawal period"""
@@ -135,13 +140,14 @@ class Traite(Document):
             WHERE lactation = %s
         """, self.lactation)[0][0] or 0
 
-        # Pic Production: best daily total within first 150 DIM
-        pic = frappe.db.sql("""
+        # Pic Production: best daily total within first N DIM (default 150)
+        pic_window = cint(get_config("pic_production_jours", default=150))
+        pic = frappe.db.sql(f"""
             SELECT MAX(daily_total) FROM (
                 SELECT SUM(quantite_litres) as daily_total
                 FROM `tabTraite`
                 WHERE lactation = %s
-                  AND DATEDIFF(date_traite, %s) <= 150
+                  AND DATEDIFF(date_traite, %s) <= {pic_window}
                 GROUP BY date_traite
             ) as daily
         """, (self.lactation, date_debut))[0][0] or 0
@@ -161,12 +167,13 @@ class Traite(Document):
             """, (self.lactation, date_debut))[0][0] or 0
             updates["lactation_305j"] = round(total_305, 2)
 
-            # Production Initiale: sum of traites within first 60 days
-            prod_init = frappe.db.sql("""
+            # Production Initiale: sum of traites within first N days (default 60)
+            init_window = cint(get_config("production_initiale_jours", default=60))
+            prod_init = frappe.db.sql(f"""
                 SELECT SUM(quantite_litres)
                 FROM `tabTraite`
                 WHERE lactation = %s
-                  AND DATEDIFF(date_traite, %s) <= 60
+                  AND DATEDIFF(date_traite, %s) <= {init_window}
             """, (self.lactation, date_debut))[0][0] or 0
             updates["production_initiale"] = round(prod_init, 2)
 

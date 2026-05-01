@@ -76,11 +76,12 @@ frappe.query_reports["Allotement Animaux"] = {
 
         if (column.fieldname === "delta_j_vs_j_1") {
             const pct = Number(value);
+            const drop_threshold = (frappe.boot.hmd_config || {}).production_drop_alert_pct || -15;
             let color = "gray";
             if (pct > 0) {
                 color = "green";
             } else if (pct < 0) {
-                color = pct <= -15 ? "red" : "orange";
+                color = pct <= drop_threshold ? "red" : "orange";
             }
             const sign = pct > 0 ? "+" : "";
             return `<span style="color:${color};font-weight:600">${sign}${pct}%</span>`;
@@ -164,12 +165,28 @@ const MOVE_TABLE_FIELDS = [
       label: __("Lot destination"), in_list_view: 1, columns: 2 }
 ];
 
-// DIM stage boundaries — must mirror Python `_get_suggestion`.
-// Used only for the Consideration column to detect "last third of stage".
+// DIM stage boundaries — derived from HMD Configuration via frappe.boot.hmd_config.
+// Must mirror Python `_get_suggestion`. Defaults preserve historical behavior if
+// boot payload isn't loaded yet. Used by the Consideration column.
+const _CFG = (frappe.boot && frappe.boot.hmd_config) || {};
+const _FV_MAX = _CFG.dim_fv_max_multi || 30;
+const _THP_MAX = _CFG.dim_thp_max || 120;
+const _HP_MAX = _CFG.dim_hp_max || 240;
+const _MP_MAX = _CFG.dim_mp_max || 305;
+const _PRIMIPARE_CAP = _CFG.dim_primipare_cap || 300;
+const _LAST_THIRD_PCT = _CFG.last_third_pct || 66.7;
+
 const LOT_DIM_RANGE_MULTI = {
-    FV: [0, 30], THP: [30, 120], HP: [120, 240], MP: [240, 305], FP: [305, 9999]
+    FV:  [0,        _FV_MAX],
+    THP: [_FV_MAX,  _THP_MAX],
+    HP:  [_THP_MAX, _HP_MAX],
+    MP:  [_HP_MAX,  _MP_MAX],
+    FP:  [_MP_MAX,  9999],
 };
-const LOT_DIM_RANGE_PRIMI = { FV: [0, 300], FP: [300, 9999] };
+const LOT_DIM_RANGE_PRIMI = {
+    FV: [0, _PRIMIPARE_CAP],
+    FP: [_PRIMIPARE_CAP, 9999],
+};
 const LOT_DEMOTE_NEXT_MULTI = { FV: "THP", THP: "HP", HP: "MP", MP: "FP" };
 const LOT_DEMOTE_NEXT_PRIMI = { FV: "FP" };
 // Stage progression rank: cows advance through these stages with DIM.
@@ -240,7 +257,7 @@ function compute_consideration(row, lots_by_name, current_seuils) {
         const range = get_lot_dim_range(cur_lot.lot_type, row.numero_lactation);
         if (range && row.dim != null) {
             const [lo, hi] = range;
-            const last_third_start = lo + (2 / 3) * (hi - lo);
+            const last_third_start = lo + (_LAST_THIRD_PCT / 100) * (hi - lo);
             if (Number(row.dim) >= last_third_start) {
                 return {
                     color: "yellow",

@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import add_days, cint, date_diff, getdate, today
 
+from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.utils.lot_utils import lot_sort_key
 
 
@@ -235,7 +236,8 @@ def _get_suggestion(row, reference_date, find_lot):
     # Gestante close to calving → tarissement (dry-off needed)
     if row.get("etat_gestation") == "GESTANTE" and row.get("date_velage_prevue"):
         days_to_calving = cint(date_diff(row["date_velage_prevue"], reference_date))
-        if 0 < days_to_calving <= 60:
+        tarissement_window = get_config("tarissement_window_jours", default=60)
+        if 0 < days_to_calving <= tarissement_window:
             return find_lot("TARISSEMENT")
 
     # 3. DIM-based
@@ -243,17 +245,23 @@ def _get_suggestion(row, reference_date, find_lot):
     if dim is None:
         return None
 
+    primipare_cap = get_config("dim_primipare_cap", default=300)
+    fv_max = get_config("dim_fv_max_multi", default=30)
+    thp_max = get_config("dim_thp_max", default=120)
+    hp_max = get_config("dim_hp_max", default=240)
+    mp_max = get_config("dim_mp_max", default=305)
+
     # Primipare: stays in FV for whole lactation, then FP
     if row.get("numero_lactation") == 1:
-        return find_lot("FV") if dim <= 300 else find_lot("FP")
+        return find_lot("FV") if dim <= primipare_cap else find_lot("FP")
 
     # Multipare
-    if dim <= 30:
+    if dim <= fv_max:
         return find_lot("FV")
-    if dim <= 120:
+    if dim <= thp_max:
         return find_lot("THP")
-    if dim <= 240:
+    if dim <= hp_max:
         return find_lot("HP")
-    if dim <= 305:
+    if dim <= mp_max:
         return find_lot("MP")
     return find_lot("FP")

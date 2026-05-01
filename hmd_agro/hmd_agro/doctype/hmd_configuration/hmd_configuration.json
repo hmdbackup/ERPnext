@@ -267,10 +267,10 @@
   {
    "fieldname": "production_drop_alert_pct",
    "fieldtype": "Float",
-   "label": "Seuil baisse production alerte (%)",
+   "label": "Seuil baisse production J/J-1 (%)",
    "default": "-15",
    "precision": "1",
-   "description": "Variation J/J-1 (%) au-delà de laquelle la cellule Delta passe en orange/rouge dans le rapport Allotement."
+   "description": "Variation J/J-1 (%) au-delà de laquelle la cellule passe en rouge. Utilisé par : rapport Allotement, rapport Contrôle Laitier, page Saisie Traite."
   }
  ],
  "index_web_pages_for_search": 0,

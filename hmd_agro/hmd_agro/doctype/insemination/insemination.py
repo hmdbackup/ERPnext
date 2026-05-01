@@ -4,6 +4,8 @@
 import frappe
 from frappe.model.document import Document
 
+from hmd_agro.hmd_agro.utils.config import get_config
+
 
 class Insemination(Document):
     def validate(self):
@@ -166,7 +168,8 @@ class Insemination(Document):
             animal = frappe.get_doc("Animal", self.animal)
             animal.id_ia_fecondante = self.name
             animal.date_velage_prevue = frappe.utils.add_days(self.date_ia, 280)
-            animal.date_tarissement = frappe.utils.add_days(animal.date_velage_prevue, -60)
+            tarissement_window = get_config("tarissement_window_jours", default=60)
+            animal.date_tarissement = frappe.utils.add_days(animal.date_velage_prevue, -tarissement_window)
             animal.etat_gestation = "GESTANTE"
             animal.flags.ignore_validate = True
             animal.save()
