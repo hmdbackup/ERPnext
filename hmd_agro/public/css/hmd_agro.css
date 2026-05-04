@@ -1,0 +1,11 @@
+/* Zebra striping for query report tables.
+   Scoped to .report-wrapper so it only affects Frappe query reports —
+   not list views, child-table grids in forms, or bulk-edit modals.
+
+   The linear-gradient overlay on top of var(--card-bg) gives an OPAQUE
+   tinted cell so reports with sticky columns (controle_laitier, etc.)
+   don't bleed the underlying scrolled content through. */
+.report-wrapper .dt-row:nth-child(even) .dt-cell {
+    background: linear-gradient(rgba(127, 127, 127, 0.15), rgba(127, 127, 127, 0.15)),
+                var(--card-bg) !important;
+}

@@ -2,15 +2,28 @@ import frappe
 from frappe.utils import getdate, add_days, today
 
 from hmd_agro.hmd_agro.utils.lot_utils import lot_sort_key
+from hmd_agro.hmd_agro.utils.report_format import normalize_precision
 from hmd_agro.hmd_agro.doctype.allotement_history.allotement_history import lot_on_date
 
 
+@normalize_precision
 def execute(filters=None):
     filters = filters or {}
     mode = filters.get("view_mode") or "Conversion"
     if mode == "CL":
         return _execute_cl(filters)
     return _execute_conversion(filters)
+
+
+# ─── Shared helpers ─────────────────────────────────────────────────────────
+
+def _normalize_lot_filter(value):
+    """MultiSelectList sends a list of names; accept str/None for safety."""
+    if not value:
+        return []
+    if isinstance(value, str):
+        return [value]
+    return list(value)
 
 
 # ─── Shared cohort: active VACHEs that have ever been milked ────────────────
@@ -66,12 +79,12 @@ def _execute_conversion(filters):
         return columns, []
 
     by_cow = _daily_totals([c.name for c in cohort], j_2, ref)
-    lot_filter = filters.get("lot")
+    lot_filter = _normalize_lot_filter(filters.get("lot"))
 
     rows = []
     for c in cohort:
         cow_lot = lot_on_date(c.name, ref) or ""
-        if lot_filter and cow_lot != lot_filter:
+        if lot_filter and cow_lot not in lot_filter:
             continue
         d = by_cow.get(c.name, {})
         v_j2 = d.get(str(j_2), 0)
@@ -88,6 +101,23 @@ def _execute_conversion(filters):
         })
 
     rows.sort(key=lambda r: (lot_sort_key(r["lot"]), r["nom_metier"]))
+
+    if rows:
+        sum_j2 = sum(r["j_2"] for r in rows)
+        sum_j1 = sum(r["j_1"] for r in rows)
+        sum_j  = sum(r["j"] for r in rows)
+        # Herd-level delta: (sum_j - sum_j1) / sum_j1 — NOT mean of per-cow
+        # deltas, which would weight 1L cows the same as 30L cows.
+        herd_delta = round((sum_j - sum_j1) / sum_j1 * 100) if sum_j1 else None
+        per_cow_moys = [r["moyenne_3j"] for r in rows if r["moyenne_3j"]]
+        avg_moy = round(sum(per_cow_moys) / len(per_cow_moys), 1) if per_cow_moys else None
+        rows.append({
+            "nom_metier": "TOTAL", "lot": "",
+            "j_2": round(sum_j2, 1), "j_1": round(sum_j1, 1), "j": round(sum_j, 1),
+            "delta": herd_delta, "moyenne_3j": avg_moy,
+            "is_total": 1,
+        })
+
     return columns, rows
 
 
@@ -124,12 +154,12 @@ def _execute_cl(filters):
         return columns, [], None, _empty_chart(dates), []
 
     by_cow = _daily_totals([c.name for c in cohort], from_date, to_date)
-    lot_filter = filters.get("lot")
+    lot_filter = _normalize_lot_filter(filters.get("lot"))
 
     rows = []
     daily_sums = [0.0] * len(dates)
     for c in cohort:
-        if lot_filter and lot_on_date(c.name, to_date) != lot_filter:
+        if lot_filter and lot_on_date(c.name, to_date) not in lot_filter:
             continue
         d_map = by_cow.get(c.name, {})
         row = {"nom_metier": c.nom_metier or c.name[-4:]}
@@ -146,6 +176,18 @@ def _execute_cl(filters):
         row["moyenne"] = round(row_total / days_with_data, 1) if days_with_data else None
         rows.append(row)
 
+    nb_animals = len(rows)
+    if rows:
+        total_row = {"nom_metier": "TOTAL", "is_total": 1}
+        grand = 0.0
+        for i, date in enumerate(dates):
+            total_row[str(date)] = round(daily_sums[i], 1) if daily_sums[i] else None
+            grand += daily_sums[i]
+        total_row["total"] = round(grand, 1) if grand else None
+        per_cow_moys = [r["moyenne"] for r in rows if r.get("moyenne") is not None]
+        total_row["moyenne"] = round(sum(per_cow_moys) / len(per_cow_moys), 1) if per_cow_moys else None
+        rows.append(total_row)
+
     chart = {
         "data": {
             "labels": [d.strftime("%d/%m") for d in dates],
@@ -158,9 +200,9 @@ def _execute_cl(filters):
     grand = sum(daily_sums)
     summary = [
         {"value": round(grand, 1), "label": "Production Totale (L)", "datatype": "Float"},
-        {"value": len(rows), "label": "Animaux", "datatype": "Int"},
+        {"value": nb_animals, "label": "Animaux", "datatype": "Int"},
         {"value": round(grand / len(dates), 1) if dates else 0, "label": "Moyenne/jour (L)", "datatype": "Float"},
-        {"value": round(grand / len(rows), 1) if rows else 0, "label": "Moyenne/animal (L)", "datatype": "Float"},
+        {"value": round(grand / nb_animals, 1) if nb_animals else 0, "label": "Moyenne/animal (L)", "datatype": "Float"},
     ]
     return columns, rows, None, chart, summary
 

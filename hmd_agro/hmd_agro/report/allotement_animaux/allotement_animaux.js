@@ -92,6 +92,18 @@ frappe.query_reports["Allotement Animaux"] = {
         }
 
         return default_formatter(value, row, column, data);
+    },
+
+    after_datatable_render(datatable) {
+        if (is_session_mode(frappe.query_report)) {
+            // Session view = printable 3-column movement list. Shrink + center
+            // so the table doesn't float lonely against a wide page.
+            hmd_fit_table_to_content(datatable);
+            return;
+        }
+        // Live mode: freeze row-number, nom_metier, lot_actuel — keep cow
+        // identity + lot visible while scrolling through DIM/gestation/J-2/J-1/J.
+        hmd_make_sticky_columns(datatable, 3);
     }
 };
 

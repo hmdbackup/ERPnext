@@ -38,7 +38,11 @@
   "dim_mp_max",
   "dim_primipare_cap",
   "last_third_pct",
-  "production_drop_alert_pct"
+  "production_drop_alert_pct",
+  "section_bilan_lait",
+  "bilan_lait_intro",
+  "ecart_lait_seuil_negatif_l",
+  "ecart_lait_seuil_perte_pct"
  ],
  "fields": [
   {
@@ -271,6 +275,34 @@
    "default": "-15",
    "precision": "1",
    "description": "Variation J/J-1 (%) au-delà de laquelle la cellule passe en rouge. Utilisé par : rapport Allotement, rapport Contrôle Laitier, page Saisie Traite."
+  },
+  {
+   "fieldname": "section_bilan_lait",
+   "fieldtype": "Section Break",
+   "label": "Bilan Lait — Couleurs Écart"
+  },
+  {
+   "fieldname": "bilan_lait_intro",
+   "fieldtype": "HTML",
+   "options": "<p style=\"color:var(--text-muted);font-size:13px;\">Seuils visuels de l'écart (production – vendu – CI – LV) sur la page Saisie Traite.</p>"
+  },
+  {
+   "fieldname": "ecart_lait_seuil_negatif_l",
+   "fieldtype": "Float",
+   "label": "Seuil rouge écart négatif (L)",
+   "default": "1",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Si l'écart < -valeur (en litres), la cellule passe en ROUGE. Indique une sur-allocation impossible (vendu+CI+LV > production)."
+  },
+  {
+   "fieldname": "ecart_lait_seuil_perte_pct",
+   "fieldtype": "Float",
+   "label": "Seuil orange perte (%)",
+   "default": "5",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Si l'écart positif > valeur % de la production totale, la cellule passe en ORANGE. Indique une perte/oubli de saisie suspect."
   }
  ],
  "index_web_pages_for_search": 0,

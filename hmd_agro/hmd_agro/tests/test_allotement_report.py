@@ -51,6 +51,10 @@ def run_all_tests():
     test_seuil_persistence(results)
     test_get_lots_capacity_includes_seuil(results)
     test_dim_boundaries_read_from_config(results)
+    test_dim_fv_max_multi_read_from_config(results)
+    test_dim_hp_max_read_from_config(results)
+    test_dim_mp_max_read_from_config(results)
+    test_dim_primipare_cap_read_from_config(results)
 
     total = results["pass"] + results["fail"]
     print(f"\n  RESULTATS: {results['pass']}/{total} passés, {results['fail']} échoués\n")
@@ -228,6 +232,86 @@ def test_dim_boundaries_read_from_config(results):
         cfg2.dim_thp_max = original
         cfg2.save(ignore_permissions=True)
         frappe.db.commit()
+
+
+def _with_config_field(field, value, fn):
+    """Save config field, run fn, restore on exit."""
+    cfg = frappe.get_single("HMD Configuration")
+    original = cfg.get(field)
+    try:
+        cfg.set(field, value)
+        cfg.save(ignore_permissions=True)
+        frappe.db.commit()
+        fn()
+    finally:
+        frappe.db.rollback()
+        cfg2 = frappe.get_single("HMD Configuration")
+        cfg2.set(field, original)
+        cfg2.save(ignore_permissions=True)
+        frappe.db.commit()
+
+
+def test_dim_fv_max_multi_read_from_config(results):
+    log("dim_fv_max_multi: changement de config affecte _get_suggestion", "HEAD")
+    base = {"numero_lactation": 3, "etat_lactation": "EN_PRODUCTION", "etat_gestation": "VIDE"}
+
+    # Baseline: fv_max=30 → DIM 25 → FV
+    r = _get_suggestion({**base, "dim": 25}, REF, _find_lot)
+    check(r == "Primipare et FV", "Baseline (fv_max=30): DIM 25 → FV", f"Got {r}", results)
+
+    def with_lower():
+        r2 = _get_suggestion({**base, "dim": 25}, REF, _find_lot)
+        check(r2 == "THP",
+              "Avec fv_max=20: DIM 25 → THP (config wiring OK)",
+              f"Got {r2}", results)
+    _with_config_field("dim_fv_max_multi", 20, with_lower)
+
+
+def test_dim_hp_max_read_from_config(results):
+    log("dim_hp_max: changement de config affecte _get_suggestion", "HEAD")
+    base = {"numero_lactation": 3, "etat_lactation": "EN_PRODUCTION", "etat_gestation": "VIDE"}
+
+    r = _get_suggestion({**base, "dim": 220}, REF, _find_lot)
+    check(r == "HP", "Baseline (hp_max=240): DIM 220 → HP", f"Got {r}", results)
+
+    def with_lower():
+        r2 = _get_suggestion({**base, "dim": 220}, REF, _find_lot)
+        check(r2 == "MP",
+              "Avec hp_max=200: DIM 220 → MP (config wiring OK)",
+              f"Got {r2}", results)
+    _with_config_field("dim_hp_max", 200, with_lower)
+
+
+def test_dim_mp_max_read_from_config(results):
+    log("dim_mp_max: changement de config affecte _get_suggestion", "HEAD")
+    base = {"numero_lactation": 3, "etat_lactation": "EN_PRODUCTION", "etat_gestation": "VIDE"}
+
+    # Test by raising mp_max (lowering would violate dim_primipare_cap monotonicity)
+    r = _get_suggestion({**base, "dim": 320}, REF, _find_lot)
+    check(r == "FP", "Baseline (mp_max=305): DIM 320 → FP", f"Got {r}", results)
+
+    def with_higher():
+        r2 = _get_suggestion({**base, "dim": 320}, REF, _find_lot)
+        check(r2 == "MP",
+              "Avec mp_max=350: DIM 320 → MP (config wiring OK)",
+              f"Got {r2}", results)
+    _with_config_field("dim_mp_max", 350, with_higher)
+
+
+def test_dim_primipare_cap_read_from_config(results):
+    log("dim_primipare_cap: changement de config affecte _get_suggestion", "HEAD")
+    base = {"numero_lactation": 1, "etat_lactation": "EN_PRODUCTION", "etat_gestation": "VIDE"}
+
+    r = _get_suggestion({**base, "dim": 250}, REF, _find_lot)
+    check(r == "Primipare et FV", "Baseline (cap=300): primipare DIM 250 → FV",
+          f"Got {r}", results)
+
+    def with_lower():
+        r2 = _get_suggestion({**base, "dim": 250}, REF, _find_lot)
+        check(r2 == "FP",
+              "Avec cap=200: primipare DIM 250 → FP (config wiring OK)",
+              f"Got {r2}", results)
+    _with_config_field("dim_primipare_cap", 200, with_lower)
 
 
 def test_get_lots_capacity_includes_seuil(results):

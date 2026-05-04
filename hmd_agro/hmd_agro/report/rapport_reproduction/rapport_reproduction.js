@@ -111,4 +111,11 @@ frappe.query_reports["Rapport Reproduction"] = {
 
         return default_formatter(value, row, column, data);
     },
+
+    after_datatable_render(datatable) {
+        // Freeze row-number + first data column. Works across all 3 sections:
+        // Reproduction (col 1 = nom_metier), Performance IA (col 1 = mois),
+        // Bilan Annuel (col 1 = annee). All have many columns, all benefit.
+        hmd_make_sticky_columns(datatable, 2);
+    },
 };

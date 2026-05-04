@@ -45,6 +45,17 @@ frappe.ui.form.on("HMD Configuration", {
                 __("Réinitialiser")
             );
         });
+
+        // Listen once per session for the recalc completion events
+        if (!frm.__recalc_listeners) {
+            frappe.realtime.on("lactation_recalc_done", (data) => {
+                _recalc_alert(data, "lactations");
+            });
+            frappe.realtime.on("tarissement_recalc_done", (data) => {
+                _recalc_alert(data, "dates de tarissement");
+            });
+            frm.__recalc_listeners = true;
+        }
     },
 
     after_save(frm) {
@@ -54,6 +65,23 @@ frappe.ui.form.on("HMD Configuration", {
         }, 7);
     },
 });
+
+function _recalc_alert(data, label) {
+    const failed_count = (data.failed || []).length;
+    if (failed_count) {
+        frappe.show_alert({
+            message: __("Recalcul {0} terminé : {1} OK, {2} en erreur (voir Error Log).",
+                [label, data.success, failed_count]),
+            indicator: "orange"
+        }, 10);
+    } else {
+        frappe.show_alert({
+            message: __("Recalcul {0} terminé ({1} mis à jour).", [label, data.success]),
+            indicator: "green"
+        }, 7);
+    }
+}
+
 
 function reset_section(frm, section) {
     const defaults = SECTION_DEFAULTS[section];

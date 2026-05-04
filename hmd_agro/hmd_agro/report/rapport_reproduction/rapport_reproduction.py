@@ -12,11 +12,14 @@ if their date_sortie > date_filter).
 import frappe
 from frappe.utils import getdate, add_days, today, cint
 
+from hmd_agro.hmd_agro.utils.report_format import normalize_precision
+
 MOIS_FR = {1: "Janvier", 2: "Février", 3: "Mars", 4: "Avril",
            5: "Mai", 6: "Juin", 7: "Juillet", 8: "Août",
            9: "Septembre", 10: "Octobre", 11: "Novembre", 12: "Décembre"}
 
 
+@normalize_precision
 def execute(filters=None):
     filters = filters or {}
     date = getdate(filters.get("date") or today())

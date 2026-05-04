@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "autoname": "format:BLJ-{date}",
+ "creation": "2026-05-04 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "section_volumes",
+  "lait_vendu",
+  "consommation_interne",
+  "column_break_lv",
+  "lait_veau",
+  "section_notes",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Date",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "section_volumes",
+   "fieldtype": "Section Break",
+   "label": "Volumes (L)"
+  },
+  {
+   "default": "0",
+   "description": "Lait vendu ce jour-là (litres).",
+   "fieldname": "lait_vendu",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Lait Vendu",
+   "non_negative": 1,
+   "precision": "1"
+  },
+  {
+   "default": "0",
+   "description": "Consommation interne (personnel ferme, usage perso).",
+   "fieldname": "consommation_interne",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Consommation Interne (CI)",
+   "non_negative": 1,
+   "precision": "1"
+  },
+  {
+   "fieldname": "column_break_lv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Lait consommé par les veaux (LV).",
+   "fieldname": "lait_veau",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Lait Veau (LV)",
+   "non_negative": 1,
+   "precision": "1"
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-05-04 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Bilan Lait Journalier",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "date",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -59,6 +59,9 @@ def run_all_tests():
     test_defaults_match_expected(results)
     test_get_config_falls_back(results)
     test_validate_dim_monotonicity(results)
+    test_validate_j50_after_j21(results)
+    test_validate_tarissement_advance_window(results)
+    test_validate_alerte_lead_cap(results)
     test_boot_session_payload(results)
 
     total = results["pass"] + results["fail"]
@@ -112,6 +115,49 @@ def test_validate_dim_monotonicity(results):
         doc2.dim_thp_max = original_thp
         doc2.save(ignore_permissions=True)
         frappe.db.commit()
+
+
+def _try_save_with(field, value, results, label):
+    """Attempt to save HMD Configuration with field=value, expect ValidationError."""
+    cfg = frappe.get_single("HMD Configuration")
+    original = cfg.get(field)
+    try:
+        cfg.set(field, value)
+        try:
+            cfg.save(ignore_permissions=True)
+            check(False, "", f"{label}: save aurait dû lever ValidationError", results)
+        except frappe.ValidationError:
+            check(True, label, "", results)
+    finally:
+        frappe.db.rollback()
+        cfg2 = frappe.get_single("HMD Configuration")
+        cfg2.set(field, original)
+        cfg2.save(ignore_permissions=True)
+        frappe.db.commit()
+
+
+def test_validate_j50_after_j21(results):
+    log("validate_j50_after_j21 — j50 doit être strictement > j21", "HEAD")
+    # j21 default 18, j50 default 50. Try setting j50 = 18 (= j21) → reject
+    _try_save_with("verification_j50_jours", 18, results,
+                   "j50=18 (= j21) → rejeté")
+    _try_save_with("verification_j50_jours", 10, results,
+                   "j50=10 (< j21) → rejeté")
+
+
+def test_validate_tarissement_advance_window(results):
+    log("validate_tarissement_advance_window — advance ≤ window", "HEAD")
+    # advance default 7, window default 60. Try setting advance = 90 → reject
+    _try_save_with("tarissement_advance_jours", 90, results,
+                   "advance=90 (> window=60) → rejeté")
+
+
+def test_validate_alerte_lead_cap(results):
+    log("validate_alerte_lead_cap — alerte_lead_jours ≤ 7", "HEAD")
+    _try_save_with("alerte_lead_jours", 8, results,
+                   "lead=8 (> 7) → rejeté")
+    _try_save_with("alerte_lead_jours", 30, results,
+                   "lead=30 (>> 7) → rejeté")
 
 
 def test_boot_session_payload(results):

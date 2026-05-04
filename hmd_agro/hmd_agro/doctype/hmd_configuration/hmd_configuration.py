@@ -5,9 +5,72 @@ import frappe
 from frappe.model.document import Document
 
 
+LACTATION_RECALC_FIELDS = ("pic_production_jours", "production_initiale_jours")
+TARISSEMENT_RECALC_FIELDS = ("tarissement_window_jours",)
+
+
 class HMDConfiguration(Document):
     def validate(self):
         self.validate_dim_monotonicity()
+        self.validate_j50_after_j21()
+        self.validate_tarissement_advance_window()
+        self.validate_alerte_lead_cap()
+
+    def validate_j50_after_j21(self):
+        """J+50 must be strictly > J+21. The J50 alert generator depends on
+        J21 alerts already existing in GESTANTE_PROBABLE state. If j50 ≤ j21,
+        the dependency chain breaks: J50 fires before J21 has had a chance to."""
+        if (self.verification_j21_jours and self.verification_j50_jours
+                and self.verification_j50_jours <= self.verification_j21_jours):
+            frappe.throw(
+                f"Vérification J+50 ({self.verification_j50_jours} jours) doit être strictement "
+                f"supérieure à J+21 ({self.verification_j21_jours} jours). "
+                f"L'alerte J+50 dépend d'une alerte J+21 préalable."
+            )
+
+    def validate_tarissement_advance_window(self):
+        """Préavis tarissement doit être ≤ fenêtre de tarissement.
+        Sinon l'alerte fire avant que la cow n'entre dans la fenêtre prévue."""
+        if (self.tarissement_advance_jours and self.tarissement_window_jours
+                and self.tarissement_advance_jours > self.tarissement_window_jours):
+            frappe.throw(
+                f"Préavis tarissement ({self.tarissement_advance_jours} jours) ne peut pas "
+                f"dépasser la fenêtre de tarissement ({self.tarissement_window_jours} jours)."
+            )
+
+    def validate_alerte_lead_cap(self):
+        """alerte_lead_jours doit rester raisonnable (≤ 7). Au-delà, les reports
+        vétérinaires courts (typiquement 7-21j) collapseraient à 'aujourd'hui'."""
+        if self.alerte_lead_jours and self.alerte_lead_jours > 7:
+            frappe.throw(
+                f"Avance d'affichage des alertes ({self.alerte_lead_jours} jours) ne peut pas "
+                f"dépasser 7 jours."
+            )
+
+    def on_update(self):
+        """Queue background recalcs for derived data when relevant config
+        fields changed. Operator doesn't wait."""
+        if any(self.has_value_changed(f) for f in LACTATION_RECALC_FIELDS):
+            frappe.enqueue(
+                "hmd_agro.hmd_agro.utils.lactation_recalc.recalculate_all_lactations",
+                queue="long",
+                timeout=900,
+            )
+            frappe.msgprint(
+                "Recalcul de toutes les lactations programmé en arrière-plan. "
+                "Une notification apparaîtra quand terminé."
+            )
+
+        if any(self.has_value_changed(f) for f in TARISSEMENT_RECALC_FIELDS):
+            frappe.enqueue(
+                "hmd_agro.hmd_agro.utils.tarissement_recalc.recalculate_tarissement_dates",
+                queue="long",
+                timeout=300,
+            )
+            frappe.msgprint(
+                "Recalcul des dates de tarissement (animaux gestants) programmé "
+                "en arrière-plan. Une notification apparaîtra quand terminé."
+            )
 
     def validate_dim_monotonicity(self):
         """DIM stage boundaries must be strictly increasing.

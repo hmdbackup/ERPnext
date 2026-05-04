@@ -12,6 +12,8 @@ JS_FIELDS = {
     "dim_primipare_cap": 300,
     "last_third_pct": 66.7,
     "production_drop_alert_pct": -15,
+    "ecart_lait_seuil_negatif_l": 1,
+    "ecart_lait_seuil_perte_pct": 5,
 }
 
 

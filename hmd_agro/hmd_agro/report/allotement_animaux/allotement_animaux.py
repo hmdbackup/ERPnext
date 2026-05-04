@@ -3,8 +3,10 @@ from frappe.utils import add_days, cint, date_diff, getdate, today
 
 from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.utils.lot_utils import lot_sort_key
+from hmd_agro.hmd_agro.utils.report_format import normalize_precision
 
 
+@normalize_precision
 def execute(filters=None):
     filters = filters or {}
 
@@ -25,34 +27,30 @@ def execute(filters=None):
 
 
 def _render_session(session_name, filters):
-    """Render a stored Allotment Session as the report data."""
+    """Render a stored Allotment Session as a printable movement list:
+    only cows that actually changed lot, with the 3 columns the farm worker
+    needs (cow ID, source lot, target lot)."""
     doc = frappe.get_doc("Allotment Session", session_name)
-    ref = doc.session_date
-    columns = build_columns(ref, add_days(ref, -1), add_days(ref, -2))
-    for c in columns:
-        if c["fieldname"] == "lot_actuel":
-            c["label"] = "Lot avant"
-    columns.append({"fieldname": "lot_after", "label": "Lot après",
-                    "fieldtype": "Data", "width": 120})
+    columns = [
+        {"fieldname": "nom_metier", "label": "N° Travail", "fieldtype": "Data", "width": 120},
+        {"fieldname": "lot_actuel", "label": "Lot Actuel", "fieldtype": "Link", "options": "Lot", "width": 160},
+        {"fieldname": "lot_destination", "label": "Lot Destination", "fieldtype": "Link", "options": "Lot", "width": 160},
+    ]
 
     lot_filter = filters.get("lot")
     data = []
     for r in doc.rows:
+        if not r.moved:
+            continue
         if lot_filter and r.lot_before != lot_filter and r.lot_after != lot_filter:
             continue
         data.append({
             "animal": r.animal,
             "nom_metier": r.nom_metier,
             "lot_actuel": r.lot_before,
-            "dim": r.dim,
-            "jours_gestation": r.jours_gestation,
-            "j_2": r.production_j_2,
-            "j_1": r.production_j_1,
-            "j": r.production_j,
-            "delta_j_vs_j_1": r.delta,
-            "moyenne_3j": r.moyenne_3j,
-            "lot_after": r.lot_after if r.moved else "",
+            "lot_destination": r.lot_after,
         })
+    data.sort(key=lambda x: (lot_sort_key(x["lot_actuel"] or ""), x["nom_metier"] or ""))
     return columns, data
 
 

@@ -42,7 +42,7 @@ fixtures = [
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/hmd_agro/css/hmd_agro.css"
+app_include_css = "/assets/hmd_agro/css/hmd_agro.css"
 app_include_js = "/assets/hmd_agro/js/hmd_agro.js"
 
 # Inject HMD Configuration values into bootinfo so report .js can read them via

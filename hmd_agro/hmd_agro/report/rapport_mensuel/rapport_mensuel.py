@@ -9,6 +9,7 @@ from hmd_agro.hmd_agro.utils.live_state import (
 )
 from hmd_agro.hmd_agro.utils.import_rapport import read_imported
 from hmd_agro.hmd_agro.utils.lot_utils import lot_sort_key
+from hmd_agro.hmd_agro.utils.report_format import normalize_precision
 
 
 # Row label → key mapping for imported days. Ordered to match the live report.
@@ -28,6 +29,7 @@ _IMPORTED_ROWS = [
 ]
 
 
+@normalize_precision
 def execute(filters=None):
     filters = filters or {}
     date = getdate(filters.get("date") or today())

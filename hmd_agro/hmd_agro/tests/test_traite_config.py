@@ -30,6 +30,7 @@ def run_all_tests():
     test_taux_tp_max(results)
     test_import_traites_max_litres(results)
     test_lactation_windows_in_sql(results)
+    test_recalculate_all_lactations(results)
 
     total = results["pass"] + results["fail"]
     print(f"\n  RESULTATS: {results['pass']}/{total} passés, {results['fail']} échoués\n")
@@ -142,6 +143,60 @@ def test_import_traites_max_litres(results):
         lambda: check(get_config("traite_max_litres", default=60) == 50,
                       "Avec config=50: get_config = 50",
                       f"Got {get_config('traite_max_litres', default=60)}", results))
+
+
+def test_recalculate_all_lactations(results):
+    """Bulk recalc helper: changing pic_production_jours then calling
+    recalculate_all_lactations should update the cached pic_production
+    of a real Lactation."""
+    log("recalculate_all_lactations propage la nouvelle config", "HEAD")
+    from hmd_agro.hmd_agro.utils.lactation_recalc import recalculate_all_lactations
+
+    lac_name = frappe.db.get_value("Lactation", {"statut": "EN_COURS"}, "name")
+    if not lac_name:
+        log("Skip — pas de Lactation EN_COURS", "FAIL")
+        results["fail"] += 1
+        return
+
+    lac_snapshot = frappe.db.get_value("Lactation", lac_name,
+        ["production_totale", "pic_production", "lactation_305j",
+         "production_initiale", "moyenne_production"], as_dict=True)
+    cfg = frappe.get_single("HMD Configuration")
+    cfg_snapshot = {
+        "pic_production_jours": cfg.pic_production_jours,
+        "production_initiale_jours": cfg.production_initiale_jours,
+    }
+
+    try:
+        # Force window to 1 day → pic and production_initiale should drop dramatically
+        cfg.pic_production_jours = 1
+        cfg.production_initiale_jours = 1
+        cfg.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        result = recalculate_all_lactations()
+        check(result["total"] > 0,
+              f"Recalc a touché {result['total']} lactations",
+              f"total={result['total']}", results)
+        check(len(result["failed"]) == 0,
+              "Aucune erreur de recalc",
+              f"failed={result['failed']}", results)
+
+        new_pic = frappe.db.get_value("Lactation", lac_name, "pic_production")
+        check(float(new_pic) <= float(lac_snapshot.pic_production or 0),
+              f"pic_production réduit ou égal après window=1 ({new_pic} <= {lac_snapshot.pic_production})",
+              f"new_pic={new_pic} > old={lac_snapshot.pic_production} → wiring cassée",
+              results)
+    finally:
+        # Restore config
+        cfg2 = frappe.get_single("HMD Configuration")
+        for f, v in cfg_snapshot.items():
+            cfg2.set(f, v)
+        cfg2.save(ignore_permissions=True)
+        frappe.db.commit()
+        # Restore lactation values directly (bypass any recalc trigger)
+        frappe.db.set_value("Lactation", lac_name, lac_snapshot)
+        frappe.db.commit()
 
 
 def test_lactation_windows_in_sql(results):

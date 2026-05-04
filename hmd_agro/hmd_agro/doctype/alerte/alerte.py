@@ -316,10 +316,15 @@ def _generate_delvo_alerts():
     ], fields=["name", "nom_metier", "date_fin_attente_lait"])
 
     for a in animals:
+        # Block only on a NOUVELLE alert. REPORTEE (deferred via "encore
+        # contaminée") and TRAITEE (handled via "lait propre" — flag also
+        # cleared) must NOT block: the deferred case needs a fresh reminder
+        # at the new date; lait propre case can't reach here (animal flag
+        # cleared, removed from the filter above).
         existing = frappe.db.exists("Alerte", {
             "animal": a.name,
             "type_alerte": "DELVO",
-            "statut": ["in", ["NOUVELLE", "TRAITEE"]]
+            "statut": "NOUVELLE"
         })
         if existing:
             continue
@@ -373,12 +378,22 @@ def delvo_encore_contamine(alert_name, nb_jours):
     if doc.type_alerte != "DELVO":
         frappe.throw("Cette action est reservee aux alertes Delvo")
 
-    # Extend the animal's withdrawal date
+    # Extend the animal's withdrawal date AND re-enable the active flag.
+    # If refresh_attente_lait already cleared the flag (date_fin was past),
+    # the flag would stay 0 here without explicit re-enable, and the
+    # generator's filter (attente_lait_active=1) would skip this animal —
+    # no follow-up alert ever fires.
     new_date = add_days(getdate(today()), nb_jours)
-    frappe.db.set_value("Animal", doc.animal, "date_fin_attente_lait", new_date)
+    frappe.db.set_value("Animal", doc.animal, {
+        "attente_lait_active": 1,
+        "date_fin_attente_lait": new_date,
+    })
 
-    # Mark alert as treated — a new one will generate 1 day before the new date
-    doc.statut = "TRAITEE"
+    # Mark alert as REPORTEE — disappears from the active dashboard but
+    # doesn't block the next generate_alerts run. A fresh NOUVELLE alert
+    # will be created once date_fin_attente_lait is within `delvo_advance_jours`
+    # of today.
+    doc.statut = "REPORTEE"
     doc.date_traitement = today()
     doc.save(ignore_permissions=True)
 

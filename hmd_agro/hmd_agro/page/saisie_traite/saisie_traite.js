@@ -104,12 +104,16 @@ function fetch_and_render(page, date) {
         method: "hmd_agro.hmd_agro.page.saisie_traite.saisie_traite.get_lactating_animals",
         args: { date: date },
         callback: function(r) {
-            render_table(page, r.message || [], date);
+            var resp = r.message || {};
+            // Backwards-compat: if backend returned a plain array (legacy), wrap it.
+            var animals = Array.isArray(resp) ? resp : (resp.animals || []);
+            var bilan = Array.isArray(resp) ? null : (resp.bilan || null);
+            render_table(page, animals, date, bilan);
         }
     });
 }
 
-function render_table(page, data, date) {
+function render_table(page, data, date, bilan) {
     var container = $(page.body).find(".st-container");
     if (!container.length) {
         container = $('<div class="st-container" style="padding: 15px;"></div>').appendTo(page.body);
@@ -125,6 +129,8 @@ function render_table(page, data, date) {
         );
         return;
     }
+
+    bilan = bilan || { lait_vendu: 0, consommation_interne: 0, lait_veau: 0 };
 
     // Summary bar
     var summary = $('<div class="st-summary" style="margin-bottom:15px; display:flex; gap:20px; flex-wrap:wrap;"></div>');
@@ -185,6 +191,36 @@ function render_table(page, data, date) {
     }
 
     container.append(table);
+
+    // ─── Bilan Lait du jour: Vendu / CI / LV ──────────────────────────
+    var bilan_block = $(
+        '<div class="st-bilan" style="margin-top:25px; padding:15px; background:var(--bg-color); border:1px solid var(--border-color); border-radius:6px;">' +
+        '<div style="font-weight:600; margin-bottom:10px;">Bilan Lait du Jour</div>' +
+        '<div style="display:flex; gap:25px; flex-wrap:wrap; align-items:flex-end;">' +
+        '<div><label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Lait Vendu (L)</label>' +
+        '<input type="number" min="0" step="0.1" class="form-control input-xs st-bilan-input" data-field="lait_vendu" ' +
+        'value="' + (bilan.lait_vendu || 0) + '" style="width:120px; text-align:center;"></div>' +
+        '<div><label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Consommation Interne — CI (L)</label>' +
+        '<input type="number" min="0" step="0.1" class="form-control input-xs st-bilan-input" data-field="consommation_interne" ' +
+        'value="' + (bilan.consommation_interne || 0) + '" style="width:120px; text-align:center;"></div>' +
+        '<div><label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Lait Veau — LV (L)</label>' +
+        '<input type="number" min="0" step="0.1" class="form-control input-xs st-bilan-input" data-field="lait_veau" ' +
+        'value="' + (bilan.lait_veau || 0) + '" style="width:120px; text-align:center;"></div>' +
+        '<div style="font-size:12px; color:var(--text-muted);">' +
+        'Écart (production – vendu – CI – LV): <strong class="st-bilan-ecart">0</strong> L ' +
+        '<span style="margin-left:6px;">(<strong class="st-bilan-ecart-pct">0</strong>)</span>' +
+        '</div>' +
+        '</div></div>'
+    );
+    container.append(bilan_block);
+
+    // Block negative input on bilan fields and recompute écart on change
+    container.off("input", ".st-bilan-input").on("input", ".st-bilan-input", function() {
+        update_totals(container);
+    });
+    container.off("keydown", ".st-bilan-input").on("keydown", ".st-bilan-input", function(e) {
+        if (e.key === "-" || e.key === "e") { e.preventDefault(); }
+    });
 
     // Bind input events
     container.off("input", ".st-qty-input").on("input", ".st-qty-input", function() {
@@ -293,6 +329,31 @@ function update_totals(container) {
         'Total: <strong>' + grand_total.toFixed(1) + ' L</strong>' +
         '</span>'
     );
+
+    // Bilan écart = production - vendu - CI - LV
+    var vendu = parseFloat(container.find('.st-bilan-input[data-field="lait_vendu"]').val()) || 0;
+    var ci    = parseFloat(container.find('.st-bilan-input[data-field="consommation_interne"]').val()) || 0;
+    var lv    = parseFloat(container.find('.st-bilan-input[data-field="lait_veau"]').val()) || 0;
+    var ecart = grand_total - vendu - ci - lv;
+    var ecart_pct = grand_total > 0 ? (ecart / grand_total) * 100 : 0;
+    var ecart_el = container.find(".st-bilan-ecart");
+    var ecart_pct_el = container.find(".st-bilan-ecart-pct");
+    ecart_el.text(ecart.toFixed(1));
+    ecart_pct_el.text(ecart_pct.toFixed(1) + " %");
+    // Color thresholds come from HMD Configuration → Bilan Lait section.
+    // Defaults match the form defaults (1 L for the negative threshold,
+    // 5% for the loss threshold).
+    var cfg = frappe.boot.hmd_config || {};
+    var seuil_neg = parseFloat(cfg.ecart_lait_seuil_negatif_l);
+    if (isNaN(seuil_neg)) seuil_neg = 1;
+    var seuil_perte_pct = parseFloat(cfg.ecart_lait_seuil_perte_pct);
+    if (isNaN(seuil_perte_pct)) seuil_perte_pct = 5;
+
+    var color = "var(--text-color)";
+    if (ecart < -seuil_neg) color = "red";
+    else if (grand_total > 0 && ecart > grand_total * (seuil_perte_pct / 100)) color = "orange";
+    ecart_el.css("color", color);
+    ecart_pct_el.css("color", color);
 }
 
 function save_all(page, date) {
@@ -314,7 +375,14 @@ function save_all(page, date) {
         }
     });
 
-    if (!entries.length) {
+    var bilan = {
+        lait_vendu: parseFloat(container.find('.st-bilan-input[data-field="lait_vendu"]').val()) || 0,
+        consommation_interne: parseFloat(container.find('.st-bilan-input[data-field="consommation_interne"]').val()) || 0,
+        lait_veau: parseFloat(container.find('.st-bilan-input[data-field="lait_veau"]').val()) || 0,
+    };
+    var has_bilan = bilan.lait_vendu > 0 || bilan.consommation_interne > 0 || bilan.lait_veau > 0;
+
+    if (!entries.length && !has_bilan) {
         frappe.show_alert({ message: "Aucune saisie a enregistrer", indicator: "orange" });
         return;
     }
@@ -323,7 +391,8 @@ function save_all(page, date) {
         method: "hmd_agro.hmd_agro.page.saisie_traite.saisie_traite.save_traites",
         args: {
             date: date,
-            entries: JSON.stringify(entries)
+            entries: JSON.stringify(entries),
+            bilan: JSON.stringify(bilan)
         },
         freeze: true,
         freeze_message: "Enregistrement en cours...",

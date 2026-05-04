@@ -5,6 +5,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate, today
 
+from hmd_agro.hmd_agro.utils.config import get_config
+
 
 class Velage(Document):
     def validate(self):
@@ -344,9 +346,10 @@ class Velage(Document):
         if self.insemination:
             ia = frappe.db.get_value("Insemination", self.insemination, "date_ia")
             if ia:
+                tarissement_window = get_config("tarissement_window_jours", default=60)
                 animal.id_ia_fecondante = self.insemination
                 animal.date_velage_prevue = frappe.utils.add_days(ia, 280)
-                animal.date_tarissement = frappe.utils.add_days(animal.date_velage_prevue, -60)
+                animal.date_tarissement = frappe.utils.add_days(animal.date_velage_prevue, -tarissement_window)
                 animal.etat_gestation = "GESTANTE"
         else:
             # No linked IA — just set back to GESTANTE
