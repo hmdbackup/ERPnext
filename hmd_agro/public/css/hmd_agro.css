@@ -9,3 +9,11 @@
     background: linear-gradient(rgba(127, 127, 127, 0.15), rgba(127, 127, 127, 0.15)),
                 var(--card-bg) !important;
 }
+
+/* Darker vertical separators between columns. Frappe's default border color
+   is too light to read against the zebra rows above; this gives a stronger
+   visual division so columns are easier to scan in dense KPI/per-lot tables.
+   Theme-neutral grey (rgba) so it adapts to light and dark themes. */
+.report-wrapper .dt-cell {
+    border-right: 1px solid rgba(127, 127, 127, 0.4) !important;
+}

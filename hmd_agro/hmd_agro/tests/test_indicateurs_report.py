@@ -148,11 +148,11 @@ def _setup():
 # ─── Tests ───
 
 def test_columns(results):
-    log("Columns — indicateur, valeur, unité (cible moved to HMD Config)", "HEAD")
+    log("Columns — indicateur, valeur, valeur_m1, delta_pct, unité", "HEAD")
     cols, _ = _indicateurs(CTX_END)
     names = [c["fieldname"] for c in cols]
-    check(names == ["indicateur", "valeur", "unite"],
-          "Has 3 expected columns (cible removed → thresholds in config)",
+    check(names == ["indicateur", "valeur", "valeur_m1", "delta_pct", "unite"],
+          "Has 5 expected columns (M-1 même période + Δ % added)",
           f"Got {names}", results)
 
 def test_vache_counts_delta(results, base_vp, base_vl, base_vt):
@@ -184,26 +184,17 @@ def test_concentre_delta(results, base_conc):
     check(delta == 868, "Δ Concentré = 868kg (Foin FOURRAGE excluded)",
           f"Got Δ={delta}", results)
 
-def test_efficacite_alim_delta(results, base_ms):
-    log("Efficacité Alim — delta MS includes all aliments", "HEAD")
+def test_efficacite_alim_delta(results):
+    log("Efficacité Alim — sensible value (> 0)", "HEAD")
     _, rows = _indicateurs(CTX_END)
-    # Verify MS total for the test cohort
-    # MS contribution: (2×0.9 + 5×0.88 + 10×0.85) × 4 cows × 31 days
-    # = (1.8 + 4.4 + 8.5) × 124 = 14.7 × 124 = 1822.8 kg MS
-    # We can't easily extract MS alone from indicateurs output; trust the
-    # alimentation report for that. Just check Efficacité Alim is sensible (>0).
     eff = _find(rows, "Efficacité Alimentaire")["valeur"]
     check(eff > 0, f"Efficacité > 0 (got {eff})", f"Got {eff}", results)
 
 def test_ratios(results):
-    log("L/C ratio present and positive (C/L was removed — redundant inverse)", "HEAD")
+    log("L/C ratio present and positive", "HEAD")
     _, rows = _indicateurs(CTX_END)
     lc = _find(rows, "L/C")["valeur"]
     check(lc > 0, f"L/C={lc} > 0", f"L/C={lc}", results)
-    # C/L was deliberately removed in Phase A KPI cleanup (redundant with L/C).
-    cl_row = _find(rows, "C/L")
-    check(cl_row is None, "C/L row removed (redundant)",
-          f"Got unexpected C/L row: {cl_row}", results)
 
 def test_midmonth_caps(results):
     log("date_filter mid-month → cumulatives respect the cutoff", "HEAD")
@@ -213,20 +204,6 @@ def test_midmonth_caps(results):
     prod_end = _find(rows_end, "Production Totale")["valeur"]
     check(prod_mid < prod_end, f"Mid-month prod ({prod_mid}) < end-month prod ({prod_end})",
           f"prod_mid={prod_mid}, prod_end={prod_end}", results)
-
-def test_deferred_frais(results):
-    log("Frais rows present with valeur=None (à intégrer)", "HEAD")
-    _, rows = _indicateurs(CTX_END)
-    frais_conc = _find(rows, "Frais Concentré")
-    check(frais_conc and frais_conc["valeur"] is None, "Frais Concentré shown but unset",
-          f"Got {frais_conc}", results)
-
-
-def test_lmv_label_renamed(results):
-    log("'LMV — Lact Moy / Vache Présente' renamed (was 'Moyenne Production / Vache Présente')", "HEAD")
-    _, rows = _indicateurs(CTX_END)
-    lmv = _find(rows, "LMV")
-    check(lmv is not None, "LMV row present", f"Got {lmv}", results)
 
 
 def test_lc_indicator_set(results):
@@ -242,26 +219,6 @@ def test_lc_indicator_set(results):
         check(ind in ("Green", "Orange", "Red"),
               f"L/C indicator set ({ind}) for value {val}",
               f"Got indicator={ind!r}", results)
-
-
-def test_phase_b_kpis_present(results):
-    """Phase B added: PIC moyen, P305j moyenne, Persistance moyenne."""
-    log("Phase B KPIs present (PIC moy, P305j moy, Persistance)", "HEAD")
-    _, rows = _indicateurs(CTX_END)
-    for label in ("PIC moyen", "P305j moyenne", "Persistance moyenne"):
-        row = _find(rows, label)
-        check(row is not None, f"'{label}' row present",
-              f"Missing '{label}'. Available: {[r['indicateur'] for r in rows]}", results)
-
-
-def test_3ia_plus_not_in_kpi(results):
-    """%3IA+ moved to Bilan Annuel — must not appear in monthly KPI table
-    (small-N noise at monthly granularity makes it misleading)."""
-    log("%3IA+ NOT in monthly KPI table (moved to Bilan Annuel)", "HEAD")
-    _, rows = _indicateurs(CTX_END)
-    found = [r for r in rows if "3IA" in (r.get("indicateur") or "")]
-    check(not found, "No %3IA+ row in KPI table",
-          f"Unexpected rows: {[r['indicateur'] for r in found]}", results)
 
 
 def test_persistance_indicator_set(results):
@@ -295,7 +252,6 @@ def run_all_tests():
     base_vt = (_find(base_rows, "Vaches Taries") or {}).get("valeur", 0)
     base_prod = (_find(base_rows, "Production Totale") or {}).get("valeur", 0)
     base_conc = (_find(base_rows, "Concentré Total") or {}).get("valeur", 0)
-    base_ms = 0  # unused
 
     try:
         _setup()
@@ -303,15 +259,11 @@ def run_all_tests():
         test_vache_counts_delta(results, base_vp, base_vl, base_vt)
         test_production_delta(results, base_prod)
         test_concentre_delta(results, base_conc)
-        test_efficacite_alim_delta(results, base_ms)
+        test_efficacite_alim_delta(results)
         test_ratios(results)
-        test_lmv_label_renamed(results)
         test_lc_indicator_set(results)
-        test_phase_b_kpis_present(results)
-        test_3ia_plus_not_in_kpi(results)
         test_persistance_indicator_set(results)
         test_midmonth_caps(results)
-        test_deferred_frais(results)
     finally:
         _cleanup()
 

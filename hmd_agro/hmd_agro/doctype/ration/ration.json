@@ -13,7 +13,9 @@
   "section_composition",
   "composition",
   "section_cout",
-  "cout_estime"
+  "cout_estime",
+  "section_lots_utilisateurs",
+  "lots_utilisateurs_html"
  ],
  "fields": [
   {
@@ -68,6 +70,18 @@
    "label": "Cout Estime (par animal/jour)",
    "options": "TND",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_lots_utilisateurs",
+   "fieldtype": "Section Break",
+   "label": "Lots utilisant cette ration",
+   "collapsible": 1,
+   "description": "Lots actuellement affectés à cette ration. Pour réaffecter, utilisez l'action 'Affecter aux lots' dans la liste des rations."
+  },
+  {
+   "fieldname": "lots_utilisateurs_html",
+   "fieldtype": "HTML",
+   "label": "Lots utilisateurs"
   }
  ],
  "index_web_pages_for_search": 1,

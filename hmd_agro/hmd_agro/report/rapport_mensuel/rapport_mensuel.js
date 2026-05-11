@@ -79,11 +79,19 @@ frappe.query_reports["Rapport Mensuel"] = {
         },
         {
             fieldname: "granularite",
-            label: __("Granularité (Alimentation)"),
+            label: __("Granularité"),
             fieldtype: "Select",
             options: "Quinzaine\nQuotidien\nHebdomadaire",
             default: "Quinzaine",
-            depends_on: "eval:doc.section == 'Alimentation' || doc.section == 'Tout'"
+            depends_on: "eval:['Alimentation','Production','Tout'].includes(doc.section)"
+        },
+        {
+            fieldname: "periode",
+            label: __("Période"),
+            fieldtype: "Select",
+            options: "Jour\nHebdomadaire",
+            default: "Jour",
+            depends_on: "eval:['Production par Lot','Tout'].includes(doc.section)"
         },
         {
             fieldname: "effectif_mode",
@@ -112,6 +120,31 @@ frappe.query_reports["Rapport Mensuel"] = {
             if (c) {
                 const w = data.indicator === "Red" ? "font-weight:bold;" : "font-weight:600;";
                 html = `<span style="color:${c};${w}">${html}</span>`;
+            }
+        }
+        // Indicateurs Δ % — color by `direction`: "up" means higher-better,
+        // "down" means lower-better. Improving trend → green, deteriorating → red.
+        // No color when direction is None (absolutes / range KPIs where sign
+        // alone isn't meaningful) or delta is null/zero.
+        if (column.fieldname === "delta_pct" && data && data.direction && data.delta_pct) {
+            const improving = (data.direction === "up" && data.delta_pct > 0) ||
+                              (data.direction === "down" && data.delta_pct < 0);
+            const c = improving ? "green" : "red";
+            html = `<span style="color:${c};font-weight:600;">${html}</span>`;
+        }
+        // Period-row tinting (Production Q1/Q2/Sn, Lot weekly Sem. préc./act.)
+        // — applied to every cell when the row carries a `tint` flag set by
+        // the Python builder. Same color palette as the Alimentation column
+        // tints below. Skip the leading label cell so the row label stays
+        // unstyled (avoids a colored "Q1" vs colored values mismatch).
+        if (data && data.tint && column.fieldname !== "jour") {
+            const tints = {
+                orange: "rgba(220, 150, 50, 0.22)",
+                green: "rgba(60, 160, 90, 0.20)",
+            };
+            const bg = tints[data.tint];
+            if (bg) {
+                html = `<span style="display:block; margin:-6px -10px; padding:6px 10px; background:${bg};">${html}</span>`;
             }
         }
         // Alimentation column tinting — applied only to rows from _alimentation

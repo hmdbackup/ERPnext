@@ -22,6 +22,8 @@
   "seuil_production_3j",
   "section_alimentation",
     "id_ration_actuelle",
+    "date_affectation_actuelle",
+    "column_break_alim",
     "adapte_hautes_performances"
  ],
  "fields": [
@@ -121,6 +123,17 @@
    "in_list_view": 1,
    "label": "Ration Actuelle",
    "options": "Ration"
+    },
+    {
+     "fieldname": "date_affectation_actuelle",
+     "fieldtype": "Date",
+     "label": "Date d'affectation",
+     "read_only": 1,
+     "description": "Date de début de la ration actuelle sur ce lot. Synchronisée depuis l'historique d'affectation (Lot Ration History)."
+    },
+    {
+     "fieldname": "column_break_alim",
+     "fieldtype": "Column Break"
     },
     {
      "default": "0",

@@ -1,9 +1,10 @@
 import frappe
-from frappe.utils import getdate, today, add_days
+from frappe.utils import getdate, today, add_days, add_months
 from calendar import monthrange
 
 from hmd_agro.hmd_agro.utils.live_state import (
-    CATEGORIES, effectif_on_date, empty_row, set_total,
+    CATEGORIES, effectif_on_date, lactantes_per_lot_on_date,
+    empty_row, set_total,
     count_velages, count_naissances, count_avortements_mort_nes,
     count_achats, count_exits, count_changements_cat,
 )
@@ -43,6 +44,9 @@ def execute(filters=None):
     # aggregates events from date_debut through date_filter (or end of month).
     # Toggled by the "État du Mois" button on the report page.
     effectif_mode = filters.get("effectif_mode") or "Jour"
+    # Période: Jour (default — D vs D-1) or Hebdomadaire (sem prév vs sem act
+    # rolling 7-day windows ending at date_filter). Production par Lot only.
+    periode = filters.get("periode") or "Jour"
 
     nb_jours = monthrange(date.year, date.month)[1]
     date_debut = getdate(f"{date.year}-{date.month:02d}-01")
@@ -50,7 +54,8 @@ def execute(filters=None):
 
     ctx = {"date_filter": date, "date_debut": date_debut,
            "date_fin": date_fin, "nb_jours": nb_jours,
-           "granularite": granularite, "effectif_mode": effectif_mode}
+           "granularite": granularite, "effectif_mode": effectif_mode,
+           "periode": periode}
 
     builders = {
         "Effectif": _effectif,
@@ -221,7 +226,7 @@ def _future_stub(extras=()):
 
 def _production(ctx):
     columns = [
-        {"fieldname": "jour", "label": "Jour", "fieldtype": "Int", "width": 60},
+        {"fieldname": "jour", "label": "Jour", "fieldtype": "Data", "width": 60},
         {"fieldname": "nb_lactantes", "label": "VL", "fieldtype": "Int", "width": 60},
         {"fieldname": "production", "label": "Production (L)", "fieldtype": "Float", "precision": 1, "width": 110},
         {"fieldname": "moyenne", "label": "Moy/VL (L)", "fieldtype": "Float", "precision": 1, "width": 100},
@@ -269,8 +274,29 @@ def _production(ctx):
             "commercialise": None,
         })
 
+    # Quinzaine/Hebdomadaire summary rows (kg + L/VL/jour per period). Spans
+    # past today are skipped so an in-progress month only shows filled periods.
+    granularite = ctx.get("granularite") or "Quotidien"
+    today_dt = getdate(today())
+    for label, start, end in _build_period_spans(granularite, ctx["date_debut"], ctx["nb_jours"]):
+        span_end = min(end, today_dt)
+        if span_end < start:
+            continue
+        sp_prod = 0.0
+        sp_cow_days = 0
+        d = start
+        while d <= span_end:
+            sp_prod += float(daily_map.get(d.day, {}).get("prod") or 0)
+            sp_cow_days += vl_by_day.get(d.day, 0)
+            d = add_days(d, 1)
+        data.append({
+            "jour": label, "is_total": 1, "tint": "orange",
+            "production": round(sp_prod, 1),
+            "moyenne": round(sp_prod / sp_cow_days, 1) if sp_cow_days else 0,
+        })
+
     data.append({
-        "jour": None, "is_total": 1, "nb_lactantes": nb_vl_end,
+        "jour": "Total", "is_total": 1, "nb_lactantes": nb_vl_end,
         "production": round(total_prod, 1),
         "moyenne": round(total_prod / total_cow_days, 1) if total_cow_days else 0,
     })
@@ -291,15 +317,21 @@ def _production(ctx):
 # ─── Production par Lot ──────────────────────────────────────────────────────
 
 def _production_lot(ctx):
-    """4-row table: Effectif (D), D-1 production, D production, Moyenne (D).
-    Effectif and production are historical (frozen via Traite.id_lot at save time).
-    Sources: Rapport Journalier Importe (imported) or Traite.id_lot (live)."""
+    """Lot table. Two modes via ctx["periode"]:
+      Jour          — 4 rows: Effectif (D), D-1, D, Moyenne. Imported priority.
+      Hebdomadaire  — 5 rows: Effectif (D), Sem. préc., Sem. act., Δ %, Moy/lact/jour.
+                       Live data only (mixing imported/live across rolling
+                       windows would be incoherent — daily mode keeps imports).
+    Effectif and production are historical (frozen via Traite.id_lot at save time)."""
     if _is_future(ctx):
         return _future_stub()
 
     date = ctx["date_filter"]
-    prev_date = add_days(date, -1)
 
+    if ctx.get("periode") == "Hebdomadaire":
+        return _render_live_lot_weekly(date)
+
+    prev_date = add_days(date, -1)
     imp = read_imported(date)
     if imp and imp.get("production_lot"):
         return _render_imported_lot(imp, date, prev_date)
@@ -337,7 +369,7 @@ def _render_imported_lot(imp, date, prev_date):
 def _render_live_lot(date, prev_date):
     prod_curr = _traite_by_lot(date)
     prod_prev = _traite_by_lot(prev_date)
-    eff_curr = _lactantes_by_lot_on_date(date)
+    eff_curr = lactantes_per_lot_on_date(date)
 
     # Always include all currently-lactating lots, plus any historical lots
     # that appear in D-1/D data (handles renamed lots gracefully). prod_curr
@@ -360,6 +392,87 @@ def _render_live_lot(date, prev_date):
     return columns, rows
 
 
+def _render_live_lot_weekly(date):
+    """Hebdomadaire mode for Production par Lot. Two window strategies:
+
+    Past month — uses _build_period_spans S1..S4 chunks, same as Alimentation
+    and Production Hebdomadaire summary rows. 'Sem. act.' is the chunk
+    containing the cursor; 'Sem. préc.' is the chunk just before in time
+    (same month if cursor is in S2/S3/S4, previous month's S4 if cursor is in
+    S1). One Hebdomadaire definition app-wide.
+
+    Current month — rolling 7-day ending at cursor. We have no future data to
+    fill a chunk fairly; the partial start-of-week is the honest reflection of
+    what's been recorded so far. Once the month finishes, the past-month
+    branch takes over and chunks become full and stable."""
+    today_dt = getdate(today())
+    is_past_month = (date.year, date.month) != (today_dt.year, today_dt.month)
+
+    if is_past_month:
+        cur_first = getdate(f"{date.year}-{date.month:02d}-01")
+        cur_days = monthrange(date.year, date.month)[1]
+        cur_spans = _build_period_spans("Hebdomadaire", cur_first, cur_days)
+        idx = next(i for i, (_, s, e) in enumerate(cur_spans) if s <= date <= e)
+        _, sem_act_start, sem_act_end = cur_spans[idx]
+        if idx > 0:
+            _, sem_prev_start, sem_prev_end = cur_spans[idx - 1]
+        else:
+            # Cursor in S1 → Sem. préc. = S4 of previous calendar month
+            last_of_prev = add_days(cur_first, -1)
+            prev_first = getdate(f"{last_of_prev.year}-{last_of_prev.month:02d}-01")
+            prev_days = monthrange(last_of_prev.year, last_of_prev.month)[1]
+            _, sem_prev_start, sem_prev_end = _build_period_spans(
+                "Hebdomadaire", prev_first, prev_days)[-1]
+    else:
+        sem_act_start = add_days(date, -6)
+        sem_act_end = date
+        sem_prev_start = add_days(date, -13)
+        sem_prev_end = add_days(date, -7)
+
+    prod_act = _traite_by_lot(sem_act_start, sem_act_end)
+    prod_prev = _traite_by_lot(sem_prev_start, sem_prev_end)
+    eff_curr = lactantes_per_lot_on_date(date)
+
+    lots = sorted(set(_active_lactating_lots()) | set(prod_act) | set(prod_prev),
+                  key=lot_sort_key)
+    columns = _lot_columns(lots)
+
+    # Daily averages divided by actual span length — handles variable-length
+    # S4 (7-10 days) and Sem. préc. cross-month case fairly. Both sides reduce
+    # to "kg/jour", so the comparison stays meaningful regardless of length.
+    sem_act_days = (sem_act_end - sem_act_start).days + 1
+    sem_prev_days = (sem_prev_end - sem_prev_start).days + 1
+    avg_act = {l: round(prod_act.get(l, 0) / sem_act_days, 1) for l in lots}
+    avg_prev = {l: round(prod_prev.get(l, 0) / sem_prev_days, 1) for l in lots}
+
+    def _delta_pct(curr, prev):
+        return round((curr - prev) / prev * 100, 1) if prev else None
+
+    total_eff = sum(eff_curr.values())
+    total_act = round(sum(avg_act.values()), 1)
+    total_prev = round(sum(avg_prev.values()), 1)
+
+    rows = [
+        {"jour": "Effectif", "is_total": True, "total": total_eff,
+         **{l: eff_curr.get(l, 0) or None for l in lots}},
+        {"jour": f"Sem. préc. ({sem_prev_start.strftime('%d/%m')}-{sem_prev_end.strftime('%d/%m')})",
+         "tint": "orange",
+         **{l: avg_prev[l] or None for l in lots},
+         "total": total_prev or None},
+        {"jour": f"Sem. act. ({sem_act_start.strftime('%d/%m')}-{sem_act_end.strftime('%d/%m')})",
+         "tint": "orange",
+         **{l: avg_act[l] or None for l in lots},
+         "total": total_act or None},
+        {"jour": "Δ % (sem. act. vs préc.)", "is_total": True,
+         **{l: _delta_pct(avg_act[l], avg_prev[l]) for l in lots},
+         "total": _delta_pct(total_act, total_prev)},
+        {"jour": "Moyenne / lact / jour", "is_total": True,
+         **{l: round(avg_act[l] / eff_curr[l], 1) if eff_curr.get(l) else None for l in lots},
+         "total": round(total_act / total_eff, 1) if total_eff else None},
+    ]
+    return columns, rows
+
+
 def _active_lactating_lots():
     """Distinct lots with at least one currently-lactating cow."""
     return [r[0] for r in frappe.db.sql("""
@@ -369,27 +482,19 @@ def _active_lactating_lots():
     """)]
 
 
-def _traite_by_lot(date):
-    """Production per lot using Traite.id_lot (stamped at save time)."""
+def _traite_by_lot(start, end=None):
+    """Production per lot using Traite.id_lot (stamped at save time). Pass a
+    single date for one day, or (start, end) for an inclusive range total."""
+    if end is None:
+        end = start
     rows = frappe.db.sql("""
         SELECT id_lot AS lot, SUM(quantite_litres) AS litres
         FROM `tabTraite`
-        WHERE date_traite = %s AND id_lot IS NOT NULL AND id_lot != ''
+        WHERE date_traite BETWEEN %s AND %s
+          AND id_lot IS NOT NULL AND id_lot != ''
         GROUP BY id_lot
-    """, str(date), as_dict=True)
+    """, (str(start), str(end)), as_dict=True)
     return {r.lot: round(float(r.litres or 0), 1) for r in rows}
-
-
-def _lactantes_by_lot_on_date(date):
-    """Historical lactantes count per lot for `date`, derived from Traite.id_lot
-    (frozen at save time). Counts distinct animals milked per lot that day."""
-    rows = frappe.db.sql("""
-        SELECT id_lot AS lot, COUNT(DISTINCT animal) AS n
-        FROM `tabTraite`
-        WHERE date_traite = %s AND id_lot IS NOT NULL AND id_lot != ''
-        GROUP BY id_lot
-    """, str(date), as_dict=True)
-    return {r.lot: int(r.n) for r in rows}
 
 
 def _lot_columns(lots):
@@ -459,22 +564,26 @@ def _aliment_data_per_lot(date_debut, date_filter, period_spans=None,
     days_in_period = (date_filter - date_debut).days + 1
     days = [add_days(date_debut, i) for i in range(days_in_period)]
 
-    # Pre-fetch all ration history for active lots (1 query).
+    # Pre-fetch all ration history (episodes) for active lots in 1 query.
+    # Each row is one episode: ration used during [date_debut, date_fin).
+    # date_fin IS NULL means the episode is currently open.
     history = {}
     for r in frappe.db.sql("""
-        SELECT lot, to_ration, DATE(creation) AS dt
+        SELECT lot, ration, date_debut, date_fin
         FROM `tabLot Ration History`
-        WHERE lot IN %s
-        ORDER BY creation ASC
+        WHERE lot IN %s AND ration IS NOT NULL
+        ORDER BY date_debut ASC
     """, (lot_names_all,), as_dict=True):
-        history.setdefault(r.lot, []).append((r.dt, r.to_ration))
+        history.setdefault(r.lot, []).append((r.date_debut, r.date_fin, r.ration))
 
     current_ration = {l.name: frappe.db.get_value("Lot", l.name, "id_ration_actuelle")
                       for l in active_lots}
 
     def ration_for(lot, day):
-        for dt, rat in reversed(history.get(lot, [])):
-            if dt <= day:
+        # Episodes are non-overlapping; reverse-walk and return the first one
+        # whose [date_debut, date_fin) interval covers `day`.
+        for date_debut, date_fin, rat in reversed(history.get(lot, [])):
+            if date_debut <= day and (date_fin is None or day < date_fin):
                 return rat
         return current_ration.get(lot)
 
@@ -877,17 +986,26 @@ def _kpi_ind_range(value, green_low, green_high, low_alarm=None, high_alarm=None
 def _indicateurs(ctx):
     """KPI dashboard. Vache counts = snapshot @ date_filter (reconstructed from
     events). Production / Concentré / MS = cumulative date_debut → date_filter
-    (per-day historical reconstruction; no phantom future days). Each row
-    optionally carries an `indicator` (Green/Orange/Red) consumed by the JS
-    formatter for color coding. Thresholds come from HMD Configuration →
-    Seuils PFE so the supervisor can adjust them without code changes. Cost
-    metrics deferred until Stock/Finance integration."""
+    (per-day historical reconstruction; no phantom future days).
+
+    M-1 même période column shows the same KPIs computed for the previous
+    calendar month, shifted by one month via add_months (handles short-month
+    edges: e.g. cursor 31/03 → M-1 ends 28/02). Per-lactation aggregates (PIC
+    moy, P305j moy, Persistance moy) skip M-1 — they're slow-moving herd
+    snapshots dominated by the same cohort, so a monthly Δ adds noise not
+    signal. Δ % is colored by `direction` ("up" higher-better, "down" lower-
+    better, None for absolutes / range KPIs where direction isn't sign-based).
+
+    Thresholds (PFE color on `valeur`) come from HMD Configuration → Seuils
+    PFE. Cost metrics deferred until Stock/Finance integration."""
     if _is_future(ctx):
         return _future_stub()
 
     columns = [
         {"fieldname": "indicateur", "label": "Indicateur", "fieldtype": "Data", "width": 320},
-        {"fieldname": "valeur", "label": "Valeur", "fieldtype": "Float", "precision": 2, "width": 130},
+        {"fieldname": "valeur", "label": "Valeur", "fieldtype": "Float", "precision": 2, "width": 110},
+        {"fieldname": "valeur_m1", "label": "M-1 même période", "fieldtype": "Float", "precision": 2, "width": 130},
+        {"fieldname": "delta_pct", "label": "Δ %", "fieldtype": "Float", "precision": 1, "width": 80},
         {"fieldname": "unite", "label": "Unité", "fieldtype": "Data", "width": 150},
     ]
 
@@ -907,24 +1025,37 @@ def _indicateurs(ctx):
     date_debut = ctx["date_debut"]
     date_filter = min(ctx["date_filter"], ctx["date_fin"])
 
-    # End-of-period reconstructed snapshot
-    eff = effectif_on_date(date_filter)
-    vl = eff["Vaches - Lact."]
-    vt = eff["Vaches - Tarie"]
-    vp = vl + vt
+    def _period_kpis(start, end):
+        """Compute the period KPIs (effectif, prod, concentré, MS, ratios) for
+        any [start, end] range. Reuses effectif_on_date and _aliment_data_per_lot
+        — the canonical historical-reconstruction primitives."""
+        eff = effectif_on_date(end)
+        vl_ = eff["Vaches - Lact."]
+        vt_ = eff["Vaches - Tarie"]
+        vp_ = vl_ + vt_
+        prod_ = float(frappe.db.sql("""
+            SELECT SUM(quantite_litres) FROM `tabTraite`
+            WHERE date_traite BETWEEN %s AND %s
+        """, (start, end))[0][0] or 0)
+        d_ = _aliment_data_per_lot(start, end)
+        concentre_ = d_["cumulative_concentre_cheptel"] if d_ else 0
+        ms_total_ = d_["cumulative_ms_cheptel"] if d_ else 0
+        return {
+            "vp": vp_, "vl": vl_, "vt": vt_,
+            "prod": prod_, "concentre": concentre_, "ms_total": ms_total_,
+            "lmv": round(prod_ / vp_, 1) if vp_ else 0,
+            "pl_vl": round(prod_ / vl_, 1) if vl_ else 0,
+            "lc": round(prod_ / concentre_, 2) if concentre_ else 0,
+            "eff_alim": round(prod_ / ms_total_, 2) if ms_total_ else 0,
+            "conc_per_vp": round(concentre_ / vp_, 2) if vp_ else 0,
+            "conc_per_vl": round(concentre_ / vl_, 2) if vl_ else 0,
+        }
 
-    # Cumulative production (cap at date_filter, no phantom future days)
-    prod = float(frappe.db.sql("""
-        SELECT SUM(quantite_litres) FROM `tabTraite`
-        WHERE date_traite BETWEEN %s AND %s
-    """, (date_debut, date_filter))[0][0] or 0)
+    cur = _period_kpis(date_debut, date_filter)
+    m1 = _period_kpis(add_months(date_debut, -1), add_months(date_filter, -1))
 
-    # Reuse per-day historical reconstruction for concentré + MS
-    d = _aliment_data_per_lot(date_debut, date_filter)
-    concentre = d["cumulative_concentre_cheptel"] if d else 0
-    ms_total = d["cumulative_ms_cheptel"] if d else 0
-
-    # ── Phase B additions: production-level herd KPIs from EN_COURS lactations
+    # ── Per-lactation herd KPIs — NO M-1 (slow-moving cohort snapshots, monthly
+    # Δ adds noise not signal; users compare to PFE benchmark instead).
     prod_stats = frappe.db.sql("""
         SELECT AVG(NULLIF(lactation_305j, 0)) AS p305_moy,
                AVG(NULLIF(pic_production, 0)) AS pic_moy
@@ -934,7 +1065,6 @@ def _indicateurs(ctx):
     p305_moy = round(float(prod_stats.p305_moy), 1) if prod_stats.p305_moy else None
     pic_moy = round(float(prod_stats.pic_moy), 1) if prod_stats.pic_moy else None
 
-    # Persistance moy (herd avg of per-cow ratios) — same SQL as Reproduction
     pers_rows = frappe.db.sql("""
         SELECT t.animal,
             SUM(CASE WHEN DATEDIFF(t.date_traite, l.date_debut) BETWEEN 0 AND 99
@@ -953,26 +1083,36 @@ def _indicateurs(ctx):
 
     period = f"{date_debut.strftime('%d/%m')} → {date_filter.strftime('%d/%m')}"
 
-    def row(indicateur, valeur, unite, indicator=""):
-        return {"indicateur": indicateur, "valeur": valeur, "unite": unite,
-                "indicator": indicator}
-
-    # Pre-compute values that need both display + indicator
-    lc_val = round(prod / concentre, 2) if concentre else 0
-    eff_val = round(prod / ms_total, 2) if ms_total else 0
-    lmv_val = round(prod / vp, 1) if vp else 0
-    pl_vl_val = round(prod / vl, 1) if vl else 0
+    def row(indicateur, valeur, unite, indicator="", valeur_m1=None, direction=None):
+        """Build a KPI row. valeur_m1=None → M-1 column blank for this row.
+        direction: 'up' (higher better), 'down' (lower better), None (no Δ
+        coloring — used for absolutes/range KPIs where sign isn't meaningful).
+        Δ % computed only when both values are non-zero (avoids /0)."""
+        delta_pct = None
+        if valeur_m1 is not None and valeur_m1 not in (0, 0.0) and valeur is not None:
+            delta_pct = round((valeur - valeur_m1) / valeur_m1 * 100, 1)
+        return {
+            "indicateur": indicateur, "valeur": valeur, "unite": unite,
+            "valeur_m1": valeur_m1, "delta_pct": delta_pct,
+            "indicator": indicator, "direction": direction,
+        }
 
     data = [
-        # ── Effectif
-        row(f"Vaches Présentes (au {date_filter.strftime('%d/%m')})", vp, "têtes"),
-        row(f"Vaches Lactantes (au {date_filter.strftime('%d/%m')})", vl, "têtes"),
-        row(f"Vaches Taries (au {date_filter.strftime('%d/%m')})", vt, "têtes"),
+        # ── Effectif (snapshot — direction None, no inherent up/down better)
+        row(f"Vaches Présentes (au {date_filter.strftime('%d/%m')})", cur["vp"], "têtes",
+            valeur_m1=m1["vp"]),
+        row(f"Vaches Lactantes (au {date_filter.strftime('%d/%m')})", cur["vl"], "têtes",
+            valeur_m1=m1["vl"]),
+        row(f"Vaches Taries (au {date_filter.strftime('%d/%m')})", cur["vt"], "têtes",
+            valeur_m1=m1["vt"]),
 
         # ── Production
-        row(f"Production Totale ({period})", round(prod, 1), "L"),
-        row("LMV — Lact Moy / Vache Présente", lmv_val, "L/tête"),
-        row("PL/VL — Production / Vache Lactante", pl_vl_val, "L/tête"),
+        row(f"Production Totale ({period})", round(cur["prod"], 1), "L",
+            valeur_m1=round(m1["prod"], 1)),
+        row("LMV — Lact Moy / Vache Présente", cur["lmv"], "L/tête",
+            valeur_m1=m1["lmv"], direction="up"),
+        row("PL/VL — Production / Vache Lactante", cur["pl_vl"], "L/tête",
+            valeur_m1=m1["pl_vl"], direction="up"),
         row("PIC moyen (vaches actives)", pic_moy or 0, "L/jour"),
         row("P305j moyenne (vaches actives)", p305_moy or 0, "L"),
         row("Persistance moyenne", persistance_moy or 0, "ratio",
@@ -981,18 +1121,21 @@ def _indicateurs(ctx):
                                      high_alarm=cfg_pers_alm_hi)),
 
         # ── Alimentation
-        row(f"Concentré Total ({period})", round(concentre, 1), "kg"),
-        row("Concentré / Vache Présente",
-            round(concentre / vp, 2) if vp else 0, "kg/tête"),
-        row("Concentré / Vache Lactante",
-            round(concentre / vl, 2) if vl else 0, "kg/tête"),
-        row("L/C — Lait / Concentré", lc_val, "L/kg",
-            indicator=_kpi_ind_range(lc_val, cfg_lc_min, cfg_lc_max,
+        row(f"Concentré Total ({period})", round(cur["concentre"], 1), "kg",
+            valeur_m1=round(m1["concentre"], 1)),
+        row("Concentré / Vache Présente", cur["conc_per_vp"], "kg/tête",
+            valeur_m1=m1["conc_per_vp"], direction="down"),
+        row("Concentré / Vache Lactante", cur["conc_per_vl"], "kg/tête",
+            valeur_m1=m1["conc_per_vl"], direction="down"),
+        row("L/C — Lait / Concentré", cur["lc"], "L/kg",
+            indicator=_kpi_ind_range(cur["lc"], cfg_lc_min, cfg_lc_max,
                                      low_alarm=cfg_lc_alm_lo,
-                                     high_alarm=cfg_lc_alm_hi)),
-        row("Efficacité Alimentaire (sur MS)", eff_val, "L/kg MS",
-            indicator=_kpi_ind(eff_val, green_min=cfg_eff_min,
-                              orange_min=cfg_eff_omn)),
+                                     high_alarm=cfg_lc_alm_hi),
+            valeur_m1=m1["lc"]),
+        row("Efficacité Alimentaire (sur MS)", cur["eff_alim"], "L/kg MS",
+            indicator=_kpi_ind(cur["eff_alim"], green_min=cfg_eff_min,
+                              orange_min=cfg_eff_omn),
+            valeur_m1=m1["eff_alim"], direction="up"),
 
         # ── Économique (deferred — Stock/Finance integration)
         row("Frais Concentré", None, "DT (à intégrer)"),

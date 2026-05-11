@@ -127,16 +127,16 @@ def _allotement_history(animal, from_lot, to_lot, creation_dt):
     _created.append(("Allotement History", doc.name))
     return doc.name
 
-def _ration_history(lot, from_ration, to_ration, creation_dt):
-    """Insert a Lot Ration History row with a backdated `creation` so the
-    ration helper sees a mid-month switch."""
+def _ration_history(lot, ration, date_debut, date_fin=None):
+    """Insert a Lot Ration History episode row directly (bypasses the auto-tracker
+    on Lot.on_update). Used to seed mid-month ration switches in test fixtures.
+    date_fin=None ⇒ open episode (currently used by the lot)."""
     doc = frappe.get_doc({
         "doctype": "Lot Ration History",
-        "lot": lot, "from_ration": from_ration, "to_ration": to_ration,
+        "lot": lot, "ration": ration,
+        "date_debut": date_debut, "date_fin": date_fin,
         "changed_by": "Administrator", "source": "MANUAL",
     }).insert(ignore_permissions=True)
-    frappe.db.sql("UPDATE `tabLot Ration History` SET creation=%s, modified=%s WHERE name=%s",
-                  (creation_dt, creation_dt, doc.name))
     _created.append(("Lot Ration History", doc.name))
     return doc.name
 
@@ -306,7 +306,13 @@ def _setup_ration_switch():
     _setup_baseline()
     soja = f"{PREFIX}SOJA"; mais = f"{PREFIX}MAIS"
     ration_new = _ration("RATION-NEW", [(soja, 4), (mais, 8)])
-    _ration_history(f"{PREFIX}HP", f"{PREFIX}RATION-HP", ration_new, "2024-03-15 12:00:00")
+    # Episode model: HP lot used RATION-HP from Mar 1 to Mar 15 (closed),
+    # then RATION-NEW from Mar 15 onward (open). Half-open intervals: day 15
+    # belongs to the new episode.
+    _ration_history(f"{PREFIX}HP", f"{PREFIX}RATION-HP",
+                    date_debut="2024-03-01", date_fin="2024-03-15")
+    _ration_history(f"{PREFIX}HP", ration_new,
+                    date_debut="2024-03-15", date_fin=None)
     frappe.db.commit()
 
 def test_ration_switch_midmonth(results):
