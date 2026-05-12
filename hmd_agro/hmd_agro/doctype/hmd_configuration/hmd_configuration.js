@@ -12,6 +12,7 @@ const SECTION_DEFAULTS = {
         alerte_lead_jours: 2,
     },
     lactation: {
+        periode_velage_jours: 280,
         tarissement_window_jours: 60,
         traite_max_litres: 60,
         production_initiale_jours: 60,
@@ -53,6 +54,9 @@ frappe.ui.form.on("HMD Configuration", {
             });
             frappe.realtime.on("tarissement_recalc_done", (data) => {
                 _recalc_alert(data, "dates de tarissement");
+            });
+            frappe.realtime.on("velage_prevue_recalc_done", (data) => {
+                _recalc_alert(data, "dates de vêlage prévues");
             });
             frm.__recalc_listeners = true;
         }

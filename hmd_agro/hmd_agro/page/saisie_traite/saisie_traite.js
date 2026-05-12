@@ -130,7 +130,7 @@ function render_table(page, data, date, bilan) {
         return;
     }
 
-    bilan = bilan || { lait_vendu: 0, consommation_interne: 0, lait_veau: 0 };
+    bilan = bilan || { lait_vendu: 0, consommation_interne: 0, lait_veau: 0, taux_tb_moyen: 0, taux_tp_moyen: 0 };
 
     // Summary bar
     var summary = $('<div class="st-summary" style="margin-bottom:15px; display:flex; gap:20px; flex-wrap:wrap;"></div>');
@@ -192,7 +192,7 @@ function render_table(page, data, date, bilan) {
 
     container.append(table);
 
-    // ─── Bilan Lait du jour: Vendu / CI / LV ──────────────────────────
+    // ─── Bilan Lait du jour: Vendu / CI / LV + TB/TP moyens ───────────
     var bilan_block = $(
         '<div class="st-bilan" style="margin-top:25px; padding:15px; background:var(--bg-color); border:1px solid var(--border-color); border-radius:6px;">' +
         '<div style="font-weight:600; margin-bottom:10px;">Bilan Lait du Jour</div>' +
@@ -206,10 +206,20 @@ function render_table(page, data, date, bilan) {
         '<div><label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Lait Veau — LV (L)</label>' +
         '<input type="number" min="0" step="0.1" class="form-control input-xs st-bilan-input" data-field="lait_veau" ' +
         'value="' + (bilan.lait_veau || 0) + '" style="width:120px; text-align:center;"></div>' +
-        '<div style="font-size:12px; color:var(--text-muted);">' +
-        'Écart (production – vendu – CI – LV): <strong class="st-bilan-ecart">0</strong> L ' +
-        '<span style="margin-left:6px;">(<strong class="st-bilan-ecart-pct">0</strong>)</span>' +
+        '<div style="font-size:12px; color:var(--text-muted); line-height:1.6;">' +
+        'Production saisie du jour: <strong class="st-bilan-brut">0.0</strong> L<br>' +
+        'Écart (saisie – vendu – CI – LV): <strong class="st-bilan-ecart">0.0</strong> L ' +
+        '<span style="margin-left:4px;">(<strong class="st-bilan-ecart-pct">0.0 %</strong>)</span>' +
         '</div>' +
+        '</div>' +
+        '<div style="display:flex; gap:25px; flex-wrap:wrap; align-items:flex-end; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border-color);">' +
+        '<div><label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">TB Moyen (%)</label>' +
+        '<input type="number" min="0" step="0.01" class="form-control input-xs st-bilan-input" data-field="taux_tb_moyen" ' +
+        'value="' + (bilan.taux_tb_moyen || 0) + '" style="width:120px; text-align:center;"></div>' +
+        '<div><label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">TP Moyen (%)</label>' +
+        '<input type="number" min="0" step="0.01" class="form-control input-xs st-bilan-input" data-field="taux_tp_moyen" ' +
+        'value="' + (bilan.taux_tp_moyen || 0) + '" style="width:120px; text-align:center;"></div>' +
+        '<div style="font-size:12px; color:var(--text-muted);">Valeurs propagées à toutes les traites du jour.</div>' +
         '</div></div>'
     );
     container.append(bilan_block);
@@ -265,18 +275,23 @@ function make_input(d, session) {
     var existing = d[session_key];
     var val = existing ? existing.qty : "";
     var traite_name = existing ? existing.name : "";
+    var brut = existing && existing.brut != null ? existing.brut : "";
+    var original_qty = existing ? existing.qty : "";
 
     return '<input type="number" min="0" max="60" step="0.1" ' +
         'class="form-control input-xs st-qty-input" ' +
         'data-animal="' + d.animal + '" ' +
         'data-session="' + session + '" ' +
         'data-traite-name="' + traite_name + '" ' +
+        'data-brut="' + brut + '" ' +
+        'data-original-qty="' + original_qty + '" ' +
         'value="' + val + '" ' +
         'style="width:90px; display:inline-block; text-align:center;">';
 }
 
 function update_totals(container) {
     var total_matin = 0, total_soir = 0, grand_total = 0;
+    var brut_total = 0;
 
     container.find("tbody tr").each(function() {
         var row = $(this);
@@ -288,6 +303,19 @@ function update_totals(container) {
             row_total += val;
             if (session === "MATIN") total_matin += val;
             else if (session === "SOIR") total_soir += val;
+
+            // Effective brut: if input matches the originally loaded qty,
+            // the cell is "unchanged" → use the stored brut. Otherwise the
+            // input value IS the new measurement.
+            var orig_qty = parseFloat($(this).data("original-qty"));
+            var stored_brut = parseFloat($(this).data("brut"));
+            var eff_brut;
+            if (!isNaN(orig_qty) && !isNaN(stored_brut) && Math.abs(val - orig_qty) < 0.05) {
+                eff_brut = stored_brut;
+            } else {
+                eff_brut = val;
+            }
+            brut_total += eff_brut;
         });
 
         row.find(".st-row-total").text(row_total ? row_total.toFixed(1) : "0");
@@ -330,19 +358,24 @@ function update_totals(container) {
         '</span>'
     );
 
-    // Bilan écart = production - vendu - CI - LV
+    // Écart compares the *brut* production (raw measurements) with consumed,
+    // independent of any reconciliation already applied. brut_total combines
+    // stored brut for unchanged inputs with the entered value for edited/new
+    // inputs — see the loop above.
     var vendu = parseFloat(container.find('.st-bilan-input[data-field="lait_vendu"]').val()) || 0;
     var ci    = parseFloat(container.find('.st-bilan-input[data-field="consommation_interne"]').val()) || 0;
     var lv    = parseFloat(container.find('.st-bilan-input[data-field="lait_veau"]').val()) || 0;
-    var ecart = grand_total - vendu - ci - lv;
-    var ecart_pct = grand_total > 0 ? (ecart / grand_total) * 100 : 0;
+    var ecart = brut_total - vendu - ci - lv;
+    var ecart_pct = brut_total > 0 ? (ecart / brut_total) * 100 : 0;
+
+    container.find(".st-bilan-brut").text(brut_total.toFixed(1));
+
     var ecart_el = container.find(".st-bilan-ecart");
     var ecart_pct_el = container.find(".st-bilan-ecart-pct");
     ecart_el.text(ecart.toFixed(1));
     ecart_pct_el.text(ecart_pct.toFixed(1) + " %");
+
     // Color thresholds come from HMD Configuration → Bilan Lait section.
-    // Defaults match the form defaults (1 L for the negative threshold,
-    // 5% for the loss threshold).
     var cfg = frappe.boot.hmd_config || {};
     var seuil_neg = parseFloat(cfg.ecart_lait_seuil_negatif_l);
     if (isNaN(seuil_neg)) seuil_neg = 1;
@@ -351,7 +384,7 @@ function update_totals(container) {
 
     var color = "var(--text-color)";
     if (ecart < -seuil_neg) color = "red";
-    else if (grand_total > 0 && ecart > grand_total * (seuil_perte_pct / 100)) color = "orange";
+    else if (brut_total > 0 && ecart > brut_total * (seuil_perte_pct / 100)) color = "orange";
     ecart_el.css("color", color);
     ecart_pct_el.css("color", color);
 }
@@ -379,8 +412,11 @@ function save_all(page, date) {
         lait_vendu: parseFloat(container.find('.st-bilan-input[data-field="lait_vendu"]').val()) || 0,
         consommation_interne: parseFloat(container.find('.st-bilan-input[data-field="consommation_interne"]').val()) || 0,
         lait_veau: parseFloat(container.find('.st-bilan-input[data-field="lait_veau"]').val()) || 0,
+        taux_tb_moyen: parseFloat(container.find('.st-bilan-input[data-field="taux_tb_moyen"]').val()) || 0,
+        taux_tp_moyen: parseFloat(container.find('.st-bilan-input[data-field="taux_tp_moyen"]').val()) || 0,
     };
-    var has_bilan = bilan.lait_vendu > 0 || bilan.consommation_interne > 0 || bilan.lait_veau > 0;
+    var has_bilan = bilan.lait_vendu > 0 || bilan.consommation_interne > 0 || bilan.lait_veau > 0
+        || bilan.taux_tb_moyen > 0 || bilan.taux_tp_moyen > 0;
 
     if (!entries.length && !has_bilan) {
         frappe.show_alert({ message: "Aucune saisie a enregistrer", indicator: "orange" });

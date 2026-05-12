@@ -217,6 +217,16 @@ function get_next_lot_type(lot_type, numero_lactation) {
     return map[lot_type] || null;
 }
 
+// Animal context shown in every Suggestion dialog row. Same 3 fields always,
+// em-dash placeholder for non-applicable values (e.g. Gest — for VIDE cows,
+// DIM — for TARIE cows with no active lactation).
+function format_metrics(row) {
+    const dim = row.dim != null ? `DIM ${row.dim}j` : "DIM —";
+    const gest = row.jours_gestation != null ? `Gest ${row.jours_gestation}j` : "Gest —";
+    const moy = Number(row.moyenne_3j || 0).toFixed(1);
+    return `${dim} · ${gest} · Moy ${moy} L`;
+}
+
 function compute_consideration(row, lots_by_name, current_seuils) {
     // Consideration = production OVERRIDES the DIM rule.
     // No flag when DIM and production agree.
@@ -230,7 +240,10 @@ function compute_consideration(row, lots_by_name, current_seuils) {
 
     // ── DIM-mismatch row: green if production wants to KEEP (override DIM move) ──
     if (dim_says_move) {
-        if (!seuil_cur) return { color: "", text: "", sortKey: 2 };
+        // Note: do NOT early-return on missing seuil_cur. The red "Peut rester"
+        // check needs seuil_cur (gated below), but the "Pas prête" ratchet only
+        // needs seuil_tgt — and FP lots typically have no seuil, so an early
+        // return here would kill the ratchet exactly where it's needed most.
         const tgt_lot = lots_by_name[row.suggestion_lot];
         const seuil_tgt = tgt_lot
             ? (current_seuils[row.suggestion_lot] || tgt_lot.seuil_production_3j || 0)
@@ -239,11 +252,11 @@ function compute_consideration(row, lots_by_name, current_seuils) {
         const tgt_rank = tgt_lot ? (LOT_RANK[tgt_lot.lot_type] || 0) : 0;
 
         // Demote (DIM advances cow to next stage): override = production justifies CURRENT
-        if (tgt_rank > cur_rank && prod >= seuil_cur) {
+        if (tgt_rank > cur_rank && seuil_cur && prod >= seuil_cur) {
             return {
                 color: "green",
                 subType: "demote_keep",
-                text: `Peut rester (${prod.toFixed(1)} ≥ ${seuil_cur.toFixed(1)} en ${cur_lot.lot_type})`,
+                text: `Peut rester (prod ≥ ${seuil_cur.toFixed(1)} en ${cur_lot.lot_type})`,
                 sortKey: 1,
             };
         }
@@ -274,7 +287,7 @@ function compute_consideration(row, lots_by_name, current_seuils) {
                 return {
                     color: "yellow",
                     subType: "yellow_demote",
-                    text: `Démettre tôt (${prod.toFixed(1)} < ${seuil_cur.toFixed(1)}, fin de stage)`,
+                    text: `Démettre tôt (prod < ${seuil_cur.toFixed(1)}, fin de stage)`,
                     sortKey: 0,
                 };
             }
@@ -307,15 +320,19 @@ function build_suggestion_items(allRows, lots, lots_by_name, current_seuils) {
         }
     });
     items.sort((a, b) => a.cons.sortKey - b.cons.sortKey);
-    return items.map((it) => ({
-        animal: it.row.animal,
-        nom_metier: it.row.nom_metier,
-        lot_actuel: it.row.lot_actuel,
-        lot_destination: it.lot_destination,
-        consideration: it.cons.text,
-        _source: it.source,
-        _cons_color: it.cons.color,
-    }));
+    return items.map((it) => {
+        const metrics = format_metrics(it.row);
+        const consideration = it.cons.text ? `${metrics} · ${it.cons.text}` : metrics;
+        return {
+            animal: it.row.animal,
+            nom_metier: it.row.nom_metier,
+            lot_actuel: it.row.lot_actuel,
+            lot_destination: it.lot_destination,
+            consideration: consideration,
+            _source: it.source,
+            _cons_color: it.cons.color,
+        };
+    });
 }
 
 
@@ -382,11 +399,16 @@ function _build_moves_dialog(report, { title, help, table_data, lots, with_consi
         title,
         size: "extra-large",
         fields: [
+            // Seuil row is always rendered now (in both dialogs) so the seuils
+            // can be edited + persisted from either workflow.
             { fieldname: "capacity_preview", fieldtype: "HTML",
-              options: render_capacity_table(lots, new Map(), {}, with_consideration) },
+              options: render_capacity_table(lots, new Map(), {}, true) },
             { fieldname: "btn_refresh", fieldtype: "Button",
               label: __("Actualiser capacité"),
-              click() { actualiser(d); } },
+              click() { actualiser_capacite(d); } },
+            { fieldname: "btn_apply_seuils", fieldtype: "Button",
+              label: __("Appliquer seuils"),
+              click() { appliquer_seuils(d); } },
             { fieldname: "help", fieldtype: "HTML",
               options: `<div style="margin:8px 0;color:var(--text-muted);font-size:13px;">${help}</div>` },
             { fieldname: "lot_destination_bulk", fieldtype: "Link",
@@ -469,46 +491,52 @@ function read_seuil_inputs(d) {
 
 
 // Re-render capacity preview without saving. Used after pending-deltas change.
+// Seuil row is always shown — both dialogs let the operator edit + persist seuils.
 function refresh_capacity(d) {
     const lots = (d.user_data || {}).lots || [];
-    const with_consideration = (d.user_data || {}).with_consideration || false;
     const current_seuils = read_seuil_inputs(d);
     const deltas = compute_pending_deltas(d);
-    const html = render_capacity_table(lots, deltas, current_seuils, with_consideration);
+    const html = render_capacity_table(lots, deltas, current_seuils, true);
     d.fields_dict.capacity_preview.$wrapper.html(html);
 }
 
 
-// Save edited seuils to DB → re-fetch lots → re-render capacity preview
-// AND fully rebuild the Suggestions grid (rows can appear/disappear when
-// seuils change, so just updating the consideration text isn't enough).
-function actualiser(d) {
-    const with_consideration = (d.user_data || {}).with_consideration || false;
+// Refresh capacity preview from currently-checked rows + their pending
+// destinations. Local-only — no server round trip. Used by the "Actualiser
+// capacité" button: a quick "what does my pending move set look like?" check.
+function actualiser_capacite(d) {
+    refresh_capacity(d);
+}
+
+// Persist edited seuils → re-fetch lots → refresh capacity preview. In the
+// Suggestions dialog, also rebuild the suggestion grid (rows can appear/
+// disappear when seuils change). Mouvements Manuels keeps its all-cows table
+// untouched — rebuilding it via build_suggestion_items would filter it down
+// to suggestion-only rows and break the manual workflow.
+function appliquer_seuils(d) {
     const seuils = read_seuil_inputs(d);
-
-    const after_save = () => {
-        frappe.call({
-            method: "hmd_agro.hmd_agro.report.allotement_animaux.allotement_animaux.get_lots_capacity",
-            callback(r) {
-                const lots = r.message || [];
-                d.user_data.lots = lots;
-                refresh_capacity(d);
-                if (with_consideration) {
-                    rebuild_suggestion_grid(d, lots);
-                }
-            }
-        });
-    };
-
-    if (with_consideration && Object.keys(seuils).length) {
-        frappe.call({
-            method: "hmd_agro.hmd_agro.report.allotement_animaux.allotement_animaux.update_lot_seuils",
-            args: { seuils: JSON.stringify(seuils) },
-            callback() { after_save(); }
-        });
-    } else {
-        after_save();
+    if (!Object.keys(seuils).length) {
+        // No seuils to persist — just refresh capacity locally and exit.
+        refresh_capacity(d);
+        return;
     }
+    frappe.call({
+        method: "hmd_agro.hmd_agro.report.allotement_animaux.allotement_animaux.update_lot_seuils",
+        args: { seuils: JSON.stringify(seuils) },
+        callback() {
+            frappe.call({
+                method: "hmd_agro.hmd_agro.report.allotement_animaux.allotement_animaux.get_lots_capacity",
+                callback(r) {
+                    const lots = r.message || [];
+                    d.user_data.lots = lots;
+                    refresh_capacity(d);
+                    if ((d.user_data || {}).with_consideration) {
+                        rebuild_suggestion_grid(d, lots);
+                    }
+                }
+            });
+        }
+    });
 }
 
 

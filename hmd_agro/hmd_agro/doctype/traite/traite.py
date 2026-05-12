@@ -18,7 +18,15 @@ class Traite(Document):
         self.validate_quantite()
         self.validate_unique_session()
         self.validate_taux()
+        self.fallback_quantite_brut()
         self.warn_attente_lait()
+
+    def fallback_quantite_brut(self):
+        """If brut wasn't set explicitly (form creation, bulk import, legacy),
+        seed it with the current quantite_litres so the reconciliation math
+        always has a brut to read."""
+        if not self.quantite_litres_brut and self.quantite_litres is not None:
+            self.quantite_litres_brut = self.quantite_litres
 
     def auto_fill_id_lot(self):
         """Stamp the cow's current lot at save time so historical reports keep the right attribution."""
@@ -112,6 +120,30 @@ class Traite(Document):
                     indicator="red",
                     alert=True
                 )
+
+    def before_insert(self):
+        self._inherit_taux_from_bilan()
+
+    def _inherit_taux_from_bilan(self):
+        """Pull daily herd TB/TP from Bilan Lait Journalier if not already set.
+        Handles the case where the Bilan was saved before this Traite was inserted
+        (e.g. backfill of a date that already has a Bilan)."""
+        if not self.date_traite:
+            return
+        if self.taux_tb and self.taux_tp:
+            return
+        bilan = frappe.db.get_value(
+            "Bilan Lait Journalier",
+            {"date": self.date_traite},
+            ["taux_tb_moyen", "taux_tp_moyen"],
+            as_dict=True,
+        )
+        if not bilan:
+            return
+        if not self.taux_tb and bilan.taux_tb_moyen:
+            self.taux_tb = bilan.taux_tb_moyen
+        if not self.taux_tp and bilan.taux_tp_moyen:
+            self.taux_tp = bilan.taux_tp_moyen
 
     def after_insert(self):
         self.update_lactation_production()

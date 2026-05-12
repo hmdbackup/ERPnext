@@ -167,7 +167,8 @@ class Insemination(Document):
         if self.resultat == "REUSSIE" and self.animal:
             animal = frappe.get_doc("Animal", self.animal)
             animal.id_ia_fecondante = self.name
-            animal.date_velage_prevue = frappe.utils.add_days(self.date_ia, 280)
+            periode_velage = get_config("periode_velage_jours", default=280)
+            animal.date_velage_prevue = frappe.utils.add_days(self.date_ia, periode_velage)
             tarissement_window = get_config("tarissement_window_jours", default=60)
             animal.date_tarissement = frappe.utils.add_days(animal.date_velage_prevue, -tarissement_window)
             animal.etat_gestation = "GESTANTE"

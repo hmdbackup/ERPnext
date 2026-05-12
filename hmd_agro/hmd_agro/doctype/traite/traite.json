@@ -15,6 +15,7 @@
   "session",
   "section_production",
   "quantite_litres",
+  "quantite_litres_brut",
   "column_break_prod",
   "taux_tb",
   "taux_tp",
@@ -85,6 +86,14 @@
    "reqd": 1,
    "in_list_view": 1,
    "precision": "1"
+  },
+  {
+   "fieldname": "quantite_litres_brut",
+   "fieldtype": "Float",
+   "label": "Quantité Brute (litres)",
+   "precision": "1",
+   "read_only": 1,
+   "description": "Quantité saisie (mesure brute avant réconciliation avec le Bilan Lait du jour). Géré automatiquement."
   },
   {
    "fieldname": "column_break_prod",

@@ -8,3 +8,5 @@ hmd_agro.patches.v1_0.init_hmd_configuration
 hmd_agro.patches.v1_1.init_pfe_seuils
 hmd_agro.patches.v1_2.init_bilan_lait
 hmd_agro.patches.v1_3.migrate_ration_history_to_episodes
+hmd_agro.patches.v1_4.backfill_quantite_brut
+hmd_agro.patches.v1_5.init_periode_velage

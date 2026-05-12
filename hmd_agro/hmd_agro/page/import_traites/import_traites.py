@@ -219,9 +219,12 @@ def _process_import(file_url, keep_original, user, resolutions=None):
                             summary["skipped_duplicate"] += 1
                             continue
                         else:
-                            # Override: update existing traite
+                            # Override: update existing traite. Reset brut to the
+                            # imported value too — the import is the new measurement.
                             frappe.db.set_value("Traite", existing,
-                                {"quantite_litres": qty, "lactation": lactation.name})
+                                {"quantite_litres": qty,
+                                 "quantite_litres_brut": qty,
+                                 "lactation": lactation.name})
                             summary["overwritten"] += 1
                             affected_lactations.add(lactation.name)
                             continue
@@ -232,6 +235,7 @@ def _process_import(file_url, keep_original, user, resolutions=None):
                         "date_traite": str(date),
                         "session": session,
                         "quantite_litres": qty,
+                        "quantite_litres_brut": qty,
                         "lactation": lactation.name,
                         "id_lot": animal_lot
                     })

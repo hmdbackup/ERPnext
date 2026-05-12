@@ -22,6 +22,7 @@
   "alerte_lead_jours",
   "section_lactation",
   "lactation_intro",
+  "periode_velage_jours",
   "tarissement_window_jours",
   "traite_max_litres",
   "production_initiale_jours",
@@ -168,6 +169,14 @@
    "fieldname": "lactation_intro",
    "fieldtype": "HTML",
    "options": "<div style='padding:6px 10px;color:var(--text-muted);font-size:12px;'>Limites de saisie et fenêtres de calcul de la lactation.</div>"
+  },
+  {
+   "fieldname": "periode_velage_jours",
+   "fieldtype": "Int",
+   "label": "Période de gestation (jours)",
+   "default": "280",
+   "non_negative": 1,
+   "description": "Durée de gestation moyenne. Holstein ≈ 280 j. Modifier propage à toutes les vaches gestantes (date de vêlage prévue + date de tarissement)."
   },
   {
    "fieldname": "tarissement_window_jours",

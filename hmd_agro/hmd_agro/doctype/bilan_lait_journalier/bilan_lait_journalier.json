@@ -11,6 +11,14 @@
   "consommation_interne",
   "column_break_lv",
   "lait_veau",
+  "section_composition",
+  "taux_tb_moyen",
+  "column_break_taux",
+  "taux_tp_moyen",
+  "section_reconciliation",
+  "production_totale_saisie",
+  "column_break_recon",
+  "ecart_litres",
   "section_notes",
   "notes"
  ],
@@ -62,6 +70,57 @@
    "label": "Lait Veau (LV)",
    "non_negative": 1,
    "precision": "1"
+  },
+  {
+   "fieldname": "section_composition",
+   "fieldtype": "Section Break",
+   "label": "Composition (%)"
+  },
+  {
+   "description": "Taux butyreux moyen du lait pour la journée (propagé à toutes les traites du jour).",
+   "fieldname": "taux_tb_moyen",
+   "fieldtype": "Float",
+   "label": "TB Moyen (%)",
+   "non_negative": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "column_break_taux",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Taux protéique moyen du lait pour la journée (propagé à toutes les traites du jour).",
+   "fieldname": "taux_tp_moyen",
+   "fieldtype": "Float",
+   "label": "TP Moyen (%)",
+   "non_negative": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "section_reconciliation",
+   "fieldtype": "Section Break",
+   "label": "Réconciliation",
+   "collapsible": 1
+  },
+  {
+   "description": "Somme des quantités brutes saisies pour la journée (avant réconciliation avec Vendu+CI+LV). Géré automatiquement.",
+   "fieldname": "production_totale_saisie",
+   "fieldtype": "Float",
+   "label": "Production Saisie Totale (L)",
+   "precision": "1",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_recon",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Écart entre production saisie et (Vendu + CI + LV). Géré automatiquement.",
+   "fieldname": "ecart_litres",
+   "fieldtype": "Float",
+   "label": "Écart (L)",
+   "precision": "1",
+   "read_only": 1
   },
   {
    "fieldname": "section_notes",
