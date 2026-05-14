@@ -219,9 +219,9 @@ function get_next_lot_type(lot_type, numero_lactation) {
 
 // Animal context shown in every Suggestion dialog row. Same 3 fields always,
 // em-dash placeholder for non-applicable values (e.g. Gest — for VIDE cows,
-// DIM — for TARIE cows with no active lactation).
+// JL — for TARIE cows with no active lactation).
 function format_metrics(row) {
-    const dim = row.dim != null ? `DIM ${row.dim}j` : "DIM —";
+    const dim = row.dim != null ? `JL ${row.dim}j` : "JL —";
     const gest = row.jours_gestation != null ? `Gest ${row.jours_gestation}j` : "Gest —";
     const moy = Number(row.moyenne_3j || 0).toFixed(1);
     return `${dim} · ${gest} · Moy ${moy} L`;
@@ -232,6 +232,17 @@ function compute_consideration(row, lots_by_name, current_seuils) {
     // No flag when DIM and production agree.
     const cur_lot = lots_by_name[row.lot_actuel];
     if (!cur_lot) return { color: "", text: "", sortKey: 2 };
+
+    // Repro-driven destinations (TARIE/TARISSEMENT) are biological lifecycle
+    // transitions, not production decisions. Mark them green and skip the
+    // production-override branches entirely. Handled BEFORE the prod check
+    // so it covers TARIE cows whose moyenne_3j is 0.
+    const tgt_lot_early = row.suggestion_lot ? lots_by_name[row.suggestion_lot] : null;
+    if (tgt_lot_early && row.suggestion_lot !== row.lot_actuel
+        && (tgt_lot_early.lot_type === "TARIE" || tgt_lot_early.lot_type === "TARISSEMENT")) {
+        return { color: "tarissement", text: "", sortKey: 1 };
+    }
+
     const seuil_cur = current_seuils[row.lot_actuel] || cur_lot.seuil_production_3j || 0;
     const prod = Number(row.moyenne_3j || 0);
     if (!prod) return { color: "", text: "", sortKey: 2 };
@@ -351,7 +362,7 @@ function open_suggestion_dialog(report, allRows) {
 
             _build_moves_dialog(report, {
                 title: __("Suggestions de mouvements"),
-                help: __("<b>Jaune</b> : suggestion de la production. <b>Rouge</b> : suggestion du DIM, mais la production veut garder l'animal. <b>Blanc</b> : suggestion du DIM seul."),
+                help: __("<b>Jaune</b> : suggestion de la production. <b>Rouge</b> : suggestion du JL, mais la production veut garder l'animal. <b>Blanc</b> : suggestion du JL seul."),
                 table_data,
                 lots,
                 with_consideration: true,
@@ -578,6 +589,7 @@ function apply_row_colors(d) {
             const source = gr.doc._source || "";
             const cons_bg = cons_color === "green" ? "#f8d7da"
                           : cons_color === "yellow" ? "#fff3cd"
+                          : cons_color === "tarissement" ? "#a5f0b7"
                           : "";
             const dest_bg = source === "prod" ? "#fff3cd" : "";
             const consCell = gr.wrapper.find('[data-fieldname="consideration"]');

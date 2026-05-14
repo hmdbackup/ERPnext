@@ -113,11 +113,11 @@ class HMDConfiguration(Document):
                 continue
             if cur_val <= prev_val:
                 frappe.throw(
-                    f"Les bornes DIM doivent être strictement croissantes : "
+                    f"Les bornes JL doivent être strictement croissantes : "
                     f"{cur_name} ({cur_val}) doit être > {prev_name} ({prev_val})."
                 )
         if self.dim_primipare_cap and self.dim_mp_max and self.dim_primipare_cap > self.dim_mp_max:
             frappe.throw(
                 f"Le cap primipare ({self.dim_primipare_cap}) ne peut pas dépasser "
-                f"le DIM max MP ({self.dim_mp_max})."
+                f"le JL max MP ({self.dim_mp_max})."
             )

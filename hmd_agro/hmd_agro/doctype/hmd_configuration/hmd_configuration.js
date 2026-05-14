@@ -1,4 +1,6 @@
-// HMD Configuration form: section-level "Reset" buttons + post-save reminder.
+// HMD Configuration form: tab-level "Reset" buttons + post-save reminder.
+// Each entry below maps to one tab in the form. Reset buttons appear in the
+// form header — visible regardless of which tab is currently active.
 const SECTION_DEFAULTS = {
     alertes: {
         chaleur_genisse_age_mois: 14,
@@ -29,16 +31,44 @@ const SECTION_DEFAULTS = {
         last_third_pct: 66.7,
         production_drop_alert_pct: -15,
     },
+    bilan_lait: {
+        ecart_lait_seuil_negatif_l: 1,
+        ecart_lait_seuil_perte_pct: 5,
+    },
+    seuils_pfe: {
+        pfe_lc_optimal_min: 2.0,
+        pfe_lc_optimal_max: 2.4,
+        pfe_lc_alarm_min: 1.5,
+        pfe_lc_alarm_max: 3.0,
+        pfe_efficacite_min: 1.4,
+        pfe_efficacite_orange_min: 1.0,
+        pfe_persistance_min: 0.85,
+        pfe_persistance_max: 0.95,
+        pfe_persistance_alarm_min: 0.7,
+        pfe_persistance_alarm_max: 1.10,
+        pfe_3ia_plus_max: 15,
+        pfe_3ia_plus_orange_max: 25,
+    },
 };
 
 const SECTION_LABELS = {
     alertes: __("Alertes"),
     lactation: __("Lactation"),
-    allotement: __("Allotement DIM"),
+    allotement: __("Allotement JL"),
+    bilan_lait: __("Bilan Lait"),
+    seuils_pfe: __("Seuils PFE"),
 };
 
 frappe.ui.form.on("HMD Configuration", {
     refresh(frm) {
+        // Add a marker class on the form's outermost wrapper. The matching
+        // CSS rule lives in public/css/hmd_agro.css — bolds .control-label
+        // descendants. frm.$wrapper is the form's outer page wrapper and is
+        // a guaranteed ancestor of all field labels.
+        if (frm.$wrapper && !frm.$wrapper.hasClass("hmd-config-bold-labels")) {
+            frm.$wrapper.addClass("hmd-config-bold-labels");
+        }
+
         Object.keys(SECTION_DEFAULTS).forEach((section) => {
             frm.add_custom_button(
                 __("Réinitialiser {0}", [SECTION_LABELS[section]]),

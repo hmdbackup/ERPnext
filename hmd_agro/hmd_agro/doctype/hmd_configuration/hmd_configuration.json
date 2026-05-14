@@ -5,10 +5,7 @@
  "engine": "InnoDB",
  "issingle": 1,
  "field_order": [
-  "section_intro",
-  "intro_html",
   "section_alertes",
-  "alertes_intro",
   "chaleur_genisse_age_mois",
   "chaleur_post_velage_jours",
   "verification_j21_jours",
@@ -21,7 +18,6 @@
   "chaleur_cycle_jours",
   "alerte_lead_jours",
   "section_lactation",
-  "lactation_intro",
   "periode_velage_jours",
   "tarissement_window_jours",
   "traite_max_litres",
@@ -41,11 +37,9 @@
   "last_third_pct",
   "production_drop_alert_pct",
   "section_bilan_lait",
-  "bilan_lait_intro",
   "ecart_lait_seuil_negatif_l",
   "ecart_lait_seuil_perte_pct",
   "section_seuils_pfe",
-  "seuils_pfe_intro",
   "pfe_lc_optimal_min",
   "pfe_lc_optimal_max",
   "pfe_lc_alarm_min",
@@ -63,26 +57,9 @@
  ],
  "fields": [
   {
-   "fieldname": "section_intro",
-   "fieldtype": "Section Break",
-   "label": "Configuration HMD Agro"
-  },
-  {
-   "fieldname": "intro_html",
-   "fieldtype": "HTML",
-   "options": "<div style='padding:10px 12px;background:var(--bg-light-gray);border-radius:6px;font-size:13px;line-height:1.5;color:var(--text-color);'><b>Page de configuration centrale.</b> Modifiez les valeurs par défaut utilisées par les alertes, la lactation et le moteur d'allotement. Toutes les modifications sont auditées (voir <i>Document History</i>). Après sauvegarde, rafraîchissez les pages ouvertes (<kbd>Ctrl+Shift+R</kbd>) pour appliquer les changements aux rapports.</div>"
-  },
-
-  {
    "fieldname": "section_alertes",
-   "fieldtype": "Section Break",
-   "label": "Alertes Reproduction",
-   "collapsible": 0
-  },
-  {
-   "fieldname": "alertes_intro",
-   "fieldtype": "HTML",
-   "options": "<div style='padding:6px 10px;color:var(--text-muted);font-size:12px;'>Délais et seuils utilisés par le générateur quotidien d'alertes.</div>"
+   "fieldtype": "Tab Break",
+   "label": "Alertes Reproduction"
   },
   {
    "fieldname": "chaleur_genisse_age_mois",
@@ -161,14 +138,8 @@
 
   {
    "fieldname": "section_lactation",
-   "fieldtype": "Section Break",
-   "label": "Lactation & Production",
-   "collapsible": 0
-  },
-  {
-   "fieldname": "lactation_intro",
-   "fieldtype": "HTML",
-   "options": "<div style='padding:6px 10px;color:var(--text-muted);font-size:12px;'>Limites de saisie et fenêtres de calcul de la lactation.</div>"
+   "fieldtype": "Tab Break",
+   "label": "Lactation & Production"
   },
   {
    "fieldname": "periode_velage_jours",
@@ -233,20 +204,18 @@
 
   {
    "fieldname": "section_allotement",
-   "fieldtype": "Section Break",
-   "label": "Allotement DIM (Avancé — modifier avec prudence)",
-   "collapsible": 1,
-   "collapsible_depends_on": "0"
+   "fieldtype": "Tab Break",
+   "label": "Allotement JL"
   },
   {
    "fieldname": "allotement_intro",
    "fieldtype": "HTML",
-   "options": "<div style='padding:6px 10px;color:var(--text-muted);font-size:12px;'>Bornes des stades de lactation utilisées par le moteur de suggestion d'allotement. <b>Doivent être strictement croissantes</b> (FV &lt; THP &lt; HP &lt; MP).</div>"
+   "options": "<div style='padding:8px 12px;background:#fff8e1;border-left:3px solid #f4a300;border-radius:4px;font-size:12px;line-height:1.5;'><b>⚠ Avancé — modifier avec prudence.</b> Bornes des stades de lactation utilisées par le moteur de suggestion d'allotement. <b>Doivent être strictement croissantes</b> (FV &lt; THP &lt; HP &lt; MP). Une modification incorrecte fausse l'allocation des vaches.</div>"
   },
   {
    "fieldname": "dim_fv_max_multi",
    "fieldtype": "Int",
-   "label": "DIM max FV — multipare (jours)",
+   "label": "JL max FV — multipare (jours)",
    "default": "30",
    "non_negative": 1,
    "description": "Limite supérieure du stade FV pour les multipares."
@@ -254,7 +223,7 @@
   {
    "fieldname": "dim_thp_max",
    "fieldtype": "Int",
-   "label": "DIM max THP (jours)",
+   "label": "JL max THP (jours)",
    "default": "120",
    "non_negative": 1,
    "description": "Limite supérieure du stade THP."
@@ -262,7 +231,7 @@
   {
    "fieldname": "dim_hp_max",
    "fieldtype": "Int",
-   "label": "DIM max HP (jours)",
+   "label": "JL max HP (jours)",
    "default": "240",
    "non_negative": 1,
    "description": "Limite supérieure du stade HP."
@@ -271,7 +240,7 @@
   {
    "fieldname": "dim_mp_max",
    "fieldtype": "Int",
-   "label": "DIM max MP (jours)",
+   "label": "JL max MP (jours)",
    "default": "305",
    "non_negative": 1,
    "description": "Limite supérieure du stade MP. Au-delà, les multipares sont en FP."
@@ -282,7 +251,7 @@
    "label": "Cap primipare (jours)",
    "default": "300",
    "non_negative": 1,
-   "description": "Les primipares restent en FV jusqu'à ce DIM, puis passent en FP."
+   "description": "Les primipares restent en FV jusqu'à ce JL, puis passent en FP."
   },
   {
    "fieldname": "last_third_pct",
@@ -303,13 +272,8 @@
   },
   {
    "fieldname": "section_bilan_lait",
-   "fieldtype": "Section Break",
-   "label": "Bilan Lait — Couleurs Écart"
-  },
-  {
-   "fieldname": "bilan_lait_intro",
-   "fieldtype": "HTML",
-   "options": "<p style=\"color:var(--text-muted);font-size:13px;\">Seuils visuels de l'écart (production – vendu – CI – LV) sur la page Saisie Traite.</p>"
+   "fieldtype": "Tab Break",
+   "label": "Bilan Lait"
   },
   {
    "fieldname": "ecart_lait_seuil_negatif_l",
@@ -331,13 +295,8 @@
   },
   {
    "fieldname": "section_seuils_pfe",
-   "fieldtype": "Section Break",
-   "label": "Seuils PFE — Tableau Indicateurs"
-  },
-  {
-   "fieldname": "seuils_pfe_intro",
-   "fieldtype": "HTML",
-   "options": "<p style=\"color:var(--text-muted);font-size:13px;\">Seuils utilisés pour le code couleur (vert/orange/rouge) des KPIs du tableau Indicateurs (Rapport Mensuel). Defaults = standards Vallet & Paccard 1984 cités dans le PFE. Modifiables si la ferme a ses propres objectifs.</p>"
+   "fieldtype": "Tab Break",
+   "label": "Seuils PFE"
   },
   {
    "fieldname": "pfe_lc_optimal_min",

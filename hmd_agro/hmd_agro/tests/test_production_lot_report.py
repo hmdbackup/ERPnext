@@ -9,7 +9,8 @@ from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _production
 
 PREFIX = "TEST-PLT-"
 ANNEE, MOIS = 2099, 3
-CTX = {"date_debut": getdate("2099-03-01"), "date_fin": getdate("2099-03-31"),
+CTX = {"date_filter": getdate("2099-03-15"),
+       "date_debut": getdate("2099-03-01"), "date_fin": getdate("2099-03-31"),
        "nb_jours": 31, "mois": MOIS, "annee": ANNEE, "jour": 0}
 
 

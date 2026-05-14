@@ -245,8 +245,8 @@ def _production(ctx):
         {"fieldname": "nb_lactantes", "label": "VL", "fieldtype": "Int", "width": 60},
         {"fieldname": "production", "label": "Production (L)", "fieldtype": "Float", "precision": 1, "width": 110},
         {"fieldname": "moyenne", "label": "Moy/VL (L)", "fieldtype": "Float", "precision": 1, "width": 100},
-        {"fieldname": "taux_tb", "label": "TB (%)", "fieldtype": "Float", "precision": 2, "width": 80},
-        {"fieldname": "taux_tp", "label": "TP (%)", "fieldtype": "Float", "precision": 2, "width": 80},
+        {"fieldname": "taux_tb", "label": "TB", "fieldtype": "Percent", "precision": 2, "width": 80},
+        {"fieldname": "taux_tp", "label": "TP", "fieldtype": "Percent", "precision": 2, "width": 80},
         {"fieldname": "commercialise", "label": "Commercialisé (L)", "fieldtype": "Float", "precision": 1, "width": 120},
     ]
 
@@ -364,15 +364,20 @@ def _render_imported_lot(imp, date, prev_date):
     total_eff = sum(lot_data.get(lot, {}).get("effectif", 0) for lot in lots)
     total_prod = sum(lot_data.get(lot, {}).get("production", 0) for lot in lots)
 
+    total_prev_prod = sum(prev_prod.get(lot, {}).get("production", 0) for lot in lots)
     rows = [
         {"jour": "Effectif", "is_total": True, "total": total_eff,
          **{lot: lot_data.get(lot, {}).get("effectif", 0) or None for lot in lots}},
         {"jour": prev_date.strftime("%d/%m"),
          **{lot: prev_prod.get(lot, {}).get("production", 0) or None for lot in lots},
-         "total": sum(prev_prod.get(lot, {}).get("production", 0) for lot in lots) or None},
+         "total": total_prev_prod or None},
         {"jour": date.strftime("%d/%m"),
          **{lot: lot_data.get(lot, {}).get("production", 0) or None for lot in lots},
          "total": total_prod or None},
+        {"jour": "Δ % (J vs J-1)", "is_total": True, "is_delta": True,
+         **{lot: _delta_pct(lot_data.get(lot, {}).get("production", 0),
+                            prev_prod.get(lot, {}).get("production", 0)) for lot in lots},
+         "total": _delta_pct(total_prod, total_prev_prod)},
         {"jour": "Moyenne / lot", "is_total": True,
          **{lot: _safe_div(lot_data.get(lot, {}).get("production", 0),
                            lot_data.get(lot, {}).get("effectif", 0)) for lot in lots},
@@ -395,11 +400,15 @@ def _render_live_lot(date, prev_date):
     total_eff = sum(eff_curr.values())
     total_prod = sum(prod_curr.values())
 
+    total_prev = sum(prod_prev.values())
     rows = [
         {"jour": "Effectif", "is_total": True, "total": total_eff,
          **{lot: eff_curr.get(lot, 0) or None for lot in lots}},
         _lot_day_row(prev_date.strftime("%d/%m"), lots, prod_prev),
         _lot_day_row(date.strftime("%d/%m"), lots, prod_curr),
+        {"jour": "Δ % (J vs J-1)", "is_total": True, "is_delta": True,
+         **{lot: _delta_pct(prod_curr.get(lot, 0), prod_prev.get(lot, 0)) for lot in lots},
+         "total": _delta_pct(total_prod, total_prev)},
         {"jour": "Moyenne / lot", "is_total": True,
          **{lot: _safe_div(prod_curr.get(lot, 0), eff_curr.get(lot, 0)) for lot in lots},
          "total": _safe_div(total_prod, total_eff)},
@@ -465,9 +474,6 @@ def _render_live_lot_weekly(date):
     avg_act_per_day = {l: prod_act.get(l, 0) / sem_act_days for l in lots}
     avg_prev_per_day = {l: prod_prev.get(l, 0) / sem_prev_days for l in lots}
 
-    def _delta_pct(curr, prev):
-        return round((curr - prev) / prev * 100, 1) if prev else None
-
     total_eff = sum(eff_curr.values())
     sum_total_act = round(sum(total_act.values()), 1)
     sum_total_prev = round(sum(total_prev.values()), 1)
@@ -485,7 +491,7 @@ def _render_live_lot_weekly(date):
          "tint": "orange",
          **{l: total_act[l] or None for l in lots},
          "total": sum_total_act or None},
-        {"jour": "Δ % (sem. act. vs préc., L/jour)", "is_total": True,
+        {"jour": "Δ % (sem. act. vs préc., L/jour)", "is_total": True, "is_delta": True,
          **{l: _delta_pct(avg_act_per_day[l], avg_prev_per_day[l]) for l in lots},
          "total": _delta_pct(sum_avg_act_per_day, sum_avg_prev_per_day)},
         {"jour": "Moyenne / lact / jour", "is_total": True,
@@ -536,6 +542,12 @@ def _lot_day_row(label, lots, prod_map):
 
 def _safe_div(num, den):
     return round(num / den, 1) if den else None
+
+
+def _delta_pct(curr, prev):
+    """Δ % between current and previous values, rounded to 1 decimal. None
+    when prev is 0 (or falsy) to avoid division-by-zero in the report cells."""
+    return round((curr - prev) / prev * 100, 1) if prev else None
 
 
 # ─── Alimentation ────────────────────────────────────────────────────────────
@@ -1027,7 +1039,7 @@ def _indicateurs(ctx):
         {"fieldname": "indicateur", "label": "Indicateur", "fieldtype": "Data", "width": 320},
         {"fieldname": "valeur", "label": "Valeur", "fieldtype": "Float", "precision": 2, "width": 110},
         {"fieldname": "valeur_m1", "label": "M-1 même période", "fieldtype": "Float", "precision": 2, "width": 130},
-        {"fieldname": "delta_pct", "label": "Δ %", "fieldtype": "Float", "precision": 1, "width": 80},
+        {"fieldname": "delta_pct", "label": "Δ", "fieldtype": "Percent", "precision": 1, "width": 80},
         {"fieldname": "unite", "label": "Unité", "fieldtype": "Data", "width": 150},
     ]
 

@@ -17,3 +17,15 @@
 .report-wrapper .dt-cell {
     border-right: 1px solid rgba(127, 127, 127, 0.4) !important;
 }
+
+/* HMD Configuration form — bold field labels so each setting's name stands
+   out clearly from its description text below it. Scoped via the
+   `hmd-config-bold-labels` class added on the form's outer wrapper in
+   hmd_configuration.js refresh(). !important is needed because Frappe's
+   own form.scss sets the regular weight at equal specificity via the
+   get_textstyle("sm", "regular") mixin. */
+.hmd-config-bold-labels .control-label {
+    font-weight: 600 !important;
+    color: var(--text-color) !important;
+    font-size: 14px !important;
+}

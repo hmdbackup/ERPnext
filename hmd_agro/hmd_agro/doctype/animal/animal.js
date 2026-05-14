@@ -221,7 +221,7 @@ function render_repro_dashboard(frm, data) {
             <div style="font-size:22px; font-weight:600;">N° ${lac.numero_lactation}</div>
             <div style="margin-top:8px; font-size:13px; color:var(--text-muted);">
                 <div>Début: ${frappe.datetime.str_to_user(lac.date_debut)}</div>
-                <div>DIM: <strong>${lac.jours_lactation || 0} jours</strong></div>
+                <div>JL: <strong>${lac.jours_lactation || 0} jours</strong></div>
                 <div>IA: ${lac.nb_inseminations || 0}</div>
             </div>
             <div style="margin-top:10px;">
@@ -398,7 +398,7 @@ function render_multi_lactation_chart(frm, datasets) {
             xIsSeries: true
         },
         tooltipOptions: {
-            formatTooltipX: d => "DIM " + d,
+            formatTooltipX: d => "JL " + d,
             formatTooltipY: d => d != null ? d.toFixed(1) + " L" : "0 L"
         }
     });

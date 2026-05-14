@@ -125,7 +125,7 @@
   {
    "fieldname": "jours_lactation",
    "fieldtype": "Int",
-   "label": "Jours en Lactation (DIM)",
+   "label": "Jours en Lactation",
    "read_only": 1
   },
   {

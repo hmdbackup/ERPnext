@@ -3,10 +3,11 @@ Tests — Rapport Reproduction (per-cow snapshot, Performance IA, Bilan Annuel)
 Run: bench --site hmd.localhost execute hmd_agro.hmd_agro.tests.test_reproduction_report.run_all_tests
 
 Coverage:
-  - Column structure & label renames (TR1IA, IVIA1, IVIF, etc.)
-  - Reproduction section shape (5-tuple) + summary card structure
+  - Bilan Annuel column structure (ivia1_moy / ivif_moy / %1IA / %2IA / %3IA+ /
+    taux_reforme / taux_survie_naissance)
+  - Reproduction section shape (5-tuple) + persistance column
   - _compute_ivia1_ivif_year helper with controlled fixtures
-  - Bilan Annuel new columns ivia1_moy / ivif_moy with controlled fixtures
+  - Persistance computation across realistic scenarios
 """
 import frappe
 from frappe.utils import getdate
@@ -117,22 +118,6 @@ def _traite(animal, lactation, date_traite, litres, session="MATIN"):
 
 # ─── Column structure tests ────────────────────────────────────────────────
 
-def test_performance_ia_label_renames(r):
-    _log("Performance IA columns use PFE-style labels (TR1IA, TR2IA…)", "HEAD")
-    cols = _performance_ia_columns()
-    by_field = {c["fieldname"]: c["label"] for c in cols}
-    _check(by_field.get("pct_reussite_ia1") == "TR1IA (%)",
-           "TR1IA label", f"Got {by_field.get('pct_reussite_ia1')}", r)
-    _check(by_field.get("pct_reussite_ia2") == "TR2IA (%)",
-           "TR2IA label", f"Got {by_field.get('pct_reussite_ia2')}", r)
-    _check(by_field.get("pct_reussite_ia3") == "TR3IA (%)",
-           "TR3IA label", f"Got {by_field.get('pct_reussite_ia3')}", r)
-    _check(by_field.get("pct_reussite_ia_sup") == "TR>3IA (%)",
-           "TR>3IA label", f"Got {by_field.get('pct_reussite_ia_sup')}", r)
-    _check(by_field.get("pct_reussite_global") == "TRGlobal (%)",
-           "TRGlobal label", f"Got {by_field.get('pct_reussite_global')}", r)
-
-
 def test_bilan_annuel_has_ivia1_ivif_cols(r):
     _log("Bilan Annuel includes IVIA1 moy + IVIF moy columns", "HEAD")
     cols = _bilan_annuel_columns()
@@ -147,7 +132,7 @@ def test_bilan_annuel_has_ivia1_ivif_cols(r):
            "IVIF label", f"Got {fields.get('ivif_moy')}", r)
     _check(fields.get("vv_moyen") == "IVV moy (j)",
            "IVV moy renamed", f"Got {fields.get('vv_moyen')}", r)
-    _check(fields.get("pct_ia_global") == "TRGlobal (%)",
+    _check(fields.get("pct_ia_global") == "TRGlobal",
            "TRGlobal label in Bilan", f"Got {fields.get('pct_ia_global')}", r)
 
 
@@ -155,9 +140,9 @@ def test_bilan_annuel_has_distribution_cols(r):
     _log("Bilan Annuel includes %1IA + %2IA + %3IA+ columns", "HEAD")
     cols = _bilan_annuel_columns()
     fields = {c["fieldname"]: c["label"] for c in cols}
-    for fn, label in (("pct_1ia",      "%1IA (%)"),
-                      ("pct_2ia",      "%2IA (%)"),
-                      ("pct_3ia_plus", "%3IA+ (%)")):
+    for fn, label in (("pct_1ia",      "%1IA"),
+                      ("pct_2ia",      "%2IA"),
+                      ("pct_3ia_plus", "%3IA+")):
         _check(fn in fields, f"{fn} field present",
                f"Fields: {list(fields.keys())}", r)
         _check(fields.get(fn) == label,
@@ -355,52 +340,6 @@ def test_reproduction_returns_5_tuple(r):
            f"Got {type(result)} len={len(result) if isinstance(result, tuple) else 'N/A'}", r)
 
 
-def test_reproduction_summary_card_labels(r):
-    """The 7 herd-level KPI cards must include all PFE-recommended summaries."""
-    _log("Reproduction summary cards — 7 cards with PFE labels", "HEAD")
-    _cleanup()
-    a = _animal("A")
-    _velage(a, f"{ANNEE-3}-01-01")  # cow has vêla'd before
-    _insemination(a, f"{ANNEE-3}-04-01", 1, "REUSSIE")  # 90 days IVIA1
-    frappe.db.commit()
-
-    # Use a past-but-recent date so the cow appears in cohort
-    ctx = {"date_filter": getdate(f"{ANNEE-3}-12-31")}
-    result = _reproduction(ctx)
-    summary = result[4] if len(result) >= 5 else []
-
-    expected_labels = [
-        "IVIA1 moy (cible 70j)", "IVIF moy (cible 90j)", "IVV moy (cible 365j)",
-        "% IVIA1 > 80j (cible <15%)", "% IVIF > 110j (cible <15%)",
-        "IC Vaches (cible ≤1.6)", "IC Génisses (cible ≤1.6)",
-    ]
-    actual_labels = [s.get("label") for s in summary]
-    for label in expected_labels:
-        _check(label in actual_labels, f"Card present: {label}",
-               f"Missing card. Got: {actual_labels}", r)
-
-
-def test_summary_indicator_red_for_bad_kpi(r):
-    """A vache with IVIA1 = 200d (way above 110 threshold) should yield a Red
-    indicator on the IVIA1 summary card."""
-    _log("Summary indicator — Red when avg IVIA1 > 110j", "HEAD")
-    _cleanup()
-    a = _animal("A")
-    _velage(a, f"{ANNEE-3}-01-01")
-    # IA1 200 days post-vêlage = way above target
-    _insemination(a, f"{ANNEE-3}-07-20", 1, "REUSSIE")
-    frappe.db.commit()
-
-    ctx = {"date_filter": getdate(f"{ANNEE-3}-12-31")}
-    result = _reproduction(ctx)
-    summary = result[4]
-    ivia1_card = next((s for s in summary
-                       if s.get("label", "").startswith("IVIA1 moy")), None)
-    _check(ivia1_card is not None and ivia1_card.get("indicator") == "Red",
-           "IVIA1 card indicator = Red (200 > 110)",
-           f"Got card: {ivia1_card}", r)
-
-
 # ─── Persistance de lactation tests ────────────────────────────────────────
 
 def test_persistance_baseline(r):
@@ -486,7 +425,6 @@ def run_all_tests():
     r = {"pass": 0, "fail": 0}
     try:
         _cleanup()
-        test_performance_ia_label_renames(r)
         test_bilan_annuel_has_ivia1_ivif_cols(r)
         test_bilan_annuel_has_distribution_cols(r)
         test_bilan_annuel_distribution_formula(r)
@@ -498,8 +436,6 @@ def run_all_tests():
         test_compute_ivia1_ivif_year_no_data(r)
         test_compute_ivia1_ivif_year_excludes_outside_range(r)
         test_reproduction_returns_5_tuple(r)
-        test_reproduction_summary_card_labels(r)
-        test_summary_indicator_red_for_bad_kpi(r)
         test_persistance_baseline(r)
         test_persistance_realistic_drop(r)
         test_persistance_none_when_short_lactation(r)

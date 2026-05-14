@@ -58,7 +58,7 @@ def build_columns(reference_date, date_j_1, date_j_2):
     return [
         {"fieldname": "nom_metier", "label": "N° Travail", "fieldtype": "Data", "width": 90},
         {"fieldname": "lot_actuel", "label": "Lot", "fieldtype": "Link", "options": "Lot", "width": 90},
-        {"fieldname": "dim", "label": "Jour Lactation", "fieldtype": "Int", "width": 95},
+        {"fieldname": "dim", "label": "JL (j)", "fieldtype": "Int", "width": 95},
         {"fieldname": "jours_gestation", "label": "Jour Gestation", "fieldtype": "Int", "width": 95},
         {"fieldname": "j_2", "label": date_j_2.strftime("Tot %d-%b"), "fieldtype": "Float", "precision": 1, "width": 85},
         {"fieldname": "j_1", "label": date_j_1.strftime("Tot %d-%b"), "fieldtype": "Float", "precision": 1, "width": 85},
