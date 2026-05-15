@@ -6,7 +6,6 @@ const SECTION_DEFAULTS = {
         chaleur_genisse_age_mois: 14,
         chaleur_post_velage_jours: 45,
         verification_j21_jours: 18,
-        verification_j50_jours: 50,
         tarissement_advance_jours: 7,
         velage_advance_jours: 15,
         delvo_advance_jours: 1,
@@ -21,6 +20,7 @@ const SECTION_DEFAULTS = {
         pic_production_jours: 150,
         taux_tb_max_pct: 10,
         taux_tp_max_pct: 10,
+        production_drop_alert_pct: -15,
     },
     allotement: {
         dim_fv_max_multi: 30,
@@ -29,7 +29,6 @@ const SECTION_DEFAULTS = {
         dim_mp_max: 305,
         dim_primipare_cap: 300,
         last_third_pct: 66.7,
-        production_drop_alert_pct: -15,
     },
     bilan_lait: {
         ecart_lait_seuil_negatif_l: 1,

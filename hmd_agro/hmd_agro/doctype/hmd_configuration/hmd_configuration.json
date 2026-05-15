@@ -10,7 +10,6 @@
   "chaleur_post_velage_jours",
   "verification_j21_jours",
   "col_break_alertes_1",
-  "verification_j50_jours",
   "tarissement_advance_jours",
   "velage_advance_jours",
   "col_break_alertes_2",
@@ -26,6 +25,7 @@
   "pic_production_jours",
   "taux_tb_max_pct",
   "taux_tp_max_pct",
+  "production_drop_alert_pct",
   "section_allotement",
   "allotement_intro",
   "dim_fv_max_multi",
@@ -35,7 +35,6 @@
   "dim_mp_max",
   "dim_primipare_cap",
   "last_third_pct",
-  "production_drop_alert_pct",
   "section_bilan_lait",
   "ecart_lait_seuil_negatif_l",
   "ecart_lait_seuil_perte_pct",
@@ -87,14 +86,6 @@
   },
   { "fieldname": "col_break_alertes_1", "fieldtype": "Column Break" },
   {
-   "fieldname": "verification_j50_jours",
-   "fieldtype": "Int",
-   "label": "Vérification J+50 (jours)",
-   "default": "50",
-   "non_negative": 1,
-   "description": "Jours après IA pour la 2ème vérification de gestation."
-  },
-  {
    "fieldname": "tarissement_advance_jours",
    "fieldtype": "Int",
    "label": "Préavis tarissement (jours)",
@@ -133,7 +124,7 @@
    "label": "Avance affichage alertes (jours)",
    "default": "2",
    "non_negative": 1,
-   "description": "Nombre de jours d'avance pour afficher une alerte avant sa date cible."
+   "description": "S'applique <b>uniquement</b> au suivi des alertes de vérification de gestation (J+21 / J+50). Quand le vétérinaire reprogramme une vérification dans X jours, l'alerte de suivi apparaît <b>ce nombre de jours</b> avant la date cible. <b>N'affecte AUCUNE autre alerte.</b>"
   },
 
   {
@@ -169,10 +160,10 @@
   {
    "fieldname": "production_initiale_jours",
    "fieldtype": "Int",
-   "label": "Fenêtre production initiale (jours)",
+   "label": "Durée du démarrage de lactation (jours)",
    "default": "60",
    "non_negative": 1,
-   "description": "Premiers jours de lactation utilisés pour la production initiale."
+   "description": "Période après vêlage utilisée pour calculer la « <b>Production Initiale</b> » de chaque lactation (somme du lait produit pendant cette période). Standard zootechnique : 60 jours. Modifier déclenche un <b>recalcul de toutes les lactations</b>."
   },
   { "fieldname": "col_break_lactation_1", "fieldtype": "Column Break" },
   {
@@ -181,7 +172,7 @@
    "label": "Fenêtre pic production (jours)",
    "default": "150",
    "non_negative": 1,
-   "description": "Jours après début de lactation utilisés pour calculer le pic."
+   "description": "Période après vêlage dans laquelle le système cherche le <b>jour avec la plus forte production</b> (le « pic »). Biologie : le pic survient généralement entre J+50 et J+100 ; le défaut 150 laisse une marge. Modifier déclenche un <b>recalcul de toutes les lactations</b>."
   },
   {
    "fieldname": "taux_tb_max_pct",
@@ -201,6 +192,14 @@
    "precision": "1",
    "description": "Plafond de validation pour le taux protéique saisi."
   },
+  {
+   "fieldname": "production_drop_alert_pct",
+   "fieldtype": "Float",
+   "label": "Alerte chute de production quotidienne (%)",
+   "default": "-15",
+   "precision": "1",
+   "description": "Pourcentage de chute de production entre deux jours consécutifs à partir duquel la cellule est mise en évidence dans les rapports (Saisie Traite, Allotement, Contrôle Laitier). Valeur négative (ex : -15 = chute de 15%)."
+  },
 
   {
    "fieldname": "section_allotement",
@@ -218,7 +217,7 @@
    "label": "JL max FV — multipare (jours)",
    "default": "30",
    "non_negative": 1,
-   "description": "Limite supérieure du stade FV pour les multipares."
+   "description": "Limite supérieure de la période FV pour les multipares."
   },
   {
    "fieldname": "dim_thp_max",
@@ -226,7 +225,7 @@
    "label": "JL max THP (jours)",
    "default": "120",
    "non_negative": 1,
-   "description": "Limite supérieure du stade THP."
+   "description": "Limite supérieure de la période THP."
   },
   {
    "fieldname": "dim_hp_max",
@@ -234,7 +233,7 @@
    "label": "JL max HP (jours)",
    "default": "240",
    "non_negative": 1,
-   "description": "Limite supérieure du stade HP."
+   "description": "Limite supérieure de la période HP."
   },
   { "fieldname": "col_break_allotement_1", "fieldtype": "Column Break" },
   {
@@ -243,7 +242,7 @@
    "label": "JL max MP (jours)",
    "default": "305",
    "non_negative": 1,
-   "description": "Limite supérieure du stade MP. Au-delà, les multipares sont en FP."
+   "description": "Limite supérieure de la période MP. Au-delà, les multipares sont en FP."
   },
   {
    "fieldname": "dim_primipare_cap",
@@ -260,15 +259,7 @@
    "default": "66.7",
    "non_negative": 1,
    "precision": "1",
-   "description": "Pourcentage du stade au-delà duquel le drapeau jaune 'démettre tôt' peut se déclencher."
-  },
-  {
-   "fieldname": "production_drop_alert_pct",
-   "fieldtype": "Float",
-   "label": "Seuil baisse production J/J-1 (%)",
-   "default": "-15",
-   "precision": "1",
-   "description": "Variation J/J-1 (%) au-delà de laquelle la cellule passe en rouge. Utilisé par : rapport Allotement, rapport Contrôle Laitier, page Saisie Traite."
+   "description": "Quand une vache dépasse ce pourcentage de la période dans son lot actuel et que sa production est faible, le système suggère de la déplacer au groupe suivant en avance."
   },
   {
    "fieldname": "section_bilan_lait",

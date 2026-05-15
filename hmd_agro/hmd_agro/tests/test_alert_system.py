@@ -39,7 +39,6 @@ def run_all_tests():
         test_chaleur_genisse(results, ctx)
         test_chaleur_post_velage(results, ctx)
         test_verification_j21(results, ctx)
-        test_verification_j50(results, ctx)
         test_tarissement(results, ctx)
         test_velage_imminent(results, ctx)
         test_alert_close_on_ia_creation(results, ctx)
@@ -360,53 +359,6 @@ def test_verification_j21(results, ctx):
     revoir_alert.reload()
     assert_test(revoir_alert.statut == "GESTANTE_PROBABLE", "A revoir → GESTANTE_PROBABLE", f"statut: {revoir_alert.statut}", results)
     assert_test(result.get("new_alert") is not None, "Follow-up J50 alert created", f"result: {result}", results)
-
-
-# ═══════════════════════════════════════════════════════════════════
-# TEST 4: VERIFICATION J50
-# ═══════════════════════════════════════════════════════════════════
-
-def test_verification_j50(results, ctx):
-    print("\n── VERIFICATION_J50 ──")
-
-    from hmd_agro.hmd_agro.doctype.alerte.alerte import generate_alerts
-
-    animal = make_animal(ctx, 30, categorie="VACHE")
-    lac = frappe.get_doc({"doctype": "Lactation", "animal": animal, "date_debut": add_days(today(), -200), "statut": "EN_COURS"})
-    lac.insert(ignore_permissions=True)
-
-    # Create IA 55 days ago
-    ia = frappe.get_doc({
-        "doctype": "Insemination", "animal": animal,
-        "taureau": ctx["taureau"], "date_ia": add_days(today(), -55),
-        "type_semence": "CONVENTIONNELLE"
-    })
-    ia.insert(ignore_permissions=True)
-    frappe.db.commit()
-
-    # Create a J21 alert marked GESTANTE_PROBABLE (this triggers J50 generation)
-    j21 = frappe.get_doc({
-        "doctype": "Alerte", "animal": animal, "type_alerte": "VERIFICATION_J21",
-        "insemination": ia.name, "date_alerte": add_days(today(), -34),
-        "raison": "test", "statut": "GESTANTE_PROBABLE"
-    })
-    j21.insert(ignore_permissions=True)
-    frappe.db.commit()
-
-    clear_alerts(animal)
-    # Re-insert the J21 since we cleared all
-    j21_new = frappe.get_doc({
-        "doctype": "Alerte", "animal": animal, "type_alerte": "VERIFICATION_J21",
-        "insemination": ia.name, "date_alerte": add_days(today(), -34),
-        "raison": "test", "statut": "GESTANTE_PROBABLE"
-    })
-    j21_new.insert(ignore_permissions=True)
-    frappe.db.commit()
-
-    generate_alerts()
-
-    alerts = frappe.get_all("Alerte", {"animal": animal, "type_alerte": "VERIFICATION_J50", "statut": "NOUVELLE"})
-    assert_test(len(alerts) >= 1, "J50 alert generated (IA 55d + J21 GESTANTE_PROBABLE)", f"alerts: {len(alerts)}", results)
 
 
 # ═══════════════════════════════════════════════════════════════════

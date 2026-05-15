@@ -13,7 +13,6 @@ VELAGE_PREVUE_RECALC_FIELDS = ("periode_velage_jours",)
 class HMDConfiguration(Document):
     def validate(self):
         self.validate_dim_monotonicity()
-        self.validate_j50_after_j21()
         self.validate_tarissement_advance_window()
         self.validate_periode_velage_vs_tarissement()
         self.validate_alerte_lead_cap()
@@ -27,18 +26,6 @@ class HMDConfiguration(Document):
             frappe.throw(
                 f"Période de gestation ({self.periode_velage_jours} jours) doit être strictement "
                 f"supérieure à la fenêtre de tarissement ({self.tarissement_window_jours} jours)."
-            )
-
-    def validate_j50_after_j21(self):
-        """J+50 must be strictly > J+21. The J50 alert generator depends on
-        J21 alerts already existing in GESTANTE_PROBABLE state. If j50 ≤ j21,
-        the dependency chain breaks: J50 fires before J21 has had a chance to."""
-        if (self.verification_j21_jours and self.verification_j50_jours
-                and self.verification_j50_jours <= self.verification_j21_jours):
-            frappe.throw(
-                f"Vérification J+50 ({self.verification_j50_jours} jours) doit être strictement "
-                f"supérieure à J+21 ({self.verification_j21_jours} jours). "
-                f"L'alerte J+50 dépend d'une alerte J+21 préalable."
             )
 
     def validate_tarissement_advance_window(self):

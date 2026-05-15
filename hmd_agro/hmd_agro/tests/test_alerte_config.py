@@ -16,8 +16,7 @@ from hmd_agro.hmd_agro.doctype.alerte import alerte as alerte_mod
 EXTREME = {
     "chaleur_genisse_age_mois":  240,    # 20 years
     "chaleur_post_velage_jours": 9000,   # ~25 years
-    "verification_j21_jours":    8999,   # j50 must be > j21 (cross-field validation)
-    "verification_j50_jours":    9000,
+    "verification_j21_jours":    8999,
     "tarissement_advance_jours": 60,     # ≤ tarissement_window_jours default 60
     "velage_advance_jours":      9000,
     "delvo_advance_jours":       9000,
@@ -86,7 +85,6 @@ def test_each_generator_reads_its_config(results):
             (alerte_mod._generate_genisse_alerts,      ("m", -240),  "chaleur_genisse_age_mois"),
             (alerte_mod._generate_post_velage_alerts,  ("d", -9000), "chaleur_post_velage_jours"),
             (alerte_mod._generate_j21_alerts,          ("d", -8999), "verification_j21_jours"),
-            (alerte_mod._generate_j50_alerts,          ("d", -9000), "verification_j50_jours"),
             (alerte_mod._generate_tarissement_alerts,  ("d", 60),    "tarissement_advance_jours"),
             (alerte_mod._generate_velage_alerts,       ("d", 9000),  "velage_advance_jours"),
             (alerte_mod._generate_delvo_alerts,        ("d", 9000),  "delvo_advance_jours"),

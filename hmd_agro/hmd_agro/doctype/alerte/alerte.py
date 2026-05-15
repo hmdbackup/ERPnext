@@ -11,12 +11,12 @@ class Alerte(Document):
 
 @frappe.whitelist()
 def generate_alerts():
-    """Run daily to create heat alerts, J+21 and J+50 verification alerts,
-    tarissement and velage imminent alerts"""
+    """Run daily to create heat, J+21 verification, tarissement,
+    velage imminent, and DELVO alerts. J+50 alerts are NOT generated
+    here — they are created only via the 'À revoir' action."""
     _generate_genisse_alerts()
     _generate_post_velage_alerts()
     _generate_j21_alerts()
-    _generate_j50_alerts()
     _generate_tarissement_alerts()
     _generate_velage_alerts()
     _generate_delvo_alerts()
@@ -155,61 +155,6 @@ def _generate_j21_alerts():
             "insemination": ia.name,
             "date_alerte": today(),
             "raison": f"IA du {ia.date_ia} - J+{days_since}",
-            "statut": "NOUVELLE"
-        })
-        doc.insert(ignore_permissions=True)
-
-
-def _generate_j50_alerts():
-    """VERIFICATION_J50: IA marked GESTANTE_PROBABLE at J+21, now N+ days old (default 50)"""
-    n_days = get_config("verification_j50_jours", default=50)
-    cutoff_date = add_days(getdate(today()), -n_days)
-
-    # Find IAs that have a GESTANTE_PROBABLE J+21 alert and are 50+ days old
-    j21_probable = frappe.db.get_all("Alerte", filters={
-        "type_alerte": "VERIFICATION_J21",
-        "statut": "GESTANTE_PROBABLE"
-    }, fields=["insemination", "animal"])
-
-    for alert in j21_probable:
-        if not alert.insemination:
-            continue
-
-        # Check IA is 50+ days old and still EN_ATTENTE
-        ia = frappe.db.get_value("Insemination", alert.insemination,
-            ["name", "date_ia", "resultat"], as_dict=True)
-        if not ia or ia.resultat != "EN_ATTENTE":
-            continue
-        if getdate(ia.date_ia) > cutoff_date:
-            continue
-
-        # Skip if J+50 alert already exists for this IA (active or future-dated)
-        existing = frappe.db.exists("Alerte", {
-            "insemination": ia.name,
-            "type_alerte": "VERIFICATION_J50",
-            "statut": ["in", ["NOUVELLE", "GESTANTE_PROBABLE"]]
-        })
-        if existing:
-            continue
-
-        # Skip if J+50 already resolved
-        resolved = frappe.db.exists("Alerte", {
-            "insemination": ia.name,
-            "type_alerte": "VERIFICATION_J50",
-            "statut": ["in", ["GESTANTE_CONFIRMEE", "RETOUR_CHALEUR"]]
-        })
-        if resolved:
-            continue
-
-        days_since = date_diff(getdate(today()), ia.date_ia)
-
-        doc = frappe.get_doc({
-            "doctype": "Alerte",
-            "animal": alert.animal,
-            "type_alerte": "VERIFICATION_J50",
-            "insemination": ia.name,
-            "date_alerte": today(),
-            "raison": f"IA du {ia.date_ia} - J+{days_since} - Confirmation gestation",
             "statut": "NOUVELLE"
         })
         doc.insert(ignore_permissions=True)

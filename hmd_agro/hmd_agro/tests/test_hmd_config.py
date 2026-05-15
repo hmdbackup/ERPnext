@@ -13,7 +13,6 @@ EXPECTED_DEFAULTS = {
     "chaleur_genisse_age_mois": 14,
     "chaleur_post_velage_jours": 45,
     "verification_j21_jours": 18,
-    "verification_j50_jours": 50,
     "tarissement_advance_jours": 7,
     "velage_advance_jours": 15,
     "delvo_advance_jours": 1,
@@ -59,7 +58,6 @@ def run_all_tests():
     test_defaults_match_expected(results)
     test_get_config_falls_back(results)
     test_validate_dim_monotonicity(results)
-    test_validate_j50_after_j21(results)
     test_validate_tarissement_advance_window(results)
     test_validate_alerte_lead_cap(results)
     test_boot_session_payload(results)
@@ -134,15 +132,6 @@ def _try_save_with(field, value, results, label):
         cfg2.set(field, original)
         cfg2.save(ignore_permissions=True)
         frappe.db.commit()
-
-
-def test_validate_j50_after_j21(results):
-    log("validate_j50_after_j21 — j50 doit être strictement > j21", "HEAD")
-    # j21 default 18, j50 default 50. Try setting j50 = 18 (= j21) → reject
-    _try_save_with("verification_j50_jours", 18, results,
-                   "j50=18 (= j21) → rejeté")
-    _try_save_with("verification_j50_jours", 10, results,
-                   "j50=10 (< j21) → rejeté")
 
 
 def test_validate_tarissement_advance_window(results):

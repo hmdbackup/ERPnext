@@ -1,0 +1,21 @@
+{
+ "color": "#48BB78",
+ "creation": "2026-05-14 00:00:00",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "function": "Sum",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "PL/VL (L)",
+ "method": "hmd_agro.hmd_agro.utils.dashboard_kpis.get_pl_vl",
+ "modified": "2026-05-14 23:57:21.244503",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Lait par Vache Lactante",
+ "owner": "Administrator",
+ "show_full_number": 0,
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Custom"
+}

@@ -8,7 +8,6 @@ DEFAULTS = {
     "chaleur_genisse_age_mois": 14,
     "chaleur_post_velage_jours": 45,
     "verification_j21_jours": 18,
-    "verification_j50_jours": 50,
     "tarissement_advance_jours": 7,
     "velage_advance_jours": 15,
     "delvo_advance_jours": 1,

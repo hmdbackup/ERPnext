@@ -289,25 +289,29 @@ def _production(ctx):
             "commercialise": None,
         })
 
-    # Quinzaine/Hebdomadaire summary rows (kg + L/VL/jour per period). Spans
-    # past today are skipped so an in-progress month only shows filled periods.
+    # Quinzaine/Hebdomadaire summary rows (kg + L/VL/jour per period). Every
+    # span gets a row, even spans entirely in the future for the current month
+    # (those rows have empty production / moyenne). Matches Alimentation's
+    # column behavior — the table shape stays stable across the month.
     granularite = ctx.get("granularite") or "Quotidien"
     today_dt = getdate(today())
     for label, start, end in _build_period_spans(granularite, ctx["date_debut"], ctx["nb_jours"]):
         span_end = min(end, today_dt)
-        if span_end < start:
-            continue
+        walked = span_end >= start
         sp_prod = 0.0
         sp_cow_days = 0
-        d = start
-        while d <= span_end:
-            sp_prod += float(daily_map.get(d.day, {}).get("prod") or 0)
-            sp_cow_days += vl_by_day.get(d.day, 0)
-            d = add_days(d, 1)
+        if walked:
+            d = start
+            while d <= span_end:
+                sp_prod += float(daily_map.get(d.day, {}).get("prod") or 0)
+                sp_cow_days += vl_by_day.get(d.day, 0)
+                d = add_days(d, 1)
+        # Future spans (not yet walked) → empty cells. Walked spans → real
+        # numbers, possibly 0 when cows are present but no traites yet.
         data.append({
             "jour": label, "is_total": 1, "tint": "orange",
-            "production": round(sp_prod, 1),
-            "moyenne": round(sp_prod / sp_cow_days, 1) if sp_cow_days else 0,
+            "production": round(sp_prod, 1) if walked else None,
+            "moyenne": round(sp_prod / sp_cow_days, 1) if (walked and sp_cow_days) else None,
         })
 
     data.append({
@@ -417,41 +421,24 @@ def _render_live_lot(date, prev_date):
 
 
 def _render_live_lot_weekly(date):
-    """Hebdomadaire mode for Production par Lot. Two window strategies:
+    """Hebdomadaire mode for Production par Lot — ISO-week-aligned.
 
-    Past month — uses _build_period_spans S1..S4 chunks, same as Alimentation
-    and Production Hebdomadaire summary rows. 'Sem. act.' is the chunk
-    containing the cursor; 'Sem. préc.' is the chunk just before in time
-    (same month if cursor is in S2/S3/S4, previous month's S4 if cursor is in
-    S1). One Hebdomadaire definition app-wide.
+    Sem. act. = the ISO week (Mon-Sun) containing the cursor. For a current
+    month with cursor mid-week, capped at the cursor (e.g., cursor on Wed →
+    Mon-Wed, 3 days). Sem. préc. = previous full ISO week (always 7 days).
 
-    Current month — rolling 7-day ending at cursor. We have no future data to
-    fill a chunk fairly; the partial start-of-week is the honest reflection of
-    what's been recorded so far. Once the month finishes, the past-month
-    branch takes over and chunks become full and stable."""
+    Same logic for past and current months — no branching. Past months will
+    always show full 7-day Sem. act. since cursor day ≤ end of past month
+    < today, so the cap at min(sun, today) ≤ today is irrelevant for past."""
     today_dt = getdate(today())
-    is_past_month = (date.year, date.month) != (today_dt.year, today_dt.month)
+    sem_act_mon, sem_act_sun = _iso_week_bounds(date)
+    # Don't include future days (no traites recorded yet).
+    sem_act_start = sem_act_mon
+    sem_act_end = min(sem_act_sun, today_dt)
 
-    if is_past_month:
-        cur_first = getdate(f"{date.year}-{date.month:02d}-01")
-        cur_days = monthrange(date.year, date.month)[1]
-        cur_spans = _build_period_spans("Hebdomadaire", cur_first, cur_days)
-        idx = next(i for i, (_, s, e) in enumerate(cur_spans) if s <= date <= e)
-        _, sem_act_start, sem_act_end = cur_spans[idx]
-        if idx > 0:
-            _, sem_prev_start, sem_prev_end = cur_spans[idx - 1]
-        else:
-            # Cursor in S1 → Sem. préc. = S4 of previous calendar month
-            last_of_prev = add_days(cur_first, -1)
-            prev_first = getdate(f"{last_of_prev.year}-{last_of_prev.month:02d}-01")
-            prev_days = monthrange(last_of_prev.year, last_of_prev.month)[1]
-            _, sem_prev_start, sem_prev_end = _build_period_spans(
-                "Hebdomadaire", prev_first, prev_days)[-1]
-    else:
-        sem_act_start = add_days(date, -6)
-        sem_act_end = date
-        sem_prev_start = add_days(date, -13)
-        sem_prev_end = add_days(date, -7)
+    sem_prev_mon, sem_prev_sun = _iso_week_bounds(add_days(sem_act_mon, -1))
+    sem_prev_start = sem_prev_mon
+    sem_prev_end = sem_prev_sun
 
     prod_act = _traite_by_lot(sem_act_start, sem_act_end)
     prod_prev = _traite_by_lot(sem_prev_start, sem_prev_end)
@@ -548,6 +535,40 @@ def _delta_pct(curr, prev):
     """Δ % between current and previous values, rounded to 1 decimal. None
     when prev is 0 (or falsy) to avoid division-by-zero in the report cells."""
     return round((curr - prev) / prev * 100, 1) if prev else None
+
+
+def _iso_weeks_in_month(date_debut, nb_jours):
+    """ISO 8601 weeks (Mon-Sun) that intersect the calendar month, clipped to
+    month boundaries. Returns [(label, start, end), ...] with labels sequenced
+    'S1', 'S2', ... within the month (NOT the ISO week number — supervisor
+    wants the existing display kept). A typical month yields 5 spans; some
+    yield 4 or 6 depending on how Mon-Sun aligns with month boundaries.
+
+    Used by `_build_period_spans('Hebdomadaire', ...)` so Production summary
+    rows and Alimentation period columns both honor real calendar weeks."""
+    date_fin = add_days(date_debut, nb_jours - 1)
+    spans = []
+    cur = getdate(date_debut)
+    idx = 1
+    while cur <= date_fin:
+        # weekday(): Mon=0..Sun=6. End-of-ISO-week = next Sunday.
+        sun = add_days(cur, 6 - cur.weekday())
+        end = min(sun, date_fin)
+        spans.append((f"S{idx}", cur, end))
+        idx += 1
+        cur = add_days(end, 1)
+    return spans
+
+
+def _iso_week_bounds(date):
+    """Full Mon-Sun of the ISO week containing `date` — NOT clipped to any
+    month. Used by `_render_live_lot_weekly` for Sem. act./Sem. préc. so the
+    comparison is apples-to-apples across complete calendar weeks even if
+    they straddle month boundaries."""
+    d = getdate(date)
+    mon = add_days(d, -d.weekday())
+    sun = add_days(mon, 6)
+    return mon, sun
 
 
 # ─── Alimentation ────────────────────────────────────────────────────────────
@@ -779,7 +800,10 @@ def _build_period_spans(granularite, date_debut, nb_jours_du_mois):
     Returns:
       Quotidien     -> [] (caller falls back to daily-snapshot behavior)
       Quinzaine     -> 2 spans: Q1 (1-15) and Q2 (16-end)
-      Hebdomadaire  -> 4 spans: S1 (1-7), S2 (8-14), S3 (15-21), S4 (22-end)
+      Hebdomadaire  -> ISO weeks (Mon-Sun) intersecting the month, clipped to
+                       month boundaries. Sequential 'S1', 'S2', ... labels.
+                       Typically 5 spans (sometimes 4 or 6 depending on how
+                       weekdays align with month boundaries).
     """
     if granularite == "Quinzaine":
         return [
@@ -787,12 +811,7 @@ def _build_period_spans(granularite, date_debut, nb_jours_du_mois):
             ("Q2", add_days(date_debut, 15), add_days(date_debut, nb_jours_du_mois - 1)),
         ]
     if granularite == "Hebdomadaire":
-        return [
-            ("S1", date_debut, add_days(date_debut, 6)),
-            ("S2", add_days(date_debut, 7), add_days(date_debut, 13)),
-            ("S3", add_days(date_debut, 14), add_days(date_debut, 20)),
-            ("S4", add_days(date_debut, 21), add_days(date_debut, nb_jours_du_mois - 1)),
-        ]
+        return _iso_weeks_in_month(date_debut, nb_jours_du_mois)
     return []
 
 
