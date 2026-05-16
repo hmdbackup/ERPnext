@@ -79,13 +79,21 @@ def _migrate_one_semence(s, verbose=False):
       - migrate_semences() bulk runner (existing records)
       - Semence.after_insert() hook (newly created records)
     """
+    from hmd_agro.hmd_agro.utils.stock_utils import ensure_item_default
+
+    actions = {"items_created": 0, "batches_created": 0,
+               "openings_created": 0, "linked": 0,
+               "skipped": 0, "defaults_synced": 0}
+
     if s.get("item"):
         if verbose:
             print(f"  [skip]      {s.name} (déjà migrée → {s.item})")
-        return {"skipped": 1}
-
-    actions = {"items_created": 0, "batches_created": 0,
-               "openings_created": 0, "linked": 0}
+        if ensure_item_default(s.item):
+            actions["defaults_synced"] = 1
+            if verbose:
+                print(f"              ↳ item_defaults synced")
+        actions["skipped"] = 1
+        return actions
 
     item_code, created_item = _ensure_item(s.taureau, s.type_semence)
     if created_item:
@@ -128,6 +136,8 @@ def _migrate_one_semence(s, verbose=False):
 
     frappe.db.set_value("Semence", s.name, "item", item_code)
     actions["linked"] = 1
+    if ensure_item_default(item_code):
+        actions["defaults_synced"] = 1
     return actions
 
 
@@ -149,7 +159,7 @@ def migrate_semences():
     print(f"\n  Semences trouvées: {len(semences)}\n")
 
     stats = {"items_created": 0, "batches_created": 0, "openings_created": 0,
-             "linked": 0, "skipped": 0}
+             "linked": 0, "skipped": 0, "defaults_synced": 0}
 
     for s in semences:
         actions = _migrate_one_semence(s, verbose=True)
@@ -164,6 +174,7 @@ def migrate_semences():
     print(f"  Stock Entries d'ouverture:     {stats['openings_created']}")
     print(f"  Semences liées:                {stats['linked']}")
     print(f"  Déjà migrées (skip):           {stats['skipped']}")
+    print(f"  Item Defaults sync:            {stats['defaults_synced']}")
     print("=" * 60 + "\n")
 
     return stats

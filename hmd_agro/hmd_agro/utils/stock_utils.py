@@ -6,7 +6,34 @@ import frappe
 from frappe.utils import today
 
 DEFAULT_COMPANY = "hmd-agro"
+DEFAULT_WAREHOUSE = "Magasin Principal - HMD"
 DEFAULT_UOM = "Unit"
+
+
+def ensure_item_default(item_code, company=DEFAULT_COMPANY, warehouse=DEFAULT_WAREHOUSE):
+    """Make sure `Item.item_defaults` has a row for `company` pointing at
+    `warehouse`. Idempotent: no-op if already correct, updates if mismatched,
+    appends if missing. Returns True iff a write happened.
+
+    Why: without this row, ERPNext falls back to `Stock Settings.default_warehouse`
+    when a user creates a Stock Entry / Purchase Receipt via UI. That fallback
+    used to be `Stores - HMD`, causing a draft PR to silently land stock in the
+    wrong warehouse. Per-Item defaults make the warehouse choice explicit and
+    survive a future change to Stock Settings."""
+    item = frappe.get_doc("Item", item_code)
+    for row in (item.item_defaults or []):
+        if row.company == company:
+            if row.default_warehouse == warehouse:
+                return False
+            row.default_warehouse = warehouse
+            item.save(ignore_permissions=True)
+            return True
+    item.append("item_defaults", {
+        "company": company,
+        "default_warehouse": warehouse,
+    })
+    item.save(ignore_permissions=True)
+    return True
 
 
 def create_stock_movement(item_code, qty, purpose, warehouse, remark,

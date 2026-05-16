@@ -11,6 +11,7 @@
   "column_break_id",
   "delai_attente_lait",
   "delai_attente_viande",
+  "prix_unitaire",
   "section_stock",
   "item",
   "stock_actuel",
@@ -54,6 +55,14 @@
    "fieldname": "delai_attente_viande",
    "fieldtype": "Int",
    "label": "Delai d'attente viande (jours)"
+  },
+  {
+   "default": "0",
+   "fieldname": "prix_unitaire",
+   "fieldtype": "Currency",
+   "label": "Prix Unitaire",
+   "options": "TND",
+   "description": "Prix d'achat unitaire. Utilisé comme valeur de référence pour les Stock Entries d'ouverture et le calcul des coûts."
   },
   {
    "fieldname": "section_stock",

@@ -2,12 +2,14 @@
 Sprint 5 — Phase A — Step 2: Médicament → Item migration.
 
 For each existing Medicament:
-  1. Create an ERPNext Item (item_code = MED-{nom_medicament})
+  1. Create an ERPNext Item (item_code = MED-{nom_medicament}) with
+     standard_rate = Médicament.prix_unitaire
   2. Create an opening Stock Entry (Material Receipt) into Magasin Principal
-     for the current `stock_actuel` quantity (skipped if 0)
+     for the current `stock_actuel` quantity (skipped if 0). basic_rate is
+     set from prix_unitaire so the SLE has a non-zero stock_value_difference.
   3. Set Medicament.item = the new Item
-
-Idempotent: re-running skips Médicaments that already have `item` set.
+  4. Sync Item.standard_rate to current prix_unitaire (idempotent — covers
+     re-runs after a price was added to a previously-migrated Médicament).
 
 Run:
     bench --site hmd.localhost execute \\
@@ -41,15 +43,30 @@ def _migrate_one_medicament(med, verbose=False):
       - migrate_medicaments() bulk runner (existing records)
       - Medicament.after_insert() hook (newly created records)
     """
+    from hmd_agro.hmd_agro.utils.stock_utils import ensure_item_default
+
+    actions = {"created_item": 0, "created_opening": 0, "linked": 0,
+               "skipped_existing_item": 0, "skipped_already_migrated": 0,
+               "defaults_synced": 0, "price_synced": 0}
+
+    prix = float(med.get("prix_unitaire") or 0)
+
     if med.get("item"):
         if verbose:
             print(f"  [skip]      {med.nom_medicament} (déjà migré → {med.item})")
-        return {"skipped_already_migrated": 1}
+        if ensure_item_default(med.item):
+            actions["defaults_synced"] = 1
+            if verbose:
+                print(f"              ↳ item_defaults synced")
+        if _sync_item_standard_rate(med.item, prix):
+            actions["price_synced"] = 1
+            if verbose:
+                print(f"              ↳ Item.standard_rate synced ({prix} TND)")
+        actions["skipped_already_migrated"] = 1
+        return actions
 
     item_code = f"MED-{med.nom_medicament}"
     item_group = TYPE_TO_ITEM_GROUP.get(med.type_medicament, "Médicament")
-    actions = {"created_item": 0, "created_opening": 0,
-               "linked": 0, "skipped_existing_item": 0}
 
     if frappe.db.exists("Item", item_code):
         if verbose:
@@ -64,15 +81,18 @@ def _migrate_one_medicament(med, verbose=False):
             "stock_uom": DEFAULT_UOM,
             "is_stock_item": 1,
             "include_item_in_manufacturing": 0,
+            "standard_rate": prix,
             "description": f"Médicament migré depuis HMD Agro (type: {med.type_medicament})",
         })
         item.insert(ignore_permissions=True)
         if verbose:
-            print(f"  [create]    Item {item_code} (groupe: {item_group})")
+            print(f"  [create]    Item {item_code} (groupe={item_group}, prix={prix} TND)")
         actions["created_item"] = 1
 
     stock_actuel = med.get("stock_actuel") or 0
     if stock_actuel > 0:
+        # allow_zero_valuation_rate is required when prix=0 (no price yet) —
+        # ERPNext otherwise refuses Material Receipt at rate 0 for stocked items.
         se = frappe.get_doc({
             "doctype": "Stock Entry",
             "stock_entry_type": "Material Receipt",
@@ -85,22 +105,35 @@ def _migrate_one_medicament(med, verbose=False):
                 "stock_uom": DEFAULT_UOM,
                 "conversion_factor": 1,
                 "t_warehouse": WAREHOUSE,
-                "basic_rate": 0,
-                "allow_zero_valuation_rate": 1,
+                "basic_rate": prix,
+                "allow_zero_valuation_rate": 1 if prix == 0 else 0,
             }],
             "remarks": f"Stock d'ouverture migration (Médicament {med.name})",
         })
         se.insert(ignore_permissions=True)
         se.submit()
         if verbose:
-            print(f"              ↳ Stock d'ouverture: {stock_actuel} unités → {WAREHOUSE}")
+            print(f"              ↳ Stock d'ouverture: {stock_actuel} unités @ {prix} TND → {WAREHOUSE}")
         actions["created_opening"] = 1
     elif verbose:
         print(f"              ↳ Stock = 0, pas de Stock Entry d'ouverture")
 
     frappe.db.set_value("Medicament", med.name, "item", item_code)
     actions["linked"] = 1
+    if ensure_item_default(item_code):
+        actions["defaults_synced"] = 1
+    if _sync_item_standard_rate(item_code, prix):
+        actions["price_synced"] = 1
     return actions
+
+
+def _sync_item_standard_rate(item_code, rate):
+    """Update Item.standard_rate if it differs. Idempotent. Returns True on write."""
+    current = frappe.db.get_value("Item", item_code, "standard_rate") or 0
+    if float(current) == float(rate or 0):
+        return False
+    frappe.db.set_value("Item", item_code, "standard_rate", rate or 0)
+    return True
 
 
 @frappe.whitelist()
@@ -114,13 +147,15 @@ def migrate_medicaments():
         frappe.throw(f"Warehouse '{WAREHOUSE}' n'existe pas. Lancez stock_foundation d'abord.")
 
     medicaments = frappe.get_all("Medicament",
-        fields=["name", "nom_medicament", "type_medicament", "stock_actuel", "item"],
+        fields=["name", "nom_medicament", "type_medicament", "stock_actuel",
+                "prix_unitaire", "item"],
         order_by="nom_medicament")
 
     print(f"\n  Médicaments trouvés: {len(medicaments)}\n")
 
     stats = {"created_item": 0, "created_opening": 0, "linked": 0,
-             "skipped_already_migrated": 0, "skipped_existing_item": 0}
+             "skipped_already_migrated": 0, "skipped_existing_item": 0,
+             "defaults_synced": 0, "price_synced": 0}
 
     for med in medicaments:
         actions = _migrate_one_medicament(med, verbose=True)
@@ -135,6 +170,8 @@ def migrate_medicaments():
     print(f"  Médicaments liés:          {stats['linked']}")
     print(f"  Déjà migrés (skip):        {stats['skipped_already_migrated']}")
     print(f"  Item existant (lien seul): {stats['skipped_existing_item']}")
+    print(f"  Item Defaults sync:        {stats['defaults_synced']}")
+    print(f"  Prix unitaires sync:       {stats['price_synced']}")
     print("=" * 60 + "\n")
 
     return stats
