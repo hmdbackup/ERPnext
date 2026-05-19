@@ -44,6 +44,47 @@ def run_all_tests():
     print("=" * 70 + "\n")
 
 
+WAREHOUSE = "Magasin Principal - HMD"
+
+
+def _bin_qty_for_med(med_name):
+    """Read current Bin.actual_qty for the Item linked to a Medicament.
+    Replaces the legacy `Medicament.stock_actuel` reads — that field was
+    removed in ST5-12. Returns 0 if no Item or no Bin row yet."""
+    item = frappe.db.get_value("Medicament", med_name, "item")
+    if not item:
+        return 0
+    return frappe.db.get_value("Bin",
+        {"item_code": item, "warehouse": WAREHOUSE}, "actual_qty") or 0
+
+
+def _seed_bin_for_med(med_name, qty, rate=10.0):
+    """Seed initial Bin stock for a Medicament's Item via a Material Receipt.
+    Replaces the legacy `stock_actuel: N` shortcut in fixture dicts."""
+    item = frappe.db.get_value("Medicament", med_name, "item")
+    if not item or qty <= 0:
+        return
+    se = frappe.get_doc({
+        "doctype": "Stock Entry",
+        "stock_entry_type": "Material Receipt",
+        "company": "hmd-agro",
+        "posting_date": today(),
+        "items": [{
+            "item_code": item,
+            "qty": qty,
+            "uom": "Unit",
+            "stock_uom": "Unit",
+            "conversion_factor": 1,
+            "t_warehouse": WAREHOUSE,
+            "basic_rate": rate,
+        }],
+        "remarks": f"test_traitement_module seed {med_name}",
+    })
+    se.insert(ignore_permissions=True)
+    se.submit()
+    frappe.db.commit()
+
+
 def assert_test(condition, pass_msg, fail_msg, results):
     if condition:
         log(pass_msg, "PASS")
@@ -143,6 +184,9 @@ def cleanup_traitements():
 def test_1_medicament(results):
     print("\n── Test 1: Medicament Doctype ──")
 
+    # ST5-14: stock_actuel field gone post-Phase C. Stock is now in Bin.
+    # Seed initial Bin via Material Receipts after creating each Medicament.
+
     # Create Medicament 1
     med1 = frappe.get_doc({
         "doctype": "Medicament",
@@ -150,16 +194,18 @@ def test_1_medicament(results):
         "type_medicament": "ANTIBIOTIQUE",
         "delai_attente_lait": 5,
         "delai_attente_viande": 10,
-        "stock_actuel": 10
     })
     med1.insert(ignore_permissions=True)
     assert_test(med1.name == "TEST-Amoxicilline",
         "Medicament created with name = nom_medicament",
         f"Medicament name mismatch: {med1.name}", results)
 
-    assert_test(med1.stock_actuel == 10,
-        "Stock actuel = 10",
-        f"Stock actuel = {med1.stock_actuel}", results)
+    _seed_bin_for_med(med1.name, 10)
+    # >=10 instead of ==10 — Material Receipts accumulate across runs, the
+    # test asserts that we successfully added stock, not exact total.
+    assert_test(_bin_qty_for_med(med1.name) >= 10,
+        f"Bin >= 10 for TEST-Amoxicilline (got {_bin_qty_for_med(med1.name)})",
+        f"Bin qty = {_bin_qty_for_med(med1.name)}", results)
 
     # Create Medicament 2
     med2 = frappe.get_doc({
@@ -167,12 +213,12 @@ def test_1_medicament(results):
         "nom_medicament": "TEST-Meloxicam",
         "type_medicament": "ANTI_INFLAMMATOIRE",
         "delai_attente_lait": 3,
-        "stock_actuel": 5
     })
     med2.insert(ignore_permissions=True)
     assert_test(med2.name == "TEST-Meloxicam",
         "Second Medicament created successfully",
         f"Second Medicament failed: {med2.name}", results)
+    _seed_bin_for_med(med2.name, 5)
 
     # Duplicate name should fail
     try:
@@ -181,25 +227,15 @@ def test_1_medicament(results):
             "nom_medicament": "TEST-Amoxicilline",
             "type_medicament": "VACCIN",
             "delai_attente_lait": 1,
-            "stock_actuel": 0
         })
         med_dup.insert(ignore_permissions=True)
         assert_test(False, "", "Duplicate Medicament should have failed", results)
     except Exception:
         assert_test(True, "Duplicate Medicament name blocked", "", results)
 
-    # Negative stock should warn (not block) — inventory check needed
-    med_neg = frappe.get_doc({
-        "doctype": "Medicament",
-        "nom_medicament": "TEST-Negative",
-        "type_medicament": "AUTRE",
-        "delai_attente_lait": 0,
-        "stock_actuel": -5
-    })
-    med_neg.insert(ignore_permissions=True)
-    assert_test(med_neg.name == "TEST-Negative",
-        "Negative stock allowed with warning (inventory check pattern)",
-        "Negative stock insert failed unexpectedly", results)
+    # ST5-14: the legacy "negative stock_actuel allowed with warning" test is
+    # obsolete (field removed). The replacement scenario — issuing a
+    # Traitement against an empty Bin — is now covered by test_stock_integration.py.
 
     frappe.db.commit()
 
@@ -374,8 +410,9 @@ def test_5_stock_decrement_restore(results):
     animal = get_test_animal()
 
     # Check initial stock
-    stock_amox_before = frappe.db.get_value("Medicament", "TEST-Amoxicilline", "stock_actuel")
-    stock_melo_before = frappe.db.get_value("Medicament", "TEST-Meloxicam", "stock_actuel")
+    # ST5-14: Bin reads instead of legacy stock_actuel
+    stock_amox_before = _bin_qty_for_med("TEST-Amoxicilline")
+    stock_melo_before = _bin_qty_for_med("TEST-Meloxicam")
     log(f"Stock before: Amoxicilline={stock_amox_before}, Meloxicam={stock_melo_before}")
 
     # Create traitement → should decrement
@@ -392,8 +429,8 @@ def test_5_stock_decrement_restore(results):
     trt.insert(ignore_permissions=True)
     frappe.db.commit()
 
-    stock_amox_after = frappe.db.get_value("Medicament", "TEST-Amoxicilline", "stock_actuel")
-    stock_melo_after = frappe.db.get_value("Medicament", "TEST-Meloxicam", "stock_actuel")
+    stock_amox_after = _bin_qty_for_med("TEST-Amoxicilline")
+    stock_melo_after = _bin_qty_for_med("TEST-Meloxicam")
 
     assert_test(stock_amox_after == stock_amox_before - 1,
         f"Amoxicilline stock decremented: {stock_amox_before} → {stock_amox_after}",
@@ -408,8 +445,8 @@ def test_5_stock_decrement_restore(results):
     frappe.delete_doc("Traitement", trt_name, force=True)
     frappe.db.commit()
 
-    stock_amox_restored = frappe.db.get_value("Medicament", "TEST-Amoxicilline", "stock_actuel")
-    stock_melo_restored = frappe.db.get_value("Medicament", "TEST-Meloxicam", "stock_actuel")
+    stock_amox_restored = _bin_qty_for_med("TEST-Amoxicilline")
+    stock_melo_restored = _bin_qty_for_med("TEST-Meloxicam")
 
     assert_test(stock_amox_restored == stock_amox_before,
         f"Amoxicilline stock restored: {stock_amox_restored}",

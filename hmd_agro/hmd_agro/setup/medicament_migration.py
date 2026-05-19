@@ -1,15 +1,17 @@
 """
-Sprint 5 — Phase A — Step 2: Médicament → Item migration.
+Sprint 5 — Médicament → Item migration (post-Phase C).
 
-For each existing Medicament:
+For each Medicament:
   1. Create an ERPNext Item (item_code = MED-{nom_medicament}) with
-     standard_rate = Médicament.prix_unitaire
-  2. Create an opening Stock Entry (Material Receipt) into Magasin Principal
-     for the current `stock_actuel` quantity (skipped if 0). basic_rate is
-     set from prix_unitaire so the SLE has a non-zero stock_value_difference.
-  3. Set Medicament.item = the new Item
+     standard_rate = Médicament.prix_unitaire and allow_negative_stock=1
+  2. Set Medicament.item = the new Item
+  3. Push item_defaults (company + default_warehouse) via ensure_item_default()
   4. Sync Item.standard_rate to current prix_unitaire (idempotent — covers
      re-runs after a price was added to a previously-migrated Médicament).
+
+New Items start at Bin = 0; stock is brought in via Purchase Receipts.
+(Pre-Phase C the migration also created an opening Stock Entry from the
+legacy `stock_actuel` field — that field was removed in ST5-12.)
 
 Run:
     bench --site hmd.localhost execute \\
@@ -18,8 +20,10 @@ Run:
 import frappe
 from frappe.utils import today
 
-COMPANY = "hmd-agro"
-WAREHOUSE = "Magasin Principal - HMD"
+from hmd_agro.hmd_agro.utils.stock_utils import (
+    DEFAULT_COMPANY as COMPANY,
+    DEFAULT_WAREHOUSE as WAREHOUSE,
+)
 DEFAULT_UOM = "Unit"
 
 # Medicament.type_medicament → Item Group name
@@ -36,18 +40,22 @@ TYPE_TO_ITEM_GROUP = {
 
 def _migrate_one_medicament(med, verbose=False):
     """Per-record migration: ensure Item exists + link Medicament.item to it.
-    Creates an opening Stock Entry only when called with stock_actuel > 0
-    (existing records during bulk migration). Returns a dict of action flags.
+    Idempotent. Returns a dict of action flags.
 
     Used by both:
       - migrate_medicaments() bulk runner (existing records)
       - Medicament.after_insert() hook (newly created records)
+
+    Post-Phase C: no opening Stock Entry creation — Items start at Bin=0,
+    stock is brought in via Purchase Receipts.
     """
-    from hmd_agro.hmd_agro.utils.stock_utils import ensure_item_default
+    from hmd_agro.hmd_agro.utils.stock_utils import (
+        ensure_item_default, ensure_item_allow_negative_stock,
+    )
 
     actions = {"created_item": 0, "created_opening": 0, "linked": 0,
                "skipped_existing_item": 0, "skipped_already_migrated": 0,
-               "defaults_synced": 0, "price_synced": 0}
+               "defaults_synced": 0, "price_synced": 0, "neg_stock_synced": 0}
 
     prix = float(med.get("prix_unitaire") or 0)
 
@@ -62,6 +70,10 @@ def _migrate_one_medicament(med, verbose=False):
             actions["price_synced"] = 1
             if verbose:
                 print(f"              ↳ Item.standard_rate synced ({prix} TND)")
+        if ensure_item_allow_negative_stock(med.item):
+            actions["neg_stock_synced"] = 1
+            if verbose:
+                print(f"              ↳ allow_negative_stock = 1 (ST5-13)")
         actions["skipped_already_migrated"] = 1
         return actions
 
@@ -82,6 +94,10 @@ def _migrate_one_medicament(med, verbose=False):
             "is_stock_item": 1,
             "include_item_in_manufacturing": 0,
             "standard_rate": prix,
+            # ST5-13: real-world Traitements must record even when system
+            # stock is stale (forgotten Purchase Receipt, miscount, etc.).
+            # Mirrors what aliment_migration does for ALI-*.
+            "allow_negative_stock": 1,
             "description": f"Médicament migré depuis HMD Agro (type: {med.type_medicament})",
         })
         item.insert(ignore_permissions=True)
@@ -89,34 +105,10 @@ def _migrate_one_medicament(med, verbose=False):
             print(f"  [create]    Item {item_code} (groupe={item_group}, prix={prix} TND)")
         actions["created_item"] = 1
 
-    stock_actuel = med.get("stock_actuel") or 0
-    if stock_actuel > 0:
-        # allow_zero_valuation_rate is required when prix=0 (no price yet) —
-        # ERPNext otherwise refuses Material Receipt at rate 0 for stocked items.
-        se = frappe.get_doc({
-            "doctype": "Stock Entry",
-            "stock_entry_type": "Material Receipt",
-            "company": COMPANY,
-            "posting_date": today(),
-            "items": [{
-                "item_code": item_code,
-                "qty": stock_actuel,
-                "uom": DEFAULT_UOM,
-                "stock_uom": DEFAULT_UOM,
-                "conversion_factor": 1,
-                "t_warehouse": WAREHOUSE,
-                "basic_rate": prix,
-                "allow_zero_valuation_rate": 1 if prix == 0 else 0,
-            }],
-            "remarks": f"Stock d'ouverture migration (Médicament {med.name})",
-        })
-        se.insert(ignore_permissions=True)
-        se.submit()
-        if verbose:
-            print(f"              ↳ Stock d'ouverture: {stock_actuel} unités @ {prix} TND → {WAREHOUSE}")
-        actions["created_opening"] = 1
-    elif verbose:
-        print(f"              ↳ Stock = 0, pas de Stock Entry d'ouverture")
+    # ST5-12 (Phase C): the legacy `stock_actuel` field is gone. New
+    # Médicaments start at Bin=0 until a Purchase Receipt is posted.
+    # Historical opening Stock Entries (from the original Phase A backfill)
+    # are preserved in the immutable Stock Ledger.
 
     frappe.db.set_value("Medicament", med.name, "item", item_code)
     actions["linked"] = 1
@@ -124,6 +116,8 @@ def _migrate_one_medicament(med, verbose=False):
         actions["defaults_synced"] = 1
     if _sync_item_standard_rate(item_code, prix):
         actions["price_synced"] = 1
+    if ensure_item_allow_negative_stock(item_code):
+        actions["neg_stock_synced"] = 1
     return actions
 
 
@@ -147,7 +141,7 @@ def migrate_medicaments():
         frappe.throw(f"Warehouse '{WAREHOUSE}' n'existe pas. Lancez stock_foundation d'abord.")
 
     medicaments = frappe.get_all("Medicament",
-        fields=["name", "nom_medicament", "type_medicament", "stock_actuel",
+        fields=["name", "nom_medicament", "type_medicament",
                 "prix_unitaire", "item"],
         order_by="nom_medicament")
 
@@ -155,7 +149,7 @@ def migrate_medicaments():
 
     stats = {"created_item": 0, "created_opening": 0, "linked": 0,
              "skipped_already_migrated": 0, "skipped_existing_item": 0,
-             "defaults_synced": 0, "price_synced": 0}
+             "defaults_synced": 0, "price_synced": 0, "neg_stock_synced": 0}
 
     for med in medicaments:
         actions = _migrate_one_medicament(med, verbose=True)
@@ -172,6 +166,7 @@ def migrate_medicaments():
     print(f"  Item existant (lien seul): {stats['skipped_existing_item']}")
     print(f"  Item Defaults sync:        {stats['defaults_synced']}")
     print(f"  Prix unitaires sync:       {stats['price_synced']}")
+    print(f"  allow_negative_stock sync: {stats['neg_stock_synced']}")
     print("=" * 60 + "\n")
 
     return stats

@@ -9,20 +9,15 @@ from frappe.model.document import Document
 
 
 class Semence(Document):
+    # ST5-13 (Phase C): quantite_restante / quantite_recue removed; their
+    # validate() bounds + before_save() default are gone. Stock state is now
+    # tracked exclusively via Bin (batch_no = Semence.name). The date check
+    # below is the only domain rule that survives Phase C.
+
     def validate(self):
-        if self.quantite_restante > self.quantite_recue:
-            frappe.throw("La quantité restante ne peut pas dépasser la quantité reçue.")
-
-        if self.quantite_restante < 0:
-            frappe.throw("La quantité restante ne peut pas être négative.")
-
         if self.date_expiration and self.date_reception:
             if self.date_expiration < self.date_reception:
                 frappe.throw("La date d'expiration ne peut pas être antérieure à la date de réception.")
-
-    def before_save(self):
-        if self.is_new() and not self.quantite_restante:
-            self.quantite_restante = self.quantite_recue
 
     def after_insert(self):
         """Auto-create the matching ERPNext Item (one per Taureau×type) and a

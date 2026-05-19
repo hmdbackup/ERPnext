@@ -7,6 +7,7 @@
   "medicament",
   "dose",
   "unite_dose",
+  "qty_consumed",
   "voie_administration",
   "diagnostic",
   "delai_attente_lait",
@@ -36,6 +37,13 @@
    "label": "Unite",
    "options": "ml\nmg\ng\ncomprime\ndose",
    "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "qty_consumed",
+   "fieldtype": "Float",
+   "label": "Qté Stock Consommée",
+   "description": "Nombre d'unités stock consommées (différent de la dose médicale). Ex: une dose de 50ml puise 1 flacon de 100ml ⇒ qty_consumed = 0.5. Défaut: 1."
   },
   {
    "fieldname": "voie_administration",

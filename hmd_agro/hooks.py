@@ -20,6 +20,14 @@ fixtures = [
 	{"dt": "Workspace", "filters": [["module", "=", "HMD AGRO"]]},
 	{"dt": "Property Setter", "filters": [["doc_type", "in", HMD_DOCTYPES]]},
 	{"dt": "Custom Field", "filters": [["dt", "in", HMD_DOCTYPES]]},
+	# Stock Entry.id_lot — SCRUM-123 custom field on a non-HMD doctype, so
+	# the prior filter doesn't catch it. Explicit by name.
+	{"dt": "Custom Field", "filters": [["name", "=", "Stock Entry-id_lot"]]},
+	# Number Cards + Dashboard Charts — protect UI-created cards from being
+	# wiped on `bench migrate`. Filter by module so we only export HMD's, not
+	# ERPNext built-ins (Active Suppliers, etc.).
+	{"dt": "Number Card", "filters": [["module", "=", "HMD AGRO"]]},
+	{"dt": "Dashboard Chart", "filters": [["module", "=", "HMD AGRO"]]},
 ]
 
 # Apps

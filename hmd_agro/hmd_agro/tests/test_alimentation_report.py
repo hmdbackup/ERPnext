@@ -24,6 +24,9 @@ import frappe
 from frappe.utils import getdate
 
 from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _alimentation
+from hmd_agro.hmd_agro.tests._sle_seed_helpers import (
+    migrate_test_aliments, seed_distribution_walk, clean_test_stock,
+)
 
 PREFIX = "TEST-ALI-"
 
@@ -141,6 +144,9 @@ def _ration_history(lot, ration, date_debut, date_fin=None):
     return doc.name
 
 def _cleanup():
+    # R2: drop SEs / SLE / Bin / Items BEFORE the Aliment so the chain
+    # unwinds cleanly. clean_test_stock is idempotent and TEST-ALI-scoped.
+    clean_test_stock(PREFIX)
     for dt, name in reversed(_created):
         frappe.db.sql(f"DELETE FROM `tab{dt}` WHERE name=%s", name)
     _created.clear()
@@ -178,6 +184,18 @@ def _setup_baseline():
         for a in (hp1, hp2, hp3): _traite(a.name, date_str, 10, lot_hp)
         for a in (mp1, mp2):     _traite(a.name, date_str, 5,  lot_mp)
     frappe.db.commit()
+
+
+def _seed_test_sle():
+    """Migrate test Aliments + walk-seed Stock Entries for the test month.
+    Called by every test entry point AFTER fixtures are fully set up
+    (including any mid-month population/ration changes the test layered
+    on top of _setup_baseline). seed_distribution_walk reads the current
+    Animal/Allotement/Lot Ration History state, so calling it last picks
+    up every fixture variation transparently."""
+    migrate_test_aliments(PREFIX)
+    lots = [f"{PREFIX}HP", f"{PREFIX}MP"]
+    seed_distribution_walk(lots, "2024-03-01", "2024-03-31")
 
 
 # ─── Tests against baseline ─────────────────────────────────────────────────
@@ -285,6 +303,7 @@ def _setup_population_change():
     _allotement_history(extra1.name, f"{PREFIX}MP", f"{PREFIX}HP", "2024-03-15 12:00:00")
     _allotement_history(extra2.name, f"{PREFIX}MP", f"{PREFIX}HP", "2024-03-15 12:00:00")
     frappe.db.commit()
+    _seed_test_sle()
 
 def test_population_change_midmonth(results):
     log("Mid-month pop change — HP 3→5, MP 4→2 on day 15", "HEAD")
@@ -314,6 +333,7 @@ def _setup_ration_switch():
     _ration_history(f"{PREFIX}HP", ration_new,
                     date_debut="2024-03-15", date_fin=None)
     frappe.db.commit()
+    _seed_test_sle()
 
 def test_ration_switch_midmonth(results):
     log("Mid-month ration switch — HP RATION-HP → RATION-NEW on day 15", "HEAD")
@@ -458,6 +478,7 @@ def run_all_tests():
     baseline_ms_moy = (baseline_row or {}).get("moy_jour_mois") or 0
     try:
         _setup_baseline()
+        _seed_test_sle()  # R2: SLE-based report needs Stock Entries seeded
         test_columns(results)
         test_aliment_daily_cells(results)
         test_aliment_moy_jour_mois(results)
@@ -487,6 +508,7 @@ def run_all_tests():
     print("\n  [Setup D: Quinzaine + Hebdomadaire (baseline)]")
     try:
         _setup_baseline()
+        _seed_test_sle()  # R2: SLE-based report needs Stock Entries seeded
         test_quinzaine_columns(results)
         test_quinzaine_baseline_values(results)
         test_quinzaine_partial_q2_midmonth(results)

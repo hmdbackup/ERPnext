@@ -26,7 +26,7 @@ Run:
 """
 import frappe
 
-TARGET_DEFAULT_WAREHOUSE = "Magasin Principal - HMD"
+from hmd_agro.hmd_agro.utils.stock_utils import DEFAULT_WAREHOUSE as TARGET_DEFAULT_WAREHOUSE
 DRAFT_PR_TO_DELETE = "MAT-PRE-2026-00001"
 
 

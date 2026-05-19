@@ -14,8 +14,7 @@ notifications, integration with Purchase Order/Receipt downstream.
 """
 import frappe
 
-
-WAREHOUSE = "Magasin Principal - HMD"
+from hmd_agro.hmd_agro.utils.stock_utils import DEFAULT_WAREHOUSE as WAREHOUSE
 # When stock falls below the reorder level, ERPNext creates a Material Request
 # of this type. "Purchase" → request gets routed to the Buying flow.
 MATERIAL_REQUEST_TYPE = "Purchase"

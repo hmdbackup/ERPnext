@@ -105,29 +105,55 @@ def setup_prerequisites(ctx):
     }).insert(ignore_permissions=True)
     ctx["taureau"] = bull_name
 
+    # ST5-14 (Phase C): legacy quantite_recue/quantite_restante/stock_actuel
+    # gone in ST5-12. Stock now lives in Batch.batch_qty / Bin.actual_qty.
+    # Seed via Material Receipts after fixture insert.
+    def _seed_stock(item_code, qty, uom, batch_no=None, rate=1):
+        if not item_code:
+            return
+        line = {
+            "item_code": item_code, "qty": qty, "uom": uom, "stock_uom": uom,
+            "conversion_factor": 1,
+            "t_warehouse": "Magasin Principal - HMD", "basic_rate": rate,
+        }
+        if batch_no:
+            line["batch_no"] = batch_no
+        se = frappe.get_doc({
+            "doctype": "Stock Entry", "stock_entry_type": "Material Receipt",
+            "company": "hmd-agro", "posting_date": today(),
+            "items": [line], "remarks": f"test_full_flow seed {item_code}",
+        })
+        se.insert(ignore_permissions=True); se.submit()
+
     # Semence
     sem = frappe.get_doc({
         "doctype": "Semence", "taureau": bull_name,
         "type_semence": "CONVENTIONNELLE",
-        "date_reception": today(), "quantite_recue": 20, "quantite_restante": 20
+        "date_reception": today(),
     })
     sem.insert(ignore_permissions=True)
     ctx["semence"] = sem.name
+    _seed_stock(frappe.db.get_value("Semence", sem.name, "item"),
+                 20, "Paillette", batch_no=sem.name)
 
     # Medicaments
     med1_name = f"TMED1-{RUN_ID}"
     frappe.get_doc({
         "doctype": "Medicament", "nom_medicament": med1_name,
-        "type_medicament": "ANTIBIOTIQUE", "delai_attente_lait": 5, "stock_actuel": 10
+        "type_medicament": "ANTIBIOTIQUE", "delai_attente_lait": 5,
     }).insert(ignore_permissions=True)
     ctx["med1"] = med1_name
+    _seed_stock(frappe.db.get_value("Medicament", med1_name, "item"),
+                 10, "Unit", rate=10)
 
     med2_name = f"TMED2-{RUN_ID}"
     frappe.get_doc({
         "doctype": "Medicament", "nom_medicament": med2_name,
-        "type_medicament": "VACCIN", "delai_attente_lait": 0, "stock_actuel": 50
+        "type_medicament": "VACCIN", "delai_attente_lait": 0,
     }).insert(ignore_permissions=True)
     ctx["med2"] = med2_name
+    _seed_stock(frappe.db.get_value("Medicament", med2_name, "item"),
+                 50, "Unit", rate=10)
 
     # Mere externe
     mere_ext = frappe.db.get_value("Mere externe", {}, "name")
@@ -154,6 +180,7 @@ def test_animal_achat(results, ctx):
         "categorie": "VACHE",
         "race": "Holstein",
         "date_naissance": "2020-06-15",
+        "date_entree": "2020-12-01",  # required when est_achat=1
         "est_achat": 1,
         "id_mere_externe": ctx["mere_externe"],
         "id_pere": ctx["taureau"],
@@ -249,7 +276,8 @@ def test_insemination(results, ctx):
     assert_test(ia.lactation is not None, "IA auto-linked to lactation", f"lactation: {ia.lactation}", results)
 
     # Check semence stock decremented
-    semence = frappe.db.get_value("Semence", ctx["semence"], "quantite_restante")
+    # ST5-14: Batch.batch_qty post-Phase C
+    semence = frappe.db.get_value("Batch", ctx["semence"], "batch_qty") or 0
     assert_test(semence == 19, "Semence stock decremented (20→19)", f"stock: {semence}", results)
 
 
@@ -533,7 +561,11 @@ def test_traitement_medical(results, ctx):
     print("\n── Part 8a: Traitement Medical ──")
 
     animal = ctx["animal"]
-    stock_before = frappe.db.get_value("Medicament", ctx["med1"], "stock_actuel")
+    # ST5-14: Bin.actual_qty post-Phase C
+    _med1_item = frappe.db.get_value("Medicament", ctx["med1"], "item")
+    stock_before = frappe.db.get_value("Bin",
+        {"item_code": _med1_item, "warehouse": "Magasin Principal - HMD"},
+        "actual_qty") or 0
 
     trt = frappe.get_doc({
         "doctype": "Traitement", "animal": animal,
@@ -551,7 +583,9 @@ def test_traitement_medical(results, ctx):
 
     assert_test(trt.name.startswith("TRT-"), f"Traitement created: {trt.name}", f"Name: {trt.name}", results)
 
-    stock_after = frappe.db.get_value("Medicament", ctx["med1"], "stock_actuel")
+    stock_after = frappe.db.get_value("Bin",
+        {"item_code": _med1_item, "warehouse": "Magasin Principal - HMD"},
+        "actual_qty") or 0
     assert_test(stock_after == stock_before - 1,
         f"Stock decremented: {stock_before}→{stock_after}", f"Stock: {stock_after}", results)
 
@@ -731,6 +765,7 @@ def test_animal_exit(results, ctx):
     exit_animal = frappe.get_doc({
         "doctype": "Animal", "identification_tn": ANIMAL_EXIT_ID,
         "categorie": "VACHE", "race": "Holstein", "date_naissance": "2019-01-01",
+        "date_entree": "2019-06-01",  # required when est_achat=1
         "est_achat": 1, "id_mere_externe": ctx["mere_externe"],
         "id_pere": ctx["taureau"], "id_lot": ctx["lot"],
         "statut": "ACTIF"
@@ -802,17 +837,21 @@ def test_lock_identity(results, ctx):
 def test_semence_stock(results, ctx):
     print("\n── Part 13: Semence Stock ──")
 
+    # ST5-14 (Phase C): the pre-Phase-C test verified the legacy validate
+    # constraint `quantite_restante <= quantite_recue` and that you could
+    # not set quantite_restante > quantite_recue. Both legacy fields are
+    # gone; stock now lives in Batch.batch_qty. The replacement scenarios
+    # — Batch can't go negative (v15 Serial-and-Batch Bundle enforcement),
+    # FIFO + all-empty refusal — are covered by tests/test_semence_dual_write.py.
+    # Here we just sanity-check that the linked Batch exists and qty is sane.
     sem = frappe.get_doc("Semence", ctx["semence"])
-    assert_test(sem.quantite_restante <= sem.quantite_recue,
-        f"Stock valid: {sem.quantite_restante}/{sem.quantite_recue}", "Stock invalid", results)
-
-    try:
-        sem.quantite_restante = sem.quantite_recue + 10
-        sem.save()
-        assert_test(False, "", "Stock > recue should fail", results)
-    except Exception:
-        assert_test(True, "Stock > recue blocked", "", results)
-    frappe.db.rollback()
+    batch_qty = frappe.db.get_value("Batch", sem.name, "batch_qty") or 0
+    assert_test(batch_qty >= 0,
+        f"Batch.batch_qty non-negative ({batch_qty})",
+        f"Batch.batch_qty negative: {batch_qty}", results)
+    assert_test(sem.item and frappe.db.exists("Item", sem.item),
+        f"Semence linked to Item {sem.item}",
+        "Semence missing Item link", results)
 
 
 # ═══════════════════════════════════════════════════════════════════

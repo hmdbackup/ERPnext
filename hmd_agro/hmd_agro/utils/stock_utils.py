@@ -19,20 +19,56 @@ def ensure_item_default(item_code, company=DEFAULT_COMPANY, warehouse=DEFAULT_WA
     when a user creates a Stock Entry / Purchase Receipt via UI. That fallback
     used to be `Stores - HMD`, causing a draft PR to silently land stock in the
     wrong warehouse. Per-Item defaults make the warehouse choice explicit and
-    survive a future change to Stock Settings."""
-    item = frappe.get_doc("Item", item_code)
-    for row in (item.item_defaults or []):
-        if row.company == company:
-            if row.default_warehouse == warehouse:
-                return False
-            row.default_warehouse = warehouse
-            item.save(ignore_permissions=True)
-            return True
-    item.append("item_defaults", {
-        "company": company,
-        "default_warehouse": warehouse,
-    })
-    item.save(ignore_permissions=True)
+    survive a future change to Stock Settings.
+
+    Implementation note (ST5-13): writes go through child-table SQL/db_insert
+    rather than `Item.save()`. The full save cycle re-runs ERPNext's Item
+    validate, which on repeated saves duplicates the stock_uom row in the
+    `Item.uoms` table — broke test_stock_integration during Phase C. db ops
+    bypass that lifecycle and produce identical visible state."""
+    existing = frappe.db.get_value(
+        "Item Default",
+        {"parent": item_code, "company": company},
+        ["name", "default_warehouse"],
+        as_dict=True,
+    )
+    if existing:
+        if existing.default_warehouse == warehouse:
+            return False
+        frappe.db.set_value("Item Default", existing.name,
+                            "default_warehouse", warehouse, update_modified=False)
+        return True
+    max_idx = (frappe.db.sql(
+        "SELECT COALESCE(MAX(idx), 0) FROM `tabItem Default` WHERE parent=%s",
+        item_code,
+    )[0][0]) or 0
+    new_doc = frappe.new_doc("Item Default")
+    new_doc.parent = item_code
+    new_doc.parenttype = "Item"
+    new_doc.parentfield = "item_defaults"
+    new_doc.company = company
+    new_doc.default_warehouse = warehouse
+    new_doc.idx = (max_idx or 0) + 1
+    new_doc.db_insert()
+    return True
+
+
+def ensure_item_allow_negative_stock(item_code):
+    """Set `Item.allow_negative_stock = 1` if not already. Idempotent.
+    Returns True iff a write happened.
+
+    Why: production stance — Traitement and Insémination represent real-world
+    events that already happened. The system must record them even if our
+    Bin count is stale (forgot to enter a Purchase Receipt, miscount, etc.).
+    Refusing the operation would force the user to fudge the data. Instead,
+    let Bin go negative; the native reorder Material Request (wired via
+    ST5-08 + utils/reorder_sync.py) handles replenishment proactively when
+    stock falls to reorder_level. Applies uniformly to ALI-, MED-, SEM-.
+    """
+    current = frappe.db.get_value("Item", item_code, "allow_negative_stock")
+    if current:
+        return False
+    frappe.db.set_value("Item", item_code, "allow_negative_stock", 1)
     return True
 
 

@@ -1,13 +1,17 @@
 """
-Sprint 5 — Phase A — Step 5: Semence → Item + Batch migration.
+Sprint 5 — Semence → Item + Batch migration (post-Phase C).
 
 Strategy:
   - One Item per (Taureau, type_semence) — e.g., "SEM-Apollo-CONV"
-  - Each existing Semence record becomes a Batch under that Item
+  - Each Semence record becomes a Batch under that Item
     - batch_id = Semence.name
     - expiry_date = Semence.date_expiration
-  - Opening Stock Entry (Material Receipt) for quantite_restante into the batch
-  - Set Semence.item = the Item code
+  - Set Semence.item = the Item code; push item_defaults
+
+New Batches start at Batch.batch_qty = 0; stock is brought in via Purchase
+Receipts with batch_no = Semence.name. (Pre-Phase C the migration also
+posted an opening Stock Entry from the legacy `quantite_restante` field —
+that field was removed in ST5-12.)
 
 Idempotent.
 
@@ -18,8 +22,10 @@ Run:
 import frappe
 from frappe.utils import today
 
-COMPANY = "hmd-agro"
-WAREHOUSE = "Magasin Principal - HMD"
+from hmd_agro.hmd_agro.utils.stock_utils import (
+    DEFAULT_COMPANY as COMPANY,
+    DEFAULT_WAREHOUSE as WAREHOUSE,
+)
 DEFAULT_UOM = "Paillette"
 
 TYPE_TO_ITEM_GROUP = {
@@ -49,6 +55,9 @@ def _ensure_item(taureau, type_semence):
         "has_batch_no": 1,
         "create_new_batch": 0,  # we create batches explicitly during migration
         "include_item_in_manufacturing": 0,
+        # ST5-13: real-world Inséminations must record even when batch stock
+        # is stale. Mirrors aliment_migration / medicament_migration.
+        "allow_negative_stock": 1,
         "description": f"Semence du taureau {taureau_name}, type {type_semence}",
     })
     item.insert(ignore_permissions=True)
@@ -72,18 +81,22 @@ def _ensure_batch(batch_id, item_code, expiry_date):
 
 def _migrate_one_semence(s, verbose=False):
     """Per-record migration: ensure (taureau, type_semence) Item exists,
-    create a Batch with batch_id=Semence.name, post an opening Stock Entry
-    for quantite_restante (skipped if 0), and link Semence.item.
+    create a Batch with batch_id=Semence.name, and link Semence.item.
 
     Used by both:
       - migrate_semences() bulk runner (existing records)
       - Semence.after_insert() hook (newly created records)
+
+    Post-Phase C: no opening Stock Entry — Batches start at qty=0, stock
+    is brought in via Purchase Receipts with batch_no = Semence.name.
     """
-    from hmd_agro.hmd_agro.utils.stock_utils import ensure_item_default
+    from hmd_agro.hmd_agro.utils.stock_utils import (
+        ensure_item_default, ensure_item_allow_negative_stock,
+    )
 
     actions = {"items_created": 0, "batches_created": 0,
                "openings_created": 0, "linked": 0,
-               "skipped": 0, "defaults_synced": 0}
+               "skipped": 0, "defaults_synced": 0, "neg_stock_synced": 0}
 
     if s.get("item"):
         if verbose:
@@ -92,6 +105,10 @@ def _migrate_one_semence(s, verbose=False):
             actions["defaults_synced"] = 1
             if verbose:
                 print(f"              ↳ item_defaults synced")
+        if ensure_item_allow_negative_stock(s.item):
+            actions["neg_stock_synced"] = 1
+            if verbose:
+                print(f"              ↳ allow_negative_stock = 1 (ST5-13)")
         actions["skipped"] = 1
         return actions
 
@@ -106,38 +123,17 @@ def _migrate_one_semence(s, verbose=False):
             print(f"              ↳ Batch {s.name} (expire {s.get('date_expiration')})")
         actions["batches_created"] = 1
 
-    qty_restante = s.get("quantite_restante") or 0
-    if qty_restante > 0:
-        se = frappe.get_doc({
-            "doctype": "Stock Entry",
-            "stock_entry_type": "Material Receipt",
-            "company": COMPANY,
-            "posting_date": today(),
-            "items": [{
-                "item_code": item_code,
-                "qty": qty_restante,
-                "uom": DEFAULT_UOM,
-                "stock_uom": DEFAULT_UOM,
-                "conversion_factor": 1,
-                "t_warehouse": WAREHOUSE,
-                "batch_no": s.name,
-                "basic_rate": s.get("prix_unitaire") or 0,
-                "allow_zero_valuation_rate": 1,
-            }],
-            "remarks": f"Stock d'ouverture migration (Semence {s.name})",
-        })
-        se.insert(ignore_permissions=True)
-        se.submit()
-        if verbose:
-            print(f"              ↳ Stock d'ouverture: {qty_restante} → batch {s.name}")
-        actions["openings_created"] = 1
-    elif verbose:
-        print(f"              ↳ quantite_restante=0, pas de Stock Entry")
+    # ST5-12 (Phase C): the legacy `quantite_restante` field is gone. New
+    # Semence batches start at Batch.batch_qty=0 until a Purchase Receipt is
+    # posted with batch_no=Semence.name. Historical opening Stock Entries
+    # (from the original Phase A backfill) are preserved in the SLE.
 
     frappe.db.set_value("Semence", s.name, "item", item_code)
     actions["linked"] = 1
     if ensure_item_default(item_code):
         actions["defaults_synced"] = 1
+    if ensure_item_allow_negative_stock(item_code):
+        actions["neg_stock_synced"] = 1
     return actions
 
 
@@ -152,14 +148,14 @@ def migrate_semences():
 
     semences = frappe.get_all("Semence",
         fields=["name", "taureau", "type_semence", "date_reception",
-                "date_expiration", "quantite_recue", "quantite_restante",
-                "prix_unitaire", "item"],
+                "date_expiration", "prix_unitaire", "item"],
         order_by="creation")
 
     print(f"\n  Semences trouvées: {len(semences)}\n")
 
     stats = {"items_created": 0, "batches_created": 0, "openings_created": 0,
-             "linked": 0, "skipped": 0, "defaults_synced": 0}
+             "linked": 0, "skipped": 0, "defaults_synced": 0,
+             "neg_stock_synced": 0}
 
     for s in semences:
         actions = _migrate_one_semence(s, verbose=True)
@@ -175,6 +171,7 @@ def migrate_semences():
     print(f"  Semences liées:                {stats['linked']}")
     print(f"  Déjà migrées (skip):           {stats['skipped']}")
     print(f"  Item Defaults sync:            {stats['defaults_synced']}")
+    print(f"  allow_negative_stock sync:     {stats['neg_stock_synced']}")
     print("=" * 60 + "\n")
 
     return stats

@@ -74,7 +74,8 @@ def setup_base(ctx):
     frappe.get_doc({"doctype": "Taureau", "nom_taureau": bull, "code_taureau": f"AC{RUN_ID}", "race": "Holstein"}).insert(ignore_permissions=True)
     ctx["taureau"] = bull
 
-    sem = frappe.get_doc({"doctype": "Semence", "taureau": bull, "type_semence": "CONVENTIONNELLE", "date_reception": today(), "quantite_recue": 50, "quantite_restante": 50})
+    # ST5-14 (Phase C): legacy quantite_recue/quantite_restante removed in ST5-12.
+    sem = frappe.get_doc({"doctype": "Semence", "taureau": bull, "type_semence": "CONVENTIONNELLE", "date_reception": today()})
     sem.insert(ignore_permissions=True)
     ctx["semence"] = sem.name
 
@@ -97,6 +98,8 @@ def make_animal(ctx, suffix, categorie="VACHE", date_naissance="2020-01-01"):
         "doctype": "Animal", "identification_tn": animal_id,
         "categorie": categorie, "race": "Holstein",
         "date_naissance": date_naissance,
+        # est_achat=1 requires date_entree (Animal.validate_mere_obligatoire)
+        "date_entree": date_naissance,
         "est_achat": 1, "id_mere_externe": ctx["mere_externe"],
         "id_pere": ctx["taureau"], "id_lot": ctx["lot"],
         "statut": "ACTIF"

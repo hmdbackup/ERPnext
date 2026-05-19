@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 
 from hmd_agro.hmd_agro.utils.config import get_config
+from hmd_agro.hmd_agro.utils.stock_utils import DEFAULT_WAREHOUSE as WAREHOUSE
 
 
 class Insemination(Document):
@@ -217,38 +218,101 @@ class Insemination(Document):
             frappe.db.set_value("Lactation", self.lactation, "nb_inseminations", count)
     
     def decrement_semence_stock(self):
-        """Decrement semence stock for the taureau and type used (FIFO oldest batch).
-        Dual-write (Sprint 5 Phase A): also create a Stock Entry (Material Issue)
-        with batch_no = picked Semence.name when the linked Item is set."""
+        """Post a Material Issue (-1 paillette) for the picked Semence batch.
+
+        Batch picker (post-Phase C, Bin-based):
+          1. List all Semence records for (taureau, type_semence) FIFO oldest first
+          2. Prefer batches with Bin.actual_qty > 0 (live stock)
+          3. Fall back to the oldest batch if all are depleted — the real
+             Insémination still gets recorded against the correct taureau even
+             when the system's stock count is stale. The Bin will go negative
+             (Item.allow_negative_stock=1), surfacing the discrepancy via the
+             native reorder Material Request and via the soft msgprint below."""
         if not self.taureau:
             return
-        filters = {"taureau": self.taureau, "quantite_restante": [">", 0]}
-        if self.type_semence:
-            filters["type_semence"] = self.type_semence
-        semence = frappe.get_list("Semence",
-            filters=filters,
-            fields=["name", "quantite_restante", "item"],
-            order_by="date_reception asc",
-            limit=1
-        )
-        if not semence:
+        from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
+        # Check whether ANY batch exists for (taureau, type) — if not, the
+        # Semence master is missing and the operator needs to add receptions
+        # first. Separate from "all batches depleted" so the message is precise.
+        any_batch = self._pick_semence_batch(prefer_with_stock=False)
+        if not any_batch:
             frappe.msgprint(
-                f"Attention: Aucun stock de semence disponible pour le taureau {self.taureau}.",
-                indicator="orange",
-                alert=True
+                f"Aucune Semence enregistrée pour taureau={self.taureau}, "
+                f"type={self.type_semence or 'tous'}. Enregistrer une "
+                f"livraison Semence avant l'IA.",
+                indicator="red", alert=True,
             )
             return
-        s = semence[0]
-        # Old path
-        frappe.db.set_value("Semence", s.name,
-            "quantite_restante", s.quantite_restante - 1)
-        # New path: dual-write via Stock Entry (only if migrated)
-        if s.item:
-            from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
-            create_stock_movement(s.item, 1, "Material Issue",
-                "Magasin Principal - HMD",
-                f"Insemination {self.name} (batch {s.name})",
-                self.date_ia, uom="Paillette", batch_no=s.name)
+        s = self._pick_semence_batch(prefer_with_stock=True)
+        if not s:
+            # All batches exist but are at qty=0. v15 enforces batch-level
+            # negative stock independent of Item.allow_negative_stock, so
+            # refusing here is the only honest option. Operator must post
+            # a Purchase Receipt before the IA can be recorded.
+            frappe.msgprint(
+                f"Stock épuisé sur TOUS les batches du taureau {self.taureau} "
+                f"({self.type_semence or 'tous types'}). Enregistrer une "
+                f"Purchase Receipt avant l'IA — ERPNext v15 n'autorise pas "
+                f"un batch en négatif.",
+                indicator="red", alert=True,
+            )
+            return
+        if not s.item:
+            frappe.msgprint(
+                f"Semence {s.name} non liée à un Item ERPNext — écriture "
+                f"stock ignorée. Lancer semence_migration.",
+                indicator="orange", alert=True,
+            )
+            return
+        create_stock_movement(s.item, 1, "Material Issue",
+            WAREHOUSE,
+            f"Insemination {self.name} (batch {s.name})",
+            self.date_ia, uom="Paillette", batch_no=s.name)
+
+    def _pick_semence_batch(self, prefer_with_stock):
+        """Resolve which Semence record (= Batch) to charge. Returns a dict
+        with name, item, qty (Batch.batch_qty) or None.
+
+        Modes:
+          prefer_with_stock=True  (decrement):  FIFO oldest-first AMONG batches
+                                                with batch_qty > 0; returns
+                                                None if none qualify. Required
+                                                because v15 ERPNext enforces
+                                                batch-level negative stock
+                                                independently of Item.allow_-
+                                                negative_stock (see Serial-
+                                                and-Batch Bundle validation) —
+                                                a depleted batch can't be
+                                                consumed even with the Item
+                                                flag, so we refuse cleanly.
+          prefer_with_stock=False (restore):    most-recent batch overall
+                                                (adding stock — always succeeds).
+
+        Per-batch qty source: `tabBatch.batch_qty` (auto-maintained by ERPNext
+        when Stock Entries with `batch_no` submit). In v15 this is the canonical
+        per-batch value — `tabBin` is per (item, warehouse) only, no batch_no
+        column anymore (batch tracking moved to Serial-and-Batch Bundle)."""
+        conditions = ["s.taureau = %s"]
+        params = [self.taureau]
+        if self.type_semence:
+            conditions.append("s.type_semence = %s")
+            params.append(self.type_semence)
+        order = "ASC" if prefer_with_stock else "DESC"
+        rows = frappe.db.sql(f"""
+            SELECT s.name, s.item, COALESCE(bat.batch_qty, 0) AS qty
+            FROM `tabSemence` s
+            LEFT JOIN `tabBatch` bat ON bat.name = s.name
+            WHERE {" AND ".join(conditions)}
+            ORDER BY s.date_reception {order}
+        """, params, as_dict=True)
+        if not rows:
+            return None
+        if prefer_with_stock:
+            for r in rows:
+                if (r.qty or 0) > 0:
+                    return r
+            return None  # all batches depleted — caller surfaces error
+        return rows[0]
 
     def close_chaleur_alerts(self):
         """Close any open chaleur alerts when IA is created"""
@@ -321,30 +385,18 @@ class Insemination(Document):
             frappe.db.set_value("Lactation", self.lactation, "nb_inseminations", count)
 
     def restore_semence_stock(self):
-        """Restore +1 dose to the most recent semence batch for this taureau and type.
-        Dual-write (Sprint 5 Phase A): also create a Stock Entry (Material Receipt)
-        with batch_no = picked Semence.name when the linked Item is set."""
+        """Compensating Material Receipt (+1 paillette) into the most recent
+        Semence batch on Insémination delete. The "most recent" pick is an
+        approximation — FIFO is irreversible by design, but matching the
+        latest batch is a reasonable proxy. Bin enforces no upper-bound check
+        (no quantite_recue ceiling) — the receipt just adds to the batch."""
         if not self.taureau:
             return
-        filters = {"taureau": self.taureau}
-        if self.type_semence:
-            filters["type_semence"] = self.type_semence
-        semence = frappe.get_list("Semence",
-            filters=filters,
-            fields=["name", "quantite_restante", "quantite_recue", "item"],
-            order_by="date_reception desc",
-            limit=1
-        )
-        if not semence or semence[0].quantite_restante >= semence[0].quantite_recue:
+        from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
+        s = self._pick_semence_batch(prefer_with_stock=False)
+        if not s or not s.item:
             return
-        s = semence[0]
-        # Old path
-        frappe.db.set_value("Semence", s.name,
-            "quantite_restante", s.quantite_restante + 1)
-        # New path: dual-write
-        if s.item:
-            from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
-            create_stock_movement(s.item, 1, "Material Receipt",
-                "Magasin Principal - HMD",
-                f"Restore Insemination {self.name} delete (batch {s.name})",
-                None, uom="Paillette", batch_no=s.name)
+        create_stock_movement(s.item, 1, "Material Receipt",
+            WAREHOUSE,
+            f"Restore Insemination {self.name} delete (batch {s.name})",
+            None, uom="Paillette", batch_no=s.name)

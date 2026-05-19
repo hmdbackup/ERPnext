@@ -12,6 +12,8 @@ Run:
 """
 import frappe
 
+from hmd_agro.hmd_agro.utils.stock_utils import DEFAULT_WAREHOUSE as WAREHOUSE
+
 
 def _section(title):
     print("\n" + "─" * 70)
@@ -47,7 +49,7 @@ def run():
     )
     for w in whs:
         marker = ""
-        if w.name == "Magasin Principal - HMD":
+        if w.name == WAREHOUSE:
             marker = "  ← OUR warehouse (created by stock_foundation.py)"
         elif w.is_group:
             marker = "  ← group (ERPNext default scaffold)"
@@ -108,7 +110,7 @@ def run():
                 print(f"     {d.parent:36s} company={d.company:25s} wh={d.default_warehouse!r}")
         else:
             print("     (aucun Item Default défini pour nos Items — ERPNext utilisera Stock Settings.default_warehouse)")
-            print("     ⚠ ce dernier est 'Stores - HMD' actuellement, pas 'Magasin Principal - HMD'")
+            print(f"     ⚠ ce dernier est 'Stores - HMD' actuellement, pas '{WAREHOUSE}'")
             print("       → impact: si quelqu'un crée un Stock Entry sans préciser de warehouse,")
             print("         il ira dans 'Stores - HMD', pas dans notre Magasin Principal.")
             print("       Notre code passe toujours warehouse explicitement → OK pour l'instant.")
@@ -153,7 +155,7 @@ def run():
         print("     (aucun Stock Entry pour nos Items)")
     for r in rows:
         flag = ""
-        if r.warehouse and r.warehouse != "Magasin Principal - HMD":
+        if r.warehouse and r.warehouse != WAREHOUSE:
             flag = "  ⚠ pas dans notre Magasin Principal !"
         print(f"     {(r.warehouse or '—'):35s} {r.stock_entry_type:18s} n={r.n_lines:>4d} qty={r.total_qty}{flag}")
 
@@ -170,7 +172,7 @@ def run():
         print("     (aucun Bin avec actual_qty != 0 pour nos Items)")
     for b in bins:
         flag = ""
-        if b.warehouse != "Magasin Principal - HMD":
+        if b.warehouse != WAREHOUSE:
             flag = "  ⚠ stock dans le mauvais warehouse"
         print(f"     {b.warehouse:35s} {b.item_code:30s} qty={b.actual_qty} val={b.valuation_rate}{flag}")
 
@@ -202,7 +204,7 @@ def run():
         print("     (aucune ligne Item Reorder définie)")
     for r in reorders:
         flag = ""
-        if r.warehouse != "Magasin Principal - HMD":
+        if r.warehouse != WAREHOUSE:
             flag = "  ⚠"
         print(f"     {r.parent:36s} wh={r.warehouse:30s} level={r.warehouse_reorder_level} qty={r.warehouse_reorder_qty} type={r.material_request_type}{flag}")
 

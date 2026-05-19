@@ -14,7 +14,8 @@ What gets posted per product type:
   • Médicament : +10 units per Item @ Médicament.prix_unitaire (Item-level)
   • Aliment    : +100 kg/g per Item @ Aliment.prix_unitaire (Item-level)
   • Semence    : +10 paillettes per Batch @ Semence.prix_unitaire (Batch-level)
-                 only for batches with quantite_restante > 0
+                 only for batches with Batch.batch_qty > 0 (post-Phase C —
+                 pre-Phase C this filtered by the legacy `quantite_restante`)
 
 Skip rules:
   • prix_unitaire == 0   → skipped (don't seed at zero)
@@ -34,8 +35,10 @@ Run:
 import frappe
 from frappe.utils import today
 
-COMPANY = "hmd-agro"
-WAREHOUSE = "Magasin Principal - HMD"
+from hmd_agro.hmd_agro.utils.stock_utils import (
+    DEFAULT_COMPANY as COMPANY,
+    DEFAULT_WAREHOUSE as WAREHOUSE,
+)
 SEED_MARKER = "SPRINT5_DEMO_SEED"
 
 SEED_QTY = {
@@ -137,13 +140,15 @@ def _seed_simple(doctype, prefix):
 
 
 def _seed_semence():
-    """Per-batch loop. For each Semence with qty_restante>0 and prix>0,
-    post a Stock Entry Material Receipt for that batch."""
+    """Per-batch loop. For each Semence with Batch.batch_qty > 0 and prix>0,
+    post a Stock Entry Material Receipt for that batch. ST5-12: pre-Phase C
+    this filtered by `Semence.quantite_restante > 0`; now reads `Batch.batch_qty`
+    since the legacy column is gone."""
     print(f"\n  ── Semence (par batch) ──")
     qty = SEED_QTY["Semence"]
     masters = frappe.get_all(
         "Semence",
-        fields=["name", "item", "prix_unitaire", "quantite_restante", "taureau"],
+        fields=["name", "item", "prix_unitaire", "taureau"],
         order_by="name",
     )
     stats = {"seeded": 0, "skipped_no_price": 0, "skipped_already_seeded": 0,
@@ -154,8 +159,9 @@ def _seed_semence():
             print(f"     [skip-no-item] {s.name}")
             stats["skipped_no_item"] += 1
             continue
-        if (s.quantite_restante or 0) <= 0:
-            print(f"     [skip-empty] {s.name} (quantite_restante=0 — batch exhausted)")
+        batch_qty = frappe.db.get_value("Batch", s.name, "batch_qty") or 0
+        if batch_qty <= 0:
+            print(f"     [skip-empty] {s.name} (Batch.batch_qty={batch_qty} — batch exhausted)")
             stats["skipped_empty"] += 1
             continue
         prix = float(s.prix_unitaire or 0)

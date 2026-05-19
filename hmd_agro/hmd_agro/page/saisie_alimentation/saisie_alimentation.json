@@ -1,0 +1,20 @@
+{
+ "content": null,
+ "creation": "2026-05-18 10:00:00.000000",
+ "doctype": "Page",
+ "icon": "list",
+ "modified": "2026-05-18 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "saisie-alimentation",
+ "owner": "Administrator",
+ "page_name": "saisie-alimentation",
+ "roles": [
+  {
+   "role": "System Manager"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Saisie Alimentation"
+}

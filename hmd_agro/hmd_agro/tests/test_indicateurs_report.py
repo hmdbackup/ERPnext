@@ -11,6 +11,9 @@ import frappe
 from frappe.utils import getdate
 
 from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _indicateurs
+from hmd_agro.hmd_agro.tests._sle_seed_helpers import (
+    migrate_test_aliments, seed_test_distribution, clean_test_stock,
+)
 
 PREFIX = "TEST-IND-"
 
@@ -111,6 +114,9 @@ def _traite(animal_name, date, litres, lot):
     _created.append(("Traite", doc.name))
 
 def _cleanup():
+    # Drop SEs / SLE / Bin / Items BEFORE the Aliment so the chain unwinds
+    # cleanly. clean_test_stock is idempotent and only touches TEST-IND- rows.
+    clean_test_stock(PREFIX)
     for dt, name in reversed(_created):
         frappe.db.sql(f"DELETE FROM `tab{dt}` WHERE name=%s", name)
     _created.clear()
@@ -142,6 +148,13 @@ def _setup():
         date_str = f"2024-03-{day:02d}"
         for c in cows:
             _traite(c.name, date_str, 25, lot)
+    frappe.db.commit()
+
+    # R2: SLE-based report needs Items + Stock Entries for the test period.
+    # Migrate test Aliments to create their Items, then post a Material Issue
+    # per day mirroring what the SCRUM-123 generator would have written.
+    migrate_test_aliments(PREFIX)
+    seed_test_distribution(lot, ration, "2024-03-01", "2024-03-31", n_pop=4)
     frappe.db.commit()
 
 

@@ -14,8 +14,6 @@
   "date_expiration",
   "section_stock",
   "item",
-  "quantite_recue",
-  "quantite_restante",
   "column_break_stock",
   "prix_unitaire",
   "section_notes",
@@ -72,23 +70,6 @@
    "options": "Item",
    "in_list_view": 1,
    "description": "Item ERPNext (rempli automatiquement par la migration). Le batch_id du Stock Entry = nom de cette Semence."
-  },
-  {
-   "fieldname": "quantite_recue",
-   "fieldtype": "Int",
-   "label": "Quantit\u00e9 Re\u00e7ue",
-   "reqd": 1,
-   "read_only": 1,
-   "description": "Initiale \u2014 fig\u00e9e \u00e0 l'enregistrement"
-  },
-  {
-   "fieldname": "quantite_restante",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Quantit\u00e9 Restante",
-   "reqd": 1,
-   "read_only": 1,
-   "description": "Mise \u00e0 jour automatiquement via les Stock Entry du module ERPNext"
   },
   {
    "fieldname": "column_break_stock",

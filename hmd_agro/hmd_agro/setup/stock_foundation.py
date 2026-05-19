@@ -103,6 +103,17 @@ def create_stock_foundation():
             print(f"     [create] {full_name}")
             created["warehouse"] += 1
 
+    # ST5-11 (2026-05-17): allow fractional Unit so Traitement.qty_consumed
+    # can be e.g. 0.5 (half a flacon). Pre-Phase C the Unit UOM had
+    # must_be_whole_number=1 (ERPNext default), which blocked fractional
+    # stock movements with the error "la quantité ne peut pas être une fraction".
+    if frappe.db.exists("UOM", "Unit"):
+        whole = frappe.db.get_value("UOM", "Unit", "must_be_whole_number")
+        if whole:
+            frappe.db.set_value("UOM", "Unit", "must_be_whole_number", 0,
+                                 update_modified=False)
+            print("  ── UOM 'Unit'.must_be_whole_number → 0 (fractional allowed)")
+
     frappe.db.commit()
 
     print("\n" + "=" * 60)

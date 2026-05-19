@@ -26,10 +26,10 @@ from frappe.utils import getdate, add_days, today
 from hmd_agro.hmd_agro.doctype.lot_ration_history.lot_ration_history import (
     ration_on_date,
 )
-
-
-COMPANY = "hmd-agro"
-WAREHOUSE = "Magasin Principal - HMD"
+from hmd_agro.hmd_agro.utils.stock_utils import (
+    DEFAULT_COMPANY as COMPANY,
+    DEFAULT_WAREHOUSE as WAREHOUSE,
+)
 
 
 # ───────────────────────── helpers ─────────────────────────
@@ -413,12 +413,46 @@ def backfill_distribution(start_date, end_date, dry_run=0):
 # ───────────────────────── scheduler ─────────────────────────
 
 @frappe.whitelist()
-def generate_daily_distribution():
-    """Scheduler entry point. Posts yesterday's distribution.
-    Why yesterday: we want to record consumption for COMPLETED days only.
-    Running at 00:01 UTC will post the previous day's data."""
-    yesterday = add_days(getdate(today()), -1)
-    print(f"\n[Scheduler] Generating feed distribution for {yesterday}")
-    s = post_distribution_for_date(yesterday, dry_run=False, verbose=True)
-    print(f"[Scheduler] Done: {s}")
-    return s
+def generate_daily_distribution(catchup_days=7):
+    """Scheduler entry point. Posts theoretical distribution for any missing
+    day in the last `catchup_days` (default 7), oldest first.
+
+    Each per-day call is idempotent via `_already_posted` inside
+    post_distribution_for_date — already-posted days produce
+    `skipped_already_posted` and the DB stays untouched. Server outages up
+    to a week self-heal: the first scheduler run after recovery fills in
+    every missing day automatically.
+
+    Why N=7: covers a long weekend, a holiday week, or a typical short
+    outage. Beyond that, you want explicit operator awareness, so use
+    `backfill_distribution(start, end)` with the known gap.
+
+    Why no "today": we only record CONSUMPTION for COMPLETED days; today
+    is still in progress.
+
+    Population is prefetched once across the full window (cheap optimisation
+    — avoids re-querying Animal/Allotement for each day inside the loop).
+    """
+    today_d = getdate(today())
+    catchup_days = int(catchup_days)
+
+    # Cap data fetch at the last completed day we'll touch.
+    end_window = add_days(today_d, -1)
+    prefetched = _prefetch_population_data(end_window)
+
+    print(f"\n[Scheduler] Catchup: "
+          f"{add_days(today_d, -catchup_days)} → {end_window}")
+
+    agg = {"posted": 0, "skipped_already_posted": 0, "skipped_no_ration": 0,
+           "skipped_no_population": 0, "skipped_no_lines": 0, "errors": 0}
+
+    # Iterate oldest → newest so chronological valuation ordering is preserved.
+    for n in range(catchup_days, 0, -1):
+        target = add_days(today_d, -n)
+        s = post_distribution_for_date(target, dry_run=False,
+                                         prefetched=prefetched, verbose=True)
+        for k, v in s.items():
+            agg[k] = agg.get(k, 0) + v
+
+    print(f"\n[Scheduler] Done. Aggregate: {agg}")
+    return agg

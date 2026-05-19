@@ -576,37 +576,45 @@ def _iso_week_bounds(date):
 def _aliment_data_per_lot(date_debut, date_filter, period_spans=None,
                            daily_snapshot_date=None):
     """Per-day per-lot historical reconstruction shared by _alimentation and
-    _indicateurs. Walks each day from date_debut → date_filter and returns:
-        active_lots:                   list of all active lot names
-        daily_qty:                     {(aliment, lot): kg distributed on snapshot day}
-        daily_ms:                      {lot: kg MS on snapshot day}
-        daily_pop:                     {lot: pop on snapshot day}
-        cumulative_qty:                {aliment: cheptel-wide kg over period}
-        cumulative_concentre_cheptel:  kg of CONCENTRE-type aliments over period
-        cumulative_ms_cheptel:         kg MS over period
-        cumulative_cow_days_cheptel:   cow-days over period
-        aliment_ms_pct:                {aliment: ms_pct fraction}
-        aliment_type:                  {aliment: type_aliment string}
-        lots_with_data:                lots with data on snapshot day
+    _indicateurs.
 
-    `daily_snapshot_date` (defaults to `date_filter` for backward compat) is
-    the day used to populate the daily_* dicts. _alimentation passes the user's
-    cursor here while letting `date_filter` go to the end of the walk window
-    (= end of month for past months) — so daily snapshot reflects the cursor
-    while period aggregates cover the full intended range.
+    Quantity / value / MS metrics come from Stock Ledger Entry via
+    `_consumption_from_sle` — the rows posted by SCRUM-123 (nightly
+    theoretical) and Saisie Alimentation (corrections). Reports therefore
+    reflect ACTUAL consumption, with frozen historical valuation.
 
-    If `period_spans` is provided as a list of (label, start, end) tuples,
-    additional per-period aggregates are returned (keys absent otherwise so
-    callers like _indicateurs are unaffected):
-        period_qty:           {(label, aliment, lot): kg total}
-        period_ms:            {(label, lot): kg MS total}
-        period_concentre:     {label: kg CONCENTRE total cheptel-wide}
-        period_ms_cheptel:    {label: kg MS total cheptel-wide}
-        period_cow_days:      {(label, lot): cow-days}
-        period_cow_days_cheptel: {label: cheptel cow-days}
-        period_days:          {label: number of actual days in the span (caps
-                               at date_filter so partial periods work)}
+    Population-derived metrics (cow-days, daily_pop) come from walking
+    Animal + Allotement History — population is independent of the stock
+    module, so it stays correct even for periods that predate the SLE
+    backfill window.
+
+    Returns:
+        active_lots:                  list of all active lot names
+        daily_qty:                    {(aliment, lot): kg net on snapshot day}
+        daily_ms:                     {lot: kg MS on snapshot day}
+        daily_pop:                    {lot: pop on snapshot day} — only for
+                                       lots with SLE data that day
+        cumulative_qty:               {aliment: cheptel kg over period (net)}
+        cumulative_concentre_cheptel: kg CONCENTRE over period
+        cumulative_ms_cheptel:        kg MS over period
+        cumulative_cow_days_cheptel:  cow-days over period (Animal-derived)
+        aliment_ms_pct:               {aliment: ms_pct fraction}
+        aliment_type:                 {aliment: type_aliment}
+        lots_with_data:               lots with SLE data (snapshot OR any
+                                       period span)
+
+    `daily_snapshot_date` (defaults to `date_filter`) drives the daily_*
+    dicts. `period_spans` (optional list of (label, start, end)) adds:
+        period_qty, period_ms, period_concentre, period_ms_cheptel
+                     (all from SLE — same shape as the legacy function)
+        period_cow_days, period_cow_days_cheptel, period_days
+                     (Animal-derived — unchanged from legacy)
     Returns None if no active lots.
+
+    Pre-backfill stance: dates before the SCRUM-123 backfill (2026-04-16)
+    return 0 for all aliment metrics — kg AND DT. Cow-days remain non-zero
+    since they come from Animal data, not the stock module. This is the
+    supervisor-approved "honest 0 rather than fabricated history" stance.
     """
     if daily_snapshot_date is None:
         daily_snapshot_date = date_filter
@@ -619,44 +627,9 @@ def _aliment_data_per_lot(date_debut, date_filter, period_spans=None,
     days_in_period = (date_filter - date_debut).days + 1
     days = [add_days(date_debut, i) for i in range(days_in_period)]
 
-    # Pre-fetch all ration history (episodes) for active lots in 1 query.
-    # Each row is one episode: ration used during [date_debut, date_fin).
-    # date_fin IS NULL means the episode is currently open.
-    history = {}
-    for r in frappe.db.sql("""
-        SELECT lot, ration, date_debut, date_fin
-        FROM `tabLot Ration History`
-        WHERE lot IN %s AND ration IS NOT NULL
-        ORDER BY date_debut ASC
-    """, (lot_names_all,), as_dict=True):
-        history.setdefault(r.lot, []).append((r.date_debut, r.date_fin, r.ration))
-
-    current_ration = {l.name: frappe.db.get_value("Lot", l.name, "id_ration_actuelle")
-                      for l in active_lots}
-
-    def ration_for(lot, day):
-        # Episodes are non-overlapping; reverse-walk and return the first one
-        # whose [date_debut, date_fin) interval covers `day`.
-        for date_debut, date_fin, rat in reversed(history.get(lot, [])):
-            if date_debut <= day and (date_fin is None or day < date_fin):
-                return rat
-        return current_ration.get(lot)
-
-    comp_cache = {}
-    def composition(ration):
-        if ration in comp_cache:
-            return comp_cache[ration]
-        rows = frappe.db.sql("""
-            SELECT c.aliment, c.quantite, a.ms_pct, a.type_aliment
-            FROM `tabComposition Ration` c JOIN `tabAliment` a ON c.aliment = a.name
-            WHERE c.parent = %s
-        """, ration, as_dict=True) if ration else []
-        comp_cache[ration] = rows
-        return rows
-
-    # Pre-fetch population data: animals + Allotement History in 2 SQL calls.
-    # Lets us compute lot population per day in pure Python (was 1 SQL per day —
-    # too slow at year scale, e.g. 365 calls/year × 7 years for Bilan Annuel).
+    # ── Population prefetch (for cow-day metrics — orthogonal to SLE) ──
+    # 2 SQL calls cover the full window, then in-memory walks per day.
+    # Avoids 1-SQL-per-day at year scale (Bilan Annuel = 365 × 7 days).
     animal_rows = frappe.db.sql("""
         SELECT name, est_achat, date_naissance, date_entree, statut, date_sortie, id_lot
         FROM `tabAnimal`
@@ -678,7 +651,6 @@ def _aliment_data_per_lot(date_debut, date_filter, period_spans=None,
             allot_history.setdefault(r.animal, []).append((getdate(r.dt), r.to_lot))
 
     def populations_on_date(day):
-        """Returns {lot: count} for `day` using pre-fetched in-memory data — no SQL."""
         per_lot = {}
         for a in animal_rows:
             if not a.entry_date or a.entry_date > day:
@@ -694,27 +666,7 @@ def _aliment_data_per_lot(date_debut, date_filter, period_spans=None,
                 per_lot[lot] = per_lot.get(lot, 0) + 1
         return per_lot
 
-    daily_qty = {}
-    daily_ms = {}
-    daily_pop = {}
-    cumulative_qty = {}
-    cumulative_concentre_cheptel = 0
-    cumulative_ms_cheptel = 0
-    cumulative_cow_days_cheptel = 0
-    aliment_ms_pct = {}
-    aliment_type = {}
-    lots_with_data = set()
-
-    period_qty = {}
-    period_ms = {}
-    period_concentre = {}
-    period_ms_cheptel = {}
-    period_cow_days = {}
-    period_cow_days_cheptel = {}
-    period_days = {}
-
     def _period_for(day):
-        """Return the label of the period this day belongs to, or None."""
         if not period_spans:
             return None
         for label, start, end in period_spans:
@@ -722,9 +674,17 @@ def _aliment_data_per_lot(date_debut, date_filter, period_spans=None,
                 return label
         return None
 
+    # ── Day walk: cow-day metrics + snapshot population only ──
+    cumulative_cow_days_cheptel = 0
+    period_cow_days = {}
+    period_cow_days_cheptel = {}
+    period_days = {}
+    snapshot_pop = {}  # captured when day == daily_snapshot_date
+
     for day in days:
         pop = populations_on_date(day)
-        is_filter_day = (day == daily_snapshot_date)
+        if day == daily_snapshot_date:
+            snapshot_pop = pop
         day_period = _period_for(day)
         if day_period is not None:
             period_days[day_period] = period_days.get(day_period, 0) + 1
@@ -734,45 +694,205 @@ def _aliment_data_per_lot(date_debut, date_filter, period_spans=None,
                 continue
             cumulative_cow_days_cheptel += n_pop
             if day_period is not None:
-                period_cow_days[(day_period, lot)] = period_cow_days.get((day_period, lot), 0) + n_pop
-                period_cow_days_cheptel[day_period] = period_cow_days_cheptel.get(day_period, 0) + n_pop
-            ration = ration_for(lot, day)
-            if not ration:
-                continue
-            for c in composition(ration):
-                aliment = c.aliment
-                ms_pct = float(c.ms_pct or 0)
-                aliment_ms_pct[aliment] = ms_pct
-                aliment_type[aliment] = c.type_aliment
-                day_qty = float(c.quantite or 0) * n_pop
-                day_ms = day_qty * ms_pct
-                cumulative_qty[aliment] = cumulative_qty.get(aliment, 0) + day_qty
-                cumulative_ms_cheptel += day_ms
-                if c.type_aliment == "CONCENTRE":
-                    cumulative_concentre_cheptel += day_qty
-                if is_filter_day:
-                    daily_qty[(aliment, lot)] = daily_qty.get((aliment, lot), 0) + day_qty
-                    daily_ms[lot] = daily_ms.get(lot, 0) + day_ms
-                    daily_pop[lot] = n_pop
-                    lots_with_data.add(lot)
-                if day_period is not None:
-                    key = (day_period, aliment, lot)
-                    period_qty[key] = period_qty.get(key, 0) + day_qty
-                    period_ms[(day_period, lot)] = period_ms.get((day_period, lot), 0) + day_ms
-                    period_ms_cheptel[day_period] = period_ms_cheptel.get(day_period, 0) + day_ms
-                    if c.type_aliment == "CONCENTRE":
-                        period_concentre[day_period] = period_concentre.get(day_period, 0) + day_qty
-                    lots_with_data.add(lot)
+                period_cow_days[(day_period, lot)] = period_cow_days.get(
+                    (day_period, lot), 0) + n_pop
+                period_cow_days_cheptel[day_period] = period_cow_days_cheptel.get(
+                    day_period, 0) + n_pop
+
+    # ── Quantity / value / MS from SLE (single source of truth) ──
+    sle_data = _consumption_from_sle(
+        date_debut, date_filter,
+        period_spans=period_spans,
+        daily_snapshot_date=daily_snapshot_date,
+    )
+
+    # daily_pop is scoped to lots that had consumption on the snapshot day
+    # only — `lots_with_data` is wider (includes lots active in any span).
+    snapshot_lots = {lot for (_, lot) in sle_data["daily_qty"].keys()}
+    daily_pop = {lot: snapshot_pop.get(lot, 0) for lot in snapshot_lots}
 
     out = {
         "active_lots": lot_names_all,
+        "daily_qty": sle_data["daily_qty"],
+        "daily_ms": sle_data["daily_ms"],
+        "daily_pop": daily_pop,
+        "cumulative_qty": sle_data["cumulative_qty"],
+        "cumulative_cost_per_aliment": sle_data["cumulative_cost_per_aliment"],
+        "cumulative_concentre_cheptel": sle_data["cumulative_concentre_cheptel"],
+        "cumulative_ms_cheptel": sle_data["cumulative_ms_cheptel"],
+        "cumulative_concentre_cost": sle_data["cumulative_concentre_cost"],
+        "cumulative_fourrage_cost": sle_data["cumulative_fourrage_cost"],
+        "cumulative_aliment_cost": sle_data["cumulative_aliment_cost"],
+        "cumulative_cow_days_cheptel": cumulative_cow_days_cheptel,
+        "aliment_ms_pct": sle_data["aliment_ms_pct"],
+        "aliment_type": sle_data["aliment_type"],
+        "lots_with_data": sle_data["lots_with_data"],
+    }
+    if period_spans:
+        out.update({
+            "period_qty": sle_data["period_qty"],
+            "period_ms": sle_data["period_ms"],
+            "period_concentre": sle_data["period_concentre"],
+            "period_ms_cheptel": sle_data["period_ms_cheptel"],
+            "period_concentre_cost": sle_data["period_concentre_cost"],
+            "period_fourrage_cost": sle_data["period_fourrage_cost"],
+            "period_aliment_cost": sle_data["period_aliment_cost"],
+            "period_cow_days": period_cow_days,
+            "period_cow_days_cheptel": period_cow_days_cheptel,
+            "period_days": period_days,
+        })
+    return out
+
+
+def _consumption_from_sle(date_debut, date_filter, period_spans=None,
+                           daily_snapshot_date=None):
+    """SLE-based equivalent of `_aliment_data_per_lot` for the QUANTITY/VALUE
+    side. Quantities and costs come from Stock Ledger Entry rows produced by
+    SCRUM-123 (RATION_DIST_) and ST5-15 Saisie Alimentation (RATION_CORRECTION_).
+    Population-derived fields (active_lots, daily_pop, cumulative_cow_days_cheptel,
+    period_cow_days*, period_days) are intentionally NOT returned here —
+    callers get those from the Animal + Allotement History walk inside
+    `_aliment_data_per_lot`.
+
+    Net math: `SUM(-actual_qty)` (issues consume, correction-receipts refund;
+    summing the signed values gives net consumed kg). Same for value via
+    `SUM(-stock_value_difference)`.
+
+    Returns a dict with keys matching `_aliment_data_per_lot`'s SLE-derivable
+    subset: daily_qty, daily_ms, cumulative_qty, cumulative_concentre_cheptel,
+    cumulative_ms_cheptel, aliment_ms_pct, aliment_type, lots_with_data.
+    Plus period_qty / period_ms / period_concentre / period_ms_cheptel when
+    `period_spans` is provided.
+
+    Sourced exclusively from rows with:
+      - voucher_type = 'Stock Entry'  (excludes future Purchase Receipts)
+      - item_code LIKE 'ALI-%'        (aliments only)
+      - remarks LIKE 'RATION_DIST_%' OR 'RATION_CORRECTION_%'
+      - id_lot IS NOT NULL            (per-lot attribution required)
+      - is_cancelled = 0
+    """
+    if daily_snapshot_date is None:
+        daily_snapshot_date = date_filter
+    snapshot = getdate(daily_snapshot_date)
+
+    # One SQL round-trip. GROUP BY (date, item_code, lot) so all downstream
+    # aggregates can be computed in Python from this single rowset.
+    rows = frappe.db.sql("""
+        SELECT
+            sle.posting_date,
+            sle.item_code,
+            se.id_lot AS lot,
+            a.name AS aliment,
+            a.ms_pct,
+            a.type_aliment,
+            SUM(-sle.actual_qty) AS qty_kg,
+            SUM(-sle.stock_value_difference) AS cost_dt
+        FROM `tabStock Ledger Entry` sle
+        JOIN `tabStock Entry` se ON se.name = sle.voucher_no
+             AND sle.voucher_type = 'Stock Entry'
+        JOIN `tabAliment` a ON a.item = sle.item_code
+        WHERE sle.is_cancelled = 0
+          AND sle.posting_date BETWEEN %s AND %s
+          AND sle.item_code LIKE %s
+          AND (se.remarks LIKE %s OR se.remarks LIKE %s)
+          AND se.id_lot IS NOT NULL
+        GROUP BY sle.posting_date, sle.item_code, se.id_lot
+    """, (date_debut, date_filter, 'ALI-%',
+          'RATION_DIST_%', 'RATION_CORRECTION_%'), as_dict=True)
+
+    # Fourrage cost aggregates roll up the three roughage groups per French
+    # dairy convention (Fourrage + Paille + Ensilage). Minéral / Supplément
+    # roll into the total but not into Fourrage specifically.
+    FOURRAGE_TYPES = {"FOURRAGE", "PAILLE", "ENSILAGE"}
+
+    daily_qty = {}
+    daily_ms = {}
+    cumulative_qty = {}
+    cumulative_cost_per_aliment = {}
+    cumulative_concentre_cheptel = 0.0
+    cumulative_ms_cheptel = 0.0
+    cumulative_concentre_cost = 0.0
+    cumulative_fourrage_cost = 0.0
+    cumulative_aliment_cost = 0.0
+    aliment_ms_pct = {}
+    aliment_type = {}
+    lots_with_data = set()
+
+    period_qty = {}
+    period_ms = {}
+    period_concentre = {}
+    period_ms_cheptel = {}
+    period_concentre_cost = {}
+    period_fourrage_cost = {}
+    period_aliment_cost = {}
+    if period_spans:
+        for label, _, _ in period_spans:
+            period_concentre.setdefault(label, 0.0)
+            period_ms_cheptel.setdefault(label, 0.0)
+            period_concentre_cost.setdefault(label, 0.0)
+            period_fourrage_cost.setdefault(label, 0.0)
+            period_aliment_cost.setdefault(label, 0.0)
+
+    for r in rows:
+        d = getdate(r.posting_date)
+        aliment = r.aliment
+        lot = r.lot
+        qty = float(r.qty_kg or 0)
+        if qty == 0:
+            # Net 0 (e.g. theoretical fully reversed by correction). Original
+            # function would never produce such a row, so skip to keep
+            # cumulative_qty keys aligned with the rest of the report.
+            continue
+        cost = float(r.cost_dt or 0)
+        ms_pct = float(r.ms_pct or 0)
+        ms_kg = qty * ms_pct
+        is_concentre = (r.type_aliment == "CONCENTRE")
+        is_fourrage = (r.type_aliment in FOURRAGE_TYPES)
+
+        aliment_ms_pct[aliment] = ms_pct
+        aliment_type[aliment] = r.type_aliment
+
+        cumulative_qty[aliment] = cumulative_qty.get(aliment, 0) + qty
+        cumulative_cost_per_aliment[aliment] = cumulative_cost_per_aliment.get(aliment, 0) + cost
+        cumulative_ms_cheptel += ms_kg
+        cumulative_aliment_cost += cost
+        if is_concentre:
+            cumulative_concentre_cheptel += qty
+            cumulative_concentre_cost += cost
+        if is_fourrage:
+            cumulative_fourrage_cost += cost
+
+        if d == snapshot:
+            daily_qty[(aliment, lot)] = daily_qty.get((aliment, lot), 0) + qty
+            daily_ms[lot] = daily_ms.get(lot, 0) + ms_kg
+            lots_with_data.add(lot)
+
+        if period_spans:
+            for label, start, end in period_spans:
+                if getdate(start) <= d <= getdate(end):
+                    key = (label, aliment, lot)
+                    period_qty[key] = period_qty.get(key, 0) + qty
+                    period_ms[(label, lot)] = period_ms.get((label, lot), 0) + ms_kg
+                    period_ms_cheptel[label] += ms_kg
+                    period_aliment_cost[label] += cost
+                    if is_concentre:
+                        period_concentre[label] = period_concentre.get(label, 0) + qty
+                        period_concentre_cost[label] += cost
+                    if is_fourrage:
+                        period_fourrage_cost[label] += cost
+                    lots_with_data.add(lot)
+                    break  # spans are non-overlapping
+
+    out = {
         "daily_qty": daily_qty,
         "daily_ms": daily_ms,
-        "daily_pop": daily_pop,
         "cumulative_qty": cumulative_qty,
+        "cumulative_cost_per_aliment": cumulative_cost_per_aliment,
         "cumulative_concentre_cheptel": cumulative_concentre_cheptel,
         "cumulative_ms_cheptel": cumulative_ms_cheptel,
-        "cumulative_cow_days_cheptel": cumulative_cow_days_cheptel,
+        "cumulative_concentre_cost": cumulative_concentre_cost,
+        "cumulative_fourrage_cost": cumulative_fourrage_cost,
+        "cumulative_aliment_cost": cumulative_aliment_cost,
         "aliment_ms_pct": aliment_ms_pct,
         "aliment_type": aliment_type,
         "lots_with_data": lots_with_data,
@@ -783,11 +903,33 @@ def _aliment_data_per_lot(date_debut, date_filter, period_spans=None,
             "period_ms": period_ms,
             "period_concentre": period_concentre,
             "period_ms_cheptel": period_ms_cheptel,
-            "period_cow_days": period_cow_days,
-            "period_cow_days_cheptel": period_cow_days_cheptel,
-            "period_days": period_days,
+            "period_concentre_cost": period_concentre_cost,
+            "period_fourrage_cost": period_fourrage_cost,
+            "period_aliment_cost": period_aliment_cost,
         })
     return out
+
+
+def _medicament_cost(date_debut, date_fin):
+    """Sum of Médicament consumption value over [date_debut, date_fin], net
+    of "Restore Traitement" Material Receipts (when a Traitement is deleted,
+    its issue gets reversed → cost should drop from the report).
+
+    Mirrors `_consumption_from_sle`'s SLE-with-marker filter but scoped to
+    MED-* items. Kept as a separate small function because the marker patterns
+    differ (Traitement / Restore Traitement) and there's no per-lot tagging
+    on medicament SEs (Traitement is per-animal, not per-lot)."""
+    return float(frappe.db.sql("""
+        SELECT COALESCE(SUM(-sle.stock_value_difference), 0)
+        FROM `tabStock Ledger Entry` sle
+        JOIN `tabStock Entry` se ON se.name = sle.voucher_no
+             AND sle.voucher_type = 'Stock Entry'
+        WHERE sle.is_cancelled = 0
+          AND sle.posting_date BETWEEN %s AND %s
+          AND sle.item_code LIKE %s
+          AND (se.remarks LIKE %s OR se.remarks LIKE %s)
+    """, (date_debut, date_fin, 'MED-%',
+          'Traitement %', 'Restore Traitement %'))[0][0] or 0)
 
 
 def _build_period_spans(granularite, date_debut, nb_jours_du_mois):
@@ -871,6 +1013,11 @@ def _alimentation(ctx):
     columns.append({"fieldname": "moy_jour_mois",
                     "label": f"Moy/jour {date_debut.strftime('%m/%Y')}",
                     "fieldtype": "Float", "precision": 2, "width": 130})
+    # Coût période (DT) — frozen historical valuation from SLE, net of any
+    # Saisie Alimentation corrections. Pre-backfill aliments show empty.
+    columns.append({"fieldname": "cout_periode",
+                    "label": "Coût période (DT)",
+                    "fieldtype": "Float", "precision": 2, "width": 130})
 
     # ── Milk fetch: per-lot daily uses cursor (today's snapshot column),
     # ── cheptel-wide cumulative + per-period uses walk_end (full-month for past).
@@ -945,6 +1092,9 @@ def _alimentation(ctx):
         # Moy/jour mois cheptel-wide
         cum = d["cumulative_qty"].get(aliment, 0)
         row["moy_jour_mois"] = round(cum / days_walked, 2) if (cum and days_walked) else None
+        # Coût période — total DT spent on this aliment in the walked range
+        cost = d["cumulative_cost_per_aliment"].get(aliment, 0)
+        row["cout_periode"] = round(cost, 2) if cost else None
         data.append(row)
 
     # ── MS Total Distribué (per-lot today; cheptel-wide for periods) ─────
@@ -999,6 +1149,15 @@ def _alimentation(ctx):
     eff_row["moy_jour_mois"] = (round(cumulative_milk_cheptel / d["cumulative_ms_cheptel"], 2)
                                 if d["cumulative_ms_cheptel"] else None)
     data.append(eff_row)
+
+    # ── Coût Total Distribué (DT) — sum of all aliment costs over the period.
+    # Audit cross-check: this total should equal the Indicateurs "Frais Aliment
+    # Total" (Coût Alim/L × Production) within rounding.
+    cost_total_row = {"aliment": "Coût Total Distribué (DT)", "ms_pct": None,
+                      "is_total": True}
+    cost_total = round(d["cumulative_aliment_cost"], 2) if d["cumulative_aliment_cost"] else None
+    cost_total_row["cout_periode"] = cost_total
+    data.append(cost_total_row)
 
     return columns, data
 
@@ -1093,6 +1252,12 @@ def _indicateurs(ctx):
         d_ = _aliment_data_per_lot(start, end)
         concentre_ = d_["cumulative_concentre_cheptel"] if d_ else 0
         ms_total_ = d_["cumulative_ms_cheptel"] if d_ else 0
+        # Cost rows source from SLE — see _consumption_from_sle. Pre-backfill
+        # periods naturally return 0 (no SLE), matching the production stance.
+        frais_conc_ = d_["cumulative_concentre_cost"] if d_ else 0
+        frais_four_ = d_["cumulative_fourrage_cost"] if d_ else 0
+        frais_alim_total_ = d_["cumulative_aliment_cost"] if d_ else 0
+        frais_med_ = _medicament_cost(start, end)
         return {
             "vp": vp_, "vl": vl_, "vt": vt_,
             "prod": prod_, "concentre": concentre_, "ms_total": ms_total_,
@@ -1102,6 +1267,10 @@ def _indicateurs(ctx):
             "eff_alim": round(prod_ / ms_total_, 2) if ms_total_ else 0,
             "conc_per_vp": round(concentre_ / vp_, 2) if vp_ else 0,
             "conc_per_vl": round(concentre_ / vl_, 2) if vl_ else 0,
+            "frais_concentre": round(frais_conc_, 2),
+            "frais_fourrage": round(frais_four_, 2),
+            "frais_medicaments": round(frais_med_, 2),
+            "cout_alim_l": round(frais_alim_total_ / prod_, 3) if prod_ else 0,
         }
 
     cur = _period_kpis(date_debut, date_filter)
@@ -1190,10 +1359,17 @@ def _indicateurs(ctx):
                               orange_min=cfg_eff_omn),
             valeur_m1=m1["eff_alim"], direction="up"),
 
-        # ── Économique (deferred — Stock/Finance integration)
-        row("Frais Concentré", None, "DT (à intégrer)"),
-        row("Frais Fourrage", None, "DT (à intégrer)"),
-        row("Coût Alimentaire / L", None, "DT/L (à intégrer)"),
+        # ── Économique — costs sourced from Stock Ledger (frozen at posting).
+        # Pre-backfill periods return 0 (no SLE rows): honest 0 rather than
+        # fabricated history. See _consumption_from_sle / _medicament_cost.
+        row("Frais Concentré", cur["frais_concentre"], "DT",
+            valeur_m1=m1["frais_concentre"], direction="down"),
+        row("Frais Fourrage", cur["frais_fourrage"], "DT",
+            valeur_m1=m1["frais_fourrage"], direction="down"),
+        row("Frais Médicaments", cur["frais_medicaments"], "DT",
+            valeur_m1=m1["frais_medicaments"], direction="down"),
+        row("Coût Alimentaire / L", cur["cout_alim_l"], "DT/L",
+            valeur_m1=m1["cout_alim_l"], direction="down"),
         row("Main d'Œuvre", None, "DT (à intégrer)"),
         row("Chiffre d'Affaires Lait", None, "DT (à intégrer)"),
     ]

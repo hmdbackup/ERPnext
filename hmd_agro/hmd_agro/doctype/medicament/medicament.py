@@ -6,14 +6,14 @@ from frappe.model.document import Document
 
 
 class Medicament(Document):
-    def validate(self):
-        if self.stock_actuel is not None and self.stock_actuel < 0:
-            frappe.msgprint(
-                f"Attention: Le stock de {self.nom_medicament} est négatif ({self.stock_actuel}). "
-                f"Veuillez vérifier l'inventaire.",
-                indicator="orange",
-                alert=True
-            )
+    # ST5-13 (Phase C): the negative-stock validate() msgprint was removed.
+    # Stock is now tracked exclusively via the ERPNext Stock module (Bin) —
+    # the legacy `stock_actuel` field is gone in ST5-12. Low-stock signals
+    # come from two sources:
+    #   • native reorder Material Request (wired via ST5-08 + utils/reorder_sync.py),
+    #     fires preventively when Bin falls to Item.reorder_level
+    #   • soft form-level msgprint in Traitement.decrement_medicament_stock,
+    #     fires when Bin <= 0 at consumption time
 
     def after_insert(self):
         """Auto-create the matching ERPNext Item and link it. Without this hook,

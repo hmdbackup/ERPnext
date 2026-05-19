@@ -63,20 +63,15 @@ class TestVelage(FrappeTestCase):
             "taureau": "Test Taureau VEL",
             "type_semence": "CONVENTIONNELLE",
         }, limit=1)
+        # ST5-14 (Phase C): legacy stock fields removed in ST5-12.
         if existing_semence:
             self.semence = existing_semence[0].name
-            frappe.db.set_value("Semence", self.semence, {
-                "quantite_restante": 10,
-                "quantite_recue": 10,
-            })
         else:
             sem = frappe.get_doc({
                 "doctype": "Semence",
                 "taureau": "Test Taureau VEL",
                 "type_semence": "CONVENTIONNELLE",
                 "date_reception": add_days(today(), -30),
-                "quantite_recue": 10,
-                "quantite_restante": 10,
             }).insert(ignore_permissions=True)
             self.semence = sem.name
 
@@ -91,7 +86,7 @@ class TestVelage(FrappeTestCase):
                 "date_naissance": "2020-01-01",
                 "id_lot": "Test Lot VEL",
                 "id_pere": "Test Taureau VEL",
-                "est_achat": 1,
+                "date_entree": add_days(today(), -500), "est_achat": 1,
                 "id_mere_externe": self.mere_externe,
                 "statut": "ACTIF",
                 "etat_gestation": "VIDE",
@@ -191,7 +186,7 @@ class TestVelage(FrappeTestCase):
                 "date_naissance": "2022-01-01",
                 "id_lot": "Test Lot VEL",
                 "id_pere": "Test Taureau VEL",
-                "est_achat": 1,
+                "date_entree": add_days(today(), -500), "est_achat": 1,
                 "id_mere_externe": self.mere_externe,
                 "statut": "ACTIF",
                 "etat_gestation": "GESTANTE",
@@ -286,7 +281,7 @@ class TestVelage(FrappeTestCase):
                 "date_naissance": "2020-01-01",
                 "id_lot": "Test Lot VEL",
                 "id_pere": "Test Taureau VEL",
-                "est_achat": 1,
+                "date_entree": add_days(today(), -500), "est_achat": 1,
                 "id_mere_externe": self.mere_externe,
                 "statut": "ACTIF",
             }).insert(ignore_permissions=True)

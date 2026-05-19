@@ -71,13 +71,43 @@ def setup_base(ctx):
     frappe.get_doc({"doctype": "Taureau", "nom_taureau": bull, "code_taureau": f"DC{RUN_ID}", "race": "Holstein"}).insert(ignore_permissions=True)
     ctx["taureau"] = bull
 
-    sem = frappe.get_doc({"doctype": "Semence", "taureau": bull, "type_semence": "CONVENTIONNELLE", "date_reception": today(), "quantite_recue": 50, "quantite_restante": 50})
+    # ST5-14 (Phase C): legacy quantite_recue/quantite_restante/stock_actuel
+    # removed in ST5-12. Stock now lives in Batch.batch_qty (Semence) and
+    # Bin.actual_qty (Medicament). Seed via Material Receipts below.
+    sem = frappe.get_doc({"doctype": "Semence", "taureau": bull, "type_semence": "CONVENTIONNELLE", "date_reception": today()})
     sem.insert(ignore_permissions=True)
     ctx["semence"] = sem.name
+    sem_item = frappe.db.get_value("Semence", sem.name, "item")
+    if sem_item:
+        se = frappe.get_doc({
+            "doctype": "Stock Entry", "stock_entry_type": "Material Receipt",
+            "company": "hmd-agro", "posting_date": today(),
+            "items": [{
+                "item_code": sem_item, "qty": 50, "uom": "Paillette",
+                "stock_uom": "Paillette", "conversion_factor": 1,
+                "t_warehouse": "Magasin Principal - HMD",
+                "batch_no": sem.name, "basic_rate": 1,
+            }],
+            "remarks": f"test_cascade_delete seed {sem.name}",
+        })
+        se.insert(ignore_permissions=True); se.submit()
 
     med = f"DMED-{RUN_ID}"
-    frappe.get_doc({"doctype": "Medicament", "nom_medicament": med, "type_medicament": "ANTIBIOTIQUE", "delai_attente_lait": 5, "stock_actuel": 20}).insert(ignore_permissions=True)
+    frappe.get_doc({"doctype": "Medicament", "nom_medicament": med, "type_medicament": "ANTIBIOTIQUE", "delai_attente_lait": 5}).insert(ignore_permissions=True)
     ctx["med"] = med
+    med_item = frappe.db.get_value("Medicament", med, "item")
+    if med_item:
+        se = frappe.get_doc({
+            "doctype": "Stock Entry", "stock_entry_type": "Material Receipt",
+            "company": "hmd-agro", "posting_date": today(),
+            "items": [{
+                "item_code": med_item, "qty": 20, "uom": "Unit",
+                "stock_uom": "Unit", "conversion_factor": 1,
+                "t_warehouse": "Magasin Principal - HMD", "basic_rate": 10,
+            }],
+            "remarks": f"test_cascade_delete seed {med}",
+        })
+        se.insert(ignore_permissions=True); se.submit()
 
     mere = frappe.db.get_value("Mere externe", {}, "name")
     if not mere:
@@ -97,6 +127,7 @@ def make_animal(ctx, suffix, categorie="VACHE"):
         "doctype": "Animal", "identification_tn": animal_id,
         "categorie": categorie, "race": "Holstein",
         "date_naissance": "2020-01-01",
+        "date_entree": "2020-06-01",  # required when est_achat=1
         "est_achat": 1, "id_mere_externe": ctx["mere_externe"],
         "id_pere": ctx["taureau"], "id_lot": ctx["lot"],
         "statut": "ACTIF"
@@ -181,7 +212,8 @@ def test_delete_insemination_reussie(results, ctx):
     lac = frappe.get_doc({"doctype": "Lactation", "animal": animal, "date_debut": "2024-01-01", "statut": "EN_COURS"})
     lac.insert(ignore_permissions=True)
 
-    stock_before = frappe.db.get_value("Semence", ctx["semence"], "quantite_restante")
+    # ST5-14: read Batch.batch_qty instead of legacy Semence.quantite_restante
+    stock_before = frappe.db.get_value("Batch", ctx["semence"], "batch_qty") or 0
 
     ia = frappe.get_doc({
         "doctype": "Insemination", "animal": animal,
@@ -191,7 +223,7 @@ def test_delete_insemination_reussie(results, ctx):
     ia.insert(ignore_permissions=True)
 
     # Stock decremented
-    stock_after_insert = frappe.db.get_value("Semence", ctx["semence"], "quantite_restante")
+    stock_after_insert = frappe.db.get_value("Batch", ctx["semence"], "batch_qty") or 0
     assert_test(stock_after_insert == stock_before - 1, "Stock decremented on IA insert", f"{stock_before}→{stock_after_insert}", results)
 
     # Mark REUSSIE
@@ -214,7 +246,7 @@ def test_delete_insemination_reussie(results, ctx):
     assert_test(a.date_velage_prevue is None, "date_velage_prevue cleared", "", results)
 
     # Semence restored
-    stock_after_delete = frappe.db.get_value("Semence", ctx["semence"], "quantite_restante")
+    stock_after_delete = frappe.db.get_value("Batch", ctx["semence"], "batch_qty") or 0
     assert_test(stock_after_delete == stock_before, f"Semence stock restored ({stock_after_delete})", f"stock: {stock_after_delete}", results)
 
 
@@ -306,7 +338,11 @@ def test_delete_traitement_restores_stock(results, ctx):
     print("\n── Delete Traitement — Stock Restore ──")
 
     animal = make_animal(ctx, 40)
-    stock_before = frappe.db.get_value("Medicament", ctx["med"], "stock_actuel")
+    # ST5-14: read Bin instead of legacy stock_actuel
+    _med_item = frappe.db.get_value("Medicament", ctx["med"], "item")
+    stock_before = frappe.db.get_value("Bin",
+        {"item_code": _med_item, "warehouse": "Magasin Principal - HMD"},
+        "actual_qty") or 0
 
     trt = frappe.get_doc({
         "doctype": "Traitement", "animal": animal,
@@ -316,7 +352,9 @@ def test_delete_traitement_restores_stock(results, ctx):
     trt.insert(ignore_permissions=True)
     frappe.db.commit()
 
-    stock_after = frappe.db.get_value("Medicament", ctx["med"], "stock_actuel")
+    stock_after = frappe.db.get_value("Bin",
+        {"item_code": _med_item, "warehouse": "Magasin Principal - HMD"},
+        "actual_qty") or 0
     assert_test(stock_after == stock_before - 1, f"Stock decremented: {stock_before}→{stock_after}", "", results)
 
     # Check attente_lait set
@@ -327,7 +365,9 @@ def test_delete_traitement_restores_stock(results, ctx):
     frappe.delete_doc("Traitement", trt.name, force=True)
     frappe.db.commit()
 
-    stock_restored = frappe.db.get_value("Medicament", ctx["med"], "stock_actuel")
+    stock_restored = frappe.db.get_value("Bin",
+        {"item_code": _med_item, "warehouse": "Magasin Principal - HMD"},
+        "actual_qty") or 0
     assert_test(stock_restored == stock_before, f"Stock restored: {stock_restored}", f"expected {stock_before}", results)
 
     flag_after = frappe.db.get_value("Animal", animal, "attente_lait_active")
