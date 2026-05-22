@@ -1,0 +1,432 @@
+{
+ "actions": [],
+ "creation": "2026-04-29 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "issingle": 1,
+ "field_order": [
+  "section_alertes",
+  "chaleur_genisse_age_mois",
+  "chaleur_post_velage_jours",
+  "verification_j21_jours",
+  "col_break_alertes_1",
+  "tarissement_advance_jours",
+  "velage_advance_jours",
+  "col_break_alertes_2",
+  "delvo_advance_jours",
+  "chaleur_cycle_jours",
+  "alerte_lead_jours",
+  "section_lactation",
+  "periode_velage_jours",
+  "tarissement_window_jours",
+  "traite_max_litres",
+  "production_initiale_jours",
+  "col_break_lactation_1",
+  "pic_production_jours",
+  "taux_tb_max_pct",
+  "taux_tp_max_pct",
+  "production_drop_alert_pct",
+  "section_allotement",
+  "allotement_intro",
+  "dim_fv_max_multi",
+  "dim_thp_max",
+  "dim_hp_max",
+  "col_break_allotement_1",
+  "dim_mp_max",
+  "dim_primipare_cap",
+  "last_third_pct",
+  "section_bilan_lait",
+  "ecart_lait_seuil_negatif_l",
+  "ecart_lait_seuil_perte_pct",
+  "section_seuils_pfe",
+  "pfe_lc_optimal_min",
+  "pfe_lc_optimal_max",
+  "pfe_lc_alarm_min",
+  "pfe_lc_alarm_max",
+  "col_break_seuils_1",
+  "pfe_efficacite_min",
+  "pfe_efficacite_orange_min",
+  "pfe_persistance_min",
+  "pfe_persistance_max",
+  "col_break_seuils_2",
+  "pfe_persistance_alarm_min",
+  "pfe_persistance_alarm_max",
+  "pfe_3ia_plus_max",
+  "pfe_3ia_plus_orange_max"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_alertes",
+   "fieldtype": "Tab Break",
+   "label": "Alertes Reproduction"
+  },
+  {
+   "fieldname": "chaleur_genisse_age_mois",
+   "fieldtype": "Int",
+   "label": "Âge déclenchement chaleur génisse (mois)",
+   "default": "14",
+   "non_negative": 1,
+   "description": "Âge en mois à partir duquel les alertes de chaleur génisse sont créées."
+  },
+  {
+   "fieldname": "chaleur_post_velage_jours",
+   "fieldtype": "Int",
+   "label": "Chaleur post-vêlage (jours)",
+   "default": "45",
+   "non_negative": 1,
+   "description": "Jours après vêlage pour le déclenchement de l'alerte chaleur post-vêlage."
+  },
+  {
+   "fieldname": "verification_j21_jours",
+   "fieldtype": "Int",
+   "label": "Vérification J+21 (jours)",
+   "default": "18",
+   "non_negative": 1,
+   "description": "Jours après IA pour la 1ère vérification de gestation."
+  },
+  { "fieldname": "col_break_alertes_1", "fieldtype": "Column Break" },
+  {
+   "fieldname": "tarissement_advance_jours",
+   "fieldtype": "Int",
+   "label": "Préavis tarissement (jours)",
+   "default": "7",
+   "non_negative": 1,
+   "description": "Jours avant la date de tarissement pour déclencher l'alerte."
+  },
+  {
+   "fieldname": "velage_advance_jours",
+   "fieldtype": "Int",
+   "label": "Préavis vêlage (jours)",
+   "default": "15",
+   "non_negative": 1,
+   "description": "Jours avant la date prévue de vêlage pour l'alerte VELAGE_IMMINENT."
+  },
+  { "fieldname": "col_break_alertes_2", "fieldtype": "Column Break" },
+  {
+   "fieldname": "delvo_advance_jours",
+   "fieldtype": "Int",
+   "label": "Préavis test DELVO (jours)",
+   "default": "1",
+   "non_negative": 1,
+   "description": "Jours avant la fin du délai d'attente lait pour l'alerte DELVO."
+  },
+  {
+   "fieldname": "chaleur_cycle_jours",
+   "fieldtype": "Int",
+   "label": "Cycle de chaleur (jours)",
+   "default": "21",
+   "non_negative": 1,
+   "description": "Durée du cycle œstral utilisée pour reporter une alerte chaleur."
+  },
+  {
+   "fieldname": "alerte_lead_jours",
+   "fieldtype": "Int",
+   "label": "Avance affichage alertes (jours)",
+   "default": "2",
+   "non_negative": 1,
+   "description": "S'applique <b>uniquement</b> au suivi des alertes de vérification de gestation (J+21 / J+50). Quand le vétérinaire reprogramme une vérification dans X jours, l'alerte de suivi apparaît <b>ce nombre de jours</b> avant la date cible. <b>N'affecte AUCUNE autre alerte.</b>"
+  },
+
+  {
+   "fieldname": "section_lactation",
+   "fieldtype": "Tab Break",
+   "label": "Lactation & Production"
+  },
+  {
+   "fieldname": "periode_velage_jours",
+   "fieldtype": "Int",
+   "label": "Période de gestation (jours)",
+   "default": "280",
+   "non_negative": 1,
+   "description": "Durée de gestation moyenne. Holstein ≈ 280 j. Modifier propage à toutes les vaches gestantes (date de vêlage prévue + date de tarissement)."
+  },
+  {
+   "fieldname": "tarissement_window_jours",
+   "fieldtype": "Int",
+   "label": "Fenêtre tarissement avant vêlage (jours)",
+   "default": "60",
+   "non_negative": 1,
+   "description": "Nombre de jours avant le vêlage déclenchant le tarissement."
+  },
+  {
+   "fieldname": "traite_max_litres",
+   "fieldtype": "Float",
+   "label": "Quantité max par traite (L)",
+   "default": "60",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Limite supérieure acceptée à la saisie d'une traite."
+  },
+  {
+   "fieldname": "production_initiale_jours",
+   "fieldtype": "Int",
+   "label": "Durée du démarrage de lactation (jours)",
+   "default": "60",
+   "non_negative": 1,
+   "description": "Période après vêlage utilisée pour calculer la « <b>Production Initiale</b> » de chaque lactation (somme du lait produit pendant cette période). Standard zootechnique : 60 jours. Modifier déclenche un <b>recalcul de toutes les lactations</b>."
+  },
+  { "fieldname": "col_break_lactation_1", "fieldtype": "Column Break" },
+  {
+   "fieldname": "pic_production_jours",
+   "fieldtype": "Int",
+   "label": "Fenêtre pic production (jours)",
+   "default": "150",
+   "non_negative": 1,
+   "description": "Période après vêlage dans laquelle le système cherche le <b>jour avec la plus forte production</b> (le « pic »). Biologie : le pic survient généralement entre J+50 et J+100 ; le défaut 150 laisse une marge. Modifier déclenche un <b>recalcul de toutes les lactations</b>."
+  },
+  {
+   "fieldname": "taux_tb_max_pct",
+   "fieldtype": "Float",
+   "label": "Taux butyreux max (%)",
+   "default": "10",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Plafond de validation pour le taux butyreux saisi."
+  },
+  {
+   "fieldname": "taux_tp_max_pct",
+   "fieldtype": "Float",
+   "label": "Taux protéique max (%)",
+   "default": "10",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Plafond de validation pour le taux protéique saisi."
+  },
+  {
+   "fieldname": "production_drop_alert_pct",
+   "fieldtype": "Float",
+   "label": "Alerte chute de production quotidienne (%)",
+   "default": "-15",
+   "precision": "1",
+   "description": "Pourcentage de chute de production entre deux jours consécutifs à partir duquel la cellule est mise en évidence dans les rapports (Saisie Traite, Allotement, Contrôle Laitier). Valeur négative (ex : -15 = chute de 15%)."
+  },
+
+  {
+   "fieldname": "section_allotement",
+   "fieldtype": "Tab Break",
+   "label": "Allotement JL"
+  },
+  {
+   "fieldname": "allotement_intro",
+   "fieldtype": "HTML",
+   "options": "<div style='padding:8px 12px;background:#fff8e1;border-left:3px solid #f4a300;border-radius:4px;font-size:12px;line-height:1.5;'><b>⚠ Avancé — modifier avec prudence.</b> Bornes des stades de lactation utilisées par le moteur de suggestion d'allotement. <b>Doivent être strictement croissantes</b> (FV &lt; THP &lt; HP &lt; MP). Une modification incorrecte fausse l'allocation des vaches.</div>"
+  },
+  {
+   "fieldname": "dim_fv_max_multi",
+   "fieldtype": "Int",
+   "label": "JL max FV — multipare (jours)",
+   "default": "30",
+   "non_negative": 1,
+   "description": "Limite supérieure de la période FV pour les multipares."
+  },
+  {
+   "fieldname": "dim_thp_max",
+   "fieldtype": "Int",
+   "label": "JL max THP (jours)",
+   "default": "120",
+   "non_negative": 1,
+   "description": "Limite supérieure de la période THP."
+  },
+  {
+   "fieldname": "dim_hp_max",
+   "fieldtype": "Int",
+   "label": "JL max HP (jours)",
+   "default": "240",
+   "non_negative": 1,
+   "description": "Limite supérieure de la période HP."
+  },
+  { "fieldname": "col_break_allotement_1", "fieldtype": "Column Break" },
+  {
+   "fieldname": "dim_mp_max",
+   "fieldtype": "Int",
+   "label": "JL max MP (jours)",
+   "default": "305",
+   "non_negative": 1,
+   "description": "Limite supérieure de la période MP. Au-delà, les multipares sont en FP."
+  },
+  {
+   "fieldname": "dim_primipare_cap",
+   "fieldtype": "Int",
+   "label": "Cap primipare (jours)",
+   "default": "300",
+   "non_negative": 1,
+   "description": "Les primipares restent en FV jusqu'à ce JL, puis passent en FP."
+  },
+  {
+   "fieldname": "last_third_pct",
+   "fieldtype": "Float",
+   "label": "Seuil dernier tiers (%)",
+   "default": "66.7",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Quand une vache dépasse ce pourcentage de la période dans son lot actuel et que sa production est faible, le système suggère de la déplacer au groupe suivant en avance."
+  },
+  {
+   "fieldname": "section_bilan_lait",
+   "fieldtype": "Tab Break",
+   "label": "Bilan Lait"
+  },
+  {
+   "fieldname": "ecart_lait_seuil_negatif_l",
+   "fieldtype": "Float",
+   "label": "Seuil rouge écart négatif (L)",
+   "default": "1",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Si l'écart < -valeur (en litres), la cellule passe en ROUGE. Indique une sur-allocation impossible (vendu+CI+LV > production)."
+  },
+  {
+   "fieldname": "ecart_lait_seuil_perte_pct",
+   "fieldtype": "Float",
+   "label": "Seuil orange perte (%)",
+   "default": "5",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Si l'écart positif > valeur % de la production totale, la cellule passe en ORANGE. Indique une perte/oubli de saisie suspect."
+  },
+  {
+   "fieldname": "section_seuils_pfe",
+   "fieldtype": "Tab Break",
+   "label": "Seuils PFE"
+  },
+  {
+   "fieldname": "pfe_lc_optimal_min",
+   "fieldtype": "Float",
+   "label": "L/C Optimal Min (vert)",
+   "default": "2.0",
+   "non_negative": 1,
+   "precision": "2",
+   "description": "Borne basse de la plage optimale L/C. PFE: 2.0."
+  },
+  {
+   "fieldname": "pfe_lc_optimal_max",
+   "fieldtype": "Float",
+   "label": "L/C Optimal Max (vert)",
+   "default": "2.4",
+   "non_negative": 1,
+   "precision": "2",
+   "description": "Borne haute de la plage optimale L/C. PFE: 2.4."
+  },
+  {
+   "fieldname": "pfe_lc_alarm_min",
+   "fieldtype": "Float",
+   "label": "L/C Alarme Min (rouge si <)",
+   "default": "1.5",
+   "non_negative": 1,
+   "precision": "2",
+   "description": "Si L/C < cette valeur → ROUGE. PFE: 1.5."
+  },
+  {
+   "fieldname": "pfe_lc_alarm_max",
+   "fieldtype": "Float",
+   "label": "L/C Alarme Max (rouge si >)",
+   "default": "3.0",
+   "non_negative": 1,
+   "precision": "2",
+   "description": "Si L/C > cette valeur → ROUGE (ration mal équilibrée). PFE: 3.0."
+  },
+  {
+   "fieldname": "col_break_seuils_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pfe_efficacite_min",
+   "fieldtype": "Float",
+   "label": "Efficacité Alimentaire Min (vert si ≥)",
+   "default": "1.4",
+   "non_negative": 1,
+   "precision": "2",
+   "description": "Production/MS ingérée ≥ cette valeur → VERT. PFE: 1.4 L/kg MS."
+  },
+  {
+   "fieldname": "pfe_efficacite_orange_min",
+   "fieldtype": "Float",
+   "label": "Efficacité Alim Orange Min (rouge si <)",
+   "default": "1.0",
+   "non_negative": 1,
+   "precision": "2",
+   "description": "Production/MS entre cette valeur et seuil min → ORANGE. < cette valeur → ROUGE."
+  },
+  {
+   "fieldname": "pfe_persistance_min",
+   "fieldtype": "Float",
+   "label": "Persistance Optimal Min (vert)",
+   "default": "0.85",
+   "non_negative": 1,
+   "precision": "2",
+   "description": "Borne basse de la plage optimale Persistance. PFE: 0.85."
+  },
+  {
+   "fieldname": "pfe_persistance_max",
+   "fieldtype": "Float",
+   "label": "Persistance Optimal Max (vert)",
+   "default": "0.95",
+   "non_negative": 1,
+   "precision": "2",
+   "description": "Borne haute de la plage optimale Persistance. PFE: 0.95."
+  },
+  {
+   "fieldname": "col_break_seuils_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pfe_persistance_alarm_min",
+   "fieldtype": "Float",
+   "label": "Persistance Alarme Min (rouge si <)",
+   "default": "0.7",
+   "non_negative": 1,
+   "precision": "2",
+   "description": "Si Persistance < cette valeur → ROUGE (chute marquée post-pic)."
+  },
+  {
+   "fieldname": "pfe_persistance_alarm_max",
+   "fieldtype": "Float",
+   "label": "Persistance Alarme Max (rouge si >)",
+   "default": "1.10",
+   "non_negative": 1,
+   "precision": "2",
+   "description": "Si Persistance > cette valeur → ROUGE (anomalie, production grimpe post-pic)."
+  },
+  {
+   "fieldname": "pfe_3ia_plus_max",
+   "fieldtype": "Float",
+   "label": "%3IA+ Max Vert (cible <)",
+   "default": "15",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "% vaches nécessitant 3+ IAs ≤ cette valeur → VERT. PFE: < 15%."
+  },
+  {
+   "fieldname": "pfe_3ia_plus_orange_max",
+   "fieldtype": "Float",
+   "label": "%3IA+ Max Orange (rouge si >)",
+   "default": "25",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "%3IA+ entre seuil vert et cette valeur → ORANGE. > cette valeur → ROUGE."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-04-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "HMD Configuration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

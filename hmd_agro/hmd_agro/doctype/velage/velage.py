@@ -5,6 +5,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate, today
 
+from hmd_agro.hmd_agro.utils.config import get_config
+
 
 class Velage(Document):
     def validate(self):
@@ -332,6 +334,10 @@ class Velage(Document):
         # Reset animal etat_lactation before deleting
         if lac.animal:
             frappe.db.set_value("Animal", lac.animal, "etat_lactation", "")
+        # Clear the back-reference so Lactation.on_trash's guard
+        # ("velage associé existe") doesn't block this cascade delete.
+        # Safe: this Velage is about to disappear anyway.
+        frappe.db.set_value("Lactation", self.lactation, "velage_debut", None)
         frappe.delete_doc("Lactation", self.lactation, ignore_permissions=True, force=True)
 
     def _restore_mother(self):
@@ -344,9 +350,11 @@ class Velage(Document):
         if self.insemination:
             ia = frappe.db.get_value("Insemination", self.insemination, "date_ia")
             if ia:
+                periode_velage = get_config("periode_velage_jours", default=280)
+                tarissement_window = get_config("tarissement_window_jours", default=60)
                 animal.id_ia_fecondante = self.insemination
-                animal.date_velage_prevue = frappe.utils.add_days(ia, 280)
-                animal.date_tarissement = frappe.utils.add_days(animal.date_velage_prevue, -60)
+                animal.date_velage_prevue = frappe.utils.add_days(ia, periode_velage)
+                animal.date_tarissement = frappe.utils.add_days(animal.date_velage_prevue, -tarissement_window)
                 animal.etat_gestation = "GESTANTE"
         else:
             # No linked IA — just set back to GESTANTE

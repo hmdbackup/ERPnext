@@ -1,0 +1,31 @@
+/* Zebra striping for query report tables.
+   Scoped to .report-wrapper so it only affects Frappe query reports —
+   not list views, child-table grids in forms, or bulk-edit modals.
+
+   The linear-gradient overlay on top of var(--card-bg) gives an OPAQUE
+   tinted cell so reports with sticky columns (controle_laitier, etc.)
+   don't bleed the underlying scrolled content through. */
+.report-wrapper .dt-row:nth-child(even) .dt-cell {
+    background: linear-gradient(rgba(127, 127, 127, 0.15), rgba(127, 127, 127, 0.15)),
+                var(--card-bg) !important;
+}
+
+/* Darker vertical separators between columns. Frappe's default border color
+   is too light to read against the zebra rows above; this gives a stronger
+   visual division so columns are easier to scan in dense KPI/per-lot tables.
+   Theme-neutral grey (rgba) so it adapts to light and dark themes. */
+.report-wrapper .dt-cell {
+    border-right: 1px solid rgba(127, 127, 127, 0.4) !important;
+}
+
+/* HMD Configuration form — bold field labels so each setting's name stands
+   out clearly from its description text below it. Scoped via the
+   `hmd-config-bold-labels` class added on the form's outer wrapper in
+   hmd_configuration.js refresh(). !important is needed because Frappe's
+   own form.scss sets the regular weight at equal specificity via the
+   get_textstyle("sm", "regular") mixin. */
+.hmd-config-bold-labels .control-label {
+    font-weight: 600 !important;
+    color: var(--text-color) !important;
+    font-size: 14px !important;
+}

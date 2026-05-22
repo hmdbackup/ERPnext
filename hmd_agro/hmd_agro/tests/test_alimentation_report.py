@@ -5,9 +5,18 @@ Convention: ms_pct stored as fraction (0.86 = 86%); the report multiplies by 100
 for display. Ration composition is immutable — to change a ration, create a new
 Ration. Mid-month switches are tracked via Lot Ration History.
 
-Each cell shows the daily snapshot AT date_filter (kg distributed that day).
-The "Cumulé" column is cheptel-wide cumulative per aliment from date_debut →
-date_filter (inclusive).
+Granularité modes (ctx["granularite"]):
+  Quotidien    — only per-lot today's snapshot + Moy/jour mois
+  Quinzaine    — per-lot today + cheptel-wide moy_q1 + moy_q2 + Δ Q2/Q1 + Moy/jour mois
+  Hebdomadaire — per-lot today + cheptel-wide moy_s1..s4 + Moy/jour mois
+
+Per-lot cells are ALWAYS today's snapshot regardless of mode (Option B
+layout — keeps the table narrow). The granularité-specific columns are
+cheptel-wide aggregates on the right side.
+
+The "Moy/jour mois" column replaces the old "Cumulé" — same underlying
+value (cumulative cheptel-wide kg per aliment) but divided by the number
+of days walked since date_debut, so the value is comparable across modes.
 
 Run: bench execute hmd_agro.hmd_agro.tests.test_alimentation_report.run_all_tests
 """
@@ -15,6 +24,9 @@ import frappe
 from frappe.utils import getdate
 
 from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _alimentation
+from hmd_agro.hmd_agro.tests._sle_seed_helpers import (
+    migrate_test_aliments, seed_distribution_walk, clean_test_stock,
+)
 
 PREFIX = "TEST-ALI-"
 
@@ -118,20 +130,23 @@ def _allotement_history(animal, from_lot, to_lot, creation_dt):
     _created.append(("Allotement History", doc.name))
     return doc.name
 
-def _ration_history(lot, from_ration, to_ration, creation_dt):
-    """Insert a Lot Ration History row with a backdated `creation` so the
-    ration helper sees a mid-month switch."""
+def _ration_history(lot, ration, date_debut, date_fin=None):
+    """Insert a Lot Ration History episode row directly (bypasses the auto-tracker
+    on Lot.on_update). Used to seed mid-month ration switches in test fixtures.
+    date_fin=None ⇒ open episode (currently used by the lot)."""
     doc = frappe.get_doc({
         "doctype": "Lot Ration History",
-        "lot": lot, "from_ration": from_ration, "to_ration": to_ration,
+        "lot": lot, "ration": ration,
+        "date_debut": date_debut, "date_fin": date_fin,
         "changed_by": "Administrator", "source": "MANUAL",
     }).insert(ignore_permissions=True)
-    frappe.db.sql("UPDATE `tabLot Ration History` SET creation=%s, modified=%s WHERE name=%s",
-                  (creation_dt, creation_dt, doc.name))
     _created.append(("Lot Ration History", doc.name))
     return doc.name
 
 def _cleanup():
+    # R2: drop SEs / SLE / Bin / Items BEFORE the Aliment so the chain
+    # unwinds cleanly. clean_test_stock is idempotent and TEST-ALI-scoped.
+    clean_test_stock(PREFIX)
     for dt, name in reversed(_created):
         frappe.db.sql(f"DELETE FROM `tab{dt}` WHERE name=%s", name)
     _created.clear()
@@ -171,20 +186,33 @@ def _setup_baseline():
     frappe.db.commit()
 
 
+def _seed_test_sle():
+    """Migrate test Aliments + walk-seed Stock Entries for the test month.
+    Called by every test entry point AFTER fixtures are fully set up
+    (including any mid-month population/ration changes the test layered
+    on top of _setup_baseline). seed_distribution_walk reads the current
+    Animal/Allotement/Lot Ration History state, so calling it last picks
+    up every fixture variation transparently."""
+    migrate_test_aliments(PREFIX)
+    lots = [f"{PREFIX}HP", f"{PREFIX}MP"]
+    seed_distribution_walk(lots, "2024-03-01", "2024-03-31")
+
+
 # ─── Tests against baseline ─────────────────────────────────────────────────
 
 def test_columns(results):
-    log("Columns — Aliment + MS% + lots + Cumulé", "HEAD")
+    log("Columns — Aliment + MS% + lots + Moy/jour mois (Quotidien default)", "HEAD")
     cols, _ = _alimentation(CTX_END)
     col_names = [c["fieldname"] for c in cols]
     check("aliment" in col_names, "Has aliment", "Missing aliment", results)
     check("ms_pct" in col_names, "Has ms_pct", "Missing ms_pct", results)
     check(f"{PREFIX}HP" in col_names, "Has HP lot", f"Cols: {col_names}", results)
     check(f"{PREFIX}MP" in col_names, "Has MP lot", f"Cols: {col_names}", results)
-    check("cumule" in col_names, "Has Cumulé", f"Cols: {col_names}", results)
-    cum_label = next(c["label"] for c in cols if c["fieldname"] == "cumule")
-    check("01/03" in cum_label and "31/03" in cum_label,
-          f"Cumulé label spans period: {cum_label}", f"Got {cum_label}", results)
+    check("moy_jour_mois" in col_names, "Has Moy/jour mois", f"Cols: {col_names}", results)
+    moy_label = next(c["label"] for c in cols if c["fieldname"] == "moy_jour_mois")
+    check("03/2024" in moy_label,
+          f"Moy/jour mois label includes month: {moy_label}", f"Got {moy_label}", results)
+    check("cumule" not in col_names, "cumule column removed", "cumule still present", results)
 
 def test_aliment_daily_cells(results):
     log("Cells = daily snapshot at date_filter (constant pop/ration)", "HEAD")
@@ -198,17 +226,17 @@ def test_aliment_daily_cells(results):
     check(soja[f"{PREFIX}MP"] == 2, "MP Soja jour = 2kg", f"Got {soja[f'{PREFIX}MP']}", results)
     check(mais[f"{PREFIX}MP"] == 6, "MP Mais jour = 6kg", f"Got {mais[f'{PREFIX}MP']}", results)
 
-def test_aliment_cumule_cheptel(results):
-    log("Cumulé column = cheptel-wide kg × 31 days", "HEAD")
+def test_aliment_moy_jour_mois(results):
+    log("Moy/jour mois = cheptel kg / nb_jours_walked", "HEAD")
     _, data = _alimentation(CTX_END)
     soja = _find_row(data, f"{PREFIX}SOJA")
     mais = _find_row(data, f"{PREFIX}MAIS")
-    # Soja cheptel: HP (2×3×31=186) + MP (1×2×31=62) = 248
-    check(soja["cumule"] == 248, "Soja cumulé = 248kg cheptel",
-          f"Got {soja['cumule']}", results)
-    # Mais cheptel: HP (5×3×31=465) + MP (3×2×31=186) = 651
-    check(mais["cumule"] == 651, "Mais cumulé = 651kg cheptel",
-          f"Got {mais['cumule']}", results)
+    # Soja cheptel: 248 kg over 31 days → moy = 8.0
+    check(soja["moy_jour_mois"] == 8.0, "Soja moy/jour = 8.0 (248/31)",
+          f"Got {soja['moy_jour_mois']}", results)
+    # Mais cheptel: 651 kg over 31 days → moy = 21.0
+    check(mais["moy_jour_mois"] == 21.0, "Mais moy/jour = 21.0 (651/31)",
+          f"Got {mais['moy_jour_mois']}", results)
 
 def test_ms_pct(results):
     log("MS% — Soja=90, Mais=88 (fraction × 100 for display)", "HEAD")
@@ -218,50 +246,52 @@ def test_ms_pct(results):
     check(soja["ms_pct"] == 90.0, "Soja MS% = 90", f"Got {soja['ms_pct']}", results)
     check(mais["ms_pct"] == 88.0, "Mais MS% = 88", f"Got {mais['ms_pct']}", results)
 
-def test_ms_total(results, baseline_ms_cum):
-    # Cumulé is cheptel-wide (includes real DB data); assert delta added by fixtures.
-    log("MS Total Distribué — daily per lot, cumulative cheptel (delta)", "HEAD")
+def test_ms_total(results, baseline_ms_moy):
+    # Moy/jour is cheptel-wide (includes real DB data); assert delta added by fixtures.
+    log("MS Total Distribué — daily per lot, moy/jour cheptel (delta)", "HEAD")
     _, data = _alimentation(CTX_END)
     row = _find_row(data, "MS Total Distribué")
     # HP daily: (2×0.9 + 5×0.88) × 3 = 6.2 × 3 = 18.6
     check(row[f"{PREFIX}HP"] == 18.6, "HP MS daily = 18.6", f"Got {row[f'{PREFIX}HP']}", results)
     # MP daily: (1×0.9 + 3×0.88) × 2 = 3.54 × 2 = 7.08
     check(row[f"{PREFIX}MP"] == 7.08, "MP MS daily = 7.08", f"Got {row[f'{PREFIX}MP']}", results)
-    # Delta added by fixtures: (18.6 + 7.08) × 31 = 796.08
-    delta = round((row["cumule"] or 0) - (baseline_ms_cum or 0), 2)
-    check(delta == 796.08, "Δ MS cumulé cheptel = 796.08",
-          f"Got Δ={delta} (cumulé={row['cumule']}, baseline={baseline_ms_cum})", results)
+    # Delta added by fixtures: (18.6 + 7.08) = 25.68 kg/day cheptel-wide constant
+    delta = round((row["moy_jour_mois"] or 0) - (baseline_ms_moy or 0), 2)
+    check(delta == 25.68, "Δ MS moy/jour cheptel = 25.68",
+          f"Got Δ={delta} (moy={row['moy_jour_mois']}, baseline={baseline_ms_moy})", results)
 
 def test_ms_tete(results):
-    log("MS/Tête — daily per lot (cumulative is cheptel-wide, not asserted)", "HEAD")
+    log("MS/Tête — daily per lot (moy/jour cheptel-wide, sanity-only)", "HEAD")
     _, data = _alimentation(CTX_END)
     row = _find_row(data, "MS Distribué/Tête")
     # HP daily: 18.6 / 3 = 6.2; MP daily: 7.08 / 2 = 3.54
     check(row[f"{PREFIX}HP"] == 6.2, "HP MS/cow daily = 6.2", f"Got {row[f'{PREFIX}HP']}", results)
     check(row[f"{PREFIX}MP"] == 3.54, "MP MS/cow daily = 3.54", f"Got {row[f'{PREFIX}MP']}", results)
-    # Cheptel cumulé MS/cow-day depends on the whole DB, not just fixtures — sanity check it's positive.
-    check((row["cumule"] or 0) > 0, "MS/cow-day cumulé > 0", f"Got {row['cumule']}", results)
+    # Cheptel-wide moy MS/cow-day depends on the whole DB — sanity check it's positive.
+    check((row["moy_jour_mois"] or 0) > 0, "MS/cow-day moy > 0",
+          f"Got {row['moy_jour_mois']}", results)
 
 def test_efficacite(results):
-    log("Efficacité — daily per lot (cumulative is cheptel-wide, not asserted)", "HEAD")
+    log("Efficacité — daily per lot (moy/jour cheptel-wide, sanity-only)", "HEAD")
     _, data = _alimentation(CTX_END)
     row = _find_row(data, "Efficacité alimentaire L/Kg MS")
     # HP daily: 30L / 18.6 = 1.61; MP daily: 10L / 7.08 = 1.41
     check(row[f"{PREFIX}HP"] == 1.61, "HP eff daily = 1.61", f"Got {row[f'{PREFIX}HP']}", results)
     check(row[f"{PREFIX}MP"] == 1.41, "MP eff daily = 1.41", f"Got {row[f'{PREFIX}MP']}", results)
-    # Cheptel cumulé Eff depends on whole DB; sanity check it's a non-negative ratio.
-    check((row["cumule"] or 0) >= 0, "Eff cumulé cheptel >= 0", f"Got {row['cumule']}", results)
+    # Cheptel-wide moy Eff depends on whole DB; sanity check it's a non-negative ratio.
+    check((row["moy_jour_mois"] or 0) >= 0, "Eff moy cheptel >= 0",
+          f"Got {row['moy_jour_mois']}", results)
 
-def test_midmonth_filter_caps_cumule(results):
-    log("date_filter = 15/03 → Cumulé only sums days 1-15", "HEAD")
+def test_midmonth_filter_caps_moy(results):
+    log("date_filter = 15/03 → Moy/jour computed on 15 days walked", "HEAD")
     _, data = _alimentation(_ctx("2024-03-15"))
     mais = _find_row(data, f"{PREFIX}MAIS")
-    # Cells stay daily (constant): HP=15, MP=6
+    # Cells stay daily (constant pop/ration): HP=15, MP=6
     check(mais[f"{PREFIX}HP"] == 15, "HP Mais cell still daily = 15",
           f"Got {mais[f'{PREFIX}HP']}", results)
-    # Cumulé only over 15 days: HP (5×3×15=225) + MP (3×2×15=90) = 315
-    check(mais["cumule"] == 315, "Mais cumulé 15j = 315kg",
-          f"Got {mais['cumule']}", results)
+    # Mais cheptel over 15 days: HP (5×3×15=225) + MP (3×2×15=90) = 315 → moy 315/15 = 21.0
+    check(mais["moy_jour_mois"] == 21.0, "Mais moy/jour 15j = 21.0 (315/15)",
+          f"Got {mais['moy_jour_mois']}", results)
 
 
 # ─── Setup B: population grows mid-month (day 15) ──────────────────────────
@@ -273,6 +303,7 @@ def _setup_population_change():
     _allotement_history(extra1.name, f"{PREFIX}MP", f"{PREFIX}HP", "2024-03-15 12:00:00")
     _allotement_history(extra2.name, f"{PREFIX}MP", f"{PREFIX}HP", "2024-03-15 12:00:00")
     frappe.db.commit()
+    _seed_test_sle()
 
 def test_population_change_midmonth(results):
     log("Mid-month pop change — HP 3→5, MP 4→2 on day 15", "HEAD")
@@ -283,9 +314,9 @@ def test_population_change_midmonth(results):
           f"Got {mais[f'{PREFIX}HP']}", results)
     check(mais[f"{PREFIX}MP"] == 6, "MP Mais cell = 6 (2 cows × 3kg)",
           f"Got {mais[f'{PREFIX}MP']}", results)
-    # Cumulé cheptel-wide: HP (5×(3×14+5×17)=635) + MP (3×(4×14+2×17)=270) = 905
-    check(mais["cumule"] == 905, "Mais cumulé cheptel = 905kg",
-          f"Got {mais['cumule']}", results)
+    # Mais cheptel: 905 kg over 31 days → moy 905/31 = 29.19
+    check(mais["moy_jour_mois"] == 29.19, "Mais moy/jour cheptel = 29.19 (905/31)",
+          f"Got {mais['moy_jour_mois']}", results)
 
 
 # ─── Setup C: lot switches ration mid-month (day 15) ───────────────────────
@@ -294,8 +325,15 @@ def _setup_ration_switch():
     _setup_baseline()
     soja = f"{PREFIX}SOJA"; mais = f"{PREFIX}MAIS"
     ration_new = _ration("RATION-NEW", [(soja, 4), (mais, 8)])
-    _ration_history(f"{PREFIX}HP", f"{PREFIX}RATION-HP", ration_new, "2024-03-15 12:00:00")
+    # Episode model: HP lot used RATION-HP from Mar 1 to Mar 15 (closed),
+    # then RATION-NEW from Mar 15 onward (open). Half-open intervals: day 15
+    # belongs to the new episode.
+    _ration_history(f"{PREFIX}HP", f"{PREFIX}RATION-HP",
+                    date_debut="2024-03-01", date_fin="2024-03-15")
+    _ration_history(f"{PREFIX}HP", ration_new,
+                    date_debut="2024-03-15", date_fin=None)
     frappe.db.commit()
+    _seed_test_sle()
 
 def test_ration_switch_midmonth(results):
     log("Mid-month ration switch — HP RATION-HP → RATION-NEW on day 15", "HEAD")
@@ -307,12 +345,121 @@ def test_ration_switch_midmonth(results):
           f"Got {soja[f'{PREFIX}HP']}", results)
     check(mais[f"{PREFIX}HP"] == 24, "HP Mais cell = 24 (3 cows × 8kg)",
           f"Got {mais[f'{PREFIX}HP']}", results)
-    # Cumulé cheptel: Soja: HP (2×3×14 + 4×3×17 = 288) + MP (62) = 350
-    check(soja["cumule"] == 350, "Soja cumulé cheptel = 350kg",
-          f"Got {soja['cumule']}", results)
-    # Mais: HP (5×3×14 + 8×3×17 = 618) + MP (186) = 804
-    check(mais["cumule"] == 804, "Mais cumulé cheptel = 804kg",
-          f"Got {mais['cumule']}", results)
+    # Soja cheptel: 350 kg over 31 days → moy 350/31 = 11.29
+    check(soja["moy_jour_mois"] == 11.29, "Soja moy/jour cheptel = 11.29 (350/31)",
+          f"Got {soja['moy_jour_mois']}", results)
+    # Mais: 804 kg over 31 days → moy 804/31 = 25.94
+    check(mais["moy_jour_mois"] == 25.94, "Mais moy/jour cheptel = 25.94 (804/31)",
+          f"Got {mais['moy_jour_mois']}", results)
+
+
+# ─── Quinzaine / Hebdomadaire mode tests (new feature) ─────────────────────
+
+def _ctx_q(date_filter_str):
+    return {**_ctx(date_filter_str), "granularite": "Quinzaine"}
+
+def _ctx_h(date_filter_str):
+    return {**_ctx(date_filter_str), "granularite": "Hebdomadaire"}
+
+
+def test_quinzaine_columns(results):
+    log("Quinzaine mode — per-lot single col + moy_q1/moy_q2 + Δ + moy_jour_mois", "HEAD")
+    cols, _ = _alimentation(_ctx_q("2024-03-31"))
+    col_names = [c["fieldname"] for c in cols]
+    # Per-lot cols are still single (Option B keeps lot snapshot, not per-period)
+    check(f"{PREFIX}HP" in col_names, "Per-lot HP col present", f"Cols: {col_names}", results)
+    check(f"{PREFIX}MP" in col_names, "Per-lot MP col present", f"Cols: {col_names}", results)
+    # Cheptel-wide period columns
+    check("moy_q1" in col_names, "Has moy_q1", f"Cols: {col_names}", results)
+    check("moy_q2" in col_names, "Has moy_q2", f"Cols: {col_names}", results)
+    check("delta_q2_q1" in col_names, "Has Δ Q2/Q1", f"Cols: {col_names}", results)
+    check("moy_jour_mois" in col_names, "Has moy_jour_mois", f"Cols: {col_names}", results)
+    # No per-lot per-period composite columns
+    check(f"{PREFIX}HP__Q1" not in col_names, "No per-lot Q1 composite",
+          f"Cols: {col_names}", results)
+
+
+def test_quinzaine_baseline_values(results):
+    log("Quinzaine baseline (constant pop/ration) — moy_q1 == moy_q2 == cheptel daily", "HEAD")
+    _, data = _alimentation(_ctx_q("2024-03-31"))
+    mais = _find_row(data, f"{PREFIX}MAIS")
+    # Per-lot cells = today's snapshot (constant pop): HP=3×5=15, MP=2×3=6
+    check(mais[f"{PREFIX}HP"] == 15, "HP Mais today = 15", f"Got {mais[f'{PREFIX}HP']}", results)
+    check(mais[f"{PREFIX}MP"] == 6, "MP Mais today = 6", f"Got {mais[f'{PREFIX}MP']}", results)
+    # Cheptel daily Mais = 15 + 6 = 21. Constant → moy_q1 = moy_q2 = 21
+    check(mais["moy_q1"] == 21, "moy_q1 cheptel = 21", f"Got {mais['moy_q1']}", results)
+    check(mais["moy_q2"] == 21, "moy_q2 cheptel = 21", f"Got {mais['moy_q2']}", results)
+    check(mais["delta_q2_q1"] == 0, "Δ Q2/Q1 = 0% (constant)",
+          f"Got {mais['delta_q2_q1']}", results)
+
+
+def test_quinzaine_population_change(results):
+    log("Quinzaine + pop change day 15 — moy_q1 ≠ moy_q2 cheptel-wide", "HEAD")
+    _, data = _alimentation(_ctx_q("2024-03-31"))
+    mais = _find_row(data, f"{PREFIX}MAIS")
+    # Per-lot today = post-move snapshot: HP=5×5=25, MP=2×3=6
+    check(mais[f"{PREFIX}HP"] == 25, "HP Mais today (post-move) = 25",
+          f"Got {mais[f'{PREFIX}HP']}", results)
+    check(mais[f"{PREFIX}MP"] == 6, "MP Mais today (post-move) = 6",
+          f"Got {mais[f'{PREFIX}MP']}", results)
+    # Q1 cheptel: days 1-14 (HP=3, MP=4) → 3×5+4×3 = 27. Day 15 (HP=5, MP=2) → 5×5+2×3 = 31.
+    # Total Q1 = 27×14 + 31 = 378+31 = 409. Moy = 409/15 = 27.27
+    check(mais["moy_q1"] == 27.27, "moy_q1 = 27.27 (pop bumped on day 15)",
+          f"Got {mais['moy_q1']}", results)
+    # Q2 cheptel: HP=5, MP=2 constant → 31 kg/day every day
+    check(mais["moy_q2"] == 31, "moy_q2 = 31 (post-bump constant)",
+          f"Got {mais['moy_q2']}", results)
+
+
+def test_quinzaine_partial_q2_midmonth(results):
+    log("Quinzaine + date_filter = 20/03 → Q1 full, Q2 partial (5 days)", "HEAD")
+    _, data = _alimentation(_ctx_q("2024-03-20"))
+    mais = _find_row(data, f"{PREFIX}MAIS")
+    # Cheptel daily Mais: HP(15) + MP(6) = 21. Constant.
+    check(mais["moy_q1"] == 21, "moy_q1 full (15d) = 21", f"Got {mais['moy_q1']}", results)
+    check(mais["moy_q2"] == 21, "moy_q2 partial (5d) = 21", f"Got {mais['moy_q2']}", results)
+    check(mais["moy_jour_mois"] == 21.0, "Mais moy/jour mois (20j) = 21.0",
+          f"Got {mais['moy_jour_mois']}", results)
+
+
+def test_quinzaine_past_month_full_q2(results):
+    """Past month → Q2 always populated regardless of cursor position. The
+    walk extends to end-of-month so users browsing a past month see complete
+    data, not a truncated view based on where their date cursor is."""
+    log("Quinzaine + past month + cursor day 10 → Q2 still full (not capped)", "HEAD")
+    _, data = _alimentation(_ctx_q("2024-03-10"))
+    mais = _find_row(data, f"{PREFIX}MAIS")
+    # Both periods walked to completion (March is past, full month is over)
+    check(mais["moy_q1"] == 21, "moy_q1 full (15d) = 21", f"Got {mais['moy_q1']}", results)
+    check(mais["moy_q2"] == 21, "moy_q2 full (16d) = 21 (past month - cursor doesn't truncate)",
+          f"Got {mais['moy_q2']}", results)
+    check(mais["delta_q2_q1"] == 0, "Δ Q2/Q1 = 0 (constant baseline)",
+          f"Got {mais['delta_q2_q1']}", results)
+    # Per-lot cell still reflects cursor day (day 10) — should match the
+    # constant daily distribution since population/ration didn't change.
+    check(mais[f"{PREFIX}HP"] == 15, "HP Mais today (cursor day 10) = 15",
+          f"Got {mais[f'{PREFIX}HP']}", results)
+
+
+def test_hebdomadaire_columns(results):
+    log("Hebdomadaire mode — moy_s1..s4 cheptel-wide, no Δ", "HEAD")
+    cols, _ = _alimentation(_ctx_h("2024-03-31"))
+    col_names = [c["fieldname"] for c in cols]
+    for s in ("s1", "s2", "s3", "s4"):
+        check(f"moy_{s}" in col_names, f"Has moy_{s}", f"Cols: {col_names}", results)
+    check("delta_q2_q1" not in col_names, "No Δ in Hebdomadaire",
+          f"Cols: {col_names}", results)
+    # Per-lot cols still single
+    check(f"{PREFIX}HP" in col_names, "Per-lot HP col present", f"Cols: {col_names}", results)
+
+
+def test_hebdomadaire_baseline_values(results):
+    log("Hebdomadaire baseline — all 4 weeks = 21 kg/day cheptel for Mais", "HEAD")
+    _, data = _alimentation(_ctx_h("2024-03-31"))
+    mais = _find_row(data, f"{PREFIX}MAIS")
+    for s in ("s1", "s2", "s3", "s4"):
+        check(mais[f"moy_{s}"] == 21, f"moy_{s} = 21 (cheptel HP+MP)",
+              f"Got {mais[f'moy_{s}']}", results)
 
 
 # ─── Runner ───
@@ -324,21 +471,22 @@ def run_all_tests():
     results = {"pass": 0, "fail": 0}
 
     print("\n  [Setup A: baseline]")
-    # Capture cheptel-wide MS cumulé BEFORE fixtures so we can assert the delta.
+    # Capture cheptel-wide MS moy/jour BEFORE fixtures so we can assert the delta.
     _cleanup()
     _, baseline_data = _alimentation(CTX_END)
     baseline_row = next((r for r in baseline_data if r.get("aliment") == "MS Total Distribué"), None)
-    baseline_ms_cum = (baseline_row or {}).get("cumule") or 0
+    baseline_ms_moy = (baseline_row or {}).get("moy_jour_mois") or 0
     try:
         _setup_baseline()
+        _seed_test_sle()  # R2: SLE-based report needs Stock Entries seeded
         test_columns(results)
         test_aliment_daily_cells(results)
-        test_aliment_cumule_cheptel(results)
+        test_aliment_moy_jour_mois(results)
         test_ms_pct(results)
-        test_ms_total(results, baseline_ms_cum)
+        test_ms_total(results, baseline_ms_moy)
         test_ms_tete(results)
         test_efficacite(results)
-        test_midmonth_filter_caps_cumule(results)
+        test_midmonth_filter_caps_moy(results)
     finally:
         _cleanup()
 
@@ -346,6 +494,7 @@ def run_all_tests():
     try:
         _setup_population_change()
         test_population_change_midmonth(results)
+        test_quinzaine_population_change(results)
     finally:
         _cleanup()
 
@@ -353,6 +502,19 @@ def run_all_tests():
     try:
         _setup_ration_switch()
         test_ration_switch_midmonth(results)
+    finally:
+        _cleanup()
+
+    print("\n  [Setup D: Quinzaine + Hebdomadaire (baseline)]")
+    try:
+        _setup_baseline()
+        _seed_test_sle()  # R2: SLE-based report needs Stock Entries seeded
+        test_quinzaine_columns(results)
+        test_quinzaine_baseline_values(results)
+        test_quinzaine_partial_q2_midmonth(results)
+        test_quinzaine_past_month_full_q2(results)
+        test_hebdomadaire_columns(results)
+        test_hebdomadaire_baseline_values(results)
     finally:
         _cleanup()
 

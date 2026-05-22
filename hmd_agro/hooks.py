@@ -20,6 +20,14 @@ fixtures = [
 	{"dt": "Workspace", "filters": [["module", "=", "HMD AGRO"]]},
 	{"dt": "Property Setter", "filters": [["doc_type", "in", HMD_DOCTYPES]]},
 	{"dt": "Custom Field", "filters": [["dt", "in", HMD_DOCTYPES]]},
+	# Stock Entry.id_lot — SCRUM-123 custom field on a non-HMD doctype, so
+	# the prior filter doesn't catch it. Explicit by name.
+	{"dt": "Custom Field", "filters": [["name", "=", "Stock Entry-id_lot"]]},
+	# Number Cards + Dashboard Charts — protect UI-created cards from being
+	# wiped on `bench migrate`. Filter by module so we only export HMD's, not
+	# ERPNext built-ins (Active Suppliers, etc.).
+	{"dt": "Number Card", "filters": [["module", "=", "HMD AGRO"]]},
+	{"dt": "Dashboard Chart", "filters": [["module", "=", "HMD AGRO"]]},
 ]
 
 # Apps
@@ -42,8 +50,12 @@ fixtures = [
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/hmd_agro/css/hmd_agro.css"
+app_include_css = "/assets/hmd_agro/css/hmd_agro.css"
 app_include_js = "/assets/hmd_agro/js/hmd_agro.js"
+
+# Inject HMD Configuration values into bootinfo so report .js can read them via
+# `frappe.boot.hmd_config.<field>` without extra HTTP requests.
+boot_session = "hmd_agro.boot.boot_session"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/hmd_agro/css/hmd_agro.css"
@@ -172,7 +184,8 @@ scheduler_events = {
  	"daily": [
 # 		"hmd_agro.tasks.daily"
         "hmd_agro.hmd_agro.doctype.alerte.alerte.generate_alerts",
-        "hmd_agro.hmd_agro.doctype.traitement.traitement.refresh_attente_lait"
+        "hmd_agro.hmd_agro.doctype.traitement.traitement.refresh_attente_lait",
+        "hmd_agro.hmd_agro.utils.feed_distribution.generate_daily_distribution"
  	],
  }
 

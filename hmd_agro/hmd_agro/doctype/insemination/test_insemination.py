@@ -47,27 +47,51 @@ class TestInsemination(FrappeTestCase):
             doc = frappe.get_doc({"doctype": "Mere externe"}).insert(ignore_permissions=True)
             self.mere_externe = doc.name
 
-        # --- Semence (stock = 10) ---
+        # --- Semence (stock seeded to 10 via Material Receipt) ---
+        # ST5-14 (Phase C): legacy stock fields removed in ST5-12. Stock now
+        # lives in Batch.batch_qty (auto-maintained from Stock Entries). To
+        # have 10 paillettes for the decrement test, we ensure a Semence row
+        # exists, then top up its Batch via a Material Receipt to qty=10.
         existing_semence = frappe.get_all("Semence", filters={
             "taureau": "Test Taureau IA",
             "type_semence": "CONVENTIONNELLE",
         }, limit=1)
         if existing_semence:
             self.semence = existing_semence[0].name
-            frappe.db.set_value("Semence", self.semence, {
-                "quantite_restante": 10,
-                "quantite_recue": 10,
-            })
         else:
             sem = frappe.get_doc({
                 "doctype": "Semence",
                 "taureau": "Test Taureau IA",
                 "type_semence": "CONVENTIONNELLE",
                 "date_reception": add_days(today(), -30),
-                "quantite_recue": 10,
-                "quantite_restante": 10,
             }).insert(ignore_permissions=True)
             self.semence = sem.name
+
+        # Top up Batch.batch_qty to 10 if it's currently below.
+        sem_item = frappe.db.get_value("Semence", self.semence, "item")
+        current_qty = frappe.db.get_value("Batch", self.semence, "batch_qty") or 0
+        if sem_item and current_qty < 10:
+            top_up = 10 - current_qty
+            se = frappe.get_doc({
+                "doctype": "Stock Entry",
+                "stock_entry_type": "Material Receipt",
+                "company": "hmd-agro",
+                "posting_date": today(),
+                "items": [{
+                    "item_code": sem_item,
+                    "qty": top_up,
+                    "uom": "Paillette",
+                    "stock_uom": "Paillette",
+                    "conversion_factor": 1,
+                    "t_warehouse": "Magasin Principal - HMD",
+                    "batch_no": self.semence,
+                    "basic_rate": 1,
+                }],
+                "remarks": f"test_insemination setUp top-up to 10",
+            })
+            se.insert(ignore_permissions=True)
+            se.submit()
+            frappe.db.commit()
 
         # --- Animal (VACHE, ACTIF, VIDE) ---
         if not frappe.db.exists("Animal", "8100000001"):
@@ -80,7 +104,7 @@ class TestInsemination(FrappeTestCase):
                 "date_naissance": "2020-01-01",
                 "id_lot": "Test Lot IA",
                 "id_pere": "Test Taureau IA",
-                "est_achat": 1,
+                "date_entree": add_days(today(), -500), "est_achat": 1,
                 "id_mere_externe": self.mere_externe,
                 "statut": "ACTIF",
                 "etat_gestation": "VIDE",
@@ -147,7 +171,7 @@ class TestInsemination(FrappeTestCase):
                 "date_naissance": "2022-06-01",
                 "id_lot": "Test Lot IA",
                 "id_pere": "Test Taureau IA",
-                "est_achat": 1,
+                "date_entree": add_days(today(), -500), "est_achat": 1,
                 "id_mere_externe": self.mere_externe,
                 "statut": "ACTIF",
                 "etat_gestation": "VIDE",
@@ -174,7 +198,7 @@ class TestInsemination(FrappeTestCase):
                 "date_naissance": "2023-01-01",
                 "id_lot": "Test Lot IA",
                 "id_pere": "Test Taureau IA",
-                "est_achat": 1,
+                "date_entree": add_days(today(), -500), "est_achat": 1,
                 "id_mere_externe": self.mere_externe,
                 "statut": "ACTIF",
             }).insert(ignore_permissions=True)
@@ -480,13 +504,15 @@ class TestInsemination(FrappeTestCase):
     # ─── 13. semence stock decrement on insert ────────────────
 
     def test_semence_stock_decremented_on_insert(self):
-        """Inserting IA should decrement semence stock by 1."""
-        stock_before = frappe.db.get_value("Semence", self.semence, "quantite_restante")
+        """Inserting IA should decrement semence Batch.batch_qty by 1.
+        ST5-14: post-Phase C, stock is tracked in Batch (auto-maintained
+        from Stock Entries) rather than the legacy Semence.quantite_restante."""
+        stock_before = frappe.db.get_value("Batch", self.semence, "batch_qty") or 0
 
         ia = self._make_ia()
         ia.insert(ignore_permissions=True)
 
-        stock_after = frappe.db.get_value("Semence", self.semence, "quantite_restante")
+        stock_after = frappe.db.get_value("Batch", self.semence, "batch_qty") or 0
         self.assertEqual(stock_after, stock_before - 1)
 
     # ─── 14. close_chaleur_alerts on insert ───────────────────
@@ -524,18 +550,20 @@ class TestInsemination(FrappeTestCase):
     # ─── 16. on_trash: restore semence stock ──────────────────
 
     def test_semence_stock_restored_on_delete(self):
-        """Deleting IA should restore semence stock by 1."""
-        stock_before = frappe.db.get_value("Semence", self.semence, "quantite_restante")
+        """Deleting IA should restore semence Batch.batch_qty by 1.
+        ST5-14: post-Phase C, stock is tracked in Batch (auto-maintained
+        from Stock Entries) rather than the legacy Semence.quantite_restante."""
+        stock_before = frappe.db.get_value("Batch", self.semence, "batch_qty") or 0
 
         ia = self._make_ia()
         ia.insert(ignore_permissions=True)
 
-        stock_after_insert = frappe.db.get_value("Semence", self.semence, "quantite_restante")
+        stock_after_insert = frappe.db.get_value("Batch", self.semence, "batch_qty") or 0
         self.assertEqual(stock_after_insert, stock_before - 1)
 
         frappe.delete_doc("Insemination", ia.name, force=True, ignore_permissions=True)
 
-        stock_after_delete = frappe.db.get_value("Semence", self.semence, "quantite_restante")
+        stock_after_delete = frappe.db.get_value("Batch", self.semence, "batch_qty") or 0
         self.assertEqual(stock_after_delete, stock_before)
 
     # ─── 17. on_trash: restore animal state if REUSSIE ────────

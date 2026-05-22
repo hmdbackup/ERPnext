@@ -4,6 +4,9 @@
 import frappe
 from frappe.model.document import Document
 
+from hmd_agro.hmd_agro.utils.config import get_config
+from hmd_agro.hmd_agro.utils.stock_utils import DEFAULT_WAREHOUSE as WAREHOUSE
+
 
 class Insemination(Document):
     def validate(self):
@@ -165,8 +168,10 @@ class Insemination(Document):
         if self.resultat == "REUSSIE" and self.animal:
             animal = frappe.get_doc("Animal", self.animal)
             animal.id_ia_fecondante = self.name
-            animal.date_velage_prevue = frappe.utils.add_days(self.date_ia, 280)
-            animal.date_tarissement = frappe.utils.add_days(animal.date_velage_prevue, -60)
+            periode_velage = get_config("periode_velage_jours", default=280)
+            animal.date_velage_prevue = frappe.utils.add_days(self.date_ia, periode_velage)
+            tarissement_window = get_config("tarissement_window_jours", default=60)
+            animal.date_tarissement = frappe.utils.add_days(animal.date_velage_prevue, -tarissement_window)
             animal.etat_gestation = "GESTANTE"
             animal.flags.ignore_validate = True
             animal.save()
@@ -213,26 +218,107 @@ class Insemination(Document):
             frappe.db.set_value("Lactation", self.lactation, "nb_inseminations", count)
     
     def decrement_semence_stock(self):
-        """Decrement semence stock for the taureau and type used"""
-        if self.taureau:
-            filters = {"taureau": self.taureau, "quantite_restante": [">", 0]}
-            if self.type_semence:
-                filters["type_semence"] = self.type_semence
-            semence = frappe.get_list("Semence",
-                filters=filters,
-                fields=["name", "quantite_restante"],
-                order_by="date_reception asc",
-                limit=1
+        """Post a Material Issue (-1 paillette) for the picked Semence batch.
+
+        Batch picker (post-Phase C, Bin-based):
+          1. List all Semence records for (taureau, type_semence) FIFO oldest first
+          2. Prefer batches with Bin.actual_qty > 0 (live stock)
+          3. Fall back to the oldest batch if all are depleted — the real
+             Insémination still gets recorded against the correct taureau even
+             when the system's stock count is stale. The Bin will go negative
+             (Item.allow_negative_stock=1), surfacing the discrepancy via the
+             native reorder Material Request and via the soft msgprint below."""
+        if not self.taureau:
+            return
+        from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
+        # Check whether ANY batch exists for (taureau, type) — if not, the
+        # Semence master is missing and the operator needs to add receptions
+        # first. Separate from "all batches depleted" so the message is precise.
+        any_batch = self._pick_semence_batch(prefer_with_stock=False)
+        if not any_batch:
+            frappe.msgprint(
+                f"Aucune Semence enregistrée pour taureau={self.taureau}, "
+                f"type={self.type_semence or 'tous'}. Enregistrer une "
+                f"livraison Semence avant l'IA.",
+                indicator="red", alert=True,
             )
-            if semence:
-                frappe.db.set_value("Semence", semence[0].name,
-                    "quantite_restante", semence[0].quantite_restante - 1)
-            else:
-                frappe.msgprint(
-                    f"Attention: Aucun stock de semence disponible pour le taureau {self.taureau}.",
-                    indicator="orange",
-                    alert=True
-                )
+            return
+        s = self._pick_semence_batch(prefer_with_stock=True)
+        if not s:
+            # All batches exist but are at qty=0. v15 enforces batch-level
+            # negative stock independent of Item.allow_negative_stock, so
+            # refusing here is the only honest option. Operator must post
+            # a Purchase Receipt before the IA can be recorded.
+            frappe.msgprint(
+                f"Stock épuisé sur TOUS les batches du taureau {self.taureau} "
+                f"({self.type_semence or 'tous types'}). Enregistrer une "
+                f"Purchase Receipt avant l'IA — ERPNext v15 n'autorise pas "
+                f"un batch en négatif.",
+                indicator="red", alert=True,
+            )
+            return
+        if not s.item:
+            frappe.msgprint(
+                f"Semence {s.name} non liée à un Item ERPNext — écriture "
+                f"stock ignorée. Lancer semence_migration.",
+                indicator="orange", alert=True,
+            )
+            return
+        create_stock_movement(s.item, 1, "Material Issue",
+            WAREHOUSE,
+            f"Insemination {self.name} (batch {s.name})",
+            self.date_ia, uom="Paillette", batch_no=s.name)
+
+    def _pick_semence_batch(self, prefer_with_stock):
+        """Resolve which Semence record (= Batch) to charge. Returns a dict
+        with name, item, qty (Batch.batch_qty) or None.
+
+        Custom picker (not native Bundle auto-pick) because Insemination.semence
+        must be resolved BEFORE the Stock Entry is created — native FIFO via
+        Serial-and-Batch Bundle picks the batch DURING SE submit, too late to
+        populate the form's semence link (which carries fournisseur, date_-
+        reception and other metadata the user sees on the IA record).
+
+        Modes:
+          prefer_with_stock=True  (decrement):  FIFO oldest-first AMONG batches
+                                                with batch_qty > 0; returns
+                                                None if none qualify. Required
+                                                because v15 ERPNext enforces
+                                                batch-level negative stock
+                                                independently of Item.allow_-
+                                                negative_stock (see Serial-
+                                                and-Batch Bundle validation) —
+                                                a depleted batch can't be
+                                                consumed even with the Item
+                                                flag, so we refuse cleanly.
+          prefer_with_stock=False (restore):    most-recent batch overall
+                                                (adding stock — always succeeds).
+
+        Per-batch qty source: `tabBatch.batch_qty` (auto-maintained by ERPNext
+        when Stock Entries with `batch_no` submit). In v15 this is the canonical
+        per-batch value — `tabBin` is per (item, warehouse) only, no batch_no
+        column anymore (batch tracking moved to Serial-and-Batch Bundle)."""
+        conditions = ["s.taureau = %s"]
+        params = [self.taureau]
+        if self.type_semence:
+            conditions.append("s.type_semence = %s")
+            params.append(self.type_semence)
+        order = "ASC" if prefer_with_stock else "DESC"
+        rows = frappe.db.sql(f"""
+            SELECT s.name, s.item, COALESCE(bat.batch_qty, 0) AS qty
+            FROM `tabSemence` s
+            LEFT JOIN `tabBatch` bat ON bat.name = s.name
+            WHERE {" AND ".join(conditions)}
+            ORDER BY s.date_reception {order}
+        """, params, as_dict=True)
+        if not rows:
+            return None
+        if prefer_with_stock:
+            for r in rows:
+                if (r.qty or 0) > 0:
+                    return r
+            return None  # all batches depleted — caller surfaces error
+        return rows[0]
 
     def close_chaleur_alerts(self):
         """Close any open chaleur alerts when IA is created"""
@@ -305,17 +391,18 @@ class Insemination(Document):
             frappe.db.set_value("Lactation", self.lactation, "nb_inseminations", count)
 
     def restore_semence_stock(self):
-        """Restore +1 dose to the most recent semence batch for this taureau and type"""
-        if self.taureau:
-            filters = {"taureau": self.taureau}
-            if self.type_semence:
-                filters["type_semence"] = self.type_semence
-            semence = frappe.get_list("Semence",
-                filters=filters,
-                fields=["name", "quantite_restante", "quantite_recue"],
-                order_by="date_reception desc",
-                limit=1
-            )
-            if semence and semence[0].quantite_restante < semence[0].quantite_recue:
-                frappe.db.set_value("Semence", semence[0].name,
-                    "quantite_restante", semence[0].quantite_restante + 1)
+        """Compensating Material Receipt (+1 paillette) into the most recent
+        Semence batch on Insémination delete. The "most recent" pick is an
+        approximation — FIFO is irreversible by design, but matching the
+        latest batch is a reasonable proxy. Bin enforces no upper-bound check
+        (no quantite_recue ceiling) — the receipt just adds to the batch."""
+        if not self.taureau:
+            return
+        from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
+        s = self._pick_semence_batch(prefer_with_stock=False)
+        if not s or not s.item:
+            return
+        create_stock_movement(s.item, 1, "Material Receipt",
+            WAREHOUSE,
+            f"Restore Insemination {self.name} delete (batch {s.name})",
+            None, uom="Paillette", batch_no=s.name)

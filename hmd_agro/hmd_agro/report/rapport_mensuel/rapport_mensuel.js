@@ -22,10 +22,44 @@ function add_date_arrows(report, fieldname) {
 frappe.query_reports["Rapport Mensuel"] = {
     onload(report) {
         add_date_arrows(report, "date");
-        if (report.__import_btn_added) return;
-        report.__import_btn_added = true;
+        if (report.__buttons_added) return;
+        report.__buttons_added = true;
 
         report.page.add_inner_button(__("Importer Excel"), () => open_import_dialog(report));
+
+        // "État du Mois" toggles a hidden effectif_mode filter. Visible only
+        // when section == Effectif or Tout (the sections that render the
+        // Effectif sub-table). Label flips to reflect current state.
+        const update_effectif_btn = () => {
+            const section = report.get_filter_value("section") || "Tout";
+            const mode = report.get_filter_value("effectif_mode") || "Jour";
+            const $btn = report.page.inner_toolbar.find('.btn').filter(function() {
+                return /^État/.test($(this).text().trim());
+            });
+            if (!$btn.length) return;
+            if (section === "Effectif" || section === "Tout") {
+                $btn.show();
+                $btn.text(mode === "Mois" ? __("État du Jour") : __("État du Mois"));
+            } else {
+                $btn.hide();
+            }
+        };
+
+        report.page.add_inner_button(__("État du Mois"), () => {
+            const current = report.get_filter_value("effectif_mode") || "Jour";
+            report.set_filter_value("effectif_mode", current === "Mois" ? "Jour" : "Mois");
+            // refresh fires automatically on filter change → wrapper below updates label
+        });
+
+        // Hook into refresh so the button label/visibility track filter changes
+        // (section toggle, effectif_mode toggle, date navigation).
+        const origRefresh = report.refresh.bind(report);
+        report.refresh = function () {
+            const r = origRefresh();
+            setTimeout(update_effectif_btn, 100);
+            return r;
+        };
+        setTimeout(update_effectif_btn, 200);  // initial load
     },
 
     filters: [
@@ -42,6 +76,30 @@ frappe.query_reports["Rapport Mensuel"] = {
             fieldtype: "Select",
             options: "Tout\nEffectif\nProduction\nProduction par Lot\nAlimentation\nIndicateurs",
             default: "Tout"
+        },
+        {
+            fieldname: "granularite",
+            label: __("Granularité"),
+            fieldtype: "Select",
+            options: "Quinzaine\nQuotidien\nHebdomadaire",
+            default: "Quinzaine",
+            depends_on: "eval:['Alimentation','Production','Tout'].includes(doc.section)"
+        },
+        {
+            fieldname: "periode",
+            label: __("Période"),
+            fieldtype: "Select",
+            options: "Jour\nHebdomadaire",
+            default: "Jour",
+            depends_on: "eval:['Production par Lot','Tout'].includes(doc.section)"
+        },
+        {
+            fieldname: "effectif_mode",
+            label: __("Effectif Mode"),
+            fieldtype: "Select",
+            options: "Jour\nMois",
+            default: "Jour",
+            hidden: 1
         }
     ],
 
@@ -49,10 +107,62 @@ frappe.query_reports["Rapport Mensuel"] = {
         if (value == null || value === "") {
             return default_formatter(value, row, column, data);
         }
+        let html = default_formatter(value, row, column, data);
         if (data && (data.is_total || data.is_header)) {
-            return `<b>${default_formatter(value, row, column, data)}</b>`;
+            html = `<b>${html}</b>`;
         }
-        return default_formatter(value, row, column, data);
+        // Indicateurs (KPI) table — color the `valeur` cell when the row carries
+        // an `indicator` (Green/Orange/Red) computed by _indicateurs against a
+        // PFE-recommended threshold.
+        if (column.fieldname === "valeur" && data && data.indicator) {
+            const colors = {Green: "green", Orange: "orange", Red: "red"};
+            const c = colors[data.indicator];
+            if (c) {
+                const w = data.indicator === "Red" ? "font-weight:bold;" : "font-weight:600;";
+                html = `<span style="color:${c};${w}">${html}</span>`;
+            }
+        }
+        // Indicateurs Δ % — color by `direction`: "up" means higher-better,
+        // "down" means lower-better. Improving trend → green, deteriorating → red.
+        // No color when direction is None (absolutes / range KPIs where sign
+        // alone isn't meaningful) or delta is null/zero.
+        if (column.fieldname === "delta_pct" && data && data.direction && data.delta_pct) {
+            const improving = (data.direction === "up" && data.delta_pct > 0) ||
+                              (data.direction === "down" && data.delta_pct < 0);
+            const c = improving ? "green" : "red";
+            html = `<span style="color:${c};font-weight:600;">${html}</span>`;
+        }
+        // Period-row tinting (Production Q1/Q2/Sn, Lot weekly Sem. préc./act.)
+        // — applied to every cell when the row carries a `tint` flag set by
+        // the Python builder. Same color palette as the Alimentation column
+        // tints below. Skip the leading label cell so the row label stays
+        // unstyled (avoids a colored "Q1" vs colored values mismatch).
+        if (data && data.tint && column.fieldname !== "jour") {
+            const tints = {
+                orange: "rgba(220, 150, 50, 0.22)",
+                green: "rgba(60, 160, 90, 0.20)",
+            };
+            const bg = tints[data.tint];
+            if (bg) {
+                html = `<span style="display:block; margin:-6px -10px; padding:6px 10px; background:${bg};">${html}</span>`;
+            }
+        }
+        // Alimentation column tinting — applied only to rows from _alimentation
+        // (rows with an "aliment" key). The block-level span with negative
+        // margins extends the color to the cell edges. Implemented in the
+        // formatter (not via injected CSS) because the global zebra has higher
+        // specificity than any per-cell selector we can write here.
+        if (data && data.aliment !== undefined) {
+            const fn = column.fieldname || "";
+            let tint = null;
+            if (fn === "moy_jour_mois")                            tint = "rgba(60, 160, 90, 0.20)";
+            else if (fn.startsWith("moy_") || fn === "delta_q2_q1") tint = "rgba(220, 150, 50, 0.22)";
+            else if (fn !== "aliment" && fn !== "ms_pct")          tint = "rgba(70, 130, 180, 0.18)";
+            if (tint) {
+                html = `<span style="display:block; margin:-6px -10px; padding:6px 10px; background:${tint};">${html}</span>`;
+            }
+        }
+        return html;
     }
 };
 

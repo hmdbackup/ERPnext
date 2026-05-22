@@ -149,6 +149,33 @@ def state_on_date(animal_name, date):
 
 # ─── Effectif aggregates ─────────────────────────────────────────────────────
 
+def lactantes_per_lot_on_date(date):
+    """Per-lot breakdown of effectif_on_date(D)["Vaches - Lact."]. Composes the
+    existing primitives — states_on_date for the cat+lact reconstruction
+    (single source of truth, same logic as effectif_on_date) and lot_on_date
+    for the cow's lot on D via the Allotement History audit log.
+
+    Decouples effectif from production (Traite), so weekly reports keep a
+    meaningful Effectif row on days where no traites have been entered yet."""
+    from hmd_agro.hmd_agro.doctype.allotement_history.allotement_history import lot_on_date
+    target_d = getdate(date)
+    d = str(target_d)
+    animal_names = [r[0] for r in frappe.db.sql("""
+        SELECT name FROM `tabAnimal`
+        WHERE (CASE WHEN est_achat = 1 THEN date_entree ELSE date_naissance END) <= %s
+          AND (statut = 'ACTIF' OR (date_sortie IS NOT NULL AND date_sortie > %s))
+    """, (d, d))]
+    states = states_on_date(animal_names, target_d)
+    per_lot = {}
+    for name, (cat, lact, _) in states.items():
+        if cat != "VACHE" or lact != "EN_PRODUCTION":
+            continue
+        lot = lot_on_date(name, target_d)
+        if lot:
+            per_lot[lot] = per_lot.get(lot, 0) + 1
+    return per_lot
+
+
 def effectif_on_date(date):
     """Count animals per category on `date`. Always reconstructed from events,
     never read directly from Animal.etat_* (which can drift if a hook fails)."""

@@ -1,0 +1,23 @@
+{
+ "color": "#ED8936",
+ "creation": "2026-05-17 18:32:29.505592",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "filters_json": "null",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "L_C (L/kg)",
+ "method": "hmd_agro.hmd_agro.utils.dashboard_kpis.get_lc_ratio",
+ "modified": "2026-05-17 18:52:17.398219",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "L_C",
+ "owner": "Administrator",
+ "report_function": "Sum",
+ "show_full_number": 0,
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Custom"
+}

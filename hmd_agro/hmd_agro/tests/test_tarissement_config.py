@@ -1,0 +1,235 @@
+"""
+Tests d'intégration — tarissement_window_jours.
+Run: bench execute hmd_agro.hmd_agro.tests.test_tarissement_config.run_all_tests
+
+Vérifie que les deux call sites lisent depuis la config :
+  - allotement_animaux._get_suggestion (suggestion TARISSEMENT)
+  - insemination.update_animal_on_resultat (calcul date_tarissement)
+"""
+import frappe
+from frappe.utils import add_days, getdate
+
+from hmd_agro.hmd_agro.report.allotement_animaux.allotement_animaux import _get_suggestion
+
+
+LOT_MAP = {"TARISSEMENT": "TARISSEMENT", "FV": "Primipare et FV", "THP": "THP",
+           "HP": "HP", "MP": "MP", "FP": "FP", "TARIE": "TARIE"}
+_find_lot = LOT_MAP.get
+REF = getdate("2026-04-10")
+
+
+def log(msg, level="INFO"):
+    prefix = {"PASS": "  OK", "FAIL": "FAIL", "HEAD": "----"}.get(level, "    ")
+    print(f"  {prefix}  {msg}")
+
+
+def check(condition, pass_msg, fail_msg, results):
+    if condition:
+        log(pass_msg, "PASS")
+        results["pass"] += 1
+    else:
+        log(fail_msg, "FAIL")
+        results["fail"] += 1
+
+
+def run_all_tests():
+    print("\n" + "=" * 60)
+    print("  TARISSEMENT WINDOW — INTÉGRATION CONFIG")
+    print("=" * 60)
+    results = {"pass": 0, "fail": 0}
+
+    test_allotement_reads_config(results)
+    test_insemination_reads_config(results)
+    test_recalculate_tarissement_dates(results)
+    test_recalc_refreshes_alert_raison(results)
+
+    total = results["pass"] + results["fail"]
+    print(f"\n  RESULTATS: {results['pass']}/{total} passés, {results['fail']} échoués\n")
+    return results
+
+
+def _with_config(field, value, fn):
+    """Run `fn` with config[field]=value, restore on exit."""
+    cfg = frappe.get_single("HMD Configuration")
+    original = cfg.get(field)
+    try:
+        cfg.set(field, value)
+        cfg.save(ignore_permissions=True)
+        frappe.db.commit()
+        fn()
+    finally:
+        frappe.db.rollback()
+        cfg2 = frappe.get_single("HMD Configuration")
+        cfg2.set(field, original)
+        cfg2.save(ignore_permissions=True)
+        frappe.db.commit()
+
+
+def test_allotement_reads_config(results):
+    """Cow GESTANTE 80 days before vêlage:
+       - default window=60 → not yet TARISSEMENT (80 > 60)
+       - window=90 → TARISSEMENT (80 ≤ 90)"""
+    log("allotement_animaux._get_suggestion lit tarissement_window_jours", "HEAD")
+
+    base = {
+        "etat_gestation": "GESTANTE", "etat_lactation": "EN_PRODUCTION",
+        "dim": 250, "numero_lactation": 3,
+        "date_velage_prevue": add_days(REF, 80),  # 80 days before vêlage
+    }
+
+    # Baseline: window=60 → 80 > 60 → suit DIM (MP, not TARISSEMENT)
+    r = _get_suggestion(base, REF, _find_lot)
+    check(r != "TARISSEMENT",
+          f"Baseline (window=60): vêlage dans 80j → {r} (pas TARISSEMENT)",
+          f"Got {r}", results)
+
+    def with_extended_window():
+        r2 = _get_suggestion(base, REF, _find_lot)
+        check(r2 == "TARISSEMENT",
+              "Après window=90: vêlage dans 80j → TARISSEMENT",
+              f"Got {r2} (config wiring cassée?)", results)
+
+    _with_config("tarissement_window_jours", 90, with_extended_window)
+
+
+def test_insemination_reads_config(results):
+    """update_animal_on_resultat sets date_tarissement = date_velage_prevue - window.
+       Test directly via the math, since calling save() requires DB setup."""
+    log("insemination.update_animal_on_resultat lit tarissement_window_jours", "HEAD")
+
+    from hmd_agro.hmd_agro.utils.config import get_config
+    velage_prevue = getdate("2026-12-01")
+
+    def with_window(expected_window):
+        actual_window = get_config("tarissement_window_jours", default=60)
+        check(actual_window == expected_window,
+              f"get_config retourne {expected_window}",
+              f"Got {actual_window}", results)
+        # Verify the date math the function performs
+        expected_tarissement = add_days(velage_prevue, -expected_window)
+        actual_tarissement = add_days(velage_prevue, -actual_window)
+        check(actual_tarissement == expected_tarissement,
+              f"date_tarissement = velage - {expected_window}j = {expected_tarissement}",
+              f"Got {actual_tarissement}", results)
+
+    # Baseline
+    with_window(60)
+    # Modified
+    _with_config("tarissement_window_jours", 90, lambda: with_window(90))
+
+
+def test_recalculate_tarissement_dates(results):
+    """Bulk recalc helper: changing tarissement_window_jours then calling
+    recalculate_tarissement_dates should update the stored
+    Animal.date_tarissement of GESTANTE animals to velage_prevue - new_window."""
+    log("recalculate_tarissement_dates propage la nouvelle config", "HEAD")
+    from hmd_agro.hmd_agro.utils.tarissement_recalc import recalculate_tarissement_dates
+
+    sample = frappe.db.sql("""
+        SELECT name, date_velage_prevue, date_tarissement
+        FROM `tabAnimal`
+        WHERE etat_gestation = 'GESTANTE'
+          AND date_velage_prevue IS NOT NULL
+        LIMIT 1
+    """, as_dict=True)
+    if not sample:
+        log("Skip — pas d'animal GESTANTE avec date_velage_prevue", "FAIL")
+        results["fail"] += 1
+        return
+    animal = sample[0]
+    snapshot = animal.date_tarissement
+    cfg_snapshot = frappe.db.get_value("HMD Configuration", "HMD Configuration",
+                                       "tarissement_window_jours")
+
+    try:
+        # Force window to 100 → new date_tarissement should be velage_prevue - 100
+        _set_window(100)
+        result = recalculate_tarissement_dates()
+        check(result["total"] > 0,
+              f"Recalc a touché {result['total']} animaux GESTANTE",
+              f"total={result['total']}", results)
+        check(len(result["failed"]) == 0,
+              "Aucune erreur de recalc",
+              f"failed={result['failed']}", results)
+
+        new_date = frappe.db.get_value("Animal", animal.name, "date_tarissement")
+        expected = getdate(add_days(getdate(animal.date_velage_prevue), -100))
+        check(getdate(new_date) == expected,
+              f"date_tarissement = velage_prevue ({animal.date_velage_prevue}) - 100j = {expected}",
+              f"Got {new_date} (config wiring cassée?)", results)
+    finally:
+        _set_window(cfg_snapshot)
+        # Restore original date_tarissement to keep the animal record clean
+        frappe.db.set_value("Animal", animal.name, "date_tarissement", snapshot,
+                            update_modified=False)
+        frappe.db.commit()
+
+
+def _set_window(value):
+    """Helper: write tarissement_window_jours via direct set_value (bypasses
+    the on_update enqueue so tests don't queue background jobs)."""
+    frappe.db.set_value("HMD Configuration", "HMD Configuration",
+                        "tarissement_window_jours", value, update_modified=False)
+    frappe.db.commit()
+
+
+def test_recalc_refreshes_alert_raison(results):
+    """When recalc fires, open TARISSEMENT alerts get their raison text updated
+    so the operator-facing message matches the new planned date."""
+    log("recalc rafraîchit le texte des alertes TARISSEMENT existantes", "HEAD")
+    from hmd_agro.hmd_agro.utils.tarissement_recalc import recalculate_tarissement_dates
+
+    sample = frappe.db.sql("""
+        SELECT name, date_velage_prevue, date_tarissement
+        FROM `tabAnimal`
+        WHERE etat_gestation = 'GESTANTE' AND date_velage_prevue IS NOT NULL
+        LIMIT 1
+    """, as_dict=True)
+    if not sample:
+        log("Skip — pas d'animal GESTANTE", "FAIL")
+        results["fail"] += 1
+        return
+    animal = sample[0]
+    snapshot_date = animal.date_tarissement
+    cfg_snapshot = frappe.db.get_value("HMD Configuration", "HMD Configuration",
+                                       "tarissement_window_jours")
+    test_alert_name = None
+
+    try:
+        # Create a stale TARISSEMENT alert with raison referencing OLD date
+        alert = frappe.get_doc({
+            "doctype": "Alerte",
+            "animal": animal.name,
+            "type_alerte": "TARISSEMENT",
+            "date_alerte": getdate("2026-01-01"),
+            "raison": "Tarissement prevu dans 99 jour(s) (1900-01-01)",  # bogus stale text
+            "statut": "NOUVELLE",
+        })
+        alert.insert(ignore_permissions=True)
+        test_alert_name = alert.name
+        frappe.db.commit()
+
+        # Trigger recalc with window=120
+        _set_window(120)
+        result = recalculate_tarissement_dates()
+        check(result["alerts_refreshed"] >= 1,
+              f"Au moins 1 alerte rafraîchie ({result['alerts_refreshed']})",
+              f"alerts_refreshed={result['alerts_refreshed']}", results)
+
+        # Read the alert raison and verify it reflects the new date
+        new_raison = frappe.db.get_value("Alerte", test_alert_name, "raison")
+        expected_date = add_days(getdate(animal.date_velage_prevue), -120)
+        check(str(expected_date) in new_raison,
+              f"Raison contient la nouvelle date {expected_date}",
+              f"Raison: {new_raison!r}", results)
+        check("99" not in new_raison,
+              "Ancienne date (99) supprimée du raison",
+              f"Raison: {new_raison!r}", results)
+    finally:
+        if test_alert_name and frappe.db.exists("Alerte", test_alert_name):
+            frappe.delete_doc("Alerte", test_alert_name, force=True,
+                              ignore_permissions=True)
+        _set_window(cfg_snapshot)
+        frappe.db.set_value("Animal", animal.name, "date_tarissement", snapshot_date,
+                            update_modified=False)
+        frappe.db.commit()

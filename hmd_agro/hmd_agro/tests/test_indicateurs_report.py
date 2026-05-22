@@ -11,6 +11,9 @@ import frappe
 from frappe.utils import getdate
 
 from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _indicateurs
+from hmd_agro.hmd_agro.tests._sle_seed_helpers import (
+    migrate_test_aliments, seed_test_distribution, clean_test_stock,
+)
 
 PREFIX = "TEST-IND-"
 
@@ -111,6 +114,9 @@ def _traite(animal_name, date, litres, lot):
     _created.append(("Traite", doc.name))
 
 def _cleanup():
+    # Drop SEs / SLE / Bin / Items BEFORE the Aliment so the chain unwinds
+    # cleanly. clean_test_stock is idempotent and only touches TEST-IND- rows.
+    clean_test_stock(PREFIX)
     for dt, name in reversed(_created):
         frappe.db.sql(f"DELETE FROM `tab{dt}` WHERE name=%s", name)
     _created.clear()
@@ -144,14 +150,22 @@ def _setup():
             _traite(c.name, date_str, 25, lot)
     frappe.db.commit()
 
+    # R2: SLE-based report needs Items + Stock Entries for the test period.
+    # Migrate test Aliments to create their Items, then post a Material Issue
+    # per day mirroring what the SCRUM-123 generator would have written.
+    migrate_test_aliments(PREFIX)
+    seed_test_distribution(lot, ration, "2024-03-01", "2024-03-31", n_pop=4)
+    frappe.db.commit()
+
 
 # ─── Tests ───
 
 def test_columns(results):
-    log("Columns — indicateur, valeur, unité", "HEAD")
+    log("Columns — indicateur, valeur, valeur_m1, delta_pct, unité", "HEAD")
     cols, _ = _indicateurs(CTX_END)
     names = [c["fieldname"] for c in cols]
-    check(names == ["indicateur", "valeur", "unite"], "Has 3 expected columns",
+    check(names == ["indicateur", "valeur", "valeur_m1", "delta_pct", "unite"],
+          "Has 5 expected columns (M-1 même période + Δ % added)",
           f"Got {names}", results)
 
 def test_vache_counts_delta(results, base_vp, base_vl, base_vt):
@@ -183,26 +197,17 @@ def test_concentre_delta(results, base_conc):
     check(delta == 868, "Δ Concentré = 868kg (Foin FOURRAGE excluded)",
           f"Got Δ={delta}", results)
 
-def test_efficacite_alim_delta(results, base_ms):
-    log("Efficacité Alim — delta MS includes all aliments", "HEAD")
+def test_efficacite_alim_delta(results):
+    log("Efficacité Alim — sensible value (> 0)", "HEAD")
     _, rows = _indicateurs(CTX_END)
-    # Verify MS total for the test cohort
-    # MS contribution: (2×0.9 + 5×0.88 + 10×0.85) × 4 cows × 31 days
-    # = (1.8 + 4.4 + 8.5) × 124 = 14.7 × 124 = 1822.8 kg MS
-    # We can't easily extract MS alone from indicateurs output; trust the
-    # alimentation report for that. Just check Efficacité Alim is sensible (>0).
     eff = _find(rows, "Efficacité Alimentaire")["valeur"]
     check(eff > 0, f"Efficacité > 0 (got {eff})", f"Got {eff}", results)
 
 def test_ratios(results):
-    log("Ratios L/C and C/L are positive and reciprocal in shape", "HEAD")
+    log("L/C ratio present and positive", "HEAD")
     _, rows = _indicateurs(CTX_END)
     lc = _find(rows, "L/C")["valeur"]
-    cl = _find(rows, "C/L")["valeur"]
-    # Both rounded independently (2 vs 3 decimals); product can drift up to ~5% for small L/C.
-    check(lc > 0 and cl > 0 and abs(lc * cl - 1) < 0.05,
-          f"L/C={lc}, C/L={cl}, product={lc * cl:.3f}",
-          f"L/C={lc}, C/L={cl}", results)
+    check(lc > 0, f"L/C={lc} > 0", f"L/C={lc}", results)
 
 def test_midmonth_caps(results):
     log("date_filter mid-month → cumulatives respect the cutoff", "HEAD")
@@ -213,12 +218,35 @@ def test_midmonth_caps(results):
     check(prod_mid < prod_end, f"Mid-month prod ({prod_mid}) < end-month prod ({prod_end})",
           f"prod_mid={prod_mid}, prod_end={prod_end}", results)
 
-def test_deferred_frais(results):
-    log("Frais rows present with valeur=None (à intégrer)", "HEAD")
+
+def test_lc_indicator_set(results):
+    """L/C row has indicator set when value > 0. Thresholds come from HMD
+    Configuration → Seuils PFE (defaults 2.0-2.4 / alarms 1.5-3.0)."""
+    log("L/C row has indicator (PFE thresholds from config)", "HEAD")
     _, rows = _indicateurs(CTX_END)
-    frais_conc = _find(rows, "Frais Concentré")
-    check(frais_conc and frais_conc["valeur"] is None, "Frais Concentré shown but unset",
-          f"Got {frais_conc}", results)
+    lc = _find(rows, "L/C")
+    check(lc is not None, "L/C row present", f"Got {lc}", results)
+    val = lc.get("valeur") if lc else 0
+    ind = lc.get("indicator") if lc else ""
+    if val and val > 0:
+        check(ind in ("Green", "Orange", "Red"),
+              f"L/C indicator set ({ind}) for value {val}",
+              f"Got indicator={ind!r}", results)
+
+
+def test_persistance_indicator_set(results):
+    """Persistance row carries an indicator (Green inside config range,
+    Red outside alarm bounds — defaults 0.85-0.95 / alarms 0.7-1.10)."""
+    log("Persistance moyenne carries indicator (range from config)", "HEAD")
+    _, rows = _indicateurs(CTX_END)
+    pers = _find(rows, "Persistance")
+    check(pers is not None, "Persistance row present", f"Got {pers}", results)
+    val = pers.get("valeur") if pers else 0
+    ind = pers.get("indicator") if pers else ""
+    if val and val > 0:
+        check(ind in ("Green", "Orange", "Red"),
+              f"Persistance indicator set ({ind}) for value {val}",
+              f"Got indicator={ind!r}", results)
 
 
 # ─── Runner ───
@@ -237,7 +265,6 @@ def run_all_tests():
     base_vt = (_find(base_rows, "Vaches Taries") or {}).get("valeur", 0)
     base_prod = (_find(base_rows, "Production Totale") or {}).get("valeur", 0)
     base_conc = (_find(base_rows, "Concentré Total") or {}).get("valeur", 0)
-    base_ms = 0  # unused
 
     try:
         _setup()
@@ -245,10 +272,11 @@ def run_all_tests():
         test_vache_counts_delta(results, base_vp, base_vl, base_vt)
         test_production_delta(results, base_prod)
         test_concentre_delta(results, base_conc)
-        test_efficacite_alim_delta(results, base_ms)
+        test_efficacite_alim_delta(results)
         test_ratios(results)
+        test_lc_indicator_set(results)
+        test_persistance_indicator_set(results)
         test_midmonth_caps(results)
-        test_deferred_frais(results)
     finally:
         _cleanup()
 

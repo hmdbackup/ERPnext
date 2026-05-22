@@ -8,10 +8,14 @@
   "section_identification",
   "nom_aliment",
   "type_aliment",
+  "item",
   "column_break_id",
   "unite",
   "prix_unitaire",
   "ms_pct",
+  "section_stock",
+  "stock_courant",
+  "reorder_level",
   "section_notes",
   "observations"
  ],
@@ -35,6 +39,14 @@
    "label": "Type",
    "options": "CONCENTRE\nFOURRAGE\nMINERAL\nENSILAGE\nPAILLE\nSUPPLEMENT",
    "reqd": 1
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Item ERPNext",
+   "options": "Item",
+   "in_list_view": 1,
+   "description": "Lien vers l'Item ERPNext (rempli automatiquement par la migration)"
   },
   {
    "fieldname": "column_break_id",
@@ -64,6 +76,27 @@
    "fieldtype": "Percent",
    "label": "Matière Sèche (MS%)",
    "description": "Pourcentage de matière sèche (0-100)"
+  },
+  {
+   "fieldname": "section_stock",
+   "fieldtype": "Section Break",
+   "label": "Gestion stock",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "stock_courant",
+   "fieldtype": "Float",
+   "label": "Stock Courant (kg)",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "Quantité actuelle en stock (Bin.actual_qty) — recalculée à chaque ouverture. Négative = stock système épuisé (le générateur consomme malgré tout)."
+  },
+  {
+   "default": "0",
+   "fieldname": "reorder_level",
+   "fieldtype": "Float",
+   "label": "Seuil de réapprovisionnement",
+   "description": "Si > 0, une alerte est créée quand le stock tombe sous ce seuil. Laisser à 0 pour désactiver."
   },
   {
    "fieldname": "section_notes",

@@ -53,54 +53,52 @@ frappe.query_reports["Controle Laitier"] = {
         },
         {
             fieldname: "lot",
-            label: __("Lot"),
-            fieldtype: "Link",
-            options: "Lot",
+            label: __("Lots"),
+            fieldtype: "MultiSelectList",
+            get_data: function(txt) {
+                return frappe.db.get_link_options("Lot", txt);
+            },
         },
     ],
 
     formatter(value, row, column, data, default_formatter) {
+        const isTotal = data && data.is_total;
+
+        // Delta color rules apply to BOTH normal and TOTAL rows so the
+        // herd-level delta is visually classified (green/orange/red) just
+        // like the per-cow deltas.
+        if (column.fieldname === "delta" && value != null && value !== "") {
+            const pct = Number(value);
+            const drop_threshold = (frappe.boot.hmd_config || {}).production_drop_alert_pct || -15;
+            let color = "gray";
+            let dropBold = false;
+            if (pct > 0) color = "green";
+            else if (pct < 0) {
+                if (pct <= drop_threshold) { color = "red"; dropBold = true; }
+                else color = "orange";
+            }
+            const sign = pct > 0 ? "+" : "";
+            const fontWeight = (isTotal || dropBold) ? "font-weight:bold;" : "";
+            const bg = isTotal ? "background:#fff3cd;" : "";
+            return `<span style="color:${color};${fontWeight}${bg}">${sign}${pct}%</span>`;
+        }
+
+        if (isTotal) {
+            const formatted = default_formatter(value, row, column, data);
+            return `<span style="font-weight:bold; background:#fff3cd;">${formatted}</span>`;
+        }
         if (value == null || value === "") {
             return default_formatter(value, row, column, data);
         }
         if (["total", "moyenne", "moyenne_3j"].includes(column.fieldname)) {
             return `<b>${default_formatter(value, row, column, data)}</b>`;
         }
-        if (column.fieldname === "delta") {
-            const pct = Number(value);
-            let color = "gray";
-            let bold = false;
-            if (pct > 0) {
-                color = "green";
-            } else if (pct < 0) {
-                if (pct <= -30) { color = "red"; bold = true; }
-                else color = "orange";
-            }
-            const sign = pct > 0 ? "+" : "";
-            const style = `color:${color};${bold ? "font-weight:bold;" : ""}`;
-            return `<span style="${style}">${sign}${pct}%</span>`;
-        }
         return default_formatter(value, row, column, data);
     },
 
     after_datatable_render(datatable) {
-        // Sticky first 2 columns (row number + nom_metier) — useful in CL wide grid.
-        if (datatable.wrapper.querySelector(".sticky-col-style")) return;
-        const style = document.createElement("style");
-        style.className = "sticky-col-style";
-        const col0Width = datatable.getColumn(0).width || 40;
-        style.textContent = `
-            .dt-cell--col-0, .dt-cell--header-0 {
-                position: sticky !important; left: 0; z-index: 10;
-                background: var(--card-bg) !important;
-            }
-            .dt-cell--header-0 { z-index: 11; }
-            .dt-cell--col-1, .dt-cell--header-1 {
-                position: sticky !important; left: ${col0Width}px; z-index: 10;
-                background: var(--card-bg) !important;
-            }
-            .dt-cell--header-1 { z-index: 11; }
-        `;
-        datatable.wrapper.appendChild(style);
+        // Freeze the row-number "+" column and nom_metier so they stay visible
+        // when the user scrolls right through many date columns.
+        hmd_make_sticky_columns(datatable, 2);
     },
 };

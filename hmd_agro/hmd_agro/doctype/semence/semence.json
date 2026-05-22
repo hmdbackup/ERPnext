@@ -13,10 +13,11 @@
   "date_reception",
   "date_expiration",
   "section_stock",
-  "quantite_recue",
-  "quantite_restante",
+  "item",
+  "stock_courant",
   "column_break_stock",
   "prix_unitaire",
+  "reorder_level",
   "section_notes",
   "observations"
  ],
@@ -65,17 +66,20 @@
    "label": "Stock"
   },
   {
-   "fieldname": "quantite_recue",
-   "fieldtype": "Int",
-   "label": "Quantit\u00e9 Re\u00e7ue",
-   "reqd": 1
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Item ERPNext",
+   "options": "Item",
+   "in_list_view": 1,
+   "description": "Item ERPNext (rempli automatiquement par la migration). Le batch_id du Stock Entry = nom de cette Semence."
   },
   {
-   "fieldname": "quantite_restante",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Quantit\u00e9 Restante",
-   "reqd": 1
+   "fieldname": "stock_courant",
+   "fieldtype": "Float",
+   "label": "Stock Courant (Batch)",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "Quantité restante dans le Batch (Batch.batch_qty) — recalculée à l'ouverture. Une Semence consomme par doses; le batch traque le total restant."
   },
   {
    "fieldname": "column_break_stock",
@@ -85,6 +89,13 @@
    "fieldname": "prix_unitaire",
    "fieldtype": "Currency",
    "label": "Prix Unitaire (DT)"
+  },
+  {
+   "default": "0",
+   "fieldname": "reorder_level",
+   "fieldtype": "Float",
+   "label": "Seuil de réapprovisionnement",
+   "description": "Si > 0, une Material Request est créée automatiquement quand le stock tombe sous ce seuil. Laisser à 0 pour désactiver."
   },
   {
    "fieldname": "section_notes",

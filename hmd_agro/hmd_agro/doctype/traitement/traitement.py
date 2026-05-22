@@ -5,6 +5,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate, today, add_days
 
+from hmd_agro.hmd_agro.utils.stock_utils import DEFAULT_WAREHOUSE as WAREHOUSE
+
 
 class Traitement(Document):
     def validate(self):
@@ -67,32 +69,72 @@ class Traitement(Document):
                 )
 
     def decrement_medicament_stock(self):
-        """RG20: Decrement stock_actuel by 1 for each medicament used"""
+        """RG20: post one Material Issue per medicament row (Stock Module only,
+        post-Phase C). Qty consumed = `row.qty_consumed` (ST5-11). Pre-ST5-11
+        the qty was hardcoded to 1, regardless of the medical `dose` field —
+        a vet administering 50ml of a 100ml flacon decremented 1 "unit" of
+        stock, which was wrong. Now `qty_consumed` is a separate field on
+        Traitement Medicale (default 1, optional) and represents the stock
+        unit count (e.g. 0.5 for half a flacon). `dose` stays the medical
+        metadata. Default 1 preserves backward-compat for old rows.
+
+        With Item.allow_negative_stock=1 on MED-*, the issue always succeeds
+        even when Bin is at/below 0 — production stance: a recorded Traitement
+        represents a real event that already happened. A soft msgprint warns
+        when Bin is depleted; the native reorder Material Request (ST5-08)
+        fires preventively at reorder_level."""
         if self.type_traitement != "TRAITEMENT_MEDICAL" or not self.medicaments:
             return
+        from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
         for row in self.medicaments:
-            if row.medicament:
-                stock = frappe.db.get_value("Medicament", row.medicament, "stock_actuel")
-                if stock and stock > 0:
-                    frappe.db.set_value("Medicament", row.medicament,
-                        "stock_actuel", stock - 1)
-                else:
-                    frappe.msgprint(
-                        f"Attention: Stock épuisé pour le médicament {row.medicament}.",
-                        indicator="orange",
-                        alert=True
-                    )
+            if not row.medicament:
+                continue
+            qty = float(row.qty_consumed or 1)
+            if qty <= 0:
+                continue
+            item = frappe.db.get_value("Medicament", row.medicament, "item")
+            if not item:
+                frappe.msgprint(
+                    f"Médicament {row.medicament} non lié à un Item ERPNext — "
+                    f"écriture stock ignorée. Lancer medicament_migration.",
+                    indicator="orange", alert=True,
+                )
+                continue
+            bin_qty = frappe.db.get_value(
+                "Bin",
+                {"item_code": item, "warehouse": WAREHOUSE},
+                "actual_qty",
+            ) or 0
+            if bin_qty <= 0:
+                frappe.msgprint(
+                    f"Attention: stock système épuisé pour {row.medicament} "
+                    f"(Bin={bin_qty}). Mouvement enregistré en négatif — "
+                    f"pensez à saisir une Purchase Receipt pour rattraper.",
+                    indicator="orange", alert=True,
+                )
+            create_stock_movement(item, qty, "Material Issue",
+                WAREHOUSE,
+                f"Traitement {self.name}", self.date_traitement)
 
     def restore_medicament_stock(self):
-        """Restore +1 to stock_actuel for each medicament on delete"""
+        """Compensating Material Receipt per medicament row on Traitement
+        delete. ST5-11: restores `row.qty_consumed` (default 1) to mirror the
+        original decrement exactly."""
         if self.type_traitement != "TRAITEMENT_MEDICAL" or not self.medicaments:
             return
+        from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
         for row in self.medicaments:
-            if row.medicament:
-                stock = frappe.db.get_value("Medicament", row.medicament, "stock_actuel")
-                if stock is not None:
-                    frappe.db.set_value("Medicament", row.medicament,
-                        "stock_actuel", stock + 1)
+            if not row.medicament:
+                continue
+            qty = float(row.qty_consumed or 1)
+            if qty <= 0:
+                continue
+            item = frappe.db.get_value("Medicament", row.medicament, "item")
+            if not item:
+                continue
+            create_stock_movement(item, qty, "Material Receipt",
+                WAREHOUSE,
+                f"Restore Traitement {self.name} delete", self.date_traitement)
 
     def update_animal_attente_lait(self, clear=False):
         """Update Animal milk withdrawal flag based on all treatments"""

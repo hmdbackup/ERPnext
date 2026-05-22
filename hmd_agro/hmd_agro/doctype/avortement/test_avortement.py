@@ -51,20 +51,17 @@ class TestAvortement(FrappeTestCase):
             "taureau": "AVO-TEST-PERE",
             "type_semence": "CONVENTIONNELLE",
         }, limit=1)
+        # ST5-14 (Phase C): legacy `quantite_recue`/`quantite_restante` fields
+        # removed in ST5-12; Semence stock now lives in Batch.batch_qty. These
+        # tests don't assert on stock, so we just need a Semence row to exist.
         if existing_semence:
             self.semence = existing_semence[0].name
-            frappe.db.set_value("Semence", self.semence, {
-                "quantite_restante": 10,
-                "quantite_recue": 10,
-            })
         else:
             sem = frappe.get_doc({
                 "doctype": "Semence",
                 "taureau": "AVO-TEST-PERE",
                 "type_semence": "CONVENTIONNELLE",
                 "date_reception": add_days(today(), -100),
-                "quantite_recue": 10,
-                "quantite_restante": 10,
             }).insert(ignore_permissions=True)
             self.semence = sem.name
 
@@ -78,7 +75,7 @@ class TestAvortement(FrappeTestCase):
                 "date_naissance": add_days(today(), -1000),
                 "id_lot": "AVO-TEST-LOT",
                 "id_pere": "AVO-TEST-PERE",
-                "est_achat": 1,
+                "date_entree": add_days(today(), -500), "est_achat": 1,
                 "id_mere_externe": self.mere_externe,
                 "statut": "ACTIF",
             }).insert(ignore_permissions=True)
@@ -93,7 +90,7 @@ class TestAvortement(FrappeTestCase):
                 "date_naissance": add_days(today(), -1000),
                 "id_lot": "AVO-TEST-LOT",
                 "id_pere": "AVO-TEST-PERE",
-                "est_achat": 1,
+                "date_entree": add_days(today(), -500), "est_achat": 1,
                 "id_mere_externe": self.mere_externe,
                 "statut": "ACTIF",
             }).insert(ignore_permissions=True)
@@ -121,13 +118,18 @@ class TestAvortement(FrappeTestCase):
             lac.flags.ignore_validate = True
             lac.insert(ignore_permissions=True)
 
-        # Create or reuse insemination
+        # Create or reuse insemination. When reusing, REFRESH date_ia so the
+        # stade_gestation arithmetic stays anchored on `today` — otherwise the
+        # test drifts (the IA's date_ia is locked at whatever `today` was the
+        # first time setUp ran, so later runs compute the wrong gestation days).
         existing_ia = frappe.get_all("Insemination", filters={
             "animal": "8700000001",
             "resultat": "REUSSIE",
         }, limit=1)
         if existing_ia:
             self.insemination = existing_ia[0].name
+            frappe.db.set_value("Insemination", self.insemination,
+                "date_ia", add_days(today(), -120))
         else:
             ia = frappe.get_doc({
                 "doctype": "Insemination",

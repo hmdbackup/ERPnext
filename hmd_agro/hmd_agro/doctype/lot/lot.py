@@ -3,6 +3,11 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import today
+
+from hmd_agro.hmd_agro.doctype.lot_ration_history.lot_ration_history import (
+	record_ration_assignment,
+)
 
 
 class Lot(Document):
@@ -20,21 +25,27 @@ class Lot(Document):
 		self._track_ration_change()
 
 	def _track_ration_change(self):
-		"""Audit log: insert a Lot Ration History row whenever id_ration_actuelle changes."""
+		"""When id_ration_actuelle changes, close the open Lot Ration History
+		episode and open a new one. Delegates to record_ration_assignment() so
+		the Ration list-view bulk action and on-form edits use identical logic.
+
+		Callers (e.g. the bulk-assign button) can pass `flags.ration_effective_date`
+		to backdate the new episode; defaults to today when unset.
+		"""
 		if not self.has_value_changed("id_ration_actuelle"):
 			return
 		prev = self.get_doc_before_save()
-		from_ration = prev.id_ration_actuelle if prev else None
-		if (from_ration or "") == (self.id_ration_actuelle or ""):
+		prev_ration = prev.id_ration_actuelle if prev else None
+		if (prev_ration or "") == (self.id_ration_actuelle or ""):
 			return
-		frappe.get_doc({
-			"doctype": "Lot Ration History",
-			"lot": self.name,
-			"from_ration": from_ration or None,
-			"to_ration": self.id_ration_actuelle or None,
-			"changed_by": frappe.session.user,
-			"source": getattr(self.flags, "ration_change_source", "MANUAL"),
-		}).insert(ignore_permissions=True)
+		date_debut = getattr(self.flags, "ration_effective_date", None) or today()
+		source = getattr(self.flags, "ration_change_source", "MANUAL")
+		record_ration_assignment(
+			lot=self.name,
+			new_ration=self.id_ration_actuelle or None,
+			date_debut=date_debut,
+			source=source,
+		)
 
 	def update_nb_animaux(self, exclude_animal=None):
 		"""Count active animals in this lot and update nb_animaux"""

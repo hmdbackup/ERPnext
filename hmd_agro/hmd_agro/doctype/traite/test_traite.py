@@ -54,6 +54,7 @@ class TestTraite(FrappeTestCase):
                 "categorie": "VACHE",
                 "race": "Holstein",
                 "date_naissance": add_days(today(), -1000),
+                "date_entree": add_days(today(), -800),
                 "id_lot": "TRA-TEST-LOT",
                 "id_pere": "TRA-TEST-PERE",
                 "est_achat": 1,
@@ -138,6 +139,7 @@ class TestTraite(FrappeTestCase):
                 "categorie": "VACHE",
                 "race": "Holstein",
                 "date_naissance": add_days(today(), -1000),
+                "date_entree": add_days(today(), -800),
                 "id_lot": "TRA-TEST-LOT",
                 "id_pere": "TRA-TEST-PERE",
                 "est_achat": 1,
@@ -281,6 +283,7 @@ class TestTraite(FrappeTestCase):
                 "categorie": "VACHE",
                 "race": "Holstein",
                 "date_naissance": add_days(today(), -1000),
+                "date_entree": add_days(today(), -800),
                 "id_lot": "TRA-TEST-LOT",
                 "id_pere": "TRA-TEST-PERE",
                 "est_achat": 1,
@@ -324,3 +327,31 @@ class TestTraite(FrappeTestCase):
 
         lac = frappe.get_doc("Lactation", self.lactation)
         self.assertAlmostEqual(lac.production_totale, 22.5, places=1)
+
+    # ──────────────────────────────────────────────
+    # Brut fallback (reconciliation bookkeeping field)
+    # ──────────────────────────────────────────────
+    def test_brut_fallback_on_direct_create(self):
+        """When creating a Traite directly without setting brut, validate() should seed it from quantite_litres."""
+        traite = frappe.get_doc({
+            "doctype": "Traite",
+            "animal": "8400000001",
+            "date_traite": add_days(today(), -3),
+            "session": "MATIN",
+            "quantite_litres": 18.0,
+        }).insert(ignore_permissions=True)
+        self.assertEqual(traite.quantite_litres_brut, 18.0)
+
+    def test_brut_explicit_value_preserved(self):
+        """If brut is set explicitly (saisie_traite reconciliation flow),
+        the fallback must NOT overwrite it."""
+        traite = frappe.get_doc({
+            "doctype": "Traite",
+            "animal": "8400000001",
+            "date_traite": add_days(today(), -4),
+            "session": "MATIN",
+            "quantite_litres": 18.9,      # reconciled value
+            "quantite_litres_brut": 20.0,  # original measurement
+        }).insert(ignore_permissions=True)
+        self.assertEqual(traite.quantite_litres, 18.9)
+        self.assertEqual(traite.quantite_litres_brut, 20.0)

@@ -1,8 +1,10 @@
 import frappe
 import openpyxl
-from frappe.utils import getdate, today
+from frappe.utils import cint, getdate, today
 from frappe.utils.background_jobs import enqueue, is_job_enqueued
 from io import BytesIO
+
+from hmd_agro.hmd_agro.utils.config import get_config
 
 
 @frappe.whitelist()
@@ -137,6 +139,7 @@ def _process_import(file_url, keep_original, user, resolutions=None):
             "overwritten": 0,
             "skipped_no_animal": 0,
             "skipped_no_lactation": 0,
+            "skipped_after_sortie": 0,
             "skipped_duplicate": 0,
             "errors": [],
             "lactations_updated": 0
@@ -163,6 +166,12 @@ def _process_import(file_url, keep_original, user, resolutions=None):
             animal_name = animal_map[nom]
             lactations = get_animal_lactations(animal_name)
             animal_lot = frappe.db.get_value("Animal", animal_name, "id_lot")
+            # Mirror Traite.validate_animal_present_on_date — refuse to import
+            # traites whose date is after the animal's exit. Without this,
+            # Excel files containing stale rows for sold/dead cows silently
+            # create post-sortie traites (140 such rows found in the audit
+            # before this guard was added).
+            animal_sortie = frappe.db.get_value("Animal", animal_name, "date_sortie")
 
             for i, date in enumerate(dates):
                 value = row["values"][i] if i < len(row["values"]) else 0
@@ -174,6 +183,20 @@ def _process_import(file_url, keep_original, user, resolutions=None):
                         "date": str(date),
                         "reason": f"Valeur non numerique: {value}"
                     })
+                    processed += 1
+                    continue
+
+                # Skip rows whose date is after the animal's exit (same rule as
+                # Traite.validate_animal_present_on_date).
+                if animal_sortie and getdate(date) > getdate(animal_sortie):
+                    summary["skipped_after_sortie"] += 1
+                    if value > 0:
+                        summary["errors"].append({
+                            "animal": nom,
+                            "date": str(date),
+                            "reason": f"Animal sorti le {animal_sortie} — "
+                                      f"date postérieure ignorée"
+                        })
                     processed += 1
                     continue
 
@@ -194,14 +217,15 @@ def _process_import(file_url, keep_original, user, resolutions=None):
                 # 50/50 split
                 half = round(value / 2, 1)
 
+                max_litres = get_config("traite_max_litres", default=60)
                 for session in ["MATIN", "SOIR"]:
-                    # Validate quantity (0-60 per session)
+                    # Validate quantity (0..max_litres per session — same limit as Traite.validate_quantite)
                     qty = half
-                    if qty > 60:
+                    if qty > max_litres:
                         summary["errors"].append({
                             "animal": nom,
                             "date": str(date),
-                            "reason": f"Quantite {session} depasse 60L ({qty})"
+                            "reason": f"Quantite {session} depasse {max_litres}L ({qty})"
                         })
                         continue
 
@@ -216,9 +240,12 @@ def _process_import(file_url, keep_original, user, resolutions=None):
                             summary["skipped_duplicate"] += 1
                             continue
                         else:
-                            # Override: update existing traite
+                            # Override: update existing traite. Reset brut to the
+                            # imported value too — the import is the new measurement.
                             frappe.db.set_value("Traite", existing,
-                                {"quantite_litres": qty, "lactation": lactation.name})
+                                {"quantite_litres": qty,
+                                 "quantite_litres_brut": qty,
+                                 "lactation": lactation.name})
                             summary["overwritten"] += 1
                             affected_lactations.add(lactation.name)
                             continue
@@ -229,6 +256,7 @@ def _process_import(file_url, keep_original, user, resolutions=None):
                         "date_traite": str(date),
                         "session": session,
                         "quantite_litres": qty,
+                        "quantite_litres_brut": qty,
                         "lactation": lactation.name,
                         "id_lot": animal_lot
                     })
@@ -297,12 +325,13 @@ def recalculate_lactation_production(lactation_name):
         WHERE lactation = %s
     """, lactation_name)[0][0] or 0
 
-    pic = frappe.db.sql("""
+    pic_window = cint(get_config("pic_production_jours", default=150))
+    pic = frappe.db.sql(f"""
         SELECT MAX(daily_total) FROM (
             SELECT SUM(quantite_litres) as daily_total
             FROM `tabTraite`
             WHERE lactation = %s
-              AND DATEDIFF(date_traite, %s) <= 150
+              AND DATEDIFF(date_traite, %s) <= {pic_window}
             GROUP BY date_traite
         ) as daily
     """, (lactation_name, date_debut))[0][0] or 0
@@ -321,11 +350,12 @@ def recalculate_lactation_production(lactation_name):
         """, (lactation_name, date_debut))[0][0] or 0
         updates["lactation_305j"] = round(total_305, 2)
 
-        prod_init = frappe.db.sql("""
+        init_window = cint(get_config("production_initiale_jours", default=60))
+        prod_init = frappe.db.sql(f"""
             SELECT SUM(quantite_litres)
             FROM `tabTraite`
             WHERE lactation = %s
-              AND DATEDIFF(date_traite, %s) <= 60
+              AND DATEDIFF(date_traite, %s) <= {init_window}
         """, (lactation_name, date_debut))[0][0] or 0
         updates["production_initiale"] = round(prod_init, 2)
 

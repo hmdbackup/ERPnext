@@ -19,8 +19,11 @@
   "column_break_2",
   "capacite_maximale",
   "nb_animaux",
+  "seuil_production_3j",
   "section_alimentation",
     "id_ration_actuelle",
+    "date_affectation_actuelle",
+    "column_break_alim",
     "adapte_hautes_performances"
  ],
  "fields": [
@@ -96,6 +99,13 @@
    "read_only": 1
   },
   {
+   "fieldname": "seuil_production_3j",
+   "fieldtype": "Float",
+   "label": "Seuil prod. moy 3j (L)",
+   "precision": "1",
+   "description": "Seuil utilisé par le panneau Suggestions d'allotement pour signaler les animaux à garder (production ≥ seuil) ou à démettre tôt (production < seuil + fin de stage). Laisser vide pour désactiver l'indicateur sur ce lot."
+  },
+  {
    "fieldname": "nom",
    "fieldtype": "Data",
    "label": "Nom",
@@ -113,6 +123,17 @@
    "in_list_view": 1,
    "label": "Ration Actuelle",
    "options": "Ration"
+    },
+    {
+     "fieldname": "date_affectation_actuelle",
+     "fieldtype": "Date",
+     "label": "Date d'affectation",
+     "read_only": 1,
+     "description": "Date de début de la ration actuelle sur ce lot. Synchronisée depuis l'historique d'affectation (Lot Ration History)."
+    },
+    {
+     "fieldname": "column_break_alim",
+     "fieldtype": "Column Break"
     },
     {
      "default": "0",

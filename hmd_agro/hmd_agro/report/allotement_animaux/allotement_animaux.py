@@ -1,9 +1,12 @@
 import frappe
 from frappe.utils import add_days, cint, date_diff, getdate, today
 
+from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.utils.lot_utils import lot_sort_key
+from hmd_agro.hmd_agro.utils.report_format import normalize_precision
 
 
+@normalize_precision
 def execute(filters=None):
     filters = filters or {}
 
@@ -24,34 +27,30 @@ def execute(filters=None):
 
 
 def _render_session(session_name, filters):
-    """Render a stored Allotment Session as the report data."""
+    """Render a stored Allotment Session as a printable movement list:
+    only cows that actually changed lot, with the 3 columns the farm worker
+    needs (cow ID, source lot, target lot)."""
     doc = frappe.get_doc("Allotment Session", session_name)
-    ref = doc.session_date
-    columns = build_columns(ref, add_days(ref, -1), add_days(ref, -2))
-    for c in columns:
-        if c["fieldname"] == "lot_actuel":
-            c["label"] = "Lot avant"
-    columns.append({"fieldname": "lot_after", "label": "Lot après",
-                    "fieldtype": "Data", "width": 120})
+    columns = [
+        {"fieldname": "nom_metier", "label": "N° Travail", "fieldtype": "Data", "width": 120},
+        {"fieldname": "lot_actuel", "label": "Lot Actuel", "fieldtype": "Link", "options": "Lot", "width": 160},
+        {"fieldname": "lot_destination", "label": "Lot Destination", "fieldtype": "Link", "options": "Lot", "width": 160},
+    ]
 
     lot_filter = filters.get("lot")
     data = []
     for r in doc.rows:
+        if not r.moved:
+            continue
         if lot_filter and r.lot_before != lot_filter and r.lot_after != lot_filter:
             continue
         data.append({
             "animal": r.animal,
             "nom_metier": r.nom_metier,
             "lot_actuel": r.lot_before,
-            "dim": r.dim,
-            "jours_gestation": r.jours_gestation,
-            "j_2": r.production_j_2,
-            "j_1": r.production_j_1,
-            "j": r.production_j,
-            "delta_j_vs_j_1": r.delta,
-            "moyenne_3j": r.moyenne_3j,
-            "lot_after": r.lot_after if r.moved else "",
+            "lot_destination": r.lot_after,
         })
+    data.sort(key=lambda x: (lot_sort_key(x["lot_actuel"] or ""), x["nom_metier"] or ""))
     return columns, data
 
 
@@ -59,7 +58,7 @@ def build_columns(reference_date, date_j_1, date_j_2):
     return [
         {"fieldname": "nom_metier", "label": "N° Travail", "fieldtype": "Data", "width": 90},
         {"fieldname": "lot_actuel", "label": "Lot", "fieldtype": "Link", "options": "Lot", "width": 90},
-        {"fieldname": "dim", "label": "Jour Lactation", "fieldtype": "Int", "width": 95},
+        {"fieldname": "dim", "label": "JL (j)", "fieldtype": "Int", "width": 95},
         {"fieldname": "jours_gestation", "label": "Jour Gestation", "fieldtype": "Int", "width": 95},
         {"fieldname": "j_2", "label": date_j_2.strftime("Tot %d-%b"), "fieldtype": "Float", "precision": 1, "width": 85},
         {"fieldname": "j_1", "label": date_j_1.strftime("Tot %d-%b"), "fieldtype": "Float", "precision": 1, "width": 85},
@@ -175,17 +174,38 @@ def get_data(reference_date, date_j_1, date_j_2, filters):
 
 @frappe.whitelist()
 def get_lots_capacity():
-    """Active lots with capacity + HP-adapted flag — used by the dialog
-    capacity preview table. Sorted: LOT1..LOTn first (numeric), then
-    TARISSEMENT, then TARIE, then the rest alphabetically."""
+    """Active lots with capacity + HP-adapted flag + seuil prod 3j —
+    used by the dialog capacity preview table. Sorted: LOT1..LOTn first
+    (numeric), then TARISSEMENT, then TARIE, then the rest alphabetically."""
     lots = frappe.get_all(
         "Lot",
         filters={"actif": 1},
         fields=["name", "lot_type", "nb_animaux",
                 "capacite_optimale", "capacite_maximale",
-                "adapte_hautes_performances"],
+                "adapte_hautes_performances", "seuil_production_3j"],
     )
     return sorted(lots, key=lambda l: lot_sort_key(l.get("name")))
+
+
+@frappe.whitelist()
+def update_lot_seuils(seuils):
+    """Persist edited seuils from the Suggestions dialog. `seuils` is a
+    JSON dict {lot_name: value}. Empty / invalid → stored as 0 (treated as
+    "no seuil" by the consideration logic)."""
+    import json
+    if isinstance(seuils, str):
+        seuils = json.loads(seuils)
+    for lot_name, val in seuils.items():
+        try:
+            v = float(val) if val not in (None, "") else 0.0
+        except (TypeError, ValueError):
+            v = 0.0
+        if v < 0:
+            v = 0.0
+        frappe.db.set_value("Lot", lot_name, "seuil_production_3j",
+                            v, update_modified=False)
+    frappe.db.commit()
+    return {"updated": len(seuils)}
 
 
 def _apply_suggestions(data, reference_date):
@@ -214,7 +234,8 @@ def _get_suggestion(row, reference_date, find_lot):
     # Gestante close to calving → tarissement (dry-off needed)
     if row.get("etat_gestation") == "GESTANTE" and row.get("date_velage_prevue"):
         days_to_calving = cint(date_diff(row["date_velage_prevue"], reference_date))
-        if 0 < days_to_calving <= 60:
+        tarissement_window = get_config("tarissement_window_jours", default=60)
+        if 0 < days_to_calving <= tarissement_window:
             return find_lot("TARISSEMENT")
 
     # 3. DIM-based
@@ -222,17 +243,23 @@ def _get_suggestion(row, reference_date, find_lot):
     if dim is None:
         return None
 
+    primipare_cap = get_config("dim_primipare_cap", default=300)
+    fv_max = get_config("dim_fv_max_multi", default=30)
+    thp_max = get_config("dim_thp_max", default=120)
+    hp_max = get_config("dim_hp_max", default=240)
+    mp_max = get_config("dim_mp_max", default=305)
+
     # Primipare: stays in FV for whole lactation, then FP
     if row.get("numero_lactation") == 1:
-        return find_lot("FV") if dim <= 300 else find_lot("FP")
+        return find_lot("FV") if dim <= primipare_cap else find_lot("FP")
 
     # Multipare
-    if dim <= 30:
+    if dim <= fv_max:
         return find_lot("FV")
-    if dim <= 120:
+    if dim <= thp_max:
         return find_lot("THP")
-    if dim <= 240:
+    if dim <= hp_max:
         return find_lot("HP")
-    if dim <= 305:
+    if dim <= mp_max:
         return find_lot("MP")
     return find_lot("FP")

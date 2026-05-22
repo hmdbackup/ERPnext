@@ -63,20 +63,15 @@ class TestVelage(FrappeTestCase):
             "taureau": "Test Taureau VEL",
             "type_semence": "CONVENTIONNELLE",
         }, limit=1)
+        # ST5-14 (Phase C): legacy stock fields removed in ST5-12.
         if existing_semence:
             self.semence = existing_semence[0].name
-            frappe.db.set_value("Semence", self.semence, {
-                "quantite_restante": 10,
-                "quantite_recue": 10,
-            })
         else:
             sem = frappe.get_doc({
                 "doctype": "Semence",
                 "taureau": "Test Taureau VEL",
                 "type_semence": "CONVENTIONNELLE",
                 "date_reception": add_days(today(), -30),
-                "quantite_recue": 10,
-                "quantite_restante": 10,
             }).insert(ignore_permissions=True)
             self.semence = sem.name
 
@@ -91,7 +86,7 @@ class TestVelage(FrappeTestCase):
                 "date_naissance": "2020-01-01",
                 "id_lot": "Test Lot VEL",
                 "id_pere": "Test Taureau VEL",
-                "est_achat": 1,
+                "date_entree": add_days(today(), -500), "est_achat": 1,
                 "id_mere_externe": self.mere_externe,
                 "statut": "ACTIF",
                 "etat_gestation": "VIDE",
@@ -191,7 +186,7 @@ class TestVelage(FrappeTestCase):
                 "date_naissance": "2022-01-01",
                 "id_lot": "Test Lot VEL",
                 "id_pere": "Test Taureau VEL",
-                "est_achat": 1,
+                "date_entree": add_days(today(), -500), "est_achat": 1,
                 "id_mere_externe": self.mere_externe,
                 "statut": "ACTIF",
                 "etat_gestation": "GESTANTE",
@@ -286,7 +281,7 @@ class TestVelage(FrappeTestCase):
                 "date_naissance": "2020-01-01",
                 "id_lot": "Test Lot VEL",
                 "id_pere": "Test Taureau VEL",
-                "est_achat": 1,
+                "date_entree": add_days(today(), -500), "est_achat": 1,
                 "id_mere_externe": self.mere_externe,
                 "statut": "ACTIF",
             }).insert(ignore_permissions=True)
@@ -503,15 +498,17 @@ class TestVelage(FrappeTestCase):
 
     # ─── TEMP ID Generation ───────────────────────────────────
 
-    def test_temp_id_generated_without_identification(self):
-        """TEMP-XX ID should be generated for calf without identification."""
+    def test_auto_id_generated_without_identification(self):
+        """A 10-digit numeric ID should be auto-generated for a calf without
+        identification (production spec: max existing identification_tn + 1,
+        zero-padded to 10 digits). Updated from the previous TEMP-XX spec."""
         vel = self._make_velage(identification_veau1="")
         vel.insert(ignore_permissions=True)
 
         calf = frappe.get_doc("Animal", vel.id_veau1)
         self.assertTrue(
-            calf.identification_tn.startswith("TEMP-"),
-            f"Expected TEMP-XX format, got {calf.identification_tn}",
+            calf.identification_tn.isdigit() and len(calf.identification_tn) == 10,
+            f"Expected 10-digit auto-incremented ID, got {calf.identification_tn}",
         )
 
     def test_calf_with_explicit_identification(self):

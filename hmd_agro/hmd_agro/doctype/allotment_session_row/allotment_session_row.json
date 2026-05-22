@@ -25,7 +25,7 @@
   {"fieldname": "lot_before", "fieldtype": "Data", "label": "Lot avant", "in_list_view": 1},
   {"fieldname": "lot_after", "fieldtype": "Data", "label": "Lot après", "in_list_view": 1},
   {"fieldname": "moved", "fieldtype": "Check", "label": "Déplacé", "in_list_view": 1},
-  {"fieldname": "dim", "fieldtype": "Int", "label": "Jour Lactation"},
+  {"fieldname": "dim", "fieldtype": "Int", "label": "JL"},
   {"fieldname": "jours_gestation", "fieldtype": "Int", "label": "Jour Gestation"},
   {"fieldname": "production_j_2", "fieldtype": "Float", "label": "Tot J-2", "precision": "1"},
   {"fieldname": "production_j_1", "fieldtype": "Float", "label": "Tot J-1", "precision": "1"},

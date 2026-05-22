@@ -31,6 +31,16 @@ function load_alerts(wrapper) {
             });
         });
 
+        page.add_button(__("Mettre à jour traitements"), function() {
+            frappe.call({
+                method: "hmd_agro.hmd_agro.doctype.traitement.traitement.refresh_attente_lait",
+                callback: function() {
+                    frappe.show_alert({ message: "Traitements mis à jour", indicator: "green" });
+                    load_alerts(wrapper);
+                }
+            });
+        });
+
         // Hide the default menu (3 dots)
         page.menu.parent().hide();
     }

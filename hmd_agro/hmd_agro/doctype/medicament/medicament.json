@@ -11,8 +11,11 @@
   "column_break_id",
   "delai_attente_lait",
   "delai_attente_viande",
+  "prix_unitaire",
   "section_stock",
-  "stock_actuel",
+  "item",
+  "stock_courant",
+  "reorder_level",
   "section_notes",
   "observations"
  ],
@@ -54,17 +57,40 @@
    "label": "Delai d'attente viande (jours)"
   },
   {
+   "default": "0",
+   "fieldname": "prix_unitaire",
+   "fieldtype": "Currency",
+   "label": "Prix Unitaire",
+   "options": "TND",
+   "description": "Prix d'achat unitaire. Utilisé comme valeur de référence pour les Stock Entries d'ouverture et le calcul des coûts."
+  },
+  {
    "fieldname": "section_stock",
    "fieldtype": "Section Break",
    "label": "Stock"
   },
   {
-   "default": "0",
-   "fieldname": "stock_actuel",
-   "fieldtype": "Int",
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Item ERPNext",
+   "options": "Item",
    "in_list_view": 1,
-   "label": "Stock Actuel",
-   "reqd": 1
+   "description": "Lien vers l'Item ERPNext (rempli automatiquement par la migration)"
+  },
+  {
+   "fieldname": "stock_courant",
+   "fieldtype": "Float",
+   "label": "Stock Courant",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "Quantité actuelle en stock (Bin.actual_qty) — recalculée à chaque ouverture du formulaire. Négative = stock système épuisé."
+  },
+  {
+   "default": "0",
+   "fieldname": "reorder_level",
+   "fieldtype": "Float",
+   "label": "Seuil de réapprovisionnement",
+   "description": "Si > 0, une alerte est créée quand le stock tombe sous ce seuil. Laisser à 0 pour désactiver."
   },
   {
    "fieldname": "section_notes",

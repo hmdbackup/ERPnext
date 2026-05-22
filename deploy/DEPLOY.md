@@ -14,7 +14,7 @@
 **1.** Clone both repos as siblings, then enter `frappe_docker`.
 ```bash
 git clone https://github.com/frappe/frappe_docker
-git clone -b sprint4 https://github.com/Mouh1b/hmd_agro hmd_agro
+git clone -b main https://github.com/Mouh1b/hmd_agro hmd_agro
 cd frappe_docker
 ```
 
@@ -76,7 +76,7 @@ Then repeat steps 3 → 7. The `down -v` flag destroys data volumes; the system 
 
 ## Updates
 
-**App code change** — push to `Mouh1b/hmd_agro` (sprint4), then on the server:
+**App code change** — push to `Mouh1b/hmd_agro` (main), then on the server:
 ```bash
 bash build-hmd.sh
 docker compose --env-file .env up -d

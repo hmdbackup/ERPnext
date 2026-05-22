@@ -8,8 +8,12 @@ from frappe.utils import getdate
 from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _production_lot
 
 PREFIX = "TEST-PLT-"
-ANNEE, MOIS = 2099, 3
-CTX = {"date_debut": getdate("2099-03-01"), "date_fin": getdate("2099-03-31"),
+# Past year for test isolation. Originally 2099 but `_production_lot` added an
+# `_is_future` guard that returns a stub for any date after today(), so
+# future dates broke these tests silently. Past year safely before demo data.
+ANNEE, MOIS = 2018, 3
+CTX = {"date_filter": getdate("2018-03-15"),
+       "date_debut": getdate("2018-03-01"), "date_fin": getdate("2018-03-31"),
        "nb_jours": 31, "mois": MOIS, "annee": ANNEE, "jour": 0}
 
 
@@ -40,7 +44,7 @@ def _animal(suffix, lot, etat_lactation="EN_PRODUCTION"):
         "doctype": "Animal", "identification_tn": f"{PREFIX}{suffix}",
         "nom_metier": f"{PREFIX}{suffix}", "categorie": "VACHE", "sexe": "F",
         "statut": "ACTIF", "etat_lactation": etat_lactation, "etat_gestation": "VIDE",
-        "date_naissance": "2095-01-01", "date_entree": "2099-01-01", "id_lot": lot,
+        "date_naissance": "2014-01-01", "date_entree": "2018-01-01", "id_lot": lot,
     })
     doc.name = f"{PREFIX}{suffix}"
     doc.db_insert()
@@ -82,23 +86,23 @@ def _setup():
     mp2 = _animal("MP2", f"{PREFIX}MP")
 
     # Day 1: HP=30L (10+10+10), MP=15L (8+7)
-    _traite(hp1.name, "2099-03-01", 10)
-    _traite(hp2.name, "2099-03-01", 10)
-    _traite(hp3.name, "2099-03-01", 10)
-    _traite(mp1.name, "2099-03-01", 8)
-    _traite(mp2.name, "2099-03-01", 7)
+    _traite(hp1.name, "2018-03-01", 10)
+    _traite(hp2.name, "2018-03-01", 10)
+    _traite(hp3.name, "2018-03-01", 10)
+    _traite(mp1.name, "2018-03-01", 8)
+    _traite(mp2.name, "2018-03-01", 7)
 
     # Day 2: HP=33L (11+11+11), MP=16L (9+7)
-    _traite(hp1.name, "2099-03-02", 11)
-    _traite(hp2.name, "2099-03-02", 11)
-    _traite(hp3.name, "2099-03-02", 11)
-    _traite(mp1.name, "2099-03-02", 9)
-    _traite(mp2.name, "2099-03-02", 7)
+    _traite(hp1.name, "2018-03-02", 11)
+    _traite(hp2.name, "2018-03-02", 11)
+    _traite(hp3.name, "2018-03-02", 11)
+    _traite(mp1.name, "2018-03-02", 9)
+    _traite(mp2.name, "2018-03-02", 7)
 
     # Day 3: only HP=27L (9+9+9), MP has no data
-    _traite(hp1.name, "2099-03-03", 9)
-    _traite(hp2.name, "2099-03-03", 9)
-    _traite(hp3.name, "2099-03-03", 9)
+    _traite(hp1.name, "2018-03-03", 9)
+    _traite(hp2.name, "2018-03-03", 9)
+    _traite(hp3.name, "2018-03-03", 9)
 
     frappe.db.commit()
 

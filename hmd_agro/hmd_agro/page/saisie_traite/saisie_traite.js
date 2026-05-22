@@ -104,12 +104,16 @@ function fetch_and_render(page, date) {
         method: "hmd_agro.hmd_agro.page.saisie_traite.saisie_traite.get_lactating_animals",
         args: { date: date },
         callback: function(r) {
-            render_table(page, r.message || [], date);
+            var resp = r.message || {};
+            // Backwards-compat: if backend returned a plain array (legacy), wrap it.
+            var animals = Array.isArray(resp) ? resp : (resp.animals || []);
+            var bilan = Array.isArray(resp) ? null : (resp.bilan || null);
+            render_table(page, animals, date, bilan);
         }
     });
 }
 
-function render_table(page, data, date) {
+function render_table(page, data, date, bilan) {
     var container = $(page.body).find(".st-container");
     if (!container.length) {
         container = $('<div class="st-container" style="padding: 15px;"></div>').appendTo(page.body);
@@ -125,6 +129,8 @@ function render_table(page, data, date) {
         );
         return;
     }
+
+    bilan = bilan || { lait_vendu: 0, consommation_interne: 0, lait_veau: 0, taux_tb_moyen: 0, taux_tp_moyen: 0 };
 
     // Summary bar
     var summary = $('<div class="st-summary" style="margin-bottom:15px; display:flex; gap:20px; flex-wrap:wrap;"></div>');
@@ -186,6 +192,46 @@ function render_table(page, data, date) {
 
     container.append(table);
 
+    // ─── Bilan Lait du jour: Vendu / CI / LV + TB/TP moyens ───────────
+    var bilan_block = $(
+        '<div class="st-bilan" style="margin-top:25px; padding:15px; background:var(--bg-color); border:1px solid var(--border-color); border-radius:6px;">' +
+        '<div style="font-weight:600; margin-bottom:10px;">Bilan Lait du Jour</div>' +
+        '<div style="display:flex; gap:25px; flex-wrap:wrap; align-items:flex-end;">' +
+        '<div><label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Lait Vendu (L)</label>' +
+        '<input type="number" min="0" step="0.1" class="form-control input-xs st-bilan-input" data-field="lait_vendu" ' +
+        'value="' + (bilan.lait_vendu || 0) + '" style="width:120px; text-align:center;"></div>' +
+        '<div><label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Consommation Interne — CI (L)</label>' +
+        '<input type="number" min="0" step="0.1" class="form-control input-xs st-bilan-input" data-field="consommation_interne" ' +
+        'value="' + (bilan.consommation_interne || 0) + '" style="width:120px; text-align:center;"></div>' +
+        '<div><label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Lait Veau — LV (L)</label>' +
+        '<input type="number" min="0" step="0.1" class="form-control input-xs st-bilan-input" data-field="lait_veau" ' +
+        'value="' + (bilan.lait_veau || 0) + '" style="width:120px; text-align:center;"></div>' +
+        '<div style="font-size:12px; color:var(--text-muted); line-height:1.6;">' +
+        'Production saisie du jour: <strong class="st-bilan-brut">0.0</strong> L<br>' +
+        'Écart (saisie – vendu – CI – LV): <strong class="st-bilan-ecart">0.0</strong> L ' +
+        '<span style="margin-left:4px;">(<strong class="st-bilan-ecart-pct">0.0 %</strong>)</span>' +
+        '</div>' +
+        '</div>' +
+        '<div style="display:flex; gap:25px; flex-wrap:wrap; align-items:flex-end; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border-color);">' +
+        '<div><label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">TB Moyen (%)</label>' +
+        '<input type="number" min="0" step="0.01" class="form-control input-xs st-bilan-input" data-field="taux_tb_moyen" ' +
+        'value="' + (bilan.taux_tb_moyen || 0) + '" style="width:120px; text-align:center;"></div>' +
+        '<div><label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">TP Moyen (%)</label>' +
+        '<input type="number" min="0" step="0.01" class="form-control input-xs st-bilan-input" data-field="taux_tp_moyen" ' +
+        'value="' + (bilan.taux_tp_moyen || 0) + '" style="width:120px; text-align:center;"></div>' +
+        '<div style="font-size:12px; color:var(--text-muted);">Valeurs propagées à toutes les traites du jour.</div>' +
+        '</div></div>'
+    );
+    container.append(bilan_block);
+
+    // Block negative input on bilan fields and recompute écart on change
+    container.off("input", ".st-bilan-input").on("input", ".st-bilan-input", function() {
+        update_totals(container);
+    });
+    container.off("keydown", ".st-bilan-input").on("keydown", ".st-bilan-input", function(e) {
+        if (e.key === "-" || e.key === "e") { e.preventDefault(); }
+    });
+
     // Bind input events
     container.off("input", ".st-qty-input").on("input", ".st-qty-input", function() {
         update_totals(container);
@@ -229,18 +275,23 @@ function make_input(d, session) {
     var existing = d[session_key];
     var val = existing ? existing.qty : "";
     var traite_name = existing ? existing.name : "";
+    var brut = existing && existing.brut != null ? existing.brut : "";
+    var original_qty = existing ? existing.qty : "";
 
     return '<input type="number" min="0" max="60" step="0.1" ' +
         'class="form-control input-xs st-qty-input" ' +
         'data-animal="' + d.animal + '" ' +
         'data-session="' + session + '" ' +
         'data-traite-name="' + traite_name + '" ' +
+        'data-brut="' + brut + '" ' +
+        'data-original-qty="' + original_qty + '" ' +
         'value="' + val + '" ' +
         'style="width:90px; display:inline-block; text-align:center;">';
 }
 
 function update_totals(container) {
     var total_matin = 0, total_soir = 0, grand_total = 0;
+    var brut_total = 0;
 
     container.find("tbody tr").each(function() {
         var row = $(this);
@@ -252,6 +303,19 @@ function update_totals(container) {
             row_total += val;
             if (session === "MATIN") total_matin += val;
             else if (session === "SOIR") total_soir += val;
+
+            // Effective brut: if input matches the originally loaded qty,
+            // the cell is "unchanged" → use the stored brut. Otherwise the
+            // input value IS the new measurement.
+            var orig_qty = parseFloat($(this).data("original-qty"));
+            var stored_brut = parseFloat($(this).data("brut"));
+            var eff_brut;
+            if (!isNaN(orig_qty) && !isNaN(stored_brut) && Math.abs(val - orig_qty) < 0.05) {
+                eff_brut = stored_brut;
+            } else {
+                eff_brut = val;
+            }
+            brut_total += eff_brut;
         });
 
         row.find(".st-row-total").text(row_total ? row_total.toFixed(1) : "0");
@@ -264,7 +328,8 @@ function update_totals(container) {
 
         if (prev > 0 && row_total > 0) {
             var drop_pct = ((row_total - prev) / prev) * 100;
-            if (drop_pct <= -30) {
+            var drop_threshold = (frappe.boot.hmd_config || {}).production_drop_alert_pct || -15;
+            if (drop_pct <= drop_threshold) {
                 alert_cell.html(
                     '<span class="indicator-pill red" style="font-size:11px;">' +
                     Math.round(drop_pct) + '%</span>'
@@ -292,6 +357,36 @@ function update_totals(container) {
         'Total: <strong>' + grand_total.toFixed(1) + ' L</strong>' +
         '</span>'
     );
+
+    // Écart compares the *brut* production (raw measurements) with consumed,
+    // independent of any reconciliation already applied. brut_total combines
+    // stored brut for unchanged inputs with the entered value for edited/new
+    // inputs — see the loop above.
+    var vendu = parseFloat(container.find('.st-bilan-input[data-field="lait_vendu"]').val()) || 0;
+    var ci    = parseFloat(container.find('.st-bilan-input[data-field="consommation_interne"]').val()) || 0;
+    var lv    = parseFloat(container.find('.st-bilan-input[data-field="lait_veau"]').val()) || 0;
+    var ecart = brut_total - vendu - ci - lv;
+    var ecart_pct = brut_total > 0 ? (ecart / brut_total) * 100 : 0;
+
+    container.find(".st-bilan-brut").text(brut_total.toFixed(1));
+
+    var ecart_el = container.find(".st-bilan-ecart");
+    var ecart_pct_el = container.find(".st-bilan-ecart-pct");
+    ecart_el.text(ecart.toFixed(1));
+    ecart_pct_el.text(ecart_pct.toFixed(1) + " %");
+
+    // Color thresholds come from HMD Configuration → Bilan Lait section.
+    var cfg = frappe.boot.hmd_config || {};
+    var seuil_neg = parseFloat(cfg.ecart_lait_seuil_negatif_l);
+    if (isNaN(seuil_neg)) seuil_neg = 1;
+    var seuil_perte_pct = parseFloat(cfg.ecart_lait_seuil_perte_pct);
+    if (isNaN(seuil_perte_pct)) seuil_perte_pct = 5;
+
+    var color = "var(--text-color)";
+    if (ecart < -seuil_neg) color = "red";
+    else if (brut_total > 0 && ecart > brut_total * (seuil_perte_pct / 100)) color = "orange";
+    ecart_el.css("color", color);
+    ecart_pct_el.css("color", color);
 }
 
 function save_all(page, date) {
@@ -313,7 +408,17 @@ function save_all(page, date) {
         }
     });
 
-    if (!entries.length) {
+    var bilan = {
+        lait_vendu: parseFloat(container.find('.st-bilan-input[data-field="lait_vendu"]').val()) || 0,
+        consommation_interne: parseFloat(container.find('.st-bilan-input[data-field="consommation_interne"]').val()) || 0,
+        lait_veau: parseFloat(container.find('.st-bilan-input[data-field="lait_veau"]').val()) || 0,
+        taux_tb_moyen: parseFloat(container.find('.st-bilan-input[data-field="taux_tb_moyen"]').val()) || 0,
+        taux_tp_moyen: parseFloat(container.find('.st-bilan-input[data-field="taux_tp_moyen"]').val()) || 0,
+    };
+    var has_bilan = bilan.lait_vendu > 0 || bilan.consommation_interne > 0 || bilan.lait_veau > 0
+        || bilan.taux_tb_moyen > 0 || bilan.taux_tp_moyen > 0;
+
+    if (!entries.length && !has_bilan) {
         frappe.show_alert({ message: "Aucune saisie a enregistrer", indicator: "orange" });
         return;
     }
@@ -322,7 +427,8 @@ function save_all(page, date) {
         method: "hmd_agro.hmd_agro.page.saisie_traite.saisie_traite.save_traites",
         args: {
             date: date,
-            entries: JSON.stringify(entries)
+            entries: JSON.stringify(entries),
+            bilan: JSON.stringify(bilan)
         },
         freeze: true,
         freeze_message: "Enregistrement en cours...",

@@ -10,7 +10,12 @@ from hmd_agro.hmd_agro.utils import live_state as LS
 from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _effectif, _production_lot
 
 PREFIX = "TEST-EFF-"
-ANNEE = 2099
+# Past year for test isolation. Was 2099 originally, but `_production_lot`
+# and `_alimentation` added an `_is_future` guard that returns a stub for
+# any date after today() — so future dates broke these tests silently.
+# A past year that's safely before the demo data window (which starts 2024)
+# avoids both real-data conflicts and the future guard.
+ANNEE = 2018
 
 
 def _log(msg, level="INFO"):
@@ -384,6 +389,62 @@ def test_prod_lot_lot_attribution(r):
            "current lot NOT shown in production", f"{by.get('20/03')}", r)
 
 
+def test_effectif_mois_past_month_full(r):
+    """Past month → aggregation covers the FULL month regardless of where the
+    date cursor is. Critically, an event AFTER date_filter but within the same
+    past month must be counted (window end = date_fin, not date_filter)."""
+    _log("_effectif Mois mode — past month aggregates the full month", "HEAD")
+    PAST_ANNEE = 2022
+    _cleanup()
+    # Births spread across the month: day 5, 12, AND 28 (after our cursor)
+    _animal("M1", "VEAU", sexe="M", date_naissance=f"{PAST_ANNEE}-03-05")
+    _animal("M2", "VELLE", sexe="F", date_naissance=f"{PAST_ANNEE}-03-12")
+    _animal("M3", "VEAU", sexe="M", date_naissance=f"{PAST_ANNEE}-03-28")  # AFTER cursor
+    _animal("MX", "VACHE", date_sortie=f"{PAST_ANNEE}-03-20", statut="VENDU",
+            prix_vente=1500, etat_lactation="EN_PRODUCTION",
+            date_naissance=f"{PAST_ANNEE-3}-01-01",
+            date_entree=f"{PAST_ANNEE-3}-01-01")
+    frappe.db.commit()
+
+    # Cursor on day 25 (mid-month) of a PAST month.
+    # New logic: end = date_fin = day 31, so M3 (day 28) IS counted.
+    ctx_mois = {"date_filter": getdate(f"{PAST_ANNEE}-03-25"),
+                "date_debut": getdate(f"{PAST_ANNEE}-03-01"),
+                "date_fin": getdate(f"{PAST_ANNEE}-03-31"), "nb_jours": 31,
+                "effectif_mode": "Mois"}
+    _, data = _effectif(ctx_mois)
+
+    def _row_total(label):
+        row = next((rr for rr in data if rr.get("ligne") == label), None)
+        return row.get("Total") if row else None
+
+    _check(_row_total("Naissance") == 3,
+           "Naissance Total = 3 (M1 day 5 + M2 day 12 + M3 day 28, ALL counted)",
+           f"Got {_row_total('Naissance')} — past month should NOT cap at cursor", r)
+    _check(_row_total("Vente (Quantité)") == 1,
+           "Vente Qté Total = 1", f"Got {_row_total('Vente (Quantité)')}", r)
+    _check(_row_total("Vente (Prix DT)") == 1500,
+           "Vente Prix Total = 1500", f"Got {_row_total('Vente (Prix DT)')}", r)
+
+
+def test_effectif_jour_mode_unchanged(r):
+    _log("_effectif Jour mode (default) — single-day behavior preserved", "HEAD")
+    PAST_ANNEE = 2022
+    _cleanup()
+    _animal("J1", "VEAU", sexe="M", date_naissance=f"{PAST_ANNEE}-03-10")
+    _animal("J2", "VEAU", sexe="M", date_naissance=f"{PAST_ANNEE}-03-15")
+    frappe.db.commit()
+
+    # Jour mode on 03-10: should see 1 birth (J1), not 2
+    ctx_jour = {"date_filter": getdate(f"{PAST_ANNEE}-03-10"),
+                "date_debut": getdate(f"{PAST_ANNEE}-03-01"),
+                "date_fin": getdate(f"{PAST_ANNEE}-03-31"), "nb_jours": 31}
+    _, data = _effectif(ctx_jour)
+    row = next((rr for rr in data if rr.get("ligne") == "Naissance"), None)
+    _check(row and row.get("Total") == 1,
+           "Jour 03-10 Naissance Total = 1 (J1 only)", f"Got {row}", r)
+
+
 # ─── Runner ──────────────────────────────────────────────────────────────────
 
 def run_all_tests():
@@ -406,6 +467,8 @@ def run_all_tests():
         test_changements_cat(r)
         test_changements_excludes_velage(r)
         test_import_priority(r)
+        test_effectif_jour_mode_unchanged(r)
+        test_effectif_mois_past_month_full(r)
         test_prod_lot_live(r)
         test_prod_lot_no_traite(r)
         test_prod_lot_import_priority(r)
