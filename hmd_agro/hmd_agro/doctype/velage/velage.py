@@ -3,7 +3,7 @@
 # i can edit
 import frappe
 from frappe.model.document import Document
-from frappe.utils import getdate, today
+from frappe.utils import getdate, today, add_days
 
 from hmd_agro.hmd_agro.utils.config import get_config
 
@@ -197,11 +197,21 @@ class Velage(Document):
         if prev_lactation:
             lac = frappe.get_doc("Lactation", prev_lactation)
             lac.statut = "TARIE"
-            lac.date_tarissement = self.date_velage
+            # Dry-off happens ~tarissement_window days BEFORE the next calving, not
+            # on the calving day. Stamping the calving date would fold the dry
+            # period into the lactation length (jours_lactation = calving interval
+            # instead of days-in-milk). This branch only fires when the farmer
+            # forgot to record the real tarissement, so velage - window is the best
+            # estimate. Guard against an impossibly short interval.
+            window = int(get_config("tarissement_window_jours", default=60))
+            dry_off = add_days(getdate(self.date_velage), -window)
+            if lac.date_debut and getdate(dry_off) < getdate(lac.date_debut):
+                dry_off = getdate(self.date_velage)
+            lac.date_tarissement = dry_off
             # Calculate jours_lactation before saving (since ignore_validate skips it)
             if lac.date_debut:
                 from frappe.utils import date_diff
-                lac.jours_lactation = date_diff(getdate(self.date_velage), getdate(lac.date_debut))
+                lac.jours_lactation = date_diff(getdate(dry_off), getdate(lac.date_debut))
             lac.flags.ignore_validate = True
             lac.save()
             frappe.msgprint(f"Lactation précédente #{lac.numero_lactation} clôturée automatiquement (TARIE).")

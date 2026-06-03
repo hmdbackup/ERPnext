@@ -403,10 +403,12 @@ class TestVelage(FrappeTestCase):
         vel = self._make_velage()
         vel.insert(ignore_permissions=True)
 
-        # The pre-existing lactation should now be TARIE
+        # The pre-existing lactation should now be TARIE, dried off
+        # tarissement_window (60) days before this velage — not on the
+        # calving day (see Velage.create_lactation).
         prev_lac = frappe.get_doc("Lactation", self.lactation)
         self.assertEqual(prev_lac.statut, "TARIE")
-        self.assertEqual(str(prev_lac.date_tarissement), today())
+        self.assertEqual(str(prev_lac.date_tarissement), add_days(today(), -60))
 
         # A new lactation should have been created
         self.assertTrue(vel.lactation)

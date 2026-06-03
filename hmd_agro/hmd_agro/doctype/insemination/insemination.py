@@ -228,6 +228,8 @@ class Insemination(Document):
              when the system's stock count is stale. The Bin will go negative
              (Item.allow_negative_stock=1), surfacing the discrepancy via the
              native reorder Material Request and via the soft msgprint below."""
+        if getattr(self.flags, "skip_semence_decrement", False):
+            return  # historical bulk import: do not write to the stock ledger
         if not self.taureau:
             return
         from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
