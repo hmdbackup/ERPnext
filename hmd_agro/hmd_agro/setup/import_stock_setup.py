@@ -22,7 +22,7 @@ COMPANY = "hmd-agro"
 WAREHOUSE = "Magasin Principal - HMD"
 WAREHOUSE_PARENT = "All Warehouses - HMD"
 
-UOMS = ["Paillette", "Dose"]
+UOMS = ["Paillette", "Dose", "Unit"]   # "Unit" = stock_utils DEFAULT_UOM (absent on a French ERPNext base)
 
 # parent group -> children (all under "All Item Groups"); names must match the
 # accented values the Aliment/Medicament/Semence Item-creation logic expects.
@@ -41,6 +41,12 @@ def run(dry_run=True):
         print(f"[ABORT] Company '{COMPANY}' missing — run the ERPNext setup wizard first.")
         return {"aborted": True}
 
+    # Root Item Group name is locale-dependent ("All Item Groups" EN /
+    # "Tous les Groupes d'Articles" FR), so resolve it instead of hardcoding.
+    root_ig = frappe.db.get_value(
+        "Item Group", {"is_group": 1, "parent_item_group": ["in", ["", None]]}, "name"
+    ) or "All Item Groups"
+
     # --- UOMs ---
     for u in UOMS:
         if frappe.db.exists("UOM", u):
@@ -56,7 +62,7 @@ def run(dry_run=True):
             log.append(f"[ADD]  Item Group {parent} (group)")
             if not dry_run:
                 frappe.get_doc({"doctype": "Item Group", "item_group_name": parent,
-                                "parent_item_group": "All Item Groups", "is_group": 1}).insert(ignore_permissions=True)
+                                "parent_item_group": root_ig, "is_group": 1}).insert(ignore_permissions=True)
         else:
             log.append(f"[skip] Item Group {parent}")
         for child in children:
