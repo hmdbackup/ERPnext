@@ -108,6 +108,10 @@ SIRES = [
     {"nom": "TOBLERONE", "izu": 0, "lait": 0},
     {"nom": "OXIBUL", "izu": 0, "lait": 0},
     {"nom": "OBERNAY", "izu": 0, "lait": 0},
+    # 2026 re-bake: new sires from the current cycle (Repro2026). "X S" sexed
+    # variants normalised to the base name at IA generation; izu/lait placeholder.
+    {"nom": "THOMSON", "izu": 0, "lait": 0},
+    {"nom": "UCCRFAY", "izu": 0, "lait": 0},
 ]
 
 
