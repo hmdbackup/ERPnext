@@ -409,21 +409,27 @@ def parse_excel(file_url):
 
 
 def build_animal_mapping():
-    """Build {nom_metier: animal_name} mapping. Returns (map, duplicates set)."""
+    """Map a milk-file animal number to an Animal by EITHER identification_fr (N°Fr)
+    or nom_metier (TN suffix) — both zero-padded to 4 to match the file parsing.
+    So a file can be keyed by French OR Tunisian numbers (even mixed in one column).
+
+    A number that resolves to >1 distinct animal (e.g. one cow's FR equals another
+    cow's TN suffix) is AMBIGUOUS -> returned in `duplicates` so the import's
+    resolution dialog asks the user which cow it is (never silently wrong).
+    Returns (map, duplicates set)."""
+    from collections import defaultdict
     animals = frappe.db.get_all("Animal",
-        fields=["name", "nom_metier"],
-        filters={"nom_metier": ["is", "set"]}
-    )
+        fields=["name", "nom_metier", "identification_fr"])
 
-    # Detect duplicates
-    from collections import Counter
-    counts = Counter(a.nom_metier for a in animals)
-    duplicates = {k for k, v in counts.items() if v > 1}
-
-    mapping = {}
+    key_to_animals = defaultdict(set)
     for a in animals:
-        if a.nom_metier not in duplicates:
-            mapping[a.nom_metier] = a.name
+        for val in (a.nom_metier, a.identification_fr):
+            if val:
+                key_to_animals[str(val).zfill(4)].add(a.name)
+
+    duplicates = {k for k, names in key_to_animals.items() if len(names) > 1}
+    mapping = {k: next(iter(names)) for k, names in key_to_animals.items()
+               if len(names) == 1}
 
     return mapping, duplicates
 
