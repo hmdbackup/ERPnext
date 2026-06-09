@@ -1,6 +1,6 @@
 """Import historical velages (calving events) for the current herd — Phase 2a.
 
-Data: `repro_2026_data.VELAGES` — AUTO-GENERATED from ETABLE HMD 2026.xlsx
+Data: `velages.csv` — AUTO-GENERATED from ETABLE HMD 2026.xlsx
 (Repro2026 V1-V5 columns), joined to the 99 current cows. 325 velages across 99
 cows, each cow's dates sorted oldest->newest. Re-bake supersedes the old REPRO2025
 snapshot (adds the 7 new 2026 calvings + 1 corrected date).
@@ -23,19 +23,32 @@ Run (dev):
     bench --site <site> execute hmd_agro.hmd_agro.setup.import_velage.run --kwargs '{"dry_run": 1}'
 Set dry_run=0 to commit.
 """
+from collections import OrderedDict
+
 import frappe
 
-from hmd_agro.hmd_agro.setup.repro_2026_data import VELAGES
+from hmd_agro.hmd_agro.setup import data_source
 
 
-def run(dry_run=True):
+def _load_velages(source):
+    """velages.csv -> [(animal_tn, [dates ascending]), ...] (file order preserved)."""
+    cows = OrderedDict()
+    for r in data_source.read(source, "velages.csv"):
+        tn = (r.get("identification_tn") or "").strip()
+        d = (r.get("date_velage") or "").strip()
+        if tn and d:
+            cows.setdefault(tn, []).append(d)
+    return list(cows.items())
+
+
+def run(dry_run=True, source=None):
     dry_run = int(dry_run)
     created = skipped = 0
     cows_done = 0
     errors = []
     missing_animal = []
 
-    for tn, dates in VELAGES:
+    for tn, dates in _load_velages(source):
         if not frappe.db.exists("Animal", tn):
             missing_animal.append(tn)
             continue

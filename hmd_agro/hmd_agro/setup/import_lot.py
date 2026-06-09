@@ -1,43 +1,23 @@
-"""Import the 12 real farm lots — prerequisite for import_animal (cows need id_lot).
+"""Import farm lots — reads lots.csv. Prerequisite for import_animal (cows need id_lot).
 
-Replicates the real lots from the current system. NOT included: the 5 test lots
-(*-TEST-*, Test Lot *). All lots are placed in bat-velage-1 (the 4 that pointed at
-test batiments — COLLECTIVE/INFIRMERIE/TARISSEMENT/GENISSE — are repointed here).
+Generic: farm data in an external CSV (see data_source.py), not baked here.
+CSV columns: nom, lot_type, superficie, cap_optimale, cap_max, seuil, hp
+(lot_type / seuil may be blank). All lots placed in bat-velage-1.
+`id_ration_actuelle` left empty on purpose (assigned later via "Affecter aux lots").
 
-`id_ration_actuelle` is intentionally LEFT EMPTY (optional field, normally synced from
-the "Affecter aux lots" flow which builds Lot Ration History). Assign rations that way
-after import — keeps this clean and avoids a Ration dependency.
+Idempotent / dry-run. Run AFTER import_batiment, BEFORE import_animal.
 
-Required Lot fields covered: nom, batiment, superficie_m2, capacite_optimale,
-capacite_maximale. Idempotent / dry-run. Run AFTER import_batiment, BEFORE import_animal.
-
-Run (dev):
-    bench --site hmd.localhost execute hmd_agro.hmd_agro.setup.import_lot.run --kwargs '{"dry_run": 1}'
+Run: bench --site <site> execute hmd_agro.hmd_agro.setup.import_lot.run --kwargs '{"dry_run": 1}'
 Set dry_run=0 to commit.
 """
 import frappe
 
+from hmd_agro.hmd_agro.setup import data_source
+
 BATIMENT = "bat-velage-1"
 
-# (nom, lot_type|None, superficie_m2, capacite_optimale, capacite_maximale,
-#  seuil_production_3j|None, adapte_hautes_performances)
-LOTS = [
-    ("Individuel",  None,          100, 30, 40, None, 0),
-    ("LOT1",        "THP",         200, 15, 20, 30,   1),
-    ("LOT2",        "HP",          50,  9,  10, 25,   1),
-    ("LOT3",        "FV",          20,  5,  10, None, 0),
-    ("LOT4",        "MP",          80,  5,  5,  12,   1),
-    ("LOT5",        "FP",          80,  9,  11, None, 0),
-    ("TARIE",       "TARIE",       20,  6,  10, None, 0),
-    ("TARISSEMENT", "TARISSEMENT", 30,  10, 12, None, 0),
-    ("COLLECTIVE",  None,          10,  15, 20, None, 0),
-    ("INFIRMERIE",  None,          100, 20, 30, None, 0),
-    ("GENISSE",     None,          50,  33, 40, None, 0),
-    ("VELLE",       None,          50,  35, 40, None, 0),
-]
 
-
-def run(dry_run=True):
+def run(dry_run=True, source=None):
     dry_run = int(dry_run)
     created = skipped = 0
     errors = []
@@ -46,7 +26,11 @@ def run(dry_run=True):
         print(f"[ABORT] Batiment '{BATIMENT}' missing — run import_batiment first.")
         return {"aborted": True}
 
-    for nom, lot_type, superf, cap_opt, cap_max, seuil, hp in LOTS:
+    rows = data_source.read(source, "lots.csv")
+    for r in rows:
+        nom = (r.get("nom") or "").strip()
+        if not nom:
+            continue
         try:
             if frappe.db.exists("Lot", nom):
                 skipped += 1
@@ -55,14 +39,16 @@ def run(dry_run=True):
                 "doctype": "Lot",
                 "nom": nom,
                 "batiment": BATIMENT,
-                "superficie_m2": superf,
-                "capacite_optimale": cap_opt,
-                "capacite_maximale": cap_max,
+                "superficie_m2": data_source.num(r.get("superficie")),
+                "capacite_optimale": data_source.num(r.get("cap_optimale"), int),
+                "capacite_maximale": data_source.num(r.get("cap_max"), int),
                 "actif": 1,
-                "adapte_hautes_performances": hp,
+                "adapte_hautes_performances": data_source.num(r.get("hp"), int) or 0,
             }
+            lot_type = data_source.txt(r.get("lot_type"))
             if lot_type:
                 doc_dict["lot_type"] = lot_type
+            seuil = data_source.num(r.get("seuil"), int)
             if seuil is not None:
                 doc_dict["seuil_production_3j"] = seuil
             if not dry_run:
@@ -74,7 +60,7 @@ def run(dry_run=True):
     if not dry_run:
         frappe.db.commit()
     mode = "DRY-RUN" if dry_run else "COMMITTED"
-    print(f"\n[{mode}] Lot import (12 real lots, batiment={BATIMENT}): "
+    print(f"\n[{mode}] Lot import (CSV, {len(rows)} lots, batiment={BATIMENT}): "
           f"created={created}, skipped(existing)={skipped}, errors={len(errors)}")
     for e in errors:
         print(f"  ERR {e['nom']}: {e['error']}")

@@ -1,6 +1,6 @@
 """Dry-off overlay — the CURRENTLY-DRY cows — FINAL step of the re-bake.
 
-Data: `repro_2026_data.TARIES` — the 18 cows flagged dry ("T") in med.xlsx, the
+Data: `taries.csv` — the 18 cows flagged dry ("T") in med.xlsx, the
 LATEST snapshot of who is dry right now. med wins over the cascade, so this runs
 LAST (after velage/lactation/insemination), as an authoritative overlay.
 
@@ -24,15 +24,25 @@ Set dry_run=0 to commit.
 import frappe
 from frappe.utils import getdate, today
 
-from hmd_agro.hmd_agro.setup.repro_2026_data import TARIES
+from hmd_agro.hmd_agro.setup import data_source
 
 
-def run(dry_run=True):
+def _load_taries(source):
+    """taries.csv -> [(animal_tn, date_tarissement|None), ...]."""
+    out = []
+    for r in data_source.read(source, "taries.csv"):
+        tn = (r.get("identification_tn") or "").strip()
+        if tn:
+            out.append((tn, data_source.txt(r.get("date_tarissement"))))
+    return out
+
+
+def run(dry_run=True, source=None):
     dry_run = int(dry_run)
     set_dry = skipped = 0
     errors, missing_animal, no_lactation, capped = [], [], [], []
 
-    for tn, tar_date in TARIES:
+    for tn, tar_date in _load_taries(source):
         try:
             if not frappe.db.exists("Animal", tn):
                 missing_animal.append(tn)

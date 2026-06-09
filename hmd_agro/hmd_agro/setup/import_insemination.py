@@ -1,6 +1,6 @@
 """Import current-cycle inseminations from the 2026 re-bake — Phase 2b-i.
 
-Data: `repro_2026_data.IA_DATA` — AUTO-GENERATED from ETABLE HMD 2026.xlsx
+Data: `inseminations.csv` — AUTO-GENERATED from ETABLE HMD 2026.xlsx
 (Repro2026 IA1-9 date/bull columns + Etat). Each cow carries her current-cycle IAs
 as explicit (date, bull, resultat) triples, so every case is unambiguous:
 
@@ -28,18 +28,33 @@ Run (dev):
     bench --site <site> execute hmd_agro.hmd_agro.setup.import_insemination.run --kwargs '{"dry_run": 1}'
 Set dry_run=0 to commit.
 """
+from collections import OrderedDict
+
 import frappe
 
-from hmd_agro.hmd_agro.setup.repro_2026_data import IA_DATA
+from hmd_agro.hmd_agro.setup import data_source
 
 
-def run(dry_run=True):
+def _load_ias(source):
+    """inseminations.csv -> [(animal_tn, [(date, bull|None, resultat)]), ...] chronological."""
+    cows = OrderedDict()
+    for r in data_source.read(source, "inseminations.csv"):
+        tn = (r.get("identification_tn") or "").strip()
+        date = (r.get("date_ia") or "").strip()
+        if not tn or not date:
+            continue
+        cows.setdefault(tn, []).append(
+            (date, data_source.txt(r.get("taureau")), (r.get("resultat") or "").strip()))
+    return list(cows.items())
+
+
+def run(dry_run=True, source=None):
     dry_run = int(dry_run)
     created = skipped = reussie = en_attente = echouee = 0
     errors = []
     missing_animal, missing_taureau, no_lactation = [], [], []
 
-    for tn, ias in IA_DATA:
+    for tn, ias in _load_ias(source):
         if not frappe.db.exists("Animal", tn):
             missing_animal.append(tn)
             continue

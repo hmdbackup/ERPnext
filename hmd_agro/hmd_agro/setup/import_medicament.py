@@ -1,11 +1,9 @@
-"""Import the Medicament master — 4 real medicaments.
+"""Import the Medicament master — reads medicaments.csv.
 
+Generic: farm data in an external CSV (see data_source.py), not baked here.
+CSV columns: nom, type_medicament, delai_attente_lait, delai_attente_viande, prix_unitaire.
 Each auto-creates a MED- Item under its type's Item Group (needs import_stock_setup
-+ Company first). The 2 dev test rows (`test`, `TEST-Amoxi`) are excluded.
-
-NOTE: on dev all 4 are tagged ANTIBIOTIQUE — Ivermectine is really an antiparasitaire
-and Meloxicam an anti-inflammatoire (mislabeled in the source). Replicated AS-IS to
-match the farm data; supervisor can correct the type in the UI later.
++ Company first).
 
 Idempotent / dry-run. Run AFTER import_stock_setup.
 
@@ -13,20 +11,18 @@ Run: bench --site <site> execute hmd_agro.hmd_agro.setup.import_medicament.run -
 """
 import frappe
 
-# (nom, type_medicament, delai_attente_lait, delai_attente_viande, prix_unitaire)
-MEDICAMENTS = [
-    ("Amoxicilline",     "ANTIBIOTIQUE", 4,  14, 24),
-    ("Ivermectine",      "ANTIBIOTIQUE", 28, 49, 33),   # really antiparasitaire — confirm
-    ("Meloxicam",        "ANTIBIOTIQUE", 5,  15, 25),   # really anti-inflammatoire — confirm
-    ("Oxytétracycline",  "ANTIBIOTIQUE", 7,  28, 56),
-]
+from hmd_agro.hmd_agro.setup import data_source
 
 
-def run(dry_run=True):
+def run(dry_run=True, source=None):
     dry_run = int(dry_run)
     created = skipped = 0
     errors = []
-    for nom, type_med, d_lait, d_viande, prix in MEDICAMENTS:
+    rows = data_source.read(source, "medicaments.csv")
+    for r in rows:
+        nom = (r.get("nom") or "").strip()
+        if not nom:
+            continue
         try:
             if frappe.db.exists("Medicament", nom):
                 skipped += 1
@@ -35,10 +31,10 @@ def run(dry_run=True):
                 frappe.get_doc({
                     "doctype": "Medicament",
                     "nom_medicament": nom,
-                    "type_medicament": type_med,
-                    "delai_attente_lait": d_lait,
-                    "delai_attente_viande": d_viande,
-                    "prix_unitaire": prix,
+                    "type_medicament": (r.get("type_medicament") or "").strip(),
+                    "delai_attente_lait": data_source.num(r.get("delai_attente_lait"), int),
+                    "delai_attente_viande": data_source.num(r.get("delai_attente_viande"), int),
+                    "prix_unitaire": data_source.num(r.get("prix_unitaire")),
                 }).insert(ignore_permissions=True)
             created += 1
         except Exception as e:
@@ -47,7 +43,7 @@ def run(dry_run=True):
     if not dry_run:
         frappe.db.commit()
     mode = "DRY-RUN" if dry_run else "COMMITTED"
-    print(f"\n[{mode}] Medicament import ({len(MEDICAMENTS)}): "
+    print(f"\n[{mode}] Medicament import (CSV, {len(rows)}): "
           f"created={created}, skipped(existing)={skipped}, errors={len(errors)}")
     for e in errors[:5]:
         print(f"  ERR {e['nom']}: {e['error']}")

@@ -1,7 +1,7 @@
 """Enrich lactations with real PRODUCTION + LENGTH — Phase 2c.
 
 Lactations are CREATED by the velage cascade (Velage.after_insert), not here. This
-step fills, per lactation, from `repro_2026_data.LACT_TOTALS` (Repro2026 "Lactation
+step fills, per lactation, from `lactation_totals.csv` (Repro2026 "Lactation
 réalisée" L1-L4: total + durée, chronological):
 
   PRODUCTION (`production_totale`): set whenever the sheet has a total — for ANY
@@ -29,20 +29,39 @@ Set dry_run=0 to commit.
 import frappe
 from frappe.utils import getdate, add_days, date_diff
 
-from hmd_agro.hmd_agro.setup.import_animal import HERD
-from hmd_agro.hmd_agro.setup.repro_2026_data import LACT_TOTALS
+from hmd_agro.hmd_agro.setup import data_source
 from hmd_agro.hmd_agro.utils.config import get_config
 
-ANIMALS = [tn for tn, _, _ in HERD]
-TOTALS = dict(LACT_TOTALS)   # tn -> [(total, duree), ...] chronological L1..Ln
+
+def _load_animals(source):
+    return [(r.get("identification_tn") or "").strip()
+            for r in data_source.read(source, "animals.csv")
+            if (r.get("identification_tn") or "").strip()]
 
 
-def run(dry_run=True):
+def _load_totals(source):
+    """lactation_totals.csv -> {tn: [(total, duree), ...]} ordered by numero_lactation."""
+    by_cow = {}
+    for r in data_source.read(source, "lactation_totals.csv"):
+        tn = (r.get("identification_tn") or "").strip()
+        if not tn:
+            continue
+        by_cow.setdefault(tn, []).append((
+            data_source.num(r.get("numero_lactation"), int),
+            data_source.num(r.get("production_totale")),
+            data_source.num(r.get("jours")),
+        ))
+    return {tn: [(tot, du) for _, tot, du in sorted(lst)] for tn, lst in by_cow.items()}
+
+
+def run(dry_run=True, source=None):
     dry_run = int(dry_run)
     window = int(get_config("tarissement_window_jours", default=60))
     real = fallback = prod_set = no_length = 0
     errors = []
 
+    ANIMALS = _load_animals(source)
+    TOTALS = _load_totals(source)
     for tn in ANIMALS:
         try:
             lacs = frappe.get_all("Lactation", filters={"animal": tn},

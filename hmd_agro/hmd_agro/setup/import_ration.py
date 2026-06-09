@@ -1,49 +1,52 @@
-"""Import the Ration master — 2 rations with their compositions.
+"""Import the Ration master — reads rations.csv (one row per composition line).
 
-Rations reference Aliments in their composition (child table), and cout_estime /
-sous_total auto-compute from current aliment prices on save. So Aliments must exist
-first. These are the rations Lots get assigned to via "Affecter aux lots".
+Generic: farm data in an external CSV (see data_source.py), not baked here.
+CSV columns: nom_ration, aliment, quantite (grouped by nom_ration into a composition).
+unite is always KG. cout_estime / sous_total auto-compute from aliment prices on save,
+so Aliments must exist first.
 
-PREREQUISITE: import_aliment (compositions reference Mais, Soja, Dreche, Foin d'Avoine).
-Idempotent / dry-run. Run AFTER import_aliment.
+PREREQUISITE: import_aliment. Idempotent / dry-run. Run AFTER import_aliment.
 
 Run: bench --site <site> execute hmd_agro.hmd_agro.setup.import_ration.run --kwargs '{"dry_run":1}'
 """
 import frappe
 
-# nom_ration -> composition: [(aliment, quantite_kg), ...]
-RATIONS = {
-    "Ration VL HP":  [("Mais", 1.5), ("Soja", 1.5), ("Dreche de Brasserie", 7.0)],
-    "Ration VL THP": [("Mais", 2.5), ("Soja", 2.0), ("Foin d'Avoine", 8.0)],
-}
+from hmd_agro.hmd_agro.setup import data_source
 
 
-def run(dry_run=True):
+def run(dry_run=True, source=None):
     dry_run = int(dry_run)
     created = skipped = 0
     errors = []
     missing_aliment = []
 
-    for nom, comp in RATIONS.items():
+    # group CSV rows by ration -> [(aliment, quantite), ...]
+    rations = {}
+    for r in data_source.read(source, "rations.csv"):
+        nom = (r.get("nom_ration") or "").strip()
+        aliment = (r.get("aliment") or "").strip()
+        if not nom or not aliment:
+            continue
+        rations.setdefault(nom, []).append((aliment, data_source.num(r.get("quantite"))))
+
+    for nom, comp in rations.items():
         try:
             if frappe.db.exists("Ration", nom):
                 skipped += 1
                 continue
-            # verify the composition's aliments exist (else the link fails)
             absent = [a for a, _ in comp if not frappe.db.exists("Aliment", a)]
             if absent:
                 missing_aliment.append((nom, absent))
                 continue
             if not dry_run:
-                doc = frappe.get_doc({
+                frappe.get_doc({
                     "doctype": "Ration",
                     "nom_ration": nom,
                     "active": 1,
                     "composition": [
                         {"aliment": a, "quantite": q, "unite": "KG"} for a, q in comp
                     ],
-                })
-                doc.insert(ignore_permissions=True)
+                }).insert(ignore_permissions=True)
             created += 1
         except Exception as e:
             errors.append({"nom": nom, "error": str(e)})
@@ -51,7 +54,7 @@ def run(dry_run=True):
     if not dry_run:
         frappe.db.commit()
     mode = "DRY-RUN" if dry_run else "COMMITTED"
-    print(f"\n[{mode}] Ration import ({len(RATIONS)}): "
+    print(f"\n[{mode}] Ration import (CSV, {len(rations)}): "
           f"created={created}, skipped(existing)={skipped}, errors={len(errors)}")
     if missing_aliment:
         print(f"  ABORTED rations (missing aliments — run import_aliment first): {missing_aliment}")
