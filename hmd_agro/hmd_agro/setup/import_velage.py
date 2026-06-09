@@ -44,20 +44,29 @@ def run(dry_run=True):
             try:
                 if frappe.db.exists("Velage", {"animal": tn, "date_velage": date}):
                     skipped += 1
-                    continue
-                if not dry_run:
+                elif not dry_run:
                     doc = frappe.get_doc({
                         "doctype": "Velage",
                         "animal": tn,
                         "date_velage": date,
                         "type_velage": "FACILE",   # source has no type; benign default
                         "nombre_veaux": "1",
-                        "vivant_veau1": 0,          # CRITICAL: suppress calf creation
+                        "vivant_veau1": 0,          # CRITICAL: suppress calf creation at insert
                     })
                     doc.flags.ignore_validate = True
                     doc.flags.ignore_mandatory = True   # sexe_veau1 left blank
                     doc.insert(ignore_permissions=True)
-                created += 1
+                    created += 1
+                else:
+                    created += 1
+                # vivant_veau1=0 was ONLY a switch to suppress calf creation at insert
+                # (create_calves fires on after_insert, only when vivant_veau1 is truthy —
+                # already done). Flip THIS vêlage to 1 so the reports don't misread it as a
+                # mort-né. No calf is created retroactively. SCOPED to the imported
+                # (animal, date) pairs so a genuine UI-recorded stillbirth is never touched.
+                if not dry_run:
+                    frappe.db.set_value("Velage", {"animal": tn, "date_velage": date},
+                                        "vivant_veau1", 1)
             except Exception as e:
                 errors.append({"tn": tn, "date": date, "error": str(e)})
 
@@ -66,14 +75,6 @@ def run(dry_run=True):
             frappe.db.set_value("Animal", tn, "date_premier_velage", dates[0])
 
     if not dry_run:
-        # vivant_veau1=0 was only a switch to SUPPRESS calf creation at insert
-        # (create_calves fires on after_insert and only when vivant_veau1 is truthy).
-        # That work is now done, so flip it to 1: these were NOT stillbirths, and the
-        # reports (count_avortements_mort_nes) read vivant_veau1=0 as "mort-né" — which
-        # would wrongly count every imported vêlage as a stillbirth. No calf Animal is
-        # created retroactively (after_insert already ran). Also fixes re-runs on data
-        # imported by the older version. Bulk + idempotent.
-        frappe.db.sql("UPDATE `tabVelage` SET vivant_veau1=1 WHERE vivant_veau1=0")
         frappe.db.commit()
 
     mode = "DRY-RUN" if dry_run else "COMMITTED"
