@@ -25,8 +25,10 @@ class Animal(Document):
         self.protect_reproduction_fields()
 
     def set_nom_metier(self):
-        """Set nom_metier: last 4 digits of identification_fr if exists, otherwise identification_tn"""
-        if self.identification_fr and re.match(r'^\d{10}$', self.identification_fr):
+        """N° travail: last 4 digits of identification_fr if it exists, otherwise of
+        identification_tn. identification_fr may be the short farm work number (4 digits)
+        or a full national ID — take its last 4 digits either way."""
+        if self.identification_fr and re.match(r'^\d{1,10}$', self.identification_fr):
             self.nom_metier = self.identification_fr[-4:]
         elif self.identification_tn and re.match(r'^\d{10}$', self.identification_tn):
             self.nom_metier = self.identification_tn[-4:]
@@ -75,10 +77,11 @@ class Animal(Document):
             self.etat_gestation = "VIDE"
     
     def validate_and_format_identification_fr(self):
-        """Validate French ID: 10 digits (same format as ID TN)"""
+        """French ID: digits only, 1 to 10 (the farm records the short work number, not the
+        full 10-digit national ID, so do not force 10 digits)."""
         if self.identification_fr:
-            if not re.match(r'^\d{10}$', self.identification_fr):
-                frappe.throw("L'identification FR doit être 10 chiffres (ex: 1234567890).")
+            if not re.match(r'^\d{1,10}$', self.identification_fr):
+                frappe.throw("L'identification FR doit être numérique (1 à 10 chiffres).")
 
     def protect_status_fields(self):
         """Prevent manual changes to etat_gestation and etat_lactation"""
@@ -127,7 +130,7 @@ class Animal(Document):
         """Update nom_metier after document is renamed"""
         # Check if animal has identification_fr — use that for nom_metier
         id_fr = frappe.db.get_value("Animal", new_name, "identification_fr")
-        if id_fr and re.match(r'^\d{10}$', id_fr):
+        if id_fr and re.match(r'^\d{1,10}$', id_fr):
             nom_metier = id_fr[-4:]
         elif re.match(r'^\d{10}$', new_name):
             nom_metier = new_name[-4:]
