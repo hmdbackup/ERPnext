@@ -361,15 +361,13 @@ function render_alerts(page, groups) {
         }
 
         if (action === "creer_velage") {
+            // Do NOT mark the alert handled here — just open the Velage form.
+            // The alert is closed by Velage.after_insert (close_open_alerts) only
+            // when the vêlage is actually saved. If the user backs out, the alert
+            // stays NOUVELLE so the cow isn't left GESTANTE with no alert.
             var animal = btn.data("animal");
-            frappe.call({
-                method: "hmd_agro.hmd_agro.doctype.alerte.alerte.mark_alert",
-                args: { alert_name: alert_name, action: "traiter" },
-                callback: function() {
-                    frappe.route_options = { animal: animal };
-                    frappe.new_doc("Velage");
-                }
-            });
+            frappe.route_options = { animal: animal };
+            frappe.new_doc("Velage");
             return;
         }
 

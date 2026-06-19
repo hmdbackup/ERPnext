@@ -82,38 +82,42 @@ def preview_import(file_url):
     }
 
 
+def _result_key(file_url):
+    return f"import_traites_result::{file_url}"
+
+
 @frappe.whitelist()
 def run_import(file_url, keep_original=1, resolutions=None):
-    """Enqueue the import as a background job"""
+    """Enqueue the import as a background job (a full-year file takes ~90s — too long for a
+    synchronous web request, which the proxy times out). The job stashes its result in cache;
+    the page polls get_import_result() for it. Polling, not realtime — background-job realtime
+    delivery proved unreliable, so the result never surfaced."""
     import json
     keep_original = int(keep_original)
     if isinstance(resolutions, str):
         resolutions = json.loads(resolutions) if resolutions else {}
     resolutions = resolutions or {}
 
-    job_id = f"import_traites::{file_url}"
-
-    if is_job_enqueued(job_id):
-        frappe.msgprint("Un import est deja en cours pour ce fichier.")
-        return {"status": "already_running"}
-
+    frappe.cache().delete_value(_result_key(file_url))   # clear any prior result
+    # Always enqueue with an RQ-assigned unique id — a fixed job_id could linger in the
+    # finished/started registry and make a re-import of the same file silently not run.
     enqueue(
-        _process_import,
-        queue="long",
-        timeout=6000,
-        job_id=job_id,
-        file_url=file_url,
-        keep_original=keep_original,
-        resolutions=resolutions,
-        user=frappe.session.user,
+        _process_import, queue="long", timeout=6000,
+        file_url=file_url, keep_original=keep_original,
+        resolutions=resolutions, user=frappe.session.user,
         now=frappe.conf.developer_mode,
     )
+    return {"status": "started", "file_url": file_url}
 
-    return {"status": "started"}
+
+@frappe.whitelist()
+def get_import_result(file_url):
+    """Poll endpoint: returns the stored result once the background import finishes, else None."""
+    return frappe.cache().get_value(_result_key(file_url))
 
 
 def _process_import(file_url, keep_original, user, resolutions=None):
-    """Background job: parse Excel and create Traite records"""
+    """Background job: parse Excel, create Traite records, stash the result in cache."""
     frappe.set_user(user)
     resolutions = resolutions or {}
 
@@ -121,9 +125,8 @@ def _process_import(file_url, keep_original, user, resolutions=None):
         dates, animals_data = parse_excel(file_url)
 
         if not dates or not animals_data:
-            frappe.publish_realtime("import_traites_complete",
-                {"success": False, "error": "Fichier invalide."},
-                user=user)
+            frappe.cache().set_value(_result_key(file_url),
+                {"success": False, "error": "Fichier invalide."}, expires_in_sec=3600)
             return
 
         animal_map, duplicate_noms = build_animal_mapping()
@@ -284,17 +287,14 @@ def _process_import(file_url, keep_original, user, resolutions=None):
         frappe.db.commit()
 
         summary["lactations_updated"] = len(affected_lactations)
-
-        frappe.publish_realtime("import_traites_complete",
-            {"success": True, "summary": summary},
-            user=user)
+        frappe.cache().set_value(_result_key(file_url),
+            {"success": True, "summary": summary}, expires_in_sec=3600)
 
     except Exception:
         frappe.db.rollback()
         frappe.log_error("Import traites failed")
-        frappe.publish_realtime("import_traites_complete",
-            {"success": False, "error": str(frappe.get_traceback())},
-            user=user)
+        frappe.cache().set_value(_result_key(file_url),
+            {"success": False, "error": str(frappe.get_traceback())}, expires_in_sec=3600)
 
 
 def find_lactation_for_date(lactations, date):

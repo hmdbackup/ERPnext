@@ -79,7 +79,11 @@ def run(dry_run=True, source=None):
         if tn in dry_list:
             continue
         try:
-            lac = frappe.db.get_value("Lactation", {"animal": tn, "statut": "TARIE"}, "name")
+            # reopen the LATEST lactation (highest date_debut), never an old one —
+            # picking an arbitrary TARIE lactation here would invert the chain (an old
+            # lactation EN_COURS while the newest stays TARIE) and mis-route recent traites.
+            lac = frappe.db.get_value("Lactation", {"animal": tn, "statut": "TARIE"}, "name",
+                                      order_by="date_debut desc")
             if not lac:
                 continue
             if not dry_run:

@@ -457,66 +457,75 @@ function save_all(page, date) {
 }
 
 function print_table(page) {
-    var container = $(page.body).find(".st-container");
+    // Printable milking sheet: 3 days (date + next 2), 2 side-by-side blocks per
+    // landscape page, lot-ordered, values pre-filled where entered else blank.
     var date_val = st_wrapper_ref._st_date_input.get_value();
-
-    var html = '<!DOCTYPE html><html><head><title>Saisie Traite - ' + date_val + '</title>' +
-        '<style>' +
-        'body { font-family: Arial, sans-serif; margin: 20px; }' +
-        'h2 { margin-bottom: 5px; }' +
-        'table { border-collapse: collapse; width: 100%; margin-top: 15px; }' +
-        'th, td { border: 1px solid #333; padding: 6px 10px; text-align: center; font-size: 13px; }' +
-        'th { background: #f0f0f0; }' +
-        '.text-left { text-align: left; }' +
-        '.alert-cell { color: red; font-weight: bold; }' +
-        'tfoot td { font-weight: bold; background: #f0f0f0; }' +
-        '@media print { body { margin: 10px; } }' +
-        '</style></head><body>';
-
-    html += '<h2>Saisie Traite</h2>';
-    html += '<p>Date: <strong>' + date_val + '</strong></p>';
-
-    html += '<table><thead><tr>' +
-        '<th>#</th><th class="text-left">Nom</th><th class="text-left">Lot</th>' +
-        '<th>MATIN</th><th>SOIR</th><th>Traitement</th>' +
-        '</tr></thead><tbody>';
-
-    var total_m = 0, total_s = 0, total_g = 0;
-
-    container.find("tbody tr").each(function(idx) {
-        var row = $(this);
-        var nom = row.find("td:eq(1)").text();
-        var lot = row.find("td:eq(2)").text();
-        var inputs = row.find(".st-qty-input");
-        var m = parseFloat(inputs.eq(0).val()) || 0;
-        var s = parseFloat(inputs.eq(1).val()) || 0;
-        var t = m + s;
-        var alert_text = row.find(".st-row-alert").text().trim();
-        var traitement_text = row.find("td:last").text().trim();
-
-        total_m += m; total_s += s; total_g += t;
-
-        html += '<tr>' +
-            '<td>' + (idx + 1) + '</td>' +
-            '<td class="text-left">' + nom + '</td>' +
-            '<td class="text-left">' + lot + '</td>' +
-            '<td>' + (m || '') + '</td>' +
-            '<td>' + (s || '') + '</td>' +
-            '<td style="color:red;">' + traitement_text + '</td>' +
-            '</tr>';
+    frappe.call({
+        method: "hmd_agro.hmd_agro.page.saisie_traite.saisie_traite.get_milking_sheet",
+        args: { date: date_val },
+        callback: function(r) { render_milking_sheet(r.message || { dates: [], rows: [] }); }
     });
+}
 
-    html += '</tbody><tfoot><tr>' +
-        '<td></td><td></td><td>TOTAUX</td>' +
-        '<td>' + total_m.toFixed(1) + '</td>' +
-        '<td>' + total_s.toFixed(1) + '</td>' +
-        '<td></td></tr></tfoot></table>';
+function render_milking_sheet(data) {
+    var dates = data.dates || [];
+    var rows = data.rows || [];
+    var ROWS_PER_COL = 47;   // rows per block before flowing to the next block (≈94/page, fits one A4 portrait)
 
-    html += '</body></html>';
+    function fmt(v) { return (v === null || v === undefined) ? '' : v; }
+
+    function blockTable(chunk) {
+        var h = '<table>' +
+            '<colgroup>' +
+            '<col class="c-nom"><col class="c-lot">' +
+            '<col class="c-val"><col class="c-val"><col class="c-val">' +
+            '<col class="c-val"><col class="c-val"><col class="c-val">' +
+            '</colgroup>' +
+            '<thead>' +
+            '<tr><th rowspan="2">N°</th><th rowspan="2">Lot</th>' +
+            '<th colspan="2">' + (dates[0] || '') + '</th>' +
+            '<th colspan="2">' + (dates[1] || '') + '</th>' +
+            '<th colspan="2">' + (dates[2] || '') + '</th></tr>' +
+            '<tr><th>Mat</th><th>Soir</th><th>Mat</th><th>Soir</th><th>Mat</th><th>Soir</th></tr>' +
+            '</thead><tbody>';
+        chunk.forEach(function(c) {
+            h += '<tr><td class="nom">' + c.nom_metier + '</td><td class="lot">' + c.lot + '</td>' +
+                '<td>' + fmt(c.days[0].matin) + '</td><td>' + fmt(c.days[0].soir) + '</td>' +
+                '<td>' + fmt(c.days[1].matin) + '</td><td>' + fmt(c.days[1].soir) + '</td>' +
+                '<td>' + fmt(c.days[2].matin) + '</td><td>' + fmt(c.days[2].soir) + '</td></tr>';
+        });
+        h += '</tbody></table>';
+        return h;
+    }
+
+    var chunks = [];
+    for (var i = 0; i < rows.length; i += ROWS_PER_COL) chunks.push(rows.slice(i, i + ROWS_PER_COL));
+    if (chunks.length === 0) chunks.push([]);
+
+    var body = '';
+    for (var p = 0; p < chunks.length; p += 2) {
+        body += '<div class="page"><div class="block">' + blockTable(chunks[p]) + '</div>';
+        if (chunks[p + 1]) body += '<div class="block">' + blockTable(chunks[p + 1]) + '</div>';
+        body += '</div>';
+    }
+
+    var css = '@page { size: A4 portrait; margin: 6mm; }' +
+        'body { font-family: Arial, sans-serif; }' +
+        'h2 { text-align:center; margin:2px 0 4px; font-size:13px; }' +
+        '.page { display:flex; flex-wrap:nowrap; gap:12px; align-items:flex-start; page-break-after:always; }' +
+        '.block { flex:1 1 50%; min-width:0; }' +     /* min-width:0 lets each block shrink to half so they stay side by side */
+        'table { border-collapse:collapse; table-layout:fixed; width:100%; }' +
+        'col.c-nom { width:14%; } col.c-lot { width:18%; } col.c-val { width:11.3%; }' +
+        'th,td { border:1px solid #333; text-align:center; font-size:11px; height:18px; padding:1px 2px; line-height:1.1; overflow:hidden; white-space:nowrap; }' +  /* nowrap = exactly one line per row, fixed height */
+        'th { background:#dce6f2; } td.nom { font-weight:bold; } td.lot { font-size:9px; background:#f2f2f2; }';
+
+    var html = '<!DOCTYPE html><html><head><title>Fiche de Traite</title><style>' + css +
+        '</style></head><body><h2>FICHE DE TRAITE &mdash; ' + dates.join('&nbsp;&nbsp;&middot;&nbsp;&nbsp;') +
+        '</h2>' + body + '</body></html>';
 
     var w = window.open('', '_blank');
     w.document.write(html);
     w.document.close();
     w.focus();
-    w.print();
+    setTimeout(function() { w.print(); }, 300);
 }

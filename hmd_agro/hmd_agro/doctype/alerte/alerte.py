@@ -221,10 +221,14 @@ def _generate_velage_alerts():
     ], fields=["name", "nom_metier", "date_velage_prevue"])
 
     for a in animals:
+        # Block only on a still-open (NOUVELLE) alert. A completed vêlage sets the
+        # animal VIDE (so she's not selected above anyway), so TRAITEE must NOT block:
+        # a cow still GESTANTE whose alert was closed (e.g. a backed-out "Créer Vêlage")
+        # gets a fresh alert on the next run instead of being stuck with none.
         existing = frappe.db.exists("Alerte", {
             "animal": a.name,
             "type_alerte": "VELAGE_IMMINENT",
-            "statut": ["in", ["NOUVELLE", "TRAITEE"]]
+            "statut": "NOUVELLE"
         })
         if existing:
             continue

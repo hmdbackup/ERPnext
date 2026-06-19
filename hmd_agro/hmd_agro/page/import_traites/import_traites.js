@@ -114,34 +114,7 @@ frappe.pages["import-traites"].on_page_load = function (wrapper) {
                 // Disable import button
                 page.main.find(".btn-import").prop("disabled", true);
 
-                // Listen for progress
-                frappe.realtime.on("import_traites_progress", function (data) {
-                    let pct = Math.round((data.current / data.total) * 100);
-                    $results.find(".progress-bar").css("width", pct + "%").text(pct + "%");
-                    $results.find(".import-status").text(
-                        data.current + " / " + data.total + " cellules traitees"
-                    );
-                });
-
-                // Listen for completion
-                frappe.realtime.on("import_traites_complete", function (data) {
-                    frappe.realtime.off("import_traites_progress");
-                    frappe.realtime.off("import_traites_complete");
-                    page.main.find(".btn-import").prop("disabled", false);
-
-                    if (data.success) {
-                        render_results(page, data.summary);
-                    } else {
-                        $results.find(".results-content").html(`
-                            <div style="border:1px solid var(--border-color); border-radius:8px; padding:20px; background:var(--alert-bg-danger);">
-                                <h5>Erreur</h5>
-                                <p>${data.error || "Une erreur est survenue."}</p>
-                            </div>
-                        `);
-                    }
-                });
-
-                // Start import
+                // Start the import in the background, then poll for the result.
                 frappe.call({
                     method: "hmd_agro.hmd_agro.page.import_traites.import_traites.run_import",
                     args: {
@@ -149,6 +122,34 @@ frappe.pages["import-traites"].on_page_load = function (wrapper) {
                         keep_original: keep_original ? 1 : 0,
                         resolutions: JSON.stringify(resolutions)
                     },
+                    callback: function (r) {
+                        let fu = (r.message || {}).file_url || file_url;
+                        let elapsed = 0;
+                        let poll = setInterval(function () {
+                            elapsed += 3;
+                            $results.find(".import-status").text("Import en cours... (" + elapsed + "s)");
+                            frappe.call({
+                                method: "hmd_agro.hmd_agro.page.import_traites.import_traites.get_import_result",
+                                args: { file_url: fu },
+                                callback: function (rr) {
+                                    let data = rr.message;
+                                    if (!data) return;            // not finished yet
+                                    clearInterval(poll);
+                                    page.main.find(".btn-import").prop("disabled", false);
+                                    if (data.success) {
+                                        render_results(page, data.summary);
+                                    } else {
+                                        $results.find(".results-content").html(`
+                                            <div style="border:1px solid var(--border-color); border-radius:8px; padding:20px; background:var(--alert-bg-danger);">
+                                                <h5>Erreur</h5>
+                                                <p>${data.error || "Une erreur est survenue."}</p>
+                                            </div>
+                                        `);
+                                    }
+                                }
+                            });
+                        }, 3000);
+                    }
                 });
             }
         );

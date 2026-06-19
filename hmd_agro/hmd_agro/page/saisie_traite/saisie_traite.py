@@ -79,6 +79,11 @@ def get_lactating_animals(date):
             "prev_total": prev_map.get(a.animal, 0) or 0
         })
 
+    # Production-cycle lot order (LOT1..n → TARISSEMENT → TARIE → INFIRMERIE → others),
+    # then N° ascending — same ordering as the printable milking sheet.
+    from hmd_agro.hmd_agro.utils.lot_utils import lot_sort_key
+    result.sort(key=lambda r: (lot_sort_key(r["lot"]), r["nom_metier"] or ""))
+
     bilan_name = frappe.db.get_value("Bilan Lait Journalier", {"date": date}, "name")
     if bilan_name:
         b = frappe.db.get_value(
@@ -99,6 +104,51 @@ def get_lactating_animals(date):
         }
 
     return {"animals": result, "bilan": bilan}
+
+
+@frappe.whitelist()
+def get_milking_sheet(date=None):
+    """Printable milking sheet: lactating cows in lot order (LOT1..n → … → INFIRMERIE →
+    others, via lot_sort_key), each with existing Matin/Soir values for `date`, date+1,
+    date+2. Values are pre-filled where already entered, blank otherwise (handwriting)."""
+    from hmd_agro.hmd_agro.utils.lot_utils import lot_sort_key
+
+    base = getdate(date or today())
+    dates = [add_days(base, i) for i in range(3)]
+    dstrs = [str(d) for d in dates]
+
+    animals = frappe.db.sql("""
+        SELECT a.name AS animal, a.nom_metier, a.id_lot AS lot
+        FROM `tabAnimal` a
+        INNER JOIN `tabLactation` l ON l.animal = a.name
+            AND l.date_debut <= %s
+            AND (l.date_tarissement IS NULL OR l.date_tarissement >= %s)
+        WHERE a.statut = 'ACTIF'
+           OR (a.date_sortie IS NOT NULL AND a.date_sortie >= %s)
+    """, (base, base, base), as_dict=True)
+
+    out = {"dates": [d.strftime("%d/%m") for d in dates], "rows": []}
+    if not animals:
+        return out
+
+    names = [a.animal for a in animals]
+    traites = frappe.db.sql("""
+        SELECT animal, date_traite, session, quantite_litres
+        FROM `tabTraite`
+        WHERE date_traite IN %s AND animal IN %s
+    """, (dstrs, names), as_dict=True)
+    tmap = {}
+    for t in traites:
+        tmap.setdefault(t.animal, {})[(str(t.date_traite), t.session)] = t.quantite_litres
+
+    animals.sort(key=lambda a: (lot_sort_key(a.lot or ""), a.nom_metier or ""))
+    for a in animals:
+        days = []
+        for ds in dstrs:
+            am = tmap.get(a.animal, {})
+            days.append({"matin": am.get((ds, "MATIN")), "soir": am.get((ds, "SOIR"))})
+        out["rows"].append({"nom_metier": a.nom_metier or a.animal, "lot": a.lot or "", "days": days})
+    return out
 
 
 @frappe.whitelist()

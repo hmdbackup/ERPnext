@@ -19,20 +19,31 @@ class Insemination(Document):
         self.set_numero_ia()
 
     def lock_identity_fields(self):
-        """Prevent editing animal/taureau always. date_ia editable only when EN_ATTENTE."""
+        """Animal is always locked. Taureau is editable until a Vêlage depends on this IA —
+        then it's locked (changing the bull would falsify the calf's sire). While no vêlage
+        references the IA, the taureau can be filled in or corrected freely (imported IAs
+        with no bull block vêlage creation, so they must be fixable). Same dependency guard
+        as validate_resultat_transition. date_ia editable only when EN_ATTENTE."""
         if self.is_new() or self.flags.ignore_validate:
             return
         db_doc = self.get_doc_before_save()
         if not db_doc:
             return
 
-        # animal and taureau: always locked
-        always_locked = {"animal": "Animal", "taureau": "Taureau"}
-        for field, label in always_locked.items():
-            if str(self.get(field) or "") != str(db_doc.get(field) or ""):
+        # animal: always locked
+        if str(self.animal or "") != str(db_doc.animal or ""):
+            frappe.throw(
+                "Le champ 'Animal' ne peut pas être modifié après création. "
+                "Supprimez cette insémination et créez-en une nouvelle."
+            )
+
+        # taureau: editable until a vêlage depends on this IA
+        if str(self.taureau or "") != str(db_doc.taureau or ""):
+            velage = frappe.db.exists("Velage", {"insemination": self.name})
+            if velage:
                 frappe.throw(
-                    f"Le champ '{label}' ne peut pas être modifié après création. "
-                    f"Supprimez cette insémination et créez-en une nouvelle."
+                    f"Le taureau ne peut pas être modifié: un vêlage ({velage}) en dépend "
+                    f"(cela fausserait le père du veau). Supprimez d'abord le vêlage."
                 )
 
         # date_ia: editable only when EN_ATTENTE
