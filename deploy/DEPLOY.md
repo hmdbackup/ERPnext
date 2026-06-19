@@ -14,7 +14,8 @@
 **1.** Clone both repos as siblings, then enter `frappe_docker`.
 ```bash
 git clone https://github.com/frappe/frappe_docker
-git clone -b main https://github.com/Mouh1b/hmd_agro hmd_agro
+# repo is named ERPnext but the app is hmd_agro → clone INTO a folder named hmd_agro
+git clone -b main https://github.com/hmdbackup/ERPnext hmd_agro
 cd frappe_docker
 ```
 
@@ -76,7 +77,7 @@ Then repeat steps 3 → 7. The `down -v` flag destroys data volumes; the system 
 
 ## Updates
 
-**App code change** — push to `Mouh1b/hmd_agro` (main), then on the server:
+**App code change** — push to `hmdbackup/ERPnext` (main), then on the server:
 ```bash
 bash build-hmd.sh
 docker compose --env-file .env up -d
@@ -140,6 +141,6 @@ The `FRAPPE_SITE_NAME_HEADER` override tells Frappe to serve the internal `hmd.a
 ## Notes
 
 - `.env` is not committed — only `.env.hmd` (template) is tracked.
-- `apps.json` pulls hmd_agro from a public repo. For private, pass a GitHub token as a build arg.
+- `apps.json` pulls the hmd_agro app from the public repo `hmdbackup/ERPnext` (branch `main`). The repo name differs from the app name — bench reads the app name (`hmd_agro`) from the code, so the build is unaffected.
 - On Windows, `bash` ships with Git for Windows.
 - Full reference: [`frappe_docker/docs/`](https://github.com/frappe/frappe_docker/tree/main/docs).
