@@ -134,9 +134,25 @@ apply_acl() {
 }
 
 # -----------------------------------------------------------------------------
+# Garantit que tous les dossiers PARENTS de HMD_ROOT sont traversables (--x)
+# par tous. Indispensable quand HMD_ROOT est placé sous un dossier personnel
+# (ex: /home/hmd/partage_windows) : /home/hmd est en 750 par defaut et bloque
+# l'acces des autres utilisateurs. On ajoute seulement o+x (traversee), jamais
+# o+r : le contenu des dossiers parents reste non listable.
+ensure_parents_traversable() {
+  local p
+  p="$(dirname "$HMD_ROOT")"
+  while [[ "$p" != "/" && -n "$p" ]]; do
+    chmod o+x "$p" 2>/dev/null || warn "Impossible d'ajouter o+x sur $p"
+    p="$(dirname "$p")"
+  done
+}
+
+# -----------------------------------------------------------------------------
 setup_dirs() {
   log "Creation de l'arborescence et application des ACL..."
   mkdir -p "$HMD_ROOT"
+  ensure_parents_traversable
 
   local entry rel read_csv write_csv abspath
   for entry in "${DIRS[@]}"; do
