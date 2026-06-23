@@ -166,12 +166,14 @@ _set_samba_passwords() {
       continue
     fi
 
-    pwd=$(tr -dc 'A-Za-z0-9@#%!' < /dev/urandom | head -c 16)
+    # dd lit un bloc fixe -> évite SIGPIPE avec set -o pipefail
+    pwd=$(dd if=/dev/urandom bs=128 count=1 2>/dev/null | tr -dc 'A-Za-z0-9@#%!' | cut -c1-16)
     printf '%s\n%s\n' "$pwd" "$pwd" | smbpasswd -a -s "$login"
     printf '%-15s : %s\n' "$login" "$pwd" >> "$SMB_CRED_FILE"
     ok "Compte Samba créé : $login"
   done
 
-  warn "Mots de passe initiaux stockés dans $SMB_CRED_FILE (visible root seulement)."
-  warn "→ Changez-les avec :  smbpasswd <login>"
+  ok "Mots de passe initiaux stockés dans : $SMB_CRED_FILE (visible root seulement)"
+  warn "→ Lire les mots de passe :   cat $SMB_CRED_FILE"
+  warn "→ Changer un mot de passe :  smbpasswd <login>"
 }
