@@ -159,8 +159,9 @@ fromagerie_g="$(resolve_group fromagerie)"
 check_acl "$HMD_ROOT"                                     "$all_g"          "r-x"
 check_acl "$HMD_ROOT"                                     "$admin_g"        "rwx"
 
-# Support
-check_acl "$HMD_ROOT/support"                             "$staff_g"        "r-x"
+# Support (lecture réservée à comptable+gestionnaire ; le staff traverse via hmd_all:--x)
+check_acl "$HMD_ROOT/support"                             "$comptable_g"    "r-x"
+check_acl "$HMD_ROOT/support"                             "$gestionnaire_g" "r-x"
 check_acl "$HMD_ROOT/support/administratif"               "$comptable_g"    "rwx"
 check_acl "$HMD_ROOT/support/administratif"               "$gestionnaire_g" "r-x"
 check_acl "$HMD_ROOT/support/comptabilite"                "$comptable_g"    "rwx"
@@ -193,7 +194,7 @@ check_acl "$HMD_ROOT/production_vegetale/dropbox"         "$all_g"          "rwx
 
 # IT
 check_acl "$HMD_ROOT/it/back-up"                         "$admin_g"        "rwx"
-check_acl "$HMD_ROOT/it/software"                        "$all_g"          "rwx"
+check_acl "$HMD_ROOT/it/software"                        "$all_g"          "r-x"  # lecture seule ; écriture admin uniquement
 check_acl "$HMD_ROOT/it/dropbox"                         "$all_g"          "rwx"
 
 # Utilisateurs / Partage

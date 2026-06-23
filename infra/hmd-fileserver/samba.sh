@@ -23,7 +23,8 @@ configure_samba() {
   # 2. Section [global]
   # ------------------------------------------------------------------
   local hostname_upper
-  hostname_upper=$(hostname -s | tr '[:lower:]' '[:upper:]')
+  # NetBIOS name is limited to 15 characters
+  hostname_upper=$(hostname -s | tr '[:lower:]' '[:upper:]' | cut -c1-15)
 
   cat > /etc/samba/smb.conf << EOF
 # Généré par samba.sh — ne pas modifier manuellement
@@ -37,7 +38,8 @@ configure_samba() {
     # Sécurité
     security        = user
     map to guest    = bad user
-    guest account   = guest      ; connexions anonymes -> compte Linux 'guest'
+    # Connexions anonymes mappées sur le compte Linux 'guest'
+    guest account   = guest
 
     # Encodage
     unix charset    = UTF-8
