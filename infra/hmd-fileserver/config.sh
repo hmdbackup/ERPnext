@@ -116,6 +116,11 @@ TRAVERSE_ALL_DIRS=(
 #   - Les partages « Depot-* » pointent directement sur les DropBox « All » :
 #     ils permettent aux Guests d'y accéder sans parcourir le dossier parent.
 SHARES=(
+  # Partage RACINE : un seul lecteur monte toute l'arborescence. Les ACL +
+  # « hide unreadable » font que chaque utilisateur ne VOIT que ce qu'il peut
+  # ouvrir. Reserve au staff+admin (les invites passent par Partage/Depot-*).
+  "HMD|.|STAFF,admin"
+
   "Support|support|comptable,gestionnaire,admin"
   "Elevage|elevage|STAFF,admin"
   "Fromagerie|fromagerie|STAFF,admin"

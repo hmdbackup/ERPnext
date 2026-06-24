@@ -59,6 +59,10 @@ configure_samba() {
     map acl inherit     = yes
     store dos attributes = yes
 
+    # Masque les dossiers/fichiers que l'utilisateur ne peut pas lire :
+    # avec le partage racine HMD, chacun ne voit que ses dossiers autorises.
+    hide unreadable     = yes
+
     # Résolution de noms (maître local)
     local master    = yes
     preferred master = yes
@@ -75,7 +79,11 @@ EOF
 
   for entry in "${SHARES[@]}"; do
     IFS='|' read -r name rel valid_users_str <<< "$entry"
-    abs_path="${HMD_ROOT}/${rel}"
+    if [[ "$rel" == "." || -z "$rel" ]]; then
+      abs_path="${HMD_ROOT}"
+    else
+      abs_path="${HMD_ROOT}/${rel}"
+    fi
 
     # valid users -> "@hmd_comptable @hmd_admin ..."
     valid_users_smb="$(resolve_valid_users "$valid_users_str") @$(resolve_group admin)"
