@@ -8,8 +8,9 @@
 # =============================================================================
 
 # Racine des données (le « Root » de l'arborescence).
-# Correspond au répertoire existant sur le serveur.
-HMD_ROOT="${HMD_ROOT:-/home/hmd/partage_windows}"
+# Placé à la racine du disque : traversable par tous (pas de blocage comme
+# sous un dossier personnel /home/<user> qui est en 750).
+HMD_ROOT="${HMD_ROOT:-/partage_windows}"
 
 # Préfixe de namespace pour les groupes (évite toute collision avec des
 # groupes système existants : admin, users, etc.)
@@ -32,6 +33,7 @@ GRP_STAFF="${GP}_staff"   # « All - Guest » = tous SAUF les Guests
 #   shell  : bash    -> compte interactif (admin, accède en SSH)
 #            nologin -> accès fichiers (Samba) uniquement, pas de session shell
 USERS=(
+  "hmd:admin:Hmd:bash"
   "samir:admin:Samir:bash"
   "aziz:admin:Aziz:bash"
   "anissa:comptable:Anissa:nologin"
