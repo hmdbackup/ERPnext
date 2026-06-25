@@ -99,6 +99,46 @@ create_users() {
 }
 
 # -----------------------------------------------------------------------------
+# Mots de passe Linux (SSH / console) pour les comptes interactifs (shell=bash).
+# Le mot de passe Linux est DISTINCT du mot de passe Samba : il est requis pour
+# l'acces SSH des administrateurs. Idempotent : un mot de passe deja defini
+# (status « P ») n'est jamais ecrase.
+set_linux_passwords() {
+  log "Definition des mots de passe Linux (comptes interactifs)..."
+  local first=1 entry login profile fullname shell status pwd
+
+  for entry in "${USERS[@]}"; do
+    IFS=':' read -r login profile fullname shell <<<"$entry"
+    [[ "$shell" == "bash" ]] || continue        # seulement les comptes interactifs
+
+    status="$(passwd -S "$login" 2>/dev/null | awk '{print $2}')"
+    if [[ "$status" == "P" ]]; then
+      ok "Mot de passe Linux deja defini, conserve : $login"
+      continue
+    fi
+
+    if (( first )); then
+      : > "$LINUX_CRED_FILE"
+      chmod 600 "$LINUX_CRED_FILE"
+      printf '# Mots de passe Linux (SSH) initiaux HMD — %s\n' "$(date)" >> "$LINUX_CRED_FILE"
+      printf '# Changez-les : passwd <login>\n\n' >> "$LINUX_CRED_FILE"
+      first=0
+    fi
+
+    # dd lit un bloc fixe -> evite SIGPIPE avec set -o pipefail
+    pwd=$(dd if=/dev/urandom bs=128 count=1 2>/dev/null | tr -dc 'A-Za-z0-9@#%!' | cut -c1-16)
+    printf '%s:%s\n' "$login" "$pwd" | chpasswd
+    printf '%-15s : %s\n' "$login" "$pwd" >> "$LINUX_CRED_FILE"
+    ok "Mot de passe Linux defini : $login"
+  done
+
+  if (( ! first )); then
+    warn "Mots de passe Linux initiaux dans : $LINUX_CRED_FILE (root seulement)"
+    warn "→ Changer un mot de passe :  passwd <login>"
+  fi
+}
+
+# -----------------------------------------------------------------------------
 # apply_acl <dossier_absolu> <lecture_csv> <ecriture_csv>
 #   Base : proprietaire root, groupe hmd_admin, setgid, aucun acces « autres ».
 #   Puis ACL nommees (acces + heritage) pour les groupes lecture/ecriture.
@@ -203,6 +243,7 @@ main() {
   ensure_packages
   create_groups
   create_users
+  set_linux_passwords
   setup_dirs
   setup_private_dirs
 

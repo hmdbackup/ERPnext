@@ -68,7 +68,7 @@ done
 section "Utilisateurs et appartenance aux groupes"
 
 for entry in "${USERS[@]}"; do
-  IFS=':' read -r login profile _ _ <<< "$entry"
+  IFS=':' read -r login profile _ shell <<< "$entry"
 
   # Existence du compte Linux
   if id "$login" >/dev/null 2>&1; then
@@ -114,6 +114,15 @@ for entry in "${USERS[@]}"; do
       pass "Compte Samba existe : $login"
     else
       fail "Compte Samba MANQUANT : $login"
+    fi
+  fi
+
+  # Mot de passe Linux (SSH) pour les comptes interactifs (shell=bash)
+  if [[ "$shell" == "bash" ]]; then
+    if [[ "$(passwd -S "$login" 2>/dev/null | awk '{print $2}')" == "P" ]]; then
+      pass "Mot de passe Linux defini (SSH) : $login"
+    else
+      fail "Mot de passe Linux MANQUANT (SSH bloque) : $login"
     fi
   fi
 done

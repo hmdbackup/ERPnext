@@ -140,3 +140,8 @@ SHARES=(
 
 # Fichier où seront écrits les mots de passe Samba initiaux (root uniquement).
 SMB_CRED_FILE="${SMB_CRED_FILE:-/root/hmd-smb-credentials.txt}"
+
+# Fichier où seront écrits les mots de passe Linux (SSH/console) initiaux des
+# comptes interactifs (shell=bash, ex. admins). Root uniquement.
+# Rappel : le mot de passe Linux (SSH) est DISTINCT du mot de passe Samba.
+LINUX_CRED_FILE="${LINUX_CRED_FILE:-/root/hmd-linux-credentials.txt}"
