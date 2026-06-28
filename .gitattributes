@@ -8,3 +8,7 @@
 *.yml   text eol=lf
 *.md    text eol=lf
 *.toml  text eol=lf
+
+# Windows scripts must stay CRLF (and not show as phantom diffs in the dev container).
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
