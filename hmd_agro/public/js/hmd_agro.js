@@ -33,6 +33,13 @@ window.hmd_make_sticky_columns = function (datatable, num_cols) {
         `;
         left += w;
     }
+    // The column sort/options dropdown is rendered inside its own header cell.
+    // For a non-frozen column adjacent to the sticky ones, that cell sits below
+    // the sticky cells' z-index, so the open menu gets painted *behind* the
+    // frozen columns. Lift the dropdown above the sticky stacking level (11).
+    css += `
+        .datatable .dt-dropdown__list { z-index: 50 !important; }
+    `;
     const style = document.createElement("style");
     style.className = "hmd-sticky-style";
     style.textContent = css;
