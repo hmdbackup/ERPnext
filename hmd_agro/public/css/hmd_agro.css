@@ -29,3 +29,20 @@
     color: var(--text-color) !important;
     font-size: 14px !important;
 }
+
+/* Report summary (KPI) cards — show the full label instead of clipping it.
+   Frappe's report.scss forces .summary-label to a single line
+   (white-space:nowrap + overflow:hidden + text-overflow:ellipsis) inside a
+   fixed 62px-high card, so long KPI labels like
+   "Délai vêlage → 1ère IA, moyen (cible 70j)" get cut to "…".
+   Let the label wrap and the card grow to fit. Applies to every query
+   report's summary cards (rapport_reproduction, rapport_mensuel, …). */
+.report-summary .summary-label {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+.report-summary .summary-item {
+    height: auto !important;
+    min-height: 62px;
+}
