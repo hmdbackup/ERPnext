@@ -23,6 +23,8 @@ fixtures = [
 	# Stock Entry.id_lot — SCRUM-123 custom field on a non-HMD doctype, so
 	# the prior filter doesn't catch it. Explicit by name.
 	{"dt": "Custom Field", "filters": [["name", "=", "Stock Entry-id_lot"]]},
+	# FIN-S30 (RC-FIN-53): CF on ERPNext core Asset — export by name
+	{"dt": "Custom Field", "filters": [["name", "=", "Asset-id_batiment"]]},
 	# Number Cards + Dashboard Charts — protect UI-created cards from being
 	# wiped on `bench migrate`. Filter by module so we only export HMD's, not
 	# ERPNext built-ins (Active Suppliers, etc.).
