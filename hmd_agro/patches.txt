@@ -10,3 +10,4 @@ hmd_agro.patches.v1_2.init_bilan_lait
 hmd_agro.patches.v1_3.migrate_ration_history_to_episodes
 hmd_agro.patches.v1_4.backfill_quantite_brut
 hmd_agro.patches.v1_5.init_periode_velage
+hmd_agro.patches.v1_6.init_seuils_finance

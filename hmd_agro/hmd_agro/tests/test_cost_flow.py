@@ -41,6 +41,8 @@ def _cleanup():
         SELECT name FROM `tabStock Entry` WHERE remarks LIKE %s
     """, (f"%{PREFIX}%",))
     for (n,) in se_names:
+        # since FIN-S11 real-CMP valuation, submitted SEs post GL — purge it too
+        frappe.db.sql("DELETE FROM `tabGL Entry` WHERE voucher_no=%s", n)
         frappe.db.sql("DELETE FROM `tabStock Entry Detail` WHERE parent=%s", n)
         frappe.db.sql("DELETE FROM `tabStock Entry` WHERE name=%s", n)
     frappe.db.sql("DELETE FROM `tabStock Ledger Entry` WHERE item_code=%s", test_item)

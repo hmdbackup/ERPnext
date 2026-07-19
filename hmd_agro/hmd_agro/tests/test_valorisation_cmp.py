@@ -37,6 +37,7 @@ def _cleanup():
             WHERE sed.item_code = %s
         """, item_code)
         for (n,) in se_names:
+            frappe.db.sql("DELETE FROM `tabGL Entry` WHERE voucher_no=%s", n)
             frappe.db.sql("DELETE FROM `tabStock Entry Detail` WHERE parent=%s", n)
             frappe.db.sql("DELETE FROM `tabStock Entry` WHERE name=%s", n)
         frappe.db.sql("DELETE FROM `tabStock Ledger Entry` WHERE item_code=%s", item_code)

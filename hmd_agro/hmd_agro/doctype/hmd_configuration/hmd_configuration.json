@@ -52,7 +52,19 @@
   "pfe_persistance_alarm_min",
   "pfe_persistance_alarm_max",
   "pfe_3ia_plus_max",
-  "pfe_3ia_plus_orange_max"
+  "pfe_3ia_plus_orange_max",
+  "section_seuils_finance",
+  "prix_reference_lait",
+  "lait_tb_reference",
+  "lait_prime_tb_par_g",
+  "col_break_fin_1",
+  "lait_tp_reference",
+  "lait_prime_tp_par_g",
+  "col_break_fin_2",
+  "objectif_cout_litre",
+  "objectif_cout_litre_alarme",
+  "pfe_iofc_jour_min",
+  "pfe_iofc_jour_orange_min"
  ],
  "fields": [
   {
@@ -84,7 +96,10 @@
    "non_negative": 1,
    "description": "Jours après IA pour la 1ère vérification de gestation."
   },
-  { "fieldname": "col_break_alertes_1", "fieldtype": "Column Break" },
+  {
+   "fieldname": "col_break_alertes_1",
+   "fieldtype": "Column Break"
+  },
   {
    "fieldname": "tarissement_advance_jours",
    "fieldtype": "Int",
@@ -101,7 +116,10 @@
    "non_negative": 1,
    "description": "Jours avant la date prévue de vêlage pour l'alerte VELAGE_IMMINENT."
   },
-  { "fieldname": "col_break_alertes_2", "fieldtype": "Column Break" },
+  {
+   "fieldname": "col_break_alertes_2",
+   "fieldtype": "Column Break"
+  },
   {
    "fieldname": "delvo_advance_jours",
    "fieldtype": "Int",
@@ -126,7 +144,6 @@
    "non_negative": 1,
    "description": "S'applique <b>uniquement</b> au suivi des alertes de vérification de gestation (J+21 / J+50). Quand le vétérinaire reprogramme une vérification dans X jours, l'alerte de suivi apparaît <b>ce nombre de jours</b> avant la date cible. <b>N'affecte AUCUNE autre alerte.</b>"
   },
-
   {
    "fieldname": "section_lactation",
    "fieldtype": "Tab Break",
@@ -165,7 +182,10 @@
    "non_negative": 1,
    "description": "Période après vêlage utilisée pour calculer la « <b>Production Initiale</b> » de chaque lactation (somme du lait produit pendant cette période). Standard zootechnique : 60 jours. Modifier déclenche un <b>recalcul de toutes les lactations</b>."
   },
-  { "fieldname": "col_break_lactation_1", "fieldtype": "Column Break" },
+  {
+   "fieldname": "col_break_lactation_1",
+   "fieldtype": "Column Break"
+  },
   {
    "fieldname": "pic_production_jours",
    "fieldtype": "Int",
@@ -200,7 +220,6 @@
    "precision": "1",
    "description": "Pourcentage de chute de production entre deux jours consécutifs à partir duquel la cellule est mise en évidence dans les rapports (Saisie Traite, Allotement, Contrôle Laitier). Valeur négative (ex : -15 = chute de 15%)."
   },
-
   {
    "fieldname": "section_allotement",
    "fieldtype": "Tab Break",
@@ -235,7 +254,10 @@
    "non_negative": 1,
    "description": "Limite supérieure de la période HP."
   },
-  { "fieldname": "col_break_allotement_1", "fieldtype": "Column Break" },
+  {
+   "fieldname": "col_break_allotement_1",
+   "fieldtype": "Column Break"
+  },
   {
    "fieldname": "dim_mp_max",
    "fieldtype": "Int",
@@ -404,6 +426,100 @@
    "non_negative": 1,
    "precision": "1",
    "description": "%3IA+ entre seuil vert et cette valeur → ORANGE. > cette valeur → ROUGE."
+  },
+  {
+   "fieldname": "section_seuils_finance",
+   "fieldtype": "Section Break",
+   "label": "Seuils Finance (FIN-S51)"
+  },
+  {
+   "fieldname": "prix_reference_lait",
+   "fieldtype": "Float",
+   "label": "Prix de référence du lait (TND/L)",
+   "default": "1.6",
+   "non_negative": 1,
+   "precision": "3",
+   "description": "Prix de base du litre pour la facture lait (RG-FIN-10). Le prix effectif = Item Price LAIT-CRU s'il existe, sinon cette valeur."
+  },
+  {
+   "fieldname": "lait_tb_reference",
+   "fieldtype": "Float",
+   "label": "TB de référence (g/L)",
+   "default": "38",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Taux butyreux de référence : au-dessus → prime, en dessous → pénalité."
+  },
+  {
+   "fieldname": "lait_prime_tb_par_g",
+   "fieldtype": "Float",
+   "label": "Prime TB (TND/L par g/L)",
+   "default": "0",
+   "non_negative": 0,
+   "precision": "4",
+   "description": "Prime/pénalité par g/L d'écart au TB de référence. 0 = pas d'indexation qualité."
+  },
+  {
+   "fieldname": "col_break_fin_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "lait_tp_reference",
+   "fieldtype": "Float",
+   "label": "TP de référence (g/L)",
+   "default": "32",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Taux protéique de référence : au-dessus → prime, en dessous → pénalité."
+  },
+  {
+   "fieldname": "lait_prime_tp_par_g",
+   "fieldtype": "Float",
+   "label": "Prime TP (TND/L par g/L)",
+   "default": "0",
+   "non_negative": 0,
+   "precision": "4",
+   "description": "Prime/pénalité par g/L d'écart au TP de référence. 0 = pas d'indexation qualité."
+  },
+  {
+   "fieldname": "col_break_fin_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "objectif_cout_litre",
+   "fieldtype": "Float",
+   "label": "Objectif coût alim./L (vert si ≤)",
+   "default": "0.65",
+   "non_negative": 1,
+   "precision": "3",
+   "description": "Coût alimentaire par litre ≤ cette valeur → VERT (RC-FIN-50)."
+  },
+  {
+   "fieldname": "objectif_cout_litre_alarme",
+   "fieldtype": "Float",
+   "label": "Coût alim./L alarme (rouge si >)",
+   "default": "0.85",
+   "non_negative": 1,
+   "precision": "3",
+   "description": "Coût alimentaire par litre entre objectif et cette valeur → ORANGE ; au-delà → ROUGE."
+  },
+  {
+   "fieldname": "pfe_iofc_jour_min",
+   "fieldtype": "Float",
+   "label": "IOFC Min Vert (TND/VL/j)",
+   "default": "3",
+   "non_negative": 0,
+   "precision": "2",
+   "description": "Income Over Feed Cost par vache lactante et par jour ≥ cette valeur → VERT (RC-FIN-51)."
+  },
+  {
+   "fieldname": "pfe_iofc_jour_orange_min",
+   "fieldtype": "Float",
+   "label": "IOFC Min Orange (rouge si <)",
+   "default": "1.5",
+   "non_negative": 0,
+   "precision": "2",
+   "description": "IOFC entre ce seuil et le seuil vert → ORANGE ; en dessous → ROUGE."
   }
  ],
  "index_web_pages_for_search": 0,

@@ -1253,6 +1253,11 @@ def _indicateurs(ctx):
     cfg_pers_max = float(get_config("pfe_persistance_max", default=0.95))
     cfg_pers_alm_lo = float(get_config("pfe_persistance_alarm_min", default=0.7))
     cfg_pers_alm_hi = float(get_config("pfe_persistance_alarm_max", default=1.10))
+    # FIN-S51 — seuils économiques (RG-FIN-60)
+    cfg_cout_l_max = float(get_config("objectif_cout_litre", default=0.65))
+    cfg_cout_l_alm = float(get_config("objectif_cout_litre_alarme", default=0.85))
+    cfg_iofc_min = float(get_config("pfe_iofc_jour_min", default=3.0))
+    cfg_iofc_omn = float(get_config("pfe_iofc_jour_orange_min", default=1.5))
 
     date_debut = ctx["date_debut"]
     date_filter = min(ctx["date_filter"], ctx["date_fin"])
@@ -1278,7 +1283,22 @@ def _indicateurs(ctx):
         frais_four_ = d_["cumulative_fourrage_cost"] if d_ else 0
         frais_alim_total_ = d_["cumulative_aliment_cost"] if d_ else 0
         frais_med_ = _medicament_cost(start, end)
+        # FIN-S50 — KPI économiques depuis le Grand Livre (RC-FIN-51/52)
+        from hmd_agro.hmd_agro.utils.finance_kpis import gl_sums
+        gl_ = gl_sums(start, end)
+        jours_ = max((getdate(end) - getdate(start)).days + 1, 1)
+        iofc_ = gl_["ca_lait"] - frais_alim_total_
         return {
+            "ca_lait": round(gl_["ca_lait"], 2),
+            "produits": round(gl_["produits"], 2),
+            "charges": round(gl_["charges"], 2),
+            "mo": round(gl_["mo"], 2),
+            "amortissements": round(gl_["amortissements"], 2),
+            "ebe": round(gl_["ebe"], 2),
+            "resultat": round(gl_["resultat"], 2),
+            "cout_complet_l": round(gl_["charges"] / prod_, 3) if prod_ else 0,
+            "iofc": round(iofc_, 2),
+            "iofc_vl_jour": round(iofc_ / vl_ / jours_, 2) if vl_ else 0,
             "vp": vp_, "vl": vl_, "vt": vt_,
             "prod": prod_, "concentre": concentre_, "ms_total": ms_total_,
             "lmv": round(prod_ / vp_, 1) if vp_ else 0,
@@ -1392,13 +1412,40 @@ def _indicateurs(ctx):
         row("Frais Médicaments", cur["frais_medicaments"], "DT",
             valeur_m1=m1["frais_medicaments"], direction="down"),
         row("Coût Alimentaire / L", cur["cout_alim_l"], "DT/L",
+            indicator=_kpi_ind(cur["cout_alim_l"] or None,
+                               green_max=cfg_cout_l_max,
+                               orange_max=cfg_cout_l_alm),
             valeur_m1=m1["cout_alim_l"], direction="down"),
         row("Coût Alimentaire / Vache Présente", cur["cout_alim_vp"], "DT/tête",
             valeur_m1=m1["cout_alim_vp"], direction="down"),
         row("Coût Alimentaire / Vache Lactante", cur["cout_alim_vl"], "DT/tête",
             valeur_m1=m1["cout_alim_vl"], direction="down"),
-        row("Main d'Œuvre", None, "DT (à intégrer)"),
-        row("Chiffre d'Affaires Lait", None, "DT (à intégrer)"),
+
+        # ── Économique compta (FIN-S50) — sommes GL de la période (frozen
+        # history) : période sans écritures → 0 honnête, comme les coûts SLE.
+        row("Chiffre d'Affaires Lait", cur["ca_lait"], "DT",
+            valeur_m1=m1["ca_lait"], direction="up"),
+        row("Produit Brut (total produits)", cur["produits"], "DT",
+            valeur_m1=m1["produits"], direction="up"),
+        row("Charges Totales", cur["charges"], "DT",
+            valeur_m1=m1["charges"], direction="down"),
+        row("Main d'Œuvre (64x)", cur["mo"], "DT",
+            valeur_m1=m1["mo"], direction="down"),
+        row("Dotations aux Amortissements (68x)", cur["amortissements"], "DT",
+            valeur_m1=m1["amortissements"]),
+        row("EBE — Excédent Brut d'Exploitation", cur["ebe"], "DT",
+            valeur_m1=m1["ebe"], direction="up"),
+        row("Résultat de la Période", cur["resultat"], "DT",
+            valeur_m1=m1["resultat"], direction="up"),
+        row("Coût Complet / L (toutes charges)", cur["cout_complet_l"], "DT/L",
+            valeur_m1=m1["cout_complet_l"], direction="down"),
+        row("IOFC — CA Lait − Coût Alimentaire", cur["iofc"], "DT",
+            valeur_m1=m1["iofc"], direction="up"),
+        row("IOFC / Vache Lactante / Jour", cur["iofc_vl_jour"], "DT/VL/j",
+            indicator=_kpi_ind(cur["iofc_vl_jour"] or None,
+                               green_min=cfg_iofc_min,
+                               orange_min=cfg_iofc_omn),
+            valeur_m1=m1["iofc_vl_jour"], direction="up"),
     ]
 
     return columns, data
