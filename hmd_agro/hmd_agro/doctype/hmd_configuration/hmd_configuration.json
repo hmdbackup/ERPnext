@@ -56,10 +56,10 @@
   "section_seuils_finance",
   "prix_reference_lait",
   "lait_tb_reference",
-  "lait_prime_tb_par_g",
+  "lait_prime_tb_par_point",
   "col_break_fin_1",
   "lait_tp_reference",
-  "lait_prime_tp_par_g",
+  "lait_prime_tp_par_point",
   "col_break_fin_2",
   "objectif_cout_litre",
   "objectif_cout_litre_alarme",
@@ -444,20 +444,20 @@
   {
    "fieldname": "lait_tb_reference",
    "fieldtype": "Float",
-   "label": "TB de référence (g/L)",
-   "default": "38",
+   "label": "TB de référence (%)",
+   "default": "3.8",
    "non_negative": 1,
    "precision": "1",
-   "description": "Taux butyreux de référence : au-dessus → prime, en dessous → pénalité."
+   "description": "Taux butyreux de référence en % (même unité que le Bilan Lait Journalier) : au-dessus → prime, en dessous → pénalité."
   },
   {
-   "fieldname": "lait_prime_tb_par_g",
+   "fieldname": "lait_prime_tb_par_point",
    "fieldtype": "Float",
-   "label": "Prime TB (TND/L par g/L)",
+   "label": "Prime TB (TND/L par point de %)",
    "default": "0",
    "non_negative": 0,
    "precision": "4",
-   "description": "Prime/pénalité par g/L d'écart au TB de référence. 0 = pas d'indexation qualité."
+   "description": "Prime/pénalité par point de % d'écart au TB de référence. 0 = pas d'indexation qualité."
   },
   {
    "fieldname": "col_break_fin_1",
@@ -466,20 +466,20 @@
   {
    "fieldname": "lait_tp_reference",
    "fieldtype": "Float",
-   "label": "TP de référence (g/L)",
-   "default": "32",
+   "label": "TP de référence (%)",
+   "default": "3.2",
    "non_negative": 1,
    "precision": "1",
-   "description": "Taux protéique de référence : au-dessus → prime, en dessous → pénalité."
+   "description": "Taux protéique de référence en % (même unité que le Bilan Lait Journalier) : au-dessus → prime, en dessous → pénalité."
   },
   {
-   "fieldname": "lait_prime_tp_par_g",
+   "fieldname": "lait_prime_tp_par_point",
    "fieldtype": "Float",
-   "label": "Prime TP (TND/L par g/L)",
+   "label": "Prime TP (TND/L par point de %)",
    "default": "0",
    "non_negative": 0,
    "precision": "4",
-   "description": "Prime/pénalité par g/L d'écart au TP de référence. 0 = pas d'indexation qualité."
+   "description": "Prime/pénalité par point de % d'écart au TP de référence. 0 = pas d'indexation qualité."
   },
   {
    "fieldname": "col_break_fin_2",

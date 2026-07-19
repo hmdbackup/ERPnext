@@ -7,9 +7,10 @@ qualité TB/TP (volume-weighted means over the same period).
 
 Prix (RG-FIN-10 — aucun littéral) :
     taux = Item Price LAIT-CRU (fallback config `prix_reference_lait`)
-         + (TB_moy − `lait_tb_reference`) × `lait_prime_tb_par_g`
-         + (TP_moy − `lait_tp_reference`) × `lait_prime_tp_par_g`
-    (primes par g/L, négatives en dessous de la référence → pénalité)
+         + (TB_moy − `lait_tb_reference`) × `lait_prime_tb_par_point`
+         + (TP_moy − `lait_tp_reference`) × `lait_prime_tp_par_point`
+    (TB/TP en % — même unité que le BLJ ; primes par point de %,
+    négatives en dessous de la référence → pénalité)
 
 Idempotence (RG-FIN-11, house pattern « marqueur remarks ») : the invoice
 carries `LAIT_FACT_<debut>_<fin>` in remarks; a re-run finds it and no-ops.
@@ -59,12 +60,12 @@ def compute_milk_rate(tb_moyen=None, tp_moyen=None):
     rate = float(base if base is not None
                  else get_config("prix_reference_lait", default=1.6))
     if tb_moyen:
-        tb_ref = float(get_config("lait_tb_reference", default=38.0))
-        prime_tb = float(get_config("lait_prime_tb_par_g", default=0.0))
+        tb_ref = float(get_config("lait_tb_reference", default=3.8))
+        prime_tb = float(get_config("lait_prime_tb_par_point", default=0.0))
         rate += (float(tb_moyen) - tb_ref) * prime_tb
     if tp_moyen:
-        tp_ref = float(get_config("lait_tp_reference", default=32.0))
-        prime_tp = float(get_config("lait_prime_tp_par_g", default=0.0))
+        tp_ref = float(get_config("lait_tp_reference", default=3.2))
+        prime_tp = float(get_config("lait_prime_tp_par_point", default=0.0))
         rate += (float(tp_moyen) - tp_ref) * prime_tp
     return round(max(rate, 0), 3)
 

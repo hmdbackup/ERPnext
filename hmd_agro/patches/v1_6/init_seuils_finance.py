@@ -15,8 +15,9 @@ import frappe
 
 FINANCE_DEFAULTS = {
     "prix_reference_lait": 1.6,
-    "lait_tb_reference": 38.0,
-    "lait_tp_reference": 32.0,
+    # TB/TP en % — même unité que Bilan Lait Journalier (taux_tb_max_pct=10)
+    "lait_tb_reference": 3.8,
+    "lait_tp_reference": 3.2,
     "objectif_cout_litre": 0.65,
     "objectif_cout_litre_alarme": 0.85,
     "pfe_iofc_jour_min": 3.0,

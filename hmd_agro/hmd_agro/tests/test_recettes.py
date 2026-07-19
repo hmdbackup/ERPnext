@@ -115,13 +115,13 @@ def _run_inner():
            f"Taux sans qualité = Item Price ({rate0} = {base})", results)
     # primes par défaut = 0 → TB/TP ne bougent pas le prix tant que la config
     # n'est pas posée (FIN-S51 seed les champs lait_prime_*)
-    rate_q = facturation_lait.compute_milk_rate(tb_moyen=41.0, tp_moyen=30.0)
+    rate_q = facturation_lait.compute_milk_rate(tb_moyen=4.1, tp_moyen=3.0)
     _check(abs(rate_q - base) < 0.001,
            f"Primes par défaut 0 → taux inchangé ({rate_q})", results)
 
     # ── 2. Facture lait période — 3 BLJ (un jour sans vente), TB/TP pondérés
-    _blj(BLJ_DEBUT, 1000, tb=38, tp=32)
-    _blj("2031-01-02", 500, tb=41, tp=32)
+    _blj(BLJ_DEBUT, 1000, tb=3.8, tp=3.2)
+    _blj("2031-01-02", 500, tb=4.1, tp=3.2)
     _blj("2031-01-03", 0)
     frappe.db.commit()
     si_name = facturation_lait.generate_milk_invoice(BLJ_DEBUT, BLJ_FIN)
@@ -131,8 +131,8 @@ def _run_inner():
         _check(si.docstatus == 1, "Facture lait soumise", results)
         _check(abs(si.items[0].qty - 1500.0) < 0.001,
                f"Volume agrégé = {si.items[0].qty} L (attendu 1500)", results)
-        _check(abs(si.items[0].rate - facturation_lait.compute_milk_rate(39, 32)) < 0.001,
-               f"Taux facturé {si.items[0].rate} = taux TB pondéré 39 g/L", results)
+        _check(abs(si.items[0].rate - facturation_lait.compute_milk_rate(3.9, 3.2)) < 0.001,
+               f"Taux facturé {si.items[0].rate} = taux TB pondéré 3.9 %", results)
         income = frappe.db.get_value(
             "Sales Invoice Item", si.items[0].name, "income_account") or ""
         _check(income.startswith("701"),
