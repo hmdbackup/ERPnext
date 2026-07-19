@@ -1291,6 +1291,9 @@ def _indicateurs(ctx):
             "frais_fourrage": round(frais_four_, 2),
             "frais_medicaments": round(frais_med_, 2),
             "cout_alim_l": round(frais_alim_total_ / prod_, 3) if prod_ else 0,
+            # RC-FIN-50 — DT/vache, two-populations pattern (présente vs lactante)
+            "cout_alim_vp": round(frais_alim_total_ / vp_, 2) if vp_ else 0,
+            "cout_alim_vl": round(frais_alim_total_ / vl_, 2) if vl_ else 0,
         }
 
     cur = _period_kpis(date_debut, date_filter)
@@ -1390,6 +1393,10 @@ def _indicateurs(ctx):
             valeur_m1=m1["frais_medicaments"], direction="down"),
         row("Coût Alimentaire / L", cur["cout_alim_l"], "DT/L",
             valeur_m1=m1["cout_alim_l"], direction="down"),
+        row("Coût Alimentaire / Vache Présente", cur["cout_alim_vp"], "DT/tête",
+            valeur_m1=m1["cout_alim_vp"], direction="down"),
+        row("Coût Alimentaire / Vache Lactante", cur["cout_alim_vl"], "DT/tête",
+            valeur_m1=m1["cout_alim_vl"], direction="down"),
         row("Main d'Œuvre", None, "DT (à intégrer)"),
         row("Chiffre d'Affaires Lait", None, "DT (à intégrer)"),
     ]

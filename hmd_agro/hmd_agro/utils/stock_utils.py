@@ -72,8 +72,17 @@ def ensure_item_allow_negative_stock(item_code):
     return True
 
 
+def get_valuation_rate(item_code, warehouse):
+    """Current CMP (moving average) of (item, warehouse) from Bin. 0 if the
+    item was never received at a real price."""
+    return float(frappe.db.get_value(
+        "Bin", {"item_code": item_code, "warehouse": warehouse}, "valuation_rate"
+    ) or 0)
+
+
 def create_stock_movement(item_code, qty, purpose, warehouse, remark,
-                          posting_date=None, company=None, uom=None, batch_no=None):
+                          posting_date=None, company=None, uom=None, batch_no=None,
+                          basic_rate=None):
     """
     Submit a single-line Stock Entry.
 
@@ -87,13 +96,20 @@ def create_stock_movement(item_code, qty, purpose, warehouse, remark,
         company:      defaults to "hmd-agro"
         uom:          defaults to "Unit"
         batch_no:     optional batch ID (required for Items with has_batch_no=1, e.g., Semence)
+        basic_rate:   Material Receipt only — explicit unit price (e.g., from a
+                      purchase). Default: current CMP so restoration receipts
+                      (on_trash mirrors) stay value-symmetric with the issue
+                      they compensate instead of diluting the CMP at 0.
 
     Returns:
         the submitted Stock Entry name (e.g., "MAT-STE-2026-00006")
 
-    Notes:
-        - Uses allow_zero_valuation_rate=1 because we don't track cost yet.
-          Phase B will add real valuation when receipt prices are entered.
+    Notes (FIN-S11, RG-FIN-30 / CF-FIN-31):
+        - Material Issue: no rate is forced — ERPNext values the outgoing
+          line at the item's CMP, so SLE.stock_value_difference is real.
+        - Garde-fou: while the item has no valuation yet (CMP = 0, never
+          purchased), fall back to the legacy zero-valuation flags so field
+          entry (Traitement/IA/ration) is never blocked.
         - Stock Entry is submitted (not draft) so Bin updates immediately.
     """
     company = company or DEFAULT_COMPANY
@@ -105,15 +121,24 @@ def create_stock_movement(item_code, qty, purpose, warehouse, remark,
         "uom": uom,
         "stock_uom": uom,
         "conversion_factor": 1,
-        "basic_rate": 0,
-        "allow_zero_valuation_rate": 1,
     }
+    cmp_rate = get_valuation_rate(item_code, warehouse)
     if batch_no:
         item_line["batch_no"] = batch_no
     if purpose == "Material Issue":
         item_line["s_warehouse"] = warehouse
+        if not cmp_rate:
+            # legacy behavior — item never valued, don't block the operation
+            item_line["basic_rate"] = 0
+            item_line["allow_zero_valuation_rate"] = 1
     elif purpose == "Material Receipt":
         item_line["t_warehouse"] = warehouse
+        rate = basic_rate if basic_rate is not None else cmp_rate
+        if rate:
+            item_line["basic_rate"] = rate
+        else:
+            item_line["basic_rate"] = 0
+            item_line["allow_zero_valuation_rate"] = 1
     else:
         frappe.throw(f"create_stock_movement: purpose '{purpose}' inconnu")
 

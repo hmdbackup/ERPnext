@@ -29,6 +29,7 @@ from hmd_agro.hmd_agro.doctype.lot_ration_history.lot_ration_history import (
 from hmd_agro.hmd_agro.utils.stock_utils import (
     DEFAULT_COMPANY as COMPANY,
     DEFAULT_WAREHOUSE as WAREHOUSE,
+    get_valuation_rate,
 )
 
 
@@ -176,14 +177,21 @@ def _build_stock_entry(lot, day, lines):
     marker = f"RATION_DIST_{lot}_{day}"
     items = []
     for L in lines:
-        items.append({
+        line = {
             "item_code": L["item_code"],
             "qty": L["qty"],
             "uom": L["stock_uom"],
             "stock_uom": L["stock_uom"],
             "conversion_factor": 1,
             "s_warehouse": WAREHOUSE,
-        })
+        }
+        # CF-FIN-31 garde-fou: an aliment never purchased (CMP=0) must not
+        # block the daily job — fall back to zero-valuation for that line only.
+        # Valued items get no flag so ERPNext posts the real CMP cost (FIN-S11).
+        if not get_valuation_rate(L["item_code"], WAREHOUSE):
+            line["basic_rate"] = 0
+            line["allow_zero_valuation_rate"] = 1
+        items.append(line)
     # set_posting_time=1 is REQUIRED for backdated entries — without it
     # ERPNext silently overrides posting_date+posting_time to now() at submit.
     # posting_time fixed at 00:00:00 so all distribution SEs for one day are
