@@ -187,6 +187,10 @@ scheduler_events = {
         "hmd_agro.hmd_agro.doctype.traitement.traitement.refresh_attente_lait",
         "hmd_agro.hmd_agro.utils.feed_distribution.generate_daily_distribution"
  	],
+ 	"monthly": [
+        # FIN-S21 — facture lait du mois précédent (idempotent, marqueur remarks)
+        "hmd_agro.hmd_agro.utils.facturation_lait.generate_monthly_milk_invoice"
+ 	],
  }
 
 # Testing

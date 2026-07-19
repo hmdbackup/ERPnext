@@ -146,8 +146,18 @@ class Animal(Document):
 
     def on_update(self):
         self._close_active_records_on_exit()
+        self._sync_sale_invoice_on_exit()
         self._update_lot_counts()
         self._track_lot_change()
+
+    def _sync_sale_invoice_on_exit(self):
+        """RG-FIN-20 / CF-FIN-21: statut → VENDU/REFORME posts the Sales
+        Invoice from prix_vente; reverting the statut cancels it. Non-blocking
+        (vente_animal never raises)."""
+        if not self.has_value_changed("statut"):
+            return
+        from hmd_agro.hmd_agro.utils.vente_animal import sync_sale_invoice
+        sync_sale_invoice(self)
 
     def _track_lot_change(self):
         """Audit log: insert an Allotement History row whenever id_lot changes.
@@ -169,6 +179,9 @@ class Animal(Document):
 
     def on_trash(self):
         self._update_lot_counts(is_delete=True)
+        # CF-FIN-21: deletion compensates the sale invoice (symmetric cascade)
+        from hmd_agro.hmd_agro.utils.vente_animal import cancel_sale_invoice
+        cancel_sale_invoice(self.name)
 
     def _close_active_records_on_exit(self):
         """RG04: Auto-close all active records when animal leaves (VENDU/MORT/REFORME)"""
