@@ -1478,6 +1478,11 @@ def _tout(ctx):
     for row in ind_data:
         val = row.get("valeur")
         unite = row.get("unite") or ""
-        data.append({"label": row["indicateur"], "valeur": f"{val} {unite}" if val is not None else unite})
+        # Carry the threshold color (Green/Orange/Red) so the `valeur` cell is
+        # tinted in this overview exactly as in the dedicated Indicateurs
+        # section — otherwise the KPI coloring is silently lost in "Tout".
+        data.append({"label": row["indicateur"],
+                     "valeur": f"{val} {unite}" if val is not None else unite,
+                     "indicator": row.get("indicator")})
 
     return columns, data
