@@ -14,7 +14,7 @@ ses stories Jira `FIN-S*` (backlog `finance_backlog_jira.csv`).
 | `6949776` | D+E — Immo & charges | S30, S40, S41 | 5 Asset Categories sur 22x/28x/681, CF `Asset-id_batiment`, amortissement linéaire auto, salaires ventilés par atelier (`post_salaires`), modes de paiement 54/532 |
 | `81da51e` | F — Pilotage | S50, S51 | `finance_kpis.gl_sums` : CA lait, produit brut, charges, MO, EBE, résultat, coût complet/L, IOFC (+/VL/j) au rapport mensuel ; seuils `HMD Configuration` (patch `v1_6`) + coloration vert/orange/rouge |
 | `5d0e03b` | G — Bascule & droits | S60, S61 | Rôle « Éleveur HMD » (zéro accès comptable — test 8/8), procédure a-nouveaux (`BASCULE.md`), seed démo E2E |
-| *(en cours)* | H — Données manquantes | S24, S25, S31, S32, S42, S70 | Les six trous restants : registre Personnel, interventions équipements, écart lait valorisé, grille prix qualité, cheptel à l'actif, contrôle de cohérence (détail ci-dessous) |
+| `4403f05` | H — Données manquantes | S24, S25, S31, S32, S42, S70 | Les six trous restants : registre Personnel, interventions équipements, écart lait valorisé, grille prix qualité, cheptel à l'actif, contrôle de cohérence (détail ci-dessous) |
 
 ## Epic H — ce qui manquait encore
 
