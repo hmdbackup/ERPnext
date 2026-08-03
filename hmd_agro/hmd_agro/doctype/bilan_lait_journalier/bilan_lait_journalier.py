@@ -1,5 +1,6 @@
 import frappe
 from frappe.model.document import Document
+from frappe.utils import flt
 
 from hmd_agro.hmd_agro.utils.config import get_config
 
@@ -7,6 +8,21 @@ from hmd_agro.hmd_agro.utils.config import get_config
 class BilanLaitJournalier(Document):
     def validate(self):
         self.validate_taux()
+        self.set_ecart_litres()
+
+    def set_ecart_litres(self):
+        """Écart = production saisie − (vendu + consommation interne + veau).
+
+        Le champ n'était alimenté que par la page Saisie Traite ; une ligne
+        créée à la main, importée ou seedée gardait un écart à 0 — donc
+        invisible du KPI qui le valorise (FIN-S25). Le calcul vit maintenant
+        ici, où toutes les écritures passent, avec la même formule que
+        `saisie_traite._upsert_bilan`."""
+        if not flt(self.production_totale_saisie):
+            return
+        affecte = (flt(self.lait_vendu) + flt(self.consommation_interne)
+                   + flt(self.lait_veau))
+        self.ecart_litres = round(flt(self.production_totale_saisie) - affecte, 1)
 
     def validate_taux(self):
         max_tb = get_config("taux_tb_max_pct", default=10)

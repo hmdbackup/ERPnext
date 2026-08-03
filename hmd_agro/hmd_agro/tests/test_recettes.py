@@ -1,8 +1,8 @@
 """
-EPIC C — tests recettes (FIN-S20/S21/S22).
+EPIC C — tests recettes (FIN-S20/S21/S22/S24).
 
 Covers:
-  1. compute_milk_rate: base Item Price + primes/pénalités TB/TP config
+  1. compute_milk_rate: grille qualité en vigueur, repli prix plat sinon
   2. generate_milk_invoice: agrégation BLJ.lait_vendu (TB/TP pondérés),
      Sales Invoice émise, idempotence (marqueur remarks → re-run no-op)
   3. Vente animal: statut → VENDU poste la facture depuis prix_vente ;
@@ -16,13 +16,17 @@ Run: bench --site hmd.agro execute hmd_agro.hmd_agro.tests.test_recettes.run
 import traceback
 
 import frappe
+from frappe.utils import today
 
+from hmd_agro.hmd_agro.doctype.grille_prix_lait.grille_prix_lait import grille_active
 from hmd_agro.hmd_agro.utils import facturation_lait, vente_animal
 
 PREFIX = "TEST-REC-"
 TN = "888000"
 BLJ_DEBUT = "2031-01-01"
 BLJ_FIN = "2031-01-31"
+# Antérieure à toute grille de prix : force le repli « prix plat » (FIN-S24).
+DATE_SANS_GRILLE = "2018-06-30"
 
 
 def _cleanup():
@@ -113,11 +117,24 @@ def _run_inner():
     rate0 = facturation_lait.compute_milk_rate()
     _check(abs(rate0 - base) < 0.001,
            f"Taux sans qualité = Item Price ({rate0} = {base})", results)
-    # primes par défaut = 0 → TB/TP ne bougent pas le prix tant que la config
-    # n'est pas posée (FIN-S51 seed les champs lait_prime_*)
-    rate_q = facturation_lait.compute_milk_rate(tb_moyen=4.1, tp_moyen=3.0)
-    _check(abs(rate_q - base) < 0.001,
-           f"Primes par défaut 0 → taux inchangé ({rate_q})", results)
+    # Repli prix plat (aucune grille en vigueur à cette date, FIN-S24) : les
+    # primes config valent 0 par défaut, donc TB/TP ne bougent pas le prix.
+    plat = facturation_lait.compute_milk_rate(tb_moyen=4.1, tp_moyen=3.0,
+                                              date=DATE_SANS_GRILLE, detail=True)
+    _check(plat["statut"] == "PRIX_PLAT" and abs(plat["prix"] - base) < 0.001,
+           f"Sans grille, primes config à 0 → taux inchangé ({plat['prix']})", results)
+    # Avec une grille en vigueur, la qualité fait bouger le prix — c'est tout
+    # l'objet de FIN-S24.
+    grille = grille_active(today())
+    if grille:
+        rate_q = facturation_lait.compute_milk_rate(tb_moyen=4.1, tp_moyen=3.0,
+                                                    date=today())
+        _check(abs(rate_q - base) > 0.001,
+               f"Grille « {grille.name} » active → prix indexé sur TB/TP "
+               f"({rate_q} vs {base})", results)
+    else:
+        _check(True, "Aucune grille active sur le site — indexation non testée",
+               results)
 
     # ── 2. Facture lait période — 3 BLJ (un jour sans vente), TB/TP pondérés
     _blj(BLJ_DEBUT, 1000, tb=3.8, tp=3.2)

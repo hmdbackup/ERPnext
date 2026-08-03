@@ -80,6 +80,7 @@ CHART_SCE = {
                 "account_number": "4088", "account_type": "Service Received But Not Billed"},
         },
         "Personnel - Rémunérations dues": {"account_number": "421"},
+        "Organismes sociaux": {"account_number": "453"},
         "État - TVA collectée": {"account_number": "4367", "account_type": "Tax"},
         "Comptes d'attente - Ouverture": {"account_number": "471", "account_type": "Temporary"},
     },

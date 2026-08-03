@@ -1,0 +1,251 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:nom_grille",
+ "creation": "2026-07-21 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_identification",
+  "nom_grille",
+  "centrale",
+  "column_break_identification",
+  "statut",
+  "active",
+  "section_validite",
+  "date_debut",
+  "column_break_validite",
+  "date_fin",
+  "section_base",
+  "prix_base",
+  "plancher_prix",
+  "column_break_base",
+  "plafond_prime",
+  "section_qualite",
+  "qualite_intro",
+  "tb_reference",
+  "prime_tb_par_point",
+  "column_break_qualite",
+  "tp_reference",
+  "prime_tp_par_point",
+  "section_paliers",
+  "paliers_intro",
+  "paliers",
+  "section_source",
+  "source",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_identification",
+   "fieldtype": "Section Break",
+   "label": "Identification"
+  },
+  {
+   "fieldname": "nom_grille",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nom de la grille",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "centrale",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Centrale (client)",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "column_break_identification",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "PROVISOIRE",
+   "description": "PROVISOIRE = valeurs indicatives non confirmées par la centrale. Le rapport et les factures le signalent.",
+   "fieldname": "statut",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Statut",
+   "options": "PROVISOIRE\nVALIDEE",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Une seule grille active à la fois sur une période donnée.",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "section_validite",
+   "fieldtype": "Section Break",
+   "label": "Période de validité"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date_debut",
+   "fieldtype": "Date",
+   "label": "Applicable à partir du",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_validite",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Vide = grille toujours en vigueur.",
+   "fieldname": "date_fin",
+   "fieldtype": "Date",
+   "label": "Jusqu'au"
+  },
+  {
+   "fieldname": "section_base",
+   "fieldtype": "Section Break",
+   "label": "Prix de base"
+  },
+  {
+   "fieldname": "prix_base",
+   "fieldtype": "Currency",
+   "label": "Prix de base (TND/L)",
+   "options": "TND",
+   "precision": "3",
+   "reqd": 1
+  },
+  {
+   "description": "Prix minimum garanti après primes/pénalités. 0 = pas de plancher.",
+   "fieldname": "plancher_prix",
+   "fieldtype": "Currency",
+   "label": "Plancher de prix (TND/L)",
+   "options": "TND",
+   "precision": "3"
+  },
+  {
+   "fieldname": "column_break_base",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Prime cumulée maximale. 0 = pas de plafond.",
+   "fieldname": "plafond_prime",
+   "fieldtype": "Currency",
+   "label": "Plafond de prime (TND/L)",
+   "options": "TND",
+   "precision": "3"
+  },
+  {
+   "fieldname": "section_qualite",
+   "fieldtype": "Section Break",
+   "label": "Indexation linéaire (secours)"
+  },
+  {
+   "fieldname": "qualite_intro",
+   "fieldtype": "HTML",
+   "options": "<p class=\"text-muted small\">Utilisée uniquement pour un critère qui n'a <b>aucun palier</b> défini plus bas. Les paliers priment toujours.</p>"
+  },
+  {
+   "default": "3.8",
+   "fieldname": "tb_reference",
+   "fieldtype": "Float",
+   "label": "TB de référence (%)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "prime_tb_par_point",
+   "fieldtype": "Currency",
+   "label": "Prime TB (TND/L par point de %)",
+   "options": "TND",
+   "precision": "3"
+  },
+  {
+   "fieldname": "column_break_qualite",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "3.2",
+   "fieldname": "tp_reference",
+   "fieldtype": "Float",
+   "label": "TP de référence (%)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "prime_tp_par_point",
+   "fieldtype": "Currency",
+   "label": "Prime TP (TND/L par point de %)",
+   "options": "TND",
+   "precision": "3"
+  },
+  {
+   "fieldname": "section_paliers",
+   "fieldtype": "Section Break",
+   "label": "Paliers qualité"
+  },
+  {
+   "fieldname": "paliers_intro",
+   "fieldtype": "HTML",
+   "options": "<p class=\"text-muted small\">La grille réelle de la centrale : un palier par tranche de TB / TP (et, si la ferme les mesure, germes et cellules). TB et TP s'expriment en <b>%</b>, comme dans le Bilan Lait Journalier.</p>"
+  },
+  {
+   "fieldname": "paliers",
+   "fieldtype": "Table",
+   "label": "Paliers",
+   "options": "Grille Prix Lait Palier"
+  },
+  {
+   "fieldname": "section_source",
+   "fieldtype": "Section Break",
+   "label": "Source & notes"
+  },
+  {
+   "description": "D'où viennent ces valeurs (contrat, décompte, courrier de la centrale…).",
+   "fieldname": "source",
+   "fieldtype": "Small Text",
+   "label": "Source des valeurs"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-21 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Grille Prix Lait",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "date_debut",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

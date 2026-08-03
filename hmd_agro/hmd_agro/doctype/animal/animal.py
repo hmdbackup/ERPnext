@@ -147,6 +147,7 @@ class Animal(Document):
     def on_update(self):
         self._close_active_records_on_exit()
         self._sync_sale_invoice_on_exit()
+        self._sync_actif_cheptel_on_exit()
         self._update_lot_counts()
         self._track_lot_change()
 
@@ -158,6 +159,18 @@ class Animal(Document):
             return
         from hmd_agro.hmd_agro.utils.vente_animal import sync_sale_invoice
         sync_sale_invoice(self)
+
+    def _sync_actif_cheptel_on_exit(self):
+        """RG-FIN-33 / CF-FIN-33: an immobilised cow leaving the herd
+        (VENDU/MORT/REFORME) is scrapped from the fixed-asset register — its
+        net book value hits the P&L instead of lingering on the balance
+        sheet. No-op when cheptel valuation is off. Non-blocking."""
+        if not self.has_value_changed("statut"):
+            return
+        if self.statut not in ("VENDU", "MORT", "REFORME"):
+            return
+        from hmd_agro.hmd_agro.utils.cheptel_valorisation import sortir_actif_cheptel
+        sortir_actif_cheptel(self)
 
     def _track_lot_change(self):
         """Audit log: insert an Allotement History row whenever id_lot changes.

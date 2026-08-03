@@ -64,7 +64,20 @@
   "objectif_cout_litre",
   "objectif_cout_litre_alarme",
   "pfe_iofc_jour_min",
-  "pfe_iofc_jour_orange_min"
+  "pfe_iofc_jour_orange_min",
+  "col_break_fin_3",
+  "ecart_lait_seuil_alarme_pct",
+  "maintenance_seuil_pct_ca",
+  "maintenance_seuil_alarme_pct_ca",
+  "section_personnel_cheptel",
+  "section_personnel",
+  "taux_charges_patronales_pct",
+  "section_cheptel",
+  "cheptel_intro",
+  "cheptel_mode",
+  "cheptel_duree_amortissement_ans",
+  "col_break_cheptel_1",
+  "cheptel_cout_elevage"
  ],
  "fields": [
   {
@@ -520,6 +533,95 @@
    "non_negative": 0,
    "precision": "2",
    "description": "IOFC entre ce seuil et le seuil vert → ORANGE ; en dessous → ROUGE."
+  },
+  {
+   "fieldname": "col_break_fin_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ecart_lait_seuil_alarme_pct",
+   "fieldtype": "Float",
+   "label": "Écart lait alarme (% rouge si >)",
+   "default": "10",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Perte de lait au-delà de ce % de la production saisie → ROUGE (FIN-S25). Entre le seuil orange (Bilan Lait) et celui-ci → ORANGE."
+  },
+  {
+   "fieldname": "maintenance_seuil_pct_ca",
+   "fieldtype": "Float",
+   "label": "Entretien / CA — cible (% vert si ≤)",
+   "default": "3",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Coût d'entretien des équipements rapporté au chiffre d'affaires (FIN-S32)."
+  },
+  {
+   "fieldname": "maintenance_seuil_alarme_pct_ca",
+   "fieldtype": "Float",
+   "label": "Entretien / CA — alarme (% rouge si >)",
+   "default": "6",
+   "non_negative": 1,
+   "precision": "1",
+   "description": "Entre la cible et cette valeur → ORANGE ; au-delà → ROUGE."
+  },
+  {
+   "fieldname": "section_personnel_cheptel",
+   "fieldtype": "Tab Break",
+   "label": "Personnel & Cheptel"
+  },
+  {
+   "fieldname": "section_personnel",
+   "fieldtype": "Section Break",
+   "label": "Personnel (FIN-S42)"
+  },
+  {
+   "fieldname": "taux_charges_patronales_pct",
+   "fieldtype": "Float",
+   "label": "Charges patronales (% du brut)",
+   "default": "16.57",
+   "non_negative": 1,
+   "precision": "2",
+   "description": "Taux employeur appliqué aux salariés du registre Personnel cochés « Soumis aux charges patronales » (CNSS régime agricole amélioré par défaut). Alimente le compte 647."
+  },
+  {
+   "fieldname": "section_cheptel",
+   "fieldtype": "Section Break",
+   "label": "Cheptel — valorisation (FIN-S31)"
+  },
+  {
+   "fieldname": "cheptel_intro",
+   "fieldtype": "HTML",
+   "options": "<p class=\"text-muted small\">Décision comptable : le cheptel reproducteur entre-t-il au bilan comme immobilisation amortissable, ou reste-t-il suivi en stock ? Tant que le mode vaut <b>NON_VALORISE</b>, aucune immobilisation n'est créée (comportement historique).</p>"
+  },
+  {
+   "fieldname": "cheptel_mode",
+   "fieldtype": "Select",
+   "label": "Mode de valorisation du cheptel",
+   "options": "NON_VALORISE\nACTIF_BIOLOGIQUE\nSTOCK",
+   "default": "NON_VALORISE",
+   "description": "ACTIF_BIOLOGIQUE = une immobilisation par vache (compte 225, amortie sur la durée ci-contre). STOCK = suivi en compte 37, hors périmètre du module."
+  },
+  {
+   "fieldname": "cheptel_duree_amortissement_ans",
+   "fieldtype": "Int",
+   "label": "Durée d'amortissement du cheptel (ans)",
+   "default": "5",
+   "non_negative": 1,
+   "description": "Doit rester cohérent avec la catégorie d'immobilisation « Cheptel reproducteur »."
+  },
+  {
+   "fieldname": "col_break_cheptel_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cheptel_cout_elevage",
+   "fieldtype": "Float",
+   "label": "Coût d'élevage d'une génisse (TND)",
+   "default": "2500",
+   "non_negative": 1,
+   "precision": "2",
+   "description": "Valeur d'entrée à l'actif d'une vache née sur la ferme (les animaux achetés entrent à leur prix d'achat réel)."
   }
  ],
  "index_web_pages_for_search": 0,

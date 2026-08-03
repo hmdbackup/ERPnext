@@ -381,9 +381,14 @@ function update_totals(container) {
     if (isNaN(seuil_neg)) seuil_neg = 1;
     var seuil_perte_pct = parseFloat(cfg.ecart_lait_seuil_perte_pct);
     if (isNaN(seuil_perte_pct)) seuil_perte_pct = 5;
+    var seuil_alarme_pct = parseFloat(cfg.ecart_lait_seuil_alarme_pct);
+    if (isNaN(seuil_alarme_pct)) seuil_alarme_pct = 10;
 
     var color = "var(--text-color)";
     if (ecart < -seuil_neg) color = "red";
+    // FIN-S25: la perte a désormais un prix (rapport mensuel) — le rouge
+    // signale ici le même seuil d'alarme que celui qui colore le KPI.
+    else if (brut_total > 0 && ecart > brut_total * (seuil_alarme_pct / 100)) color = "red";
     else if (brut_total > 0 && ecart > brut_total * (seuil_perte_pct / 100)) color = "orange";
     ecart_el.css("color", color);
     ecart_pct_el.css("color", color);

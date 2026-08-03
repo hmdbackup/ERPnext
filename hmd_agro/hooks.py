@@ -13,18 +13,37 @@ HMD_DOCTYPES = [
 	"Animal", "Lactation", "Traite", "Insemination", "Velage", "Avortement",
 	"Alerte", "Lot", "Batiment", "Pesee", "Etat Corporel", "Semence", "Taureau",
 	"Mere Externe", "Traitement", "Traitement Medicale", "Medicament",
-	"Aliment", "Ration", "Composition Ration"
+	"Aliment", "Ration", "Composition Ration",
+	# Finance — registre du personnel (FIN-S42) et grille prix lait (FIN-S24)
+	"Personnel", "Personnel Repartition",
+	"Grille Prix Lait", "Grille Prix Lait Palier"
+]
+
+# Custom Fields posés par HMD sur des DocTypes ERPNext core (le filtre
+# `dt in HMD_DOCTYPES` ne les attrape pas — il faut les nommer).
+#   Stock Entry-id_lot                SCRUM-123
+#   Asset-id_batiment / -id_animal    FIN-S30 / FIN-S31 (RC-FIN-53/55)
+#   Asset Repair-*                    FIN-S32 (RC-FIN-54) interventions
+CORE_CUSTOM_FIELDS = [
+	"Stock Entry-id_lot",
+	"Asset-id_batiment",
+	"Asset-id_animal",
+	"Asset Repair-type_intervention",
+	"Asset Repair-personnel",
+	"Asset Repair-reference_hmd",
 ]
 
 fixtures = [
 	{"dt": "Workspace", "filters": [["module", "=", "HMD AGRO"]]},
 	{"dt": "Property Setter", "filters": [["doc_type", "in", HMD_DOCTYPES]]},
-	{"dt": "Custom Field", "filters": [["dt", "in", HMD_DOCTYPES]]},
-	# Stock Entry.id_lot — SCRUM-123 custom field on a non-HMD doctype, so
-	# the prior filter doesn't catch it. Explicit by name.
-	{"dt": "Custom Field", "filters": [["name", "=", "Stock Entry-id_lot"]]},
-	# FIN-S30 (RC-FIN-53): CF on ERPNext core Asset — export by name
-	{"dt": "Custom Field", "filters": [["name", "=", "Asset-id_batiment"]]},
+	# UNE seule entrée « Custom Field » : `export_fixtures` réécrit
+	# fixtures/custom_field.json à chaque entrée du hook portant ce DocType,
+	# donc plusieurs entrées s'écrasent les unes les autres et seule la
+	# dernière survit à l'export.
+	{"dt": "Custom Field", "or_filters": [
+		["dt", "in", HMD_DOCTYPES],
+		["name", "in", CORE_CUSTOM_FIELDS],
+	]},
 	# Number Cards + Dashboard Charts — protect UI-created cards from being
 	# wiped on `bench migrate`. Filter by module so we only export HMD's, not
 	# ERPNext built-ins (Active Suppliers, etc.).
@@ -191,7 +210,13 @@ scheduler_events = {
  	],
  	"monthly": [
         # FIN-S21 — facture lait du mois précédent (idempotent, marqueur remarks)
-        "hmd_agro.hmd_agro.utils.facturation_lait.generate_monthly_milk_invoice"
+        "hmd_agro.hmd_agro.utils.facturation_lait.generate_monthly_milk_invoice",
+        # FIN-S42 — masse salariale du mois écoulé depuis le registre Personnel
+        # (idempotent, sans effet tant que le registre est vide)
+        "hmd_agro.hmd_agro.utils.charges_utils.post_salaires_mois_precedent",
+        # FIN-S31 — immobilise les vaches entrées en production dans le mois
+        # (no-op tant que cheptel_mode = NON_VALORISE)
+        "hmd_agro.hmd_agro.utils.cheptel_valorisation.synchroniser_cheptel"
  	],
  }
 

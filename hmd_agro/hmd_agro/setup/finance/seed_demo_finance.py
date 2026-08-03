@@ -9,10 +9,17 @@ Builds a small but complete economic month on the site :
   3. Achats seedés → Bin.valuation_rate réel (seed_demo_prices — FIN-S10)
   4. Ration affectée au lot + distribution backfillée 7 jours → coûts réels
      dans le SLE (FIN-S11)
-  5. Traites récentes (setup/seed_recent_traites) + BLJ (lait_vendu, TB/TP)
-  6. Facture lait de la semaine (FIN-S21) + vente d'un animal (FIN-S22)
-  7. Salaires ventilés + électricité (FIN-S40/S41)
-  8. Tracteur en Asset avec calendrier d'amortissement (FIN-S30)
+  5. Traites récentes (setup/seed_recent_traites) + BLJ (lait_vendu, TB/TP,
+     et un écart lait réaliste ~2 % pour que FIN-S25 ait de la matière)
+  6. Facture lait de la semaine au prix de la grille qualité (FIN-S21/S24)
+     + vente d'un animal (FIN-S22)
+  7. Registre du personnel puis masse salariale reconstruite depuis ce
+     registre + électricité (FIN-S40/S41/S42)
+  8. Tracteur en Asset avec calendrier d'amortissement (FIN-S30), son plan
+     de maintenance préventive et deux interventions (FIN-S32)
+  9. Cheptel reproducteur immobilisé (FIN-S31) — le seed bascule
+     `cheptel_mode` sur ACTIF_BIOLOGIQUE : c'est un site de démonstration,
+     la décision reste NON_VALORISE par défaut en production.
 
 Idempotent : chaque étape se re-skip (marqueurs / exists).
 
@@ -42,6 +49,30 @@ ALIMENTS = [
 MEDICAMENT = ("Amoxicilline Démo", "ANTIBIOTIQUE", 3, 25.0)   # délai lait 3 j
 SEMENCE_PRIX = 45.0
 
+# FIN-S42 — (nom, rôle, salaire brut TND, atelier principal, répartition)
+# Une équipe plausible de ferme laitière : la MO du coût/litre vient de là.
+PERSONNEL = [
+    ("Ali Ben Salah", "RESPONSABLE_TROUPEAU", 1400, "Lait",
+     [("Lait", 70), ("Élevage - Génisses", 30)]),
+    ("Mohamed Trabelsi", "OUVRIER_TRAITE", 850, "Lait", None),
+    ("Hassen Jouini", "OUVRIER_TRAITE", 850, "Lait", None),
+    ("Salah Gharbi", "SOIGNEUR", 800, "Élevage - Génisses", None),
+    ("Béchir Ayari", "TRACTORISTE", 950, "Traction",
+     [("Traction", 60), ("Cultures - Fourrage", 40)]),
+    ("Naceur Khelifi", "GARDIEN", 700, "Frais Généraux", None),
+]
+
+# FIN-S32 — interventions de démonstration sur le tracteur
+INTERVENTIONS = [
+    ("Vidange moteur + filtres", 340.0, "PREVENTIVE", -45, "4 h"),
+    ("Remplacement courroie d'alternateur", 185.0, "CURATIVE", -12, "1 jour"),
+]
+TACHES_MAINTENANCE = [
+    {"tache": "Vidange moteur", "periodicite": "Half-yearly"},
+    {"tache": "Contrôle technique", "periodicite": "Yearly"},
+    {"tache": "Graissage et contrôle pneumatiques", "periodicite": "Quarterly"},
+]
+
 
 def _step(msg):
     print(f"\n  ── {msg}")
@@ -58,10 +89,14 @@ def run():
     _prix()
     _ration_et_distribution()
     _traites_et_blj()
+    _grille_lait()
     _facture_lait()
     _vente_animal()
+    _personnel()
     _charges()
     _immobilisation()
+    _maintenance()
+    _cheptel()
 
     frappe.db.commit()
     print("\n  Démo finance seedée.\n" + "=" * 70 + "\n")
@@ -164,21 +199,29 @@ def _traites_et_blj():
             "WHERE date_traite=%s", day)[0][0])
         if prod <= 0:
             continue
+        # Vendu + CI + veau = 98 % de la production : les 2 % restants sont
+        # l'écart lait (lait perdu / non affecté) que FIN-S25 valorise.
         frappe.get_doc({
             "doctype": "Bilan Lait Journalier",
             "date": day,
-            "lait_vendu": round(prod * 0.93, 1),
+            "lait_vendu": round(prod * 0.91, 1),
             "consommation_interne": round(prod * 0.03, 1),
             "lait_veau": round(prod * 0.04, 1),
             "taux_tb_moyen": 3.9,
             "taux_tp_moyen": 3.25,
             "production_totale_saisie": round(prod, 1),
         }).insert(ignore_permissions=True)
-    print("     [done]   BLJ des 7 derniers jours")
+    print("     [done]   BLJ des 7 derniers jours (écart lait ≈ 2 %)")
+
+
+def _grille_lait():
+    _step("Grille de prix qualité de la centrale (FIN-S24)")
+    from hmd_agro.hmd_agro.setup.finance.grille_lait import setup_grille_lait
+    setup_grille_lait()
 
 
 def _facture_lait():
-    _step("Facture lait de la semaine (FIN-S21)")
+    _step("Facture lait de la semaine, prix à la grille (FIN-S21/S24)")
     from hmd_agro.hmd_agro.utils.facturation_lait import generate_milk_invoice
     generate_milk_invoice(add_days(today(), -7), add_days(today(), -1))
 
@@ -207,12 +250,41 @@ def _vente_animal():
     print(f"     [done]   {cible} VENDU @ 2500 TND")
 
 
+def _personnel():
+    _step("Registre du personnel (FIN-S42)")
+    abbr = frappe.db.get_value("Company", COMPANY, "abbr")
+    cree = 0
+    for nom, role, salaire, atelier, repartition in PERSONNEL:
+        if frappe.db.exists("Personnel", {"nom_complet": nom}):
+            continue
+        frappe.get_doc({
+            "doctype": "Personnel",
+            "nom_complet": nom,
+            "role_personnel": role,
+            "type_contrat": "CDI",
+            "date_embauche": add_days(today(), -400),
+            "statut": "ACTIF",
+            "salaire_brut_mensuel": salaire,
+            "taux_activite_pct": 100,
+            "soumis_cnss": 1,
+            "atelier": f"{atelier} - {abbr}",
+            "repartition": [
+                {"atelier": f"{cc} - {abbr}", "pourcentage": pct}
+                for cc, pct in (repartition or [])
+            ],
+        }).insert(ignore_permissions=True)
+        cree += 1
+    total = frappe.db.count("Personnel", {"statut": "ACTIF"})
+    print(f"     [done]   {cree} salarié(s) créé(s), {total} au registre")
+
+
 def _charges():
-    _step("Salaires ventilés + électricité (FIN-S40/S41)")
-    from hmd_agro.hmd_agro.utils.charges_utils import post_salaires
+    _step("Masse salariale depuis le registre + électricité (FIN-S41/S42)")
+    from hmd_agro.hmd_agro.utils.charges_utils import apercu_masse_salariale, post_salaires
     d = getdate(today())
-    post_salaires(f"{d.year}-{d.month:02d}",
-                  {"Lait": 3500, "Élevage - Génisses": 1200, "Frais Généraux": 800})
+    periode = f"{d.year}-{d.month:02d}"
+    apercu_masse_salariale(periode)
+    post_salaires(periode)
     marker = f"ELEC_{d.year}-{d.month:02d}"
     if frappe.db.get_value("Journal Entry",
                            {"user_remark": ["like", f"%{marker}%"],
@@ -271,3 +343,54 @@ def _immobilisation():
     asset.insert(ignore_permissions=True)
     asset.submit()
     print(f"     [done]   {asset.name} — 45 000 TND, 5 ans linéaire")
+
+
+def _tracteur():
+    return frappe.db.get_value(
+        "Asset", {"asset_name": "Tracteur Démo", "docstatus": 1}, "name")
+
+
+def _maintenance():
+    _step("Plan de maintenance + interventions sur le tracteur (FIN-S32)")
+    from hmd_agro.hmd_agro.setup.finance.maintenance import setup_maintenance
+    from hmd_agro.hmd_agro.utils.maintenance_utils import (
+        enregistrer_intervention, planifier_maintenance,
+    )
+
+    setup_maintenance()
+    asset = _tracteur()
+    if not asset:
+        print("     [skip]   Aucun équipement à entretenir")
+        return
+
+    planifier_maintenance(asset, [
+        {**tache, "date_debut": add_days(today(), -30)} for tache in TACHES_MAINTENANCE
+    ])
+    for description, cout, type_intervention, jours, arret in INTERVENTIONS:
+        enregistrer_intervention(
+            asset=asset, description=description, cout=cout,
+            date=add_days(today(), jours), type_intervention=type_intervention,
+            arret=arret, reference=f"DEMO_MAINT_{abs(jours)}",
+        )
+    print(f"     [done]   {len(INTERVENTIONS)} interventions + "
+          f"{len(TACHES_MAINTENANCE)} tâches préventives")
+
+
+def _cheptel():
+    _step("Cheptel reproducteur à l'actif (FIN-S31)")
+    from hmd_agro.hmd_agro.utils.cheptel_valorisation import (
+        MODE_ACTIF, mode, synchroniser_cheptel, valeur_cheptel,
+    )
+
+    # Site de démonstration : on active la valorisation pour que le bilan
+    # montre le troupeau. En production le défaut reste NON_VALORISE tant que
+    # la décision comptable n'est pas prise (cf. HMD Configuration).
+    if mode() != MODE_ACTIF:
+        frappe.db.set_single_value("HMD Configuration", "cheptel_mode", MODE_ACTIF)
+        frappe.clear_cache()
+        print(f"     [update] cheptel_mode → {MODE_ACTIF} (site de démo)")
+    resume = synchroniser_cheptel()
+    valeur = valeur_cheptel()
+    print(f"     [done]   {valeur['effectif']} vaches à l'actif — brut "
+          f"{valeur['brut']:.0f} TND, VNC {valeur['net']:.0f} TND "
+          f"({resume['crees']} créée(s) ce passage)")

@@ -86,7 +86,9 @@ def _run_inner():
     frappe.db.commit()
     si = facturation_lait.generate_milk_invoice(BLJ_DEBUT, BLJ_FIN)
     _check(bool(si), f"Facture lait postée ({si})", results)
-    ca_attendu = 1500 * facturation_lait.compute_milk_rate()
+    # Prix daté : depuis FIN-S24 le tarif dépend de la grille en vigueur à la
+    # date facturée, pas de celle d'aujourd'hui.
+    ca_attendu = 1500 * facturation_lait.compute_milk_rate(date=BLJ_FIN)
 
     je = charges_utils.post_salaires(_periode_mo(), {"Lait": 2000})
     _check(bool(je), f"Salaires postés ({je})", results)

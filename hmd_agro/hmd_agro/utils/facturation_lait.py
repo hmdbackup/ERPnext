@@ -2,15 +2,18 @@
 FIN-S21 (RG-FIN-10/11/12, RG-FIN-04) — facture lait de la période.
 
 Aggregates `Bilan Lait Journalier.lait_vendu` over a period into ONE Sales
-Invoice for the milk buyer, priced from Item Price + primes/pénalités
-qualité TB/TP (volume-weighted means over the same period).
+Invoice for the milk buyer, priced from the quality grid in force (TB/TP
+volume-weighted means over the same period).
 
-Prix (RG-FIN-10 — aucun littéral) :
-    taux = Item Price LAIT-CRU (fallback config `prix_reference_lait`)
-         + (TB_moy − `lait_tb_reference`) × `lait_prime_tb_par_point`
-         + (TP_moy − `lait_tp_reference`) × `lait_prime_tp_par_point`
-    (TB/TP en % — même unité que le BLJ ; primes par point de %,
-    négatives en dessous de la référence → pénalité)
+Prix (RG-FIN-10/13 — aucun littéral) :
+  1. `Grille Prix Lait` active à la date de facturation (FIN-S24) — prix de
+     base + paliers qualité TB/TP de la centrale. C'est le chemin nominal.
+  2. À défaut de grille : repli historique, prix plat = Item Price LAIT-CRU
+     (fallback config `prix_reference_lait`) indexé linéairement par
+     `lait_prime_tb_par_point` / `lait_prime_tp_par_point` (0 par défaut).
+     Ce repli est signalé dans les remarques de la facture — un prix plat
+     n'est pas un prix contractuel.
+    (TB/TP en % — même unité que le BLJ ; primes négatives = pénalité)
 
 Idempotence (RG-FIN-11, house pattern « marqueur remarks ») : the invoice
 carries `LAIT_FACT_<debut>_<fin>` in remarks; a re-run finds it and no-ops.
@@ -50,24 +53,43 @@ def existing_invoice(date_debut, date_fin):
     )
 
 
-def compute_milk_rate(tb_moyen=None, tp_moyen=None):
-    """Prix du litre = base Item Price + primes qualité (RG-FIN-10).
-    TB/TP None → base rate only (pas de données qualité, pas de prime)."""
+def compute_milk_rate(tb_moyen=None, tp_moyen=None, date=None, detail=False):
+    """Prix du litre à une date (RG-FIN-10/13). Grille qualité si elle existe,
+    sinon repli prix plat. TB/TP None → aucune prime (pas de donnée qualité).
+
+    detail=True retourne le décomposé {prix, prix_base, primes, grille, statut}
+    — utilisé par la facture et le pilotage pour tracer d'où sort le prix."""
+    from hmd_agro.hmd_agro.doctype.grille_prix_lait.grille_prix_lait import grille_active
+
+    grille = grille_active(date)
+    if grille:
+        return grille.prix_du_litre(tb=tb_moyen, tp=tp_moyen, detail=detail)
+
     base = frappe.db.get_value(
         "Item Price", {"item_code": ITEM_LAIT, "price_list": PRICE_LIST},
         "price_list_rate",
     )
-    rate = float(base if base is not None
-                 else get_config("prix_reference_lait", default=1.6))
+    prix_base = float(base if base is not None
+                      else get_config("prix_reference_lait", default=1.6))
+    primes = {}
     if tb_moyen:
         tb_ref = float(get_config("lait_tb_reference", default=3.8))
         prime_tb = float(get_config("lait_prime_tb_par_point", default=0.0))
-        rate += (float(tb_moyen) - tb_ref) * prime_tb
+        primes["TB"] = (float(tb_moyen) - tb_ref) * prime_tb
     if tp_moyen:
         tp_ref = float(get_config("lait_tp_reference", default=3.2))
         prime_tp = float(get_config("lait_prime_tp_par_point", default=0.0))
-        rate += (float(tp_moyen) - tp_ref) * prime_tp
-    return round(max(rate, 0), 3)
+        primes["TP"] = (float(tp_moyen) - tp_ref) * prime_tp
+    prime_totale = sum(primes.values())
+    prix = round(max(prix_base + prime_totale, 0), 3)
+    if not detail:
+        return prix
+    return {
+        "prix": prix, "prix_base": prix_base,
+        "primes": {k: round(v, 3) for k, v in primes.items() if v},
+        "prime_totale": round(prime_totale, 3),
+        "grille": None, "statut": "PRIX_PLAT",
+    }
 
 
 def _period_volumes(date_debut, date_fin):
@@ -106,7 +128,8 @@ def generate_milk_invoice(date_debut, date_fin, customer=None, submit=True):
         print(f"  [skip]   Aucun lait vendu (BLJ) sur {date_debut} → {date_fin}")
         return None
 
-    rate = compute_milk_rate(tb, tp)
+    prix = compute_milk_rate(tb, tp, date=date_fin, detail=True)
+    rate = prix["prix"]
     customer = customer or CUSTOMER_LAIT
     si = frappe.get_doc({
         "doctype": "Sales Invoice",
@@ -121,14 +144,30 @@ def generate_milk_invoice(date_debut, date_fin, customer=None, submit=True):
         }],
         "remarks": (f"{_marker(date_debut, date_fin)} — {volume:.0f} L"
                     + (f", TB {tb:.1f}" if tb else "")
-                    + (f", TP {tp:.1f}" if tp else "")),
+                    + (f", TP {tp:.1f}" if tp else "")
+                    + f" — {_libelle_prix(prix)}"),
     })
     si.insert(ignore_permissions=True)
     if submit:
         si.submit()
     print(f"  [create] Facture lait {si.name} : {volume:.0f} L @ {rate} TND/L "
-          f"= {si.grand_total} TND")
+          f"= {si.grand_total} TND ({_libelle_prix(prix)})")
     return si.name
+
+
+def _libelle_prix(prix):
+    """Trace lisible de l'origine du prix, gardée dans les remarques de la
+    facture : on doit pouvoir dire six mois plus tard pourquoi ce prix-là."""
+    if not prix.get("grille"):
+        return ("prix plat (aucune grille active — RG-FIN-13, "
+                "grille centrale à saisir)")
+    detail = ", ".join(f"{critere} {montant:+.3f}"
+                       for critere, montant in prix["primes"].items())
+    libelle = (f"grille « {prix['grille'] } » base {prix['prix_base']:.3f}"
+               + (f" ({detail})" if detail else " (aucune prime)"))
+    if prix.get("statut") == "PROVISOIRE":
+        libelle += " — GRILLE PROVISOIRE, à valider avec la centrale"
+    return libelle
 
 
 def generate_monthly_milk_invoice():

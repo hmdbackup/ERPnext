@@ -1,0 +1,234 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:PERS-{#####}",
+ "creation": "2026-07-21 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_identite",
+  "nom_complet",
+  "cin",
+  "column_break_identite",
+  "telephone",
+  "user",
+  "section_poste",
+  "role_personnel",
+  "type_contrat",
+  "column_break_poste",
+  "date_embauche",
+  "date_sortie",
+  "statut",
+  "section_remuneration",
+  "salaire_brut_mensuel",
+  "taux_activite_pct",
+  "column_break_remuneration",
+  "soumis_cnss",
+  "cout_employeur_mensuel",
+  "section_ventilation",
+  "atelier",
+  "repartition_intro",
+  "repartition",
+  "section_notes",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_identite",
+   "fieldtype": "Section Break",
+   "label": "Identité"
+  },
+  {
+   "fieldname": "nom_complet",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Nom et prénom",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cin",
+   "fieldtype": "Data",
+   "label": "CIN"
+  },
+  {
+   "fieldname": "column_break_identite",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "telephone",
+   "fieldtype": "Data",
+   "label": "Téléphone",
+   "options": "Phone"
+  },
+  {
+   "description": "Compte Frappe associé (facultatif) — permet de rattacher les interventions de maintenance et la traçabilité des saisies.",
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "Utilisateur",
+   "options": "User"
+  },
+  {
+   "fieldname": "section_poste",
+   "fieldtype": "Section Break",
+   "label": "Poste"
+  },
+  {
+   "fieldname": "role_personnel",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Rôle",
+   "options": "OUVRIER_TRAITE\nSOIGNEUR\nRESPONSABLE_TROUPEAU\nINSEMINATEUR\nVETERINAIRE\nTRACTORISTE\nMAINTENANCE\nMAGASINIER\nGARDIEN\nADMINISTRATIF\nCOMPTABLE\nAUTRE",
+   "reqd": 1
+  },
+  {
+   "default": "CDI",
+   "fieldname": "type_contrat",
+   "fieldtype": "Select",
+   "label": "Type de contrat",
+   "options": "CDI\nCDD\nSAISONNIER\nJOURNALIER"
+  },
+  {
+   "fieldname": "column_break_poste",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date_embauche",
+   "fieldtype": "Date",
+   "label": "Date d'embauche",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date_sortie",
+   "fieldtype": "Date",
+   "label": "Date de sortie"
+  },
+  {
+   "default": "ACTIF",
+   "fieldname": "statut",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Statut",
+   "options": "ACTIF\nSORTI",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_remuneration",
+   "fieldtype": "Section Break",
+   "label": "Rémunération"
+  },
+  {
+   "description": "Salaire brut pour un mois complet à 100 % d'activité.",
+   "fieldname": "salaire_brut_mensuel",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Salaire brut mensuel",
+   "options": "TND",
+   "reqd": 1
+  },
+  {
+   "default": "100",
+   "description": "Temps de présence (100 % = temps plein).",
+   "fieldname": "taux_activite_pct",
+   "fieldtype": "Percent",
+   "label": "Taux d'activité (%)"
+  },
+  {
+   "fieldname": "column_break_remuneration",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "Applique le taux de charges patronales de HMD Configuration → Personnel.",
+   "fieldname": "soumis_cnss",
+   "fieldtype": "Check",
+   "label": "Soumis aux charges patronales (CNSS)"
+  },
+  {
+   "description": "Salaire brut × taux d'activité + charges patronales. Calculé automatiquement.",
+   "fieldname": "cout_employeur_mensuel",
+   "fieldtype": "Currency",
+   "label": "Coût employeur mensuel",
+   "options": "TND",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_ventilation",
+   "fieldtype": "Section Break",
+   "label": "Ventilation analytique (RG-FIN-40)"
+  },
+  {
+   "description": "Atelier d'imputation par défaut du coût de ce salarié.",
+   "fieldname": "atelier",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Atelier principal",
+   "options": "Cost Center",
+   "reqd": 1
+  },
+  {
+   "fieldname": "repartition_intro",
+   "fieldtype": "HTML",
+   "options": "<p class=\"text-muted small\">Laisser la table vide si le salarié travaille à 100 % sur l'atelier principal. Sinon, détailler la répartition — la somme des parts doit faire 100 %.</p>"
+  },
+  {
+   "fieldname": "repartition",
+   "fieldtype": "Table",
+   "label": "Répartition multi-ateliers",
+   "options": "Personnel Repartition"
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-21 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Personnel",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "nom_complet,role_personnel,atelier",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "nom_complet",
+ "track_changes": 1
+}

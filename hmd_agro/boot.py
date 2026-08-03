@@ -14,6 +14,7 @@ JS_FIELDS = {
     "production_drop_alert_pct": -15,
     "ecart_lait_seuil_negatif_l": 1,
     "ecart_lait_seuil_perte_pct": 5,
+    "ecart_lait_seuil_alarme_pct": 10,
     # FIN-S51 — seuils économiques (coloration côté client si besoin)
     "prix_reference_lait": 1.6,
     "objectif_cout_litre": 0.65,

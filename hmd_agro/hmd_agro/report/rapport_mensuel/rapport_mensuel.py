@@ -1258,6 +1258,11 @@ def _indicateurs(ctx):
     cfg_cout_l_alm = float(get_config("objectif_cout_litre_alarme", default=0.85))
     cfg_iofc_min = float(get_config("pfe_iofc_jour_min", default=3.0))
     cfg_iofc_omn = float(get_config("pfe_iofc_jour_orange_min", default=1.5))
+    # FIN-S25 / FIN-S32 — écart lait valorisé et entretien des équipements
+    cfg_ecart_max = float(get_config("ecart_lait_seuil_perte_pct", default=5.0))
+    cfg_ecart_alm = float(get_config("ecart_lait_seuil_alarme_pct", default=10.0))
+    cfg_maint_max = float(get_config("maintenance_seuil_pct_ca", default=3.0))
+    cfg_maint_alm = float(get_config("maintenance_seuil_alarme_pct_ca", default=6.0))
 
     date_debut = ctx["date_debut"]
     date_filter = min(ctx["date_filter"], ctx["date_fin"])
@@ -1284,10 +1289,19 @@ def _indicateurs(ctx):
         frais_alim_total_ = d_["cumulative_aliment_cost"] if d_ else 0
         frais_med_ = _medicament_cost(start, end)
         # FIN-S50 — KPI économiques depuis le Grand Livre (RC-FIN-51/52)
-        from hmd_agro.hmd_agro.utils.finance_kpis import gl_sums
+        from hmd_agro.hmd_agro.utils.finance_kpis import ecart_lait, gl_sums
+        from hmd_agro.hmd_agro.utils.maintenance_utils import cout_maintenance
         gl_ = gl_sums(start, end)
         jours_ = max((getdate(end) - getdate(start)).days + 1, 1)
         iofc_ = gl_["ca_lait"] - frais_alim_total_
+        # FIN-S25 — les litres écartés, enfin chiffrés
+        ecart_ = ecart_lait(start, end)
+        # FIN-S32 — coût des interventions sur les équipements
+        maint_ = cout_maintenance(start, end)
+        vendu_ = float(frappe.db.sql("""
+            SELECT COALESCE(SUM(lait_vendu), 0) FROM `tabBilan Lait Journalier`
+            WHERE date BETWEEN %s AND %s
+        """, (start, end))[0][0] or 0)
         return {
             "ca_lait": round(gl_["ca_lait"], 2),
             "produits": round(gl_["produits"], 2),
@@ -1299,6 +1313,20 @@ def _indicateurs(ctx):
             "cout_complet_l": round(gl_["charges"] / prod_, 3) if prod_ else 0,
             "iofc": round(iofc_, 2),
             "iofc_vl_jour": round(iofc_ / vl_ / jours_, 2) if vl_ else 0,
+            # RC-FIN-41 — la MO devient un coût unitaire (registre Personnel)
+            "cout_mo_l": round(gl_["mo"] / prod_, 3) if prod_ else 0,
+            "cout_mo_vp": round(gl_["mo"] / vp_, 2) if vp_ else 0,
+            # RC-FIN-14 — écart lait valorisé
+            "ecart_litres": ecart_["litres_perdus"],
+            "ecart_valeur": ecart_["valeur"],
+            "ecart_pct": ecart_["pct_production"],
+            "prix_litre": ecart_["prix_litre"],
+            "prix_moyen_realise": round(gl_["ca_lait"] / vendu_, 3) if vendu_ else 0,
+            # RC-FIN-54 — entretien des équipements
+            "entretien": round(gl_["entretien"], 2),
+            "interventions": maint_["interventions"],
+            "entretien_pct_ca": (round(gl_["entretien"] / gl_["produits"] * 100, 2)
+                                 if gl_["produits"] else 0),
             "vp": vp_, "vl": vl_, "vt": vt_,
             "prod": prod_, "concentre": concentre_, "ms_total": ms_total_,
             "lmv": round(prod_ / vp_, 1) if vp_ else 0,
@@ -1446,7 +1474,53 @@ def _indicateurs(ctx):
                                green_min=cfg_iofc_min,
                                orange_min=cfg_iofc_omn),
             valeur_m1=m1["iofc_vl_jour"], direction="up"),
+
+        # ── Main d'œuvre unitaire (FIN-S42) — la MO vient du registre
+        # Personnel, elle a donc un coût par litre et par vache comme
+        # l'alimentation, et non plus un montant global sans dénominateur.
+        row("Coût Main d'Œuvre / L", cur["cout_mo_l"], "DT/L",
+            valeur_m1=m1["cout_mo_l"], direction="down"),
+        row("Coût Main d'Œuvre / Vache Présente", cur["cout_mo_vp"], "DT/tête",
+            valeur_m1=m1["cout_mo_vp"], direction="down"),
+
+        # ── Écart lait valorisé (FIN-S25) — les litres qui manquent à l'appel,
+        # convertis au prix du litre de la période.
+        row("Écart Lait (perte)", cur["ecart_litres"], "L",
+            valeur_m1=m1["ecart_litres"], direction="down"),
+        row("Écart Lait / Production", cur["ecart_pct"], "%",
+            indicator=_kpi_ind(cur["ecart_pct"] or None,
+                               green_max=cfg_ecart_max,
+                               orange_max=cfg_ecart_alm),
+            valeur_m1=m1["ecart_pct"], direction="down"),
+        row("Valeur de l'Écart Lait", cur["ecart_valeur"], "DT",
+            valeur_m1=m1["ecart_valeur"], direction="down"),
+        row("Prix Moyen Réalisé du Litre", cur["prix_moyen_realise"], "DT/L",
+            valeur_m1=m1["prix_moyen_realise"], direction="up"),
+
+        # ── Entretien des équipements (FIN-S32) — on amortissait le matériel
+        # sans savoir ce qu'il coûte à entretenir.
+        row("Frais Entretien & Réparations (615)", cur["entretien"], "DT",
+            valeur_m1=m1["entretien"], direction="down"),
+        row("Interventions sur Équipements", cur["interventions"], "nb",
+            valeur_m1=m1["interventions"]),
+        row("Entretien / Produit Brut", cur["entretien_pct_ca"], "%",
+            indicator=_kpi_ind(cur["entretien_pct_ca"] or None,
+                               green_max=cfg_maint_max,
+                               orange_max=cfg_maint_alm),
+            valeur_m1=m1["entretien_pct_ca"], direction="down"),
     ]
+
+    # ── Cheptel immobilisé (FIN-S31) — n'apparaît que si la valorisation est
+    # activée : sinon la ligne afficherait un 0 qui ressemble à une anomalie
+    # alors que c'est une décision comptable assumée.
+    from hmd_agro.hmd_agro.utils.cheptel_valorisation import MODE_ACTIF, valeur_cheptel
+    cheptel = valeur_cheptel(date_filter)
+    if cheptel["mode"] == MODE_ACTIF:
+        data.extend([
+            row("Cheptel Immobilisé (effectif)", cheptel["effectif"], "têtes"),
+            row("Cheptel — Valeur Brute", cheptel["brut"], "DT"),
+            row("Cheptel — Valeur Nette (VNC)", cheptel["net"], "DT"),
+        ])
 
     return columns, data
 

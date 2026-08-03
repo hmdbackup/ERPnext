@@ -37,6 +37,15 @@ COST_CENTERS = [
 # Accounting Dimensions on custom doctypes (Atelier = the Cost Center axis itself)
 DIMENSIONS = ["Lot", "Batiment"]
 
+# Comptes ajoutés au plan APRÈS le premier import du chart. `create_charts` ne
+# rejoue pas sur un plan existant : ces comptes sont créés un par un sous la
+# racine de leur root_type, idempotents.
+# (account_number, nom, root_type, account_type)
+EXTRA_ACCOUNTS = [
+    # FIN-S42 — contrepartie des charges patronales de la paie
+    ("453", "Organismes sociaux", "Liability", ""),
+]
+
 # (template title, rate %, tax account number)  — data seed, editable in UI after
 SALES_TVA = [
     ("TVA collectée 19%", 19.0),
@@ -72,6 +81,11 @@ COMPANY_ACCOUNT_DEFAULTS = {
 }
 DEFAULT_COST_CENTER = "Frais Généraux"
 
+# Exercices antérieurs ouverts en plus de l'exercice courant : la reprise
+# d'historique (bascule, restauration de production) poste des mouvements
+# datés d'avant l'année en cours.
+EXERCICES_ANTERIEURS = 3
+
 
 def _acc(number):
     """Account name for an SCE account_number on COMPANY (None if missing)."""
@@ -89,6 +103,7 @@ def setup_socle_comptable():
     _ensure_currency()
     _ensure_company()
     _replace_chart()
+    _ensure_extra_accounts()
     _ensure_fiscal_year()
     _ensure_cost_centers()
     _set_company_defaults()
@@ -187,22 +202,68 @@ def _replace_chart():
     print(f"  [create] Plan SCE : {new_count} comptes créés")
 
 
-def _ensure_fiscal_year():
-    year = getdate(nowdate()).year
-    exists = frappe.db.exists(
-        "Fiscal Year",
-        {"year_start_date": ("<=", nowdate()), "year_end_date": (">=", nowdate())},
+def _root_account(root_type):
+    """Compte racine (groupe) du root_type — premier groupe dans l'ordre de
+    l'arbre. (`parent_account` vaut NULL sur les racines : un filtre
+    `["in", ["", None]]` ne les trouve pas, SQL `IN` ignorant NULL.)"""
+    return frappe.db.get_value(
+        "Account",
+        {"company": COMPANY, "root_type": root_type, "is_group": 1},
+        "name",
+        order_by="lft asc",
     )
-    if exists:
-        print(f"  [skip]   Fiscal Year couvrant {nowdate()} existe ({exists})")
-        return
-    frappe.get_doc({
-        "doctype": "Fiscal Year",
-        "year": str(year),
-        "year_start_date": f"{year}-01-01",
-        "year_end_date": f"{year}-12-31",
-    }).insert(ignore_permissions=True)
-    print(f"  [create] Fiscal Year {year}")
+
+
+def _ensure_extra_accounts():
+    """Crée les comptes ajoutés au plan après le premier import (EXTRA_ACCOUNTS).
+    Un site déjà déployé ne rejoue pas `create_charts` — sans ça, les nouveaux
+    comptes n'existeraient que sur les instances neuves."""
+    for number, nom, root_type, account_type in EXTRA_ACCOUNTS:
+        if _acc(number):
+            print(f"  [skip]   Compte {number} {nom}")
+            continue
+        parent = _root_account(root_type)
+        if not parent:
+            print(f"  [warn]   Racine {root_type} introuvable — compte {number} ignoré")
+            continue
+        doc = frappe.get_doc({
+            "doctype": "Account",
+            "account_name": nom,
+            "account_number": number,
+            "parent_account": parent,
+            "company": COMPANY,
+            "root_type": root_type,
+            "is_group": 0,
+        })
+        if account_type:
+            doc.account_type = account_type
+        doc.insert(ignore_permissions=True)
+        print(f"  [create] Compte {number} {nom} (sous {parent})")
+
+
+def _ensure_fiscal_year():
+    """Exercice courant + les EXERCICES_ANTERIEURS précédents.
+
+    Les années passées ne sont pas un luxe : depuis FIN-S11 toute sortie de
+    stock poste au Grand Livre, donc reprendre un historique (restauration de
+    production, import de mouvements antérieurs) échoue avec un
+    « Date … is not in any active Fiscal Year » si l'exercice manque."""
+    annee_courante = getdate(nowdate()).year
+    for annee in range(annee_courante - EXERCICES_ANTERIEURS, annee_courante + 1):
+        couvert = frappe.db.exists("Fiscal Year", {
+            "year_start_date": ("<=", f"{annee}-12-31"),
+            "year_end_date": (">=", f"{annee}-01-01"),
+        })
+        if couvert:
+            print(f"  [skip]   Fiscal Year {annee} couvert ({couvert})")
+            continue
+        frappe.get_doc({
+            "doctype": "Fiscal Year",
+            "year": str(annee),
+            "year_start_date": f"{annee}-01-01",
+            "year_end_date": f"{annee}-12-31",
+        }).insert(ignore_permissions=True)
+        print(f"  [create] Fiscal Year {annee}")
 
 
 def _root_cost_center():

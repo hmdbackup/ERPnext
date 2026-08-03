@@ -64,6 +64,7 @@ def setup_immobilisations():
     _ensure_location()
     _ensure_asset_categories()
     _ensure_asset_batiment_field()
+    _ensure_asset_animal_field()
     _ensure_auto_depreciation()
     _ensure_suppliers()
     _ensure_mode_of_payment_accounts()
@@ -124,6 +125,27 @@ def _ensure_asset_batiment_field():
         "insert_after": "location",
     }).insert(ignore_permissions=True)
     print("  [create] Custom Field Asset-id_batiment (Link → Batiment)")
+
+
+def _ensure_asset_animal_field():
+    """FIN-S31 (RC-FIN-55) — relie l'immobilisation à la vache qu'elle
+    représente. C'est la clé d'idempotence de `cheptel_valorisation` : une
+    vache, une Asset. Fixture exportée par nom dans hooks.py."""
+    if frappe.db.exists("Custom Field", "Asset-id_animal"):
+        print("  [skip]   Custom Field Asset-id_animal")
+        return
+    frappe.get_doc({
+        "doctype": "Custom Field",
+        "dt": "Asset",
+        "fieldname": "id_animal",
+        "label": "Animal HMD",
+        "fieldtype": "Link",
+        "options": "Animal",
+        "read_only": 1,
+        "description": "Vache reproductrice immobilisée (FIN-S31).",
+        "insert_after": "id_batiment",
+    }).insert(ignore_permissions=True)
+    print("  [create] Custom Field Asset-id_animal (Link → Animal)")
 
 
 def _ensure_auto_depreciation():

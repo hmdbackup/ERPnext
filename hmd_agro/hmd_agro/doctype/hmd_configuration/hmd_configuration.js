@@ -48,6 +48,12 @@ const SECTION_DEFAULTS = {
         pfe_3ia_plus_max: 15,
         pfe_3ia_plus_orange_max: 25,
     },
+    personnel_cheptel: {
+        taux_charges_patronales_pct: 16.57,
+        cheptel_mode: "NON_VALORISE",
+        cheptel_duree_amortissement_ans: 5,
+        cheptel_cout_elevage: 2500,
+    },
 };
 
 const SECTION_LABELS = {
@@ -56,6 +62,7 @@ const SECTION_LABELS = {
     allotement: __("Allotement JL"),
     bilan_lait: __("Bilan Lait"),
     seuils_pfe: __("Seuils PFE"),
+    personnel_cheptel: __("Personnel & Cheptel"),
 };
 
 frappe.ui.form.on("HMD Configuration", {
