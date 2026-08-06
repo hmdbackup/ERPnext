@@ -37,8 +37,9 @@ const SECTION_DEFAULTS = {
     seuils_pfe: {
         pfe_lc_optimal_min: 2.0,
         pfe_lc_optimal_max: 2.4,
-        pfe_lc_alarm_min: 1.5,
+        pfe_lc_alarm_min: 1.8,
         pfe_lc_alarm_max: 3.0,
+        pfe_lc_cible: 2.2,
         pfe_efficacite_min: 1.4,
         pfe_efficacite_orange_min: 1.0,
         pfe_persistance_min: 0.85,
@@ -49,7 +50,8 @@ const SECTION_DEFAULTS = {
         pfe_3ia_plus_orange_max: 25,
     },
     personnel_cheptel: {
-        taux_charges_patronales_pct: 16.57,
+        taux_charges_patronales_pct: 30,
+        equipement_cout_horaire_defaut: 25,
         cheptel_mode: "NON_VALORISE",
         cheptel_duree_amortissement_ans: 5,
         cheptel_cout_elevage: 2500,

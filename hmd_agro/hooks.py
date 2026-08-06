@@ -16,18 +16,24 @@ HMD_DOCTYPES = [
 	"Aliment", "Ration", "Composition Ration",
 	# Finance — registre du personnel (FIN-S42) et grille prix lait (FIN-S24)
 	"Personnel", "Personnel Repartition",
-	"Grille Prix Lait", "Grille Prix Lait Palier"
+	# RH (A2) — historique de salaire immuable et primes
+	"Personnel Salaire Historique", "Prime Personnel",
+	"Grille Prix Lait", "Grille Prix Lait Palier",
+	# Finance — historisation stricte des recettes lait (FIN-B1)
+	"Decompte Lait Mensuel",
 ]
 
 # Custom Fields posés par HMD sur des DocTypes ERPNext core (le filtre
 # `dt in HMD_DOCTYPES` ne les attrape pas — il faut les nommer).
 #   Stock Entry-id_lot                SCRUM-123
 #   Asset-id_batiment / -id_animal    FIN-S30 / FIN-S31 (RC-FIN-53/55)
+#   Asset-cout_horaire                TASK B3 coût horaire équipement
 #   Asset Repair-*                    FIN-S32 (RC-FIN-54) interventions
 CORE_CUSTOM_FIELDS = [
 	"Stock Entry-id_lot",
 	"Asset-id_batiment",
 	"Asset-id_animal",
+	"Asset-cout_horaire",
 	"Asset Repair-type_intervention",
 	"Asset Repair-personnel",
 	"Asset Repair-reference_hmd",

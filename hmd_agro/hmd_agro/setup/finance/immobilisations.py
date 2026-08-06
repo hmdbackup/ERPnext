@@ -13,6 +13,8 @@ Seeds the ERPNext Asset module on the SCE chart:
   • Location « Ferme HMD » (requise par Asset).
   • Custom Field `Asset-id_batiment` (Link → Batiment) — RC-FIN-53, exporté
     par nom dans hooks.py (pattern Stock Entry-id_lot).
+  • Custom Field `Asset-cout_horaire` (Currency, DT/h) — TASK B3, vide →
+    défaut `equipement_cout_horaire_defaut` (25 DT/h) de HMD Configuration.
   • Accounts Settings : booking automatique des dotations.
 
 EPIC E (FIN-S40) : les comptes de charges (606/61x/62x/64x), les modèles TVA
@@ -65,6 +67,7 @@ def setup_immobilisations():
     _ensure_asset_categories()
     _ensure_asset_batiment_field()
     _ensure_asset_animal_field()
+    _ensure_asset_cout_horaire_field()
     _ensure_auto_depreciation()
     _ensure_suppliers()
     _ensure_mode_of_payment_accounts()
@@ -130,9 +133,23 @@ def _ensure_asset_batiment_field():
 def _ensure_asset_animal_field():
     """FIN-S31 (RC-FIN-55) — relie l'immobilisation à la vache qu'elle
     représente. C'est la clé d'idempotence de `cheptel_valorisation` : une
-    vache, une Asset. Fixture exportée par nom dans hooks.py."""
+    vache, une Asset. Visible en liste et en filtre pour que l'utilisateur
+    retrouve la vache derrière l'Asset (TASK A1). Fixture exportée par nom
+    dans hooks.py."""
     if frappe.db.exists("Custom Field", "Asset-id_animal"):
-        print("  [skip]   Custom Field Asset-id_animal")
+        # Update branch (existing installs): surface the field in list view
+        # and standard filters — same posture as _ensure_mode_of_payment_accounts.
+        current = frappe.db.get_value(
+            "Custom Field", "Asset-id_animal",
+            ["in_list_view", "in_standard_filter"], as_dict=True)
+        if current.in_list_view and current.in_standard_filter:
+            print("  [skip]   Custom Field Asset-id_animal")
+            return
+        frappe.db.set_value("Custom Field", "Asset-id_animal",
+                            {"in_list_view": 1, "in_standard_filter": 1},
+                            update_modified=False)
+        frappe.clear_cache(doctype="Asset")
+        print("  [update] Custom Field Asset-id_animal (visible en liste et filtre)")
         return
     frappe.get_doc({
         "doctype": "Custom Field",
@@ -142,10 +159,32 @@ def _ensure_asset_animal_field():
         "fieldtype": "Link",
         "options": "Animal",
         "read_only": 1,
+        "in_list_view": 1,
+        "in_standard_filter": 1,
         "description": "Vache reproductrice immobilisée (FIN-S31).",
         "insert_after": "id_batiment",
     }).insert(ignore_permissions=True)
     print("  [create] Custom Field Asset-id_animal (Link → Animal)")
+
+
+def _ensure_asset_cout_horaire_field():
+    """TASK B3 — coût horaire de l'équipement (DT/h). Laissé vide, le
+    résolveur `maintenance_utils.cout_horaire` retombe sur le défaut de
+    HMD Configuration (`equipement_cout_horaire_defaut`, 25 DT/h). Fixture
+    exportée par nom dans hooks.py (pattern SCRUM-123)."""
+    if frappe.db.exists("Custom Field", "Asset-cout_horaire"):
+        print("  [skip]   Custom Field Asset-cout_horaire")
+        return
+    frappe.get_doc({
+        "doctype": "Custom Field",
+        "dt": "Asset",
+        "fieldname": "cout_horaire",
+        "label": "Coût horaire (DT/h)",
+        "fieldtype": "Currency",
+        "description": "Vide → défaut de HMD Configuration (25 DT/h)",
+        "insert_after": "id_animal",
+    }).insert(ignore_permissions=True)
+    print("  [create] Custom Field Asset-cout_horaire (Currency)")
 
 
 def _ensure_auto_depreciation():
