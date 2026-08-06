@@ -31,6 +31,7 @@ Run:
 import frappe
 from frappe.utils import flt, get_datetime, getdate, today
 
+from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.utils.stock_utils import DEFAULT_COMPANY as COMPANY
 
 COMPTE_ENTRETIEN = "615"
@@ -312,6 +313,20 @@ def _prochaine_echeance(periodicite, date_debut):
 
 
 # ─── Lectures ────────────────────────────────────────────────────────────────
+
+def cout_horaire(asset_name):
+    """Coût horaire d'un équipement en DT/h (TASK B3).
+
+    Résolution : `Asset.cout_horaire` s'il est renseigné, sinon le défaut
+    `equipement_cout_horaire_defaut` de HMD Configuration (25 DT/h).
+    NOTE : la saisie des heures d'utilisation par équipement n'est pas
+    encore conçue — ce résolveur ne fait que fournir le taux.
+    """
+    valeur = flt(frappe.db.get_value("Asset", asset_name, "cout_horaire"))
+    if valeur:
+        return valeur
+    return flt(get_config("equipement_cout_horaire_defaut", default=25))
+
 
 def cout_maintenance(date_debut, date_fin):
     """Coût d'entretien de la période, lu au Grand Livre (compte 615) et
