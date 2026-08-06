@@ -1,0 +1,111 @@
+Issue Type,Summary,Epic Name,Epic Link,Description,Labels
+Story,FIN-S80 Afficher le N° travail sur les assets cheptel,,Immobilisations,"En tant qu'utilisateur, je veux voir le numero de travail de la vache (ex: 0122) et non l'ID technique (ex: 0000000122) dans la liste des assets afin d'identifier les animaux d'un coup d'oeil.
+
+Criteres d'acceptation:
+- asset_name = ""Vache <nom_metier>"" a la creation de l'actif cheptel.
+- Un renommage de l'animal (nouvelle boucle) ou un changement de nom_metier repropage le titre sur l'Asset (frappe.db.set_value, actifs soumis).
+- Le champ Asset-id_animal est visible en liste et en filtre standard.
+- Patch v1_8 rename_assets_cheptel retitre idempotemment les assets existants.
+
+Statut: livre (commit branche finance/socle-comptable). Origine: reunion 05/08/2026, remarque de M. Samir (40:00-56:00).",finance reunion-2026-08-05
+Story,FIN-S81 Identification provisoire au velage puis boucle officielle,,Cheptel,"En tant qu'eleveur, je veux qu'un veau recoive instantanement un ID provisoire au velage puis enregistrer plus tard sa boucle officielle tunisienne, l'identification officielle devenant non modifiable.
+
+Criteres d'acceptation:
+- Les IDs auto-generes au velage sont dans la bande reservee 99xxxxxxxx et flagges identification_provisoire=1.
+- Un ID officiel n'est pas renommable (ERR-ANI-01), sauf System Manager.
+- Methode enregistrer_boucle_officielle + bouton sur la fiche Animal (visible si provisoire): format 10 chiffres (ERR-ANI-02), unicite (ERR-ANI-03), animal provisoire uniquement (ERR-ANI-04); renomme, efface le flag, resynchronise nom_metier et l'asset.
+
+Statut: livre. DECISION CLIENT: confirmer qu'aucune boucle reelle ne commence par 99.",finance reunion-2026-08-05
+Story,FIN-S82 Charges patronales 30% par defaut surchargeable par salarie,,Personnel,"En tant que gerant, je veux un taux de charges patronales par defaut de 30% dans la configuration, applicable a tous mais modifiable sur chaque fiche employe.
+
+Criteres d'acceptation:
+- HMD Configuration.taux_charges_patronales_pct par defaut a 30 (patch v1_8: migre l'ancien defaut 16.57 vers 30, respecte toute valeur personnalisee).
+- Champ Personnel.taux_charges_patronales_pct (vide = taux global); resolveur taux_charges_effectif utilise partout (cout employeur, masse salariale).
+
+Statut: livre. Origine: reunion 05/08/2026 (29:50-38:40).",finance reunion-2026-08-05
+Story,FIN-S83 Historique de salaire immuable,,Personnel,"En tant que gerant, je veux qu'une augmentation de salaire aujourd'hui ne modifie jamais les charges deja calculees des mois passes.
+
+Criteres d'acceptation:
+- Child table Personnel Salaire Historique: toute modification de remuneration ajoute une ligne datee; les lignes passees sont non modifiables et non supprimables (ERR-PERS-09).
+- masse_salariale(periode) resout la remuneration effective a la fin du mois calcule depuis l'historique (repli valeurs vives si vide).
+- Le controle de coherence Registre/Grand Livre 64x ne genere plus de fausse alerte apres une augmentation.
+- Patch v1_8: une ligne d'historique initiale par employe existant.
+
+Statut: livre.",finance reunion-2026-08-05
+Story,FIN-S84 Attribution groupee de primes,,Personnel,"En tant que gerant, je veux cocher plusieurs employes et leur attribuer une prime commune (ex: prime de l'Aid 50 DT) en un clic.
+
+Criteres d'acceptation:
+- DocType Prime Personnel (employe, periode YYYY-MM, montant, motif); une prime touche uniquement son mois.
+- Action de liste ""Attribuer une prime"" sur Personnel (selection multiple -> dialogue -> creation en masse via attribuer_prime_bulk).
+- Les primes du mois entrent dans la masse salariale et l'ecriture 640/647 du mois.
+
+Statut: livre. DECISION CLIENT: les primes sont-elles toutes soumises CNSS? Traitement d'une prime ajoutee apres cloture du mois?",finance reunion-2026-08-05
+Story,FIN-S85 Decompte lait mensuel fige (historisation des recettes),,Recettes,"En tant que gerant, je veux que les recettes lait d'un mois clos soient figees: modifier une grille de prix aujourd'hui ne doit jamais reecrire les chiffres passes.
+
+Criteres d'acceptation:
+- DocType soumis Decompte Lait Mensuel: volumes, TB/TP ponderes, grille appliquee, decomposition du prix (base, prime qualite, prime quantite, ajustement), facture liee - fige au submit.
+- generate_milk_invoice cree/complete le decompte et facture a son prix_final; idempotence par decompte soumis.
+- finance_kpis.ecart_lait lit le decompte soumis des periodes closes (plus de recalcul live).
+- Une grille referencee par un decompte soumis devient non modifiable/non supprimable (ERR-GRL-06) - versionner par dates.
+- Patch v1_8 backfill: un decompte fige par facture LAIT_FACT existante.
+
+Statut: livre.",finance reunion-2026-08-05
+Story,FIN-S86 Bonus quantite et ajustement mensuel manuel,,Recettes,"En tant que gerant, je veux le bonus de quantite (paye plus cher quand on livre plus) et un ajustement manuel de bonification pour un mois donne.
+
+Criteres d'acceptation:
+- Critere VOLUME dans les paliers de grille (bornes en litres/mois), integre au calcul du prix du litre.
+- Champ ajustement_manuel + motif sur le Decompte Lait Mensuel, repercute sur la facture.
+
+Statut: livre. Reste hors perimetre (stories futures): multi-acheteurs, grille par centrale, prorata intra-mois.",finance reunion-2026-08-05
+Story,FIN-S87 Seuils indicateur Lait/Concentre (rouge < 1.8 - cible 2.2),,Pilotage,"En tant que gerant, je veux que le ratio litres de lait par kg de concentre s'affiche en rouge sous 1,8 avec une cible affichee a 2,2.
+
+Criteres d'acceptation:
+- pfe_lc_alarm_min passe a 1.8 (patch v1_8, respecte une valeur personnalisee differente de l'ancien defaut 1.5); nouveau pfe_lc_cible=2.2 seede.
+- Cible affichee dans le libelle de la ligne L/C du rapport mensuel; meme coloration sur la Number Card 7 jours.
+- Seuils pfe_lc_* exposes au JS via frappe.boot.hmd_config.
+
+Statut: livre. Origine: reunion 05/08/2026 (06:00-09:00).",finance reunion-2026-08-05
+Story,FIN-S88 Cout du litre hors amortissement et libelle IOFC,,Pilotage,"En tant que gerant, je veux lire le cout du litre hors amortissement en sortie de rapport et comprendre l'acronyme IOFC.
+
+Criteres d'acceptation:
+- Ligne ""Cout du Litre hors Amortissement"" = (charges - amortissements)/litres dans le rapport mensuel, avec comparaison M-1.
+- Libelles ""IOFC (Income Over Feed Cost)"" partout (rapport, cartes).
+
+Statut: livre.",finance reunion-2026-08-05
+Story,FIN-S89 Rapport de performance consolide hebdo/mensuel exportable,,Pilotage,"En tant que gerant, je veux une vue unique hebdomadaire ou mensuelle: mouvements du cheptel, production, cout des rations, charges RH et mecanique - avec un export propre vers Excel (pas de PDF complexe).
+
+Criteres d'acceptation:
+- Script Report Rapport Performance (filtres Semaine/Mois + date) avec valeurs numeriques typees -> export CSV/Excel natif propre pour templates externes (VLOOKUP).
+- Sections: mouvements cheptel (naissances, velages, achats, ventes qty+DT, morts, reformes, effectif debut/fin), production, alimentation (couts + L/C colore), charges GL (MO 64x, entretien 615, amortissements 68x, EBE, resultat) + maintenance, couts unitaires (dont hors amortissement, IOFC).
+
+Statut: livre. Question ouverte: raccourci Workspace a exporter apres migrate.",finance reunion-2026-08-05
+Story,FIN-S90 Tableau d'amortissement consolide,,Immobilisations,"En tant que gerant, je veux un tableau unique de tous les actifs (vaches, tracteurs, materiel) comparable aux etats de l'expert-comptable.
+
+Criteres d'acceptation:
+- Script Report Tableau Amortissement en francais: ID actif, designation, categorie, animal, valeur initiale, dates acquisition/entree/sortie, duree en mois, mois amortis, amortissement cumule, reste a amortir, statut; totaux; actifs sortis inclus par defaut.
+- Compatible v15 (Asset Depreciation Schedule); remplace les ledgers natifs supprimes; Fixed Asset Register reste disponible.
+
+Statut: livre. Origine: reunion 05/08/2026 (00:00-02:50).",finance reunion-2026-08-05
+Story,FIN-S91 Cout horaire par equipement,,Immobilisations,"En tant que gerant, je veux un cout horaire d'utilisation par equipement (defaut 25 DT/h configurable) pour imputer la mecanique aux ateliers et au cout du litre.
+
+Criteres d'acceptation:
+- Config equipement_cout_horaire_defaut (25 DT/h, patch v1_8) + champ Asset.cout_horaire surchargeable.
+- Resolveur maintenance_utils.cout_horaire(asset).
+
+Statut: livre partiellement - la saisie des heures d'utilisation reste a concevoir (DECISION: compteur horaire? DocType Utilisation Equipement?). Option 2 (la plus simple) retenue en reunion.",finance reunion-2026-08-05
+Story,FIN-S92 Alignement des versions et durcissement du deploiement,,Exploitation,"En tant qu'equipe, nous devons tous voir la meme version (le site affichait une version vieille de 2 mois).
+
+Cause racine identifiee: le travail finance vit sur finance/socle-comptable jamais fusionnee dans main (branche construite par l'image Docker), build avec cache Docker pouvant resservir de vieilles couches, version d'app figee a 0.0.1 rendant les builds indistinguables.
+
+Criteres d'acceptation:
+- Version hmd_agro 0.2.0 (bump a chaque deploiement) visible dans Aide > A propos.
+- erpnext pinne au tag v15.95.2 dans deploy/apps.json; build-hmd.sh en --no-cache par defaut.
+- DEPLOY.md: procedure de mise a jour revisee + verification des versions.
+- runbook_alignement_versions.md: etapes serveur (Aziz), utilisateurs (Siwar/Soumaya: hard refresh + capture A propos), benchs dev.
+
+Statut: livre (repo). ACTION EN ATTENTE: fusion finance/socle-comptable -> main par Mohamed Slim apres validation, puis rebuild serveur selon runbook.",finance reunion-2026-08-05
+Story,FIN-S93 Cout de revient genisse et facturation interne du lait,,Couts genisses,"En tant que gerant, je veux connaitre le cout de revient d'une genisse de la naissance a 18-22 mois pour decider de la vendre a 3 mois ou de l'elever.
+
+Contenu: facturation interne du lait bu (lait_veau valorise vers l'atelier genisses), couts ration par lot, quote-part mecanique (cout horaire equipement), main d'oeuvre ventilee par atelier, aide a la decision vendre vs elever.
+
+Statut: specification livree (spec_cout_genisse_facturation_interne.md) - implementation a planifier apres validation des questions ouvertes (prix du lait interne, comptes de cession, courbe d'allaitement, prix de marche, perimetre males, taux de perte).",finance reunion-2026-08-05

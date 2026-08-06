@@ -16,6 +16,35 @@ ses stories Jira `FIN-S*` (backlog `finance_backlog_jira.csv`).
 | `5d0e03b` | G — Bascule & droits | S60, S61 | Rôle « Éleveur HMD » (zéro accès comptable — test 8/8), procédure a-nouveaux (`BASCULE.md`), seed démo E2E |
 | `4403f05` | H — Données manquantes | S24, S25, S31, S32, S42, S70 | Les six trous restants : registre Personnel, interventions équipements, écart lait valorisé, grille prix qualité, cheptel à l'actif, contrôle de cohérence (détail ci-dessous) |
 
+## Réunion 05/08/2026 — corrections M. Samir (stories S80–S93)
+
+Backlog dédié : `finance_backlog_jira_reunion_2026-08-05.csv` ; compte-rendu :
+`reunion_2026-08-05/compte_rendu.md`. Patches `v1_8` appliqués par
+`bench migrate`.
+
+| Commit | Stories | Contenu |
+|---|---|---|
+| `a3ff762` | S80–S91 (socle) | Config v1_8 : charges patronales 30 %, `pfe_lc_cible` 2,2, alarme L/C 1,8, coût horaire équipement 25 DT/h ; registre des 5 patches ; fixtures partagées |
+| `78b7e5b` | S80, S81 | Assets cheptel titrés au **N° travail** (+ patch de reprise, resync au renommage) ; ID provisoire `99999xxxxx` au vêlage → `enregistrer_boucle_officielle`, ID officiel verrouillé (ERR-ANI-01..04) |
+| `77ac89e` | S82, S83, S84 | Taux charges surchargeable par salarié ; **historique de salaire immuable** (taux effectif figé par ligne, `masse_salariale` datée) ; DocType `Prime Personnel` + action groupée « Attribuer une prime » (refus mois posté ERR-PRIME-04) |
+| `84e55ec` | S85, S86 | **Décompte Lait Mensuel** soumis = recettes figées par période (ERR-DLM-04..06), grille verrouillée après règlement (ERR-GRL-06), backfill des factures existantes ; palier VOLUME + ajustement manuel motivé |
+| `17f0e4e` | S87, S88, S89 | L/C rouge < 1,8 · cible 2,2 (rapport + Number Card + boot JS) ; « Coût du Litre hors Amortissement » ; IOFC explicité ; rapport **Rapport Performance** (Semaine/Mois, export Excel propre) |
+| `c770be5` | S90, S91 | Rapport **Tableau Amortissement** (durée/mois amortis/cumul/restant, sortis inclus) ; champ `Asset.cout_horaire` + résolveur |
+| `593bc01` | S92 | Version 0.2.0, erpnext épinglé v15.95.2, build `--no-cache`, DEPLOY.md révisé, `runbook_alignement_versions.md` (cause racine du site obsolète) |
+| *(ce commit)* | S93 | Spécification coût de revient génisse + facturation interne (`spec_cout_genisse_facturation_interne.md`) — implémentation après validation |
+
+Nouveaux tests (à exécuter sur bench après `migrate` — non exécutés ici) :
+`test_decompte_lait`, `test_rapport_performance`, `test_tableau_amortissement`,
+et extensions de `test_cheptel`, `test_full_flow`, `test_personnel`,
+`test_grille_lait`, `test_recettes`, `test_finance_kpis`,
+`test_indicateurs_report`.
+
+Décisions client en attente (réunion 05/08) : bande provisoire `99999` à
+confirmer auprès de l'autorité d'identification ; primes soumises CNSS ou
+non ; saisie des heures d'utilisation des équipements ; questions ouvertes de
+la spec génisse ; fusion `finance/socle-comptable` → `main` + rebuild serveur
+(runbook).
+
 ## Epic H — ce qui manquait encore
 
 | Story | Trou comblé | Où ça vit |
@@ -101,9 +130,10 @@ fichiers produits à la main :
 5. **Backup BD réelle** (demande à Sami) : l'outil de validation existe
    désormais — restaurer la base, lancer le contrôle de cohérence, traiter
    les ERREUR puis les ALERTE.
-6. **Taux de charges patronales** (`taux_charges_patronales_pct`, 16,57 %
-   par défaut = CNSS régime agricole amélioré) et **salaires réels** à
-   confirmer avec la ferme avant de poster une vraie paie.
+6. **Taux de charges patronales** — tranché en réunion 05/08/2026 : 30 %
+   par défaut (`taux_charges_patronales_pct`, patch v1_8), surchargeable par
+   salarié sur la fiche Personnel. Les **salaires réels** restent à confirmer
+   avec la ferme avant de poster une vraie paie.
 
 ## Tests
 
