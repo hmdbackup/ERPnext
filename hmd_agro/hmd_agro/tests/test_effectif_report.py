@@ -1,5 +1,5 @@
 """
-Tests — Rapport Mensuel / Effectif (live state reconstruction).
+Tests — Rapport Periodique / Effectif (live state reconstruction).
 Run: bench --site hmd.localhost execute hmd_agro.hmd_agro.tests.test_effectif_report.run_all_tests
 """
 import frappe
@@ -7,7 +7,7 @@ import json
 from frappe.utils import getdate
 
 from hmd_agro.hmd_agro.utils import live_state as LS
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _effectif, _production_lot
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import _effectif, _production_lot
 
 PREFIX = "TEST-EFF-"
 # Past year for test isolation. Was 2099 originally, but `_production_lot`
@@ -449,7 +449,7 @@ def test_effectif_jour_mode_unchanged(r):
 
 def run_all_tests():
     print("\n" + "=" * 60)
-    print("  RAPPORT MENSUEL / EFFECTIF — TESTS (LIVE STATE)")
+    print("  RAPPORT PERIODIQUE / EFFECTIF — TESTS (LIVE STATE)")
     print("=" * 60)
     r = {"pass": 0, "fail": 0}
     try:

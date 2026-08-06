@@ -2,7 +2,7 @@
 Comprehensive flow audit — exercises every affected surface after the
 SLE unification (R1+R2+R3) and ST5-15 Saisie Alimentation:
 
-  1. Aliment table flow (Rapport Mensuel)
+  1. Aliment table flow (Rapport Periodique)
   2. Indicateurs (KPIs) flow
   3. Bilan Annuel (Rapport Reproduction) flow
   4. Saisie Alimentation correction → report propagation
@@ -16,7 +16,7 @@ Run: bench --site hmd.localhost execute hmd_agro.hmd_agro.setup.flow_audit.run
 import frappe
 from frappe.utils import getdate
 
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import (
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
     _consumption_from_sle, _aliment_data_per_lot, _alimentation, _indicateurs,
     _medicament_cost,
 )
@@ -54,7 +54,7 @@ def run():
     results = {"pass": 0, "fail": 0}
 
     # ════════════════════════════════════════════════════════════════════
-    # 1. ALIMENT TABLE (Rapport Mensuel → section Alimentation)
+    # 1. ALIMENT TABLE (Rapport Periodique → section Alimentation)
     # ════════════════════════════════════════════════════════════════════
     hdr("1. ALIMENT TABLE — flow & accuracy")
 

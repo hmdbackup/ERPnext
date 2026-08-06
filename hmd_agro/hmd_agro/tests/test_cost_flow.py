@@ -11,7 +11,7 @@ guarantee:
     → _frais_consumption() aggregates over the date range, returns the cost
     → _frais_consumption_per_aliment() maps it back to the Aliment master
 
-After this test passes, the cost columns in Rapport Mensuel's Indicateurs
+After this test passes, the cost columns in Rapport Periodique's Indicateurs
 section ("Frais Concentré" etc.) and Alimentation section ("Coût période")
 are guaranteed to read the same frozen numbers — a future Aliment price
 change can never rewrite them.
@@ -23,7 +23,7 @@ import traceback
 from frappe.utils import today
 
 from hmd_agro.hmd_agro.utils.stock_utils import DEFAULT_WAREHOUSE as WAREHOUSE
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import (
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
     _consumption_from_sle,
 )
 

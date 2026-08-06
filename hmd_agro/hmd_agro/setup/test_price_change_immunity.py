@@ -1,7 +1,7 @@
 """Prove past report cost cells are immune to Aliment.prix_unitaire edits.
 
 Steps:
-  1. Run rapport_mensuel for 2026-05-01..2026-05-31 (a past period with data)
+  1. Run rapport_periodique for 2026-05-01..2026-05-31 (a past period with data)
      → capture the per-aliment cost rows AND the grand-total cost row.
   2. Pick the Aliment linked to ALI-Mais and multiply its prix_unitaire ×10.
   3. Re-run the report with identical filters.
@@ -13,7 +13,7 @@ Run: bench --site hmd.localhost execute hmd_agro.hmd_agro.setup.test_price_chang
 import frappe
 from frappe.utils import getdate
 
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _alimentation
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import _alimentation
 
 
 CTX = {

@@ -386,7 +386,7 @@ function update_totals(container) {
 
     var color = "var(--text-color)";
     if (ecart < -seuil_neg) color = "red";
-    // FIN-S25: la perte a désormais un prix (rapport mensuel) — le rouge
+    // FIN-S25: la perte a désormais un prix (rapport périodique) — le rouge
     // signale ici le même seuil d'alarme que celui qui colore le KPI.
     else if (brut_total > 0 && ecart > brut_total * (seuil_alarme_pct / 100)) color = "red";
     else if (brut_total > 0 && ecart > brut_total * (seuil_perte_pct / 100)) color = "orange";

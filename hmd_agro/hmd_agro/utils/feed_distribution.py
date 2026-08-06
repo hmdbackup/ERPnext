@@ -17,7 +17,7 @@ Idempotency: each Stock Entry carries `remarks` starting with
 `RATION_DIST_<lot>_<date>`. Re-running on a (lot, date) that already has a
 submitted SE is a no-op.
 
-Self-contained: this module does NOT import from rapport_mensuel.py — the
+Self-contained: this module does NOT import from rapport_periodique.py — the
 population logic is replicated here. The Aliment Item link, prix_unitaire,
 warehouse, and migration helpers ARE shared via the existing module layout.
 """
@@ -66,7 +66,7 @@ def _prefetch_population_data(end_date):
 
 def _populations_on_date(day, prefetched):
     """Return {lot_name: animal_count} for `day`, using pre-fetched data.
-    Mirrors the logic in rapport_mensuel.py:680-695 — kept standalone so
+    Mirrors the logic in rapport_periodique.py:680-695 — kept standalone so
     feed_distribution stays decoupled from the report module."""
     day = getdate(day)
     per_lot = {}

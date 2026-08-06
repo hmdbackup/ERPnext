@@ -17,7 +17,7 @@ import traceback
 import frappe
 from frappe.utils import get_first_day, get_last_day, getdate, today
 
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _kpi_ind
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import _kpi_ind
 from hmd_agro.hmd_agro.utils import charges_utils, facturation_lait, finance_kpis
 from hmd_agro.hmd_agro.utils.config import get_config
 

@@ -204,7 +204,7 @@ def test_bilan_annuel_distribution_formula(r):
 
     # Sanity — production code returns same fields on a year row.
     from hmd_agro.hmd_agro.utils.live_state import effectif_on_date
-    from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _aliment_data_per_lot
+    from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import _aliment_data_per_lot
     row = _bilan_year_row(ANNEE,
                           getdate(f"{ANNEE}-01-01"), getdate(f"{ANNEE}-12-31"),
                           is_partial=False,

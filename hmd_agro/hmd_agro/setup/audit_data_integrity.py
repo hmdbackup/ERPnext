@@ -79,7 +79,7 @@ def run():
     """, as_dict=True)
     print(f"    Found: {len(rows)}")
     print(f"    Impact: these animals will be bucketed as 'Gén. - Vide' (or - Pleine)")
-    print(f"    in effectif_on_date / Rapport Mensuel, NOT as Vaches.")
+    print(f"    in effectif_on_date / Rapport Periodique, NOT as Vaches.")
     report_examples(rows, lambda r: f"{r.name}  statut={r.statut}  "
                     f"etat_lact={r.etat_lactation}  etat_gest={r.etat_gestation}")
 

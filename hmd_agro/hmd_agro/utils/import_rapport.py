@@ -1,5 +1,6 @@
 """
-Parse "Rapport Mensuel" Excel workbooks and persist each daily sheet as a
+Parse the farm's historical monthly Excel workbooks (1 sheet per day, "01".."31")
+and persist each daily sheet as a
 `Rapport Journalier Importe` row. Read-only historical copy — the report
 checks for imported data first, then falls back to live event queries.
 """

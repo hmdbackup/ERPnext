@@ -13,7 +13,7 @@ Run: bench --site hmd.localhost execute hmd_agro.hmd_agro.setup.audit_indicateur
 import frappe
 from frappe.utils import getdate, add_days
 
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import (
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
     _indicateurs, _alimentation, _build_period_spans,
     _consumption_from_sle, _medicament_cost,
 )

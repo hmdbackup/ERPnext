@@ -15,7 +15,7 @@ import random
 import frappe
 from frappe.utils import getdate
 
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _effectif
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import _effectif
 
 
 # Hard caps so the audit stays under ~30s

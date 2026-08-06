@@ -11,10 +11,10 @@ référence ses stories Jira `FIN-S*` (backlogs `finance_backlog_jira.csv` et
 | Commit | Epic | Stories | Contenu |
 |---|---|---|---|
 | `40d8593` | A — Socle | S01, S02 | Company `hmd-agro` TND/Tunisie, plan SCE 77 comptes, TVA 19/13/7/0, 5 Cost Centers ateliers, dimensions Lot/Batiment (`setup/finance/socle_comptable.py`) |
-| `2de4c06` | B — Valorisation | S10–S12 | Consommations valorisées au CMP natif (garde-fou CMP=0 jamais bloquant), restaurations symétriques, DT/L réel + DT/vache (présente & lactante) au rapport mensuel |
+| `2de4c06` | B — Valorisation | S10–S12 | Consommations valorisées au CMP natif (garde-fou CMP=0 jamais bloquant), restaurations symétriques, DT/L réel + DT/vache (présente & lactante) au rapport périodique |
 | `587d60b` | C — Recettes | S20–S23 | Items LAIT-CRU/FUMIER/ANIMAL-VENTE (701/708/702), facture lait de période idempotente, facture auto à la vente d'animal avec annulation compensatoire |
 | `6949776` | D+E — Immo & charges | S30, S40, S41 | 5 Asset Categories sur 22x/28x/681, CF `Asset-id_batiment`, amortissement linéaire auto, salaires ventilés par atelier (`post_salaires`), modes de paiement 54/532 |
-| `81da51e` | F — Pilotage | S50, S51 | `finance_kpis.gl_sums` : CA lait, produit brut, charges, MO, EBE, résultat, coût complet/L, IOFC (+/VL/j) au rapport mensuel ; seuils `HMD Configuration` (patch `v1_6`) + coloration vert/orange/rouge |
+| `81da51e` | F — Pilotage | S50, S51 | `finance_kpis.gl_sums` : CA lait, produit brut, charges, MO, EBE, résultat, coût complet/L, IOFC (+/VL/j) au rapport périodique ; seuils `HMD Configuration` (patch `v1_6`) + coloration vert/orange/rouge |
 | `5d0e03b` | G — Bascule & droits | S60, S61 | Rôle « Éleveur HMD » (zéro accès comptable — test 8/8), procédure a-nouveaux (`BASCULE.md`), seed démo E2E |
 | `4403f05` | H — Données manquantes | S24, S25, S31, S32, S42, S70 | Les six trous restants : registre Personnel, interventions équipements, écart lait valorisé, grille prix qualité, cheptel à l'actif, contrôle de cohérence (détail ci-dessous) |
 

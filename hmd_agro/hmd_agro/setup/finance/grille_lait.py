@@ -9,7 +9,7 @@ prix du litre cesse d'être plat, avec :
     `lait_tp_reference` 3.2 %).
 
 ⚠️ Les montants de primes sont **INDICATIFS** : la grille naît en
-`statut = PROVISOIRE`. Facture, rapport mensuel et contrôle de cohérence le
+`statut = PROVISOIRE`. Facture, rapport périodique et contrôle de cohérence le
 signalent tant que le statut n'est pas passé à VALIDEE. Dès que la centrale
 fournit sa grille contractuelle : ouvrir « Grille Prix Lait », corriger les
 paliers, renseigner `source`, passer le statut à VALIDEE. Aucun code à

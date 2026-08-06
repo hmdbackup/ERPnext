@@ -48,7 +48,7 @@ class Ration(Document):
         """A ration's name + composition are frozen after first save. To change
         a recipe, create a new ration and use 'Affecter aux lots' to migrate.
 
-        WHY: reports (rapport_mensuel.py) and the upcoming Stock Module daily
+        WHY: reports (rapport_periodique.py) and the upcoming Stock Module daily
         Material Issue generator read composition LIVE from the current Ration.
         Without this guard, editing a recipe today silently rewrites past
         distribution math. Immutability is the schema-level enforcement of the

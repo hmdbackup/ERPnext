@@ -17,7 +17,7 @@ from frappe.utils import getdate, add_days, today
 from hmd_agro.hmd_agro.utils.feed_correction import (
     get_aliment_state, post_aliment_corrections_batch, cancel_aliment_correction,
 )
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import (
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
     _alimentation,
 )
 from hmd_agro.hmd_agro.utils.feed_distribution import (

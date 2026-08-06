@@ -1,11 +1,11 @@
 """
-Tests unitaires — Rapport Mensuel / Production par Lot
+Tests unitaires — Rapport Periodique / Production par Lot
 Run: bench execute hmd_agro.hmd_agro.tests.test_production_lot_report.run_all_tests
 """
 import frappe
 from frappe.utils import getdate
 
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _production_lot
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import _production_lot
 
 PREFIX = "TEST-PLT-"
 # Past year for test isolation. Originally 2099 but `_production_lot` added an
@@ -170,7 +170,7 @@ def test_compact_format(results):
 
 def run_all_tests():
     print("\n" + "=" * 60)
-    print("  RAPPORT MENSUEL / PRODUCTION PAR LOT — TESTS")
+    print("  RAPPORT PERIODIQUE / PRODUCTION PAR LOT — TESTS")
     print("=" * 60)
 
     results = {"pass": 0, "fail": 0}

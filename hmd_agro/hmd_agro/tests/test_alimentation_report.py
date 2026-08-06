@@ -1,5 +1,5 @@
 """
-Tests unitaires — Rapport Mensuel / Alimentation (Ration)
+Tests unitaires — Rapport Periodique / Alimentation (Ration)
 
 Convention: ms_pct stored as fraction (0.86 = 86%); the report multiplies by 100
 for display. Ration composition is immutable — to change a ration, create a new
@@ -23,7 +23,7 @@ Run: bench execute hmd_agro.hmd_agro.tests.test_alimentation_report.run_all_test
 import frappe
 from frappe.utils import getdate
 
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _alimentation
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import _alimentation
 from hmd_agro.hmd_agro.tests._sle_seed_helpers import (
     migrate_test_aliments, seed_distribution_walk, clean_test_stock,
 )
@@ -466,7 +466,7 @@ def test_hebdomadaire_baseline_values(results):
 
 def run_all_tests():
     print("\n" + "=" * 60)
-    print("  RAPPORT MENSUEL / ALIMENTATION — TESTS")
+    print("  RAPPORT PERIODIQUE / ALIMENTATION — TESTS")
     print("=" * 60)
     results = {"pass": 0, "fail": 0}
 

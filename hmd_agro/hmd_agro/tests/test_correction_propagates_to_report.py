@@ -3,7 +3,7 @@ R4 — Saisie Alimentation correction round-trip regression test (per-aliment).
 
 Locks in the critical guarantee from the SLE unification (R1+R2+R3):
 when the farmer posts a correction via Saisie Alimentation, the change
-must propagate to Rapport Mensuel (both kg side and DT side) AND must
+must propagate to Rapport Periodique (both kg side and DT side) AND must
 remain consistent across all three granularités. A negative correction
 must DECREASE the cost (this was the pre-R3 bug: `actual_qty < 0` filter
 ignored Material Receipts).
@@ -33,7 +33,7 @@ from hmd_agro.hmd_agro.utils.feed_correction import (
     post_aliment_corrections_batch,
     cancel_aliment_correction,
 )
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import (
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
     _consumption_from_sle, _alimentation,
 )
 
@@ -79,7 +79,7 @@ def _alimentation_total(granularite):
 
 def run():
     print("\n" + "=" * 76)
-    print("  R4 — Saisie correction round-trip → Rapport Mensuel (per-aliment)")
+    print("  R4 — Saisie correction round-trip → Rapport Periodique (per-aliment)")
     print("=" * 76)
     try:
         return _run_inner()
