@@ -72,8 +72,9 @@ backup de la base réelle.
 
 Décisions client en attente (réunion 05/08) : bande provisoire `99999` à
 confirmer auprès de l'autorité d'identification ; primes soumises CNSS ou
-non ; saisie des heures d'utilisation des équipements ; questions ouvertes de
-la spec génisse ; rebuild du serveur selon le runbook.
+non ; questions ouvertes de la spec génisse ; rebuild du serveur selon le
+runbook. *(La saisie des heures d'équipement n'est plus une question : l'option
+2 retenue en séance est implémentée — story FIN-S96.)*
 
 ## Epic H — ce qui manquait encore
 

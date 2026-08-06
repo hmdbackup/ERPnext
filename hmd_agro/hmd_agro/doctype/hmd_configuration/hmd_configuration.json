@@ -47,6 +47,7 @@
   "pfe_lc_alarm_min",
   "pfe_lc_alarm_max",
   "pfe_lc_cible",
+  "couverture_lait_tolerance_jours",
   "col_break_seuils_1",
   "pfe_efficacite_min",
   "pfe_efficacite_orange_min",
@@ -392,6 +393,14 @@
    "precision": "2"
   },
   {
+   "default": "1",
+   "description": "Nombre de jours sans saisie de traite tolérés avant que les rapports signalent « données incomplètes » et neutralisent la coloration des indicateurs faussés (L/C, coûts au litre, IOFC).",
+   "fieldname": "couverture_lait_tolerance_jours",
+   "fieldtype": "Int",
+   "label": "Tolérance de couverture lait (jours)",
+   "non_negative": 1
+  },
+  {
    "fieldname": "col_break_seuils_1",
    "fieldtype": "Column Break"
   },
@@ -666,7 +675,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-08-05 00:00:00.000000",
+ "modified": "2026-08-06 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "HMD AGRO",
  "name": "HMD Configuration",

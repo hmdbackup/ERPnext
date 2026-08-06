@@ -21,3 +21,4 @@ hmd_agro.patches.v1_8.set_langue_francaise
 hmd_agro.patches.v1_8.appliquer_taux_charges_30
 hmd_agro.patches.v1_9.init_vente_lait_multi_acheteurs
 hmd_agro.patches.v1_9.renommer_rapport_periodique
+hmd_agro.patches.v1_9.init_couverture_lait
