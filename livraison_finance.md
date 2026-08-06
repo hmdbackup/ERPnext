@@ -1,7 +1,7 @@
 # Livraison Finance — HMD Agro (contrôle de gestion sur ERPNext natif)
 
 Branche : `finance/socle-comptable` (basée sur `origin/main`).
-Suite de tests : **408/408 verts** (18 modules — 336 tests finance + 72 tests
+Suite de tests : **521/521 verts** (19 modules — 449 tests finance + 72 tests
 du flux E2E `test_full_flow`), exécutés sur bench le 06/08/2026. Chaque commit
 référence ses stories Jira `FIN-S*` (backlogs `finance_backlog_jira.csv` et
 `finance_backlog_jira_reunion_2026-08-05.csv`).
@@ -51,6 +51,17 @@ Rapport Performance (demande « il faut que ce soit flexible »), libellé
 « cible 2,2 » en écriture française, paie de juillet postée (la Main d'Œuvre
 n'apparaissait nulle part), facture lait en double annulée (11→17 et 14→20
 juillet se chevauchaient).
+
+### Chantiers menés en attendant les données réelles (06/08/2026)
+
+| Commit | Stories | Contenu |
+|---|---|---|
+| `865fde1` | S94 | **Vente à plusieurs acheteurs** : ventilation journalière par acheteur, grille de prix par centrale avec précédence documentée, un décompte et une facture par acheteur, prix moyen pondéré dans l'écart lait |
+| `1f73bea` | S96 | **Heures d'utilisation des équipements** : DocType de saisie, taux figé sur la ligne, agrégation par atelier et par équipement — aucune écriture comptable (vue analytique, le 68x et le 615 sont déjà au Grand Livre) |
+| `34b4c1b` | S101 | **Simulations** facture fournisseur + TVA + consommation de médicaments, avec `scenario_demo_simulations.md` (chemin de clics, montants attendus, questions probables) |
+| `2508504` | S95, S100 | Rapport renommé **« Rapport Periodique »** ; **garde-fou « période incomplète »** (affiche « lait saisi sur X jours sur Y » et neutralise la coloration des indicateurs faussés) ; coût mécanique au Rapport Performance |
+
+Suite complète après ces chantiers : **521/521 tests verts sur 19 modules**.
 
 ⚠️ **À traiter avant toute démo** (`FIN-S99`) : le jeu de données de
 démonstration fausse les indicateurs — les 25 animaux sont dans un seul lot

@@ -117,14 +117,14 @@ Criteres d'acceptation (transcription reunion 05/08/2026):
 - Reglement en fin de mois sur moyenne mensuelle; prix temporaire accepte le temps de finaliser avec l'acheteur (statut PROVISOIRE existant).
 - La destination interne atelier genisses est couverte par FIN-S93 (facturation interne), pas par une facture client.
 
-Statut: a faire - PRIORITE REHAUSSEE (besoin actuel confirme par la transcription, pas un besoin futur).",finance reunion-2026-08-05
+Statut: LIVRE (commit 865fde1). Ventilation par acheteur sur le Bilan Lait Journalier, grille par acheteur avec precedence documentee, un decompte et une facture par acheteur, prix moyen pondere dans ecart_lait, config client_lait_defaut + patch de reprise v1_9. Tests: test_decompte_lait 54/54, test_grille_lait 42/42.",finance reunion-2026-08-05
 Story,FIN-S95 Renommer le rapport « mensuel » en rapport periodique,,Pilotage,"En tant qu'utilisateur, je veux que le rapport ne s'appelle plus « Rapport Mensuel » car il est journalier / hebdomadaire / par quinzaine (transcription: « Rabi a3mlaha zid n7i mensuel mena. 7otou rapport »).
 
 Criteres d'acceptation:
 - Renommer le rapport (et ses raccourcis Workspace / liens) sans casser les URLs existantes ni les tests.
 - Verifier la coherence avec le nouveau « Rapport Performance » (Semaine/Mois) pour eviter deux noms proches.
 
-Statut: a faire (quick win).",finance reunion-2026-08-05
+Statut: LIVRE (commits 2508504 + 51c9c4b). « Rapport Mensuel » devient « Rapport Periodique » : dossier, JSON/JS, imports paresseux, raccourcis workspace (blocs ET raccourcis), documents, patch v1_9 idempotent qui fusionne l'orphelin en base.",finance reunion-2026-08-05
 Story,FIN-S96 Saisie des heures d'utilisation par equipement et imputation au cout du litre,,Immobilisations,"En tant que gerant, je veux saisir les heures d'utilisation de chaque equipement (« le tracteur a travaille 1 h ou 5 h dans la journee ») pour imputer un cout horaire forfaitaire aux ateliers et au cout du litre.
 
 Decision de la reunion 05/08/2026 (option 2 retenue en seance):
@@ -133,7 +133,7 @@ Decision de la reunion 05/08/2026 (option 2 retenue en seance):
 - Imputation: heures x cout horaire ventile par atelier -> quote-part mecanique dans le rapport de performance et le cout du litre (vue analytique), et brique mecanique du cout genisse (FIN-S93).
 - Repercussion sur le cout du litre: obligatoire (reunion).
 
-Statut: a faire (specifie par la reunion elle-meme).",finance reunion-2026-08-05
+Statut: LIVRE (commits 1f73bea + 2508504). DocType « Utilisation Equipement » (equipement, date, heures, atelier, operateur), taux fige sur la ligne a la saisie, cout_utilisation() agrege par atelier et par equipement, lignes « Heures d'Equipement », « Cout d'Utilisation Mecanique » et « Cout Mecanique / L » au Rapport Performance. AUCUNE ecriture comptable: vue analytique, le 68x et le 615 sont deja au Grand Livre. Tests: test_maintenance 42/42.",finance reunion-2026-08-05
 Story,FIN-S97 Interface entierement en francais,,Exploitation,"En tant qu'utilisateur, je veux une interface entierement en francais (M. Samir en reunion : « fama onglets b'francais wel chay tkhalet » puis « lezemna nq3dou bel francais »).
 
 Cause racine: la langue du site etait « en » et chaque compte utilisateur portait « en » en surcharge, donc toute l'interface ERPNext native (Actif, Ecriture de Journal, colonnes de liste, boutons) restait en anglais alors que nos propres DocTypes etaient en francais.
@@ -165,3 +165,21 @@ Criteres d'acceptation:
 - Source des donnees reelles a trancher (base du site de production, base de Siwar, ou export Excel remplace par le rapport journalier). ATTENTION: ce n'est pas une attente externe — l'engagement a ete pris cote developpement en reunion (« ma3neha mouch sa3ib, n7otoulkom les donnees reelles li ntab3ouhom »). Aucune demande de backup n'a ete adressee a un tiers pendant la reunion du 05/08.
 
 Statut: a faire AVANT toute demo client.",finance reunion-2026-08-05
+Story,FIN-S100 Garde-fou periode incomplete dans les rapports,,Pilotage,"En tant que gerant, je ne veux pas qu'un trou de saisie soit affiche comme une alerte troupeau.
+
+Constat: le lait n'etait saisi que 10 jours en juillet alors que les rations sont distribuees tous les jours -> L/C affiche 0,66 en ROUGE et cout du litre a 3,37 DT. Le calcul est juste, la periode est incomplete. En production la saisie prendra du retard un jour ou l'autre.
+
+Criteres d'acceptation:
+- Les rapports comptent les jours de la periode ayant au moins une traite et affichent « Couverture des donnees (lait) = X/Y jours ».
+- Si la couverture est incomplete: ligne d'avertissement explicite en francais et coloration NEUTRALISEE sur les seuls indicateurs fausses (L/C, couts au litre, IOFC), sans masquer les valeurs.
+- Ne neutralise que s'il y a reellement un ecart, pour ne pas perdre les vraies alertes.
+
+Statut: LIVRE (commit 2508504).",finance reunion-2026-08-05
+Story,FIN-S101 Scenario de simulation facture fournisseur medicaments et TVA,,Exploitation,"En tant que gerant, je veux voir tourner devant moi une facture fournisseur, une utilisation de medicaments et le traitement de la TVA (point 14 du compte-rendu: « a simuler pour la prochaine fois »).
+
+Criteres d'acceptation:
+- setup_simulations() monte le scenario en une commande bench, idempotent et additif: fournisseur + facture d'aliment avec TVA 19% deductible et entree en stock (le CMP bouge a l'ecran), facture de service avec TVA, traitement d'un animal consommant du stock de medicament avec delai d'attente lait, TVA collectee cote vente.
+- scenario_demo_simulations.md: objectif metier, commande de preparation, chemin de clics exact, montants attendus, impact au Grand Livre et sur le cout du litre, questions probables du client.
+- Les pieces sont datees du jour d'execution (une ecriture de stock antidatee mettrait ERPNext en repost differe): lancer la commande le matin de la reunion.
+
+Statut: LIVRE (commit 34b4c1b). Tests: test_simulations 40/40.",finance reunion-2026-08-05
