@@ -1245,8 +1245,10 @@ def _indicateurs(ctx):
     # Defaults match Vallet & Paccard 1984 / PFE Chap 3.
     cfg_lc_min   = float(get_config("pfe_lc_optimal_min", default=2.0))
     cfg_lc_max   = float(get_config("pfe_lc_optimal_max", default=2.4))
-    cfg_lc_alm_lo = float(get_config("pfe_lc_alarm_min", default=1.5))
+    # Réunion 05/08/2026 : rouge sous 1,8 (was 1.5) — patch v1_8/update_lc_seuils
+    cfg_lc_alm_lo = float(get_config("pfe_lc_alarm_min", default=1.8))
     cfg_lc_alm_hi = float(get_config("pfe_lc_alarm_max", default=3.0))
+    cfg_lc_cible = float(get_config("pfe_lc_cible", default=2.2))
     cfg_eff_min  = float(get_config("pfe_efficacite_min", default=1.4))
     cfg_eff_omn  = float(get_config("pfe_efficacite_orange_min", default=1.0))
     cfg_pers_min = float(get_config("pfe_persistance_min", default=0.85))
@@ -1311,6 +1313,10 @@ def _indicateurs(ctx):
             "ebe": round(gl_["ebe"], 2),
             "resultat": round(gl_["resultat"], 2),
             "cout_complet_l": round(gl_["charges"] / prod_, 3) if prod_ else 0,
+            # Réunion 05/08/2026 — coût du litre hors dotations (68x), pour
+            # comparer au prix du lait sans le bruit comptable des amortissements.
+            "cout_hors_amort_l": (round((gl_["charges"] - gl_["amortissements"]) / prod_, 3)
+                                  if prod_ else 0),
             "iofc": round(iofc_, 2),
             "iofc_vl_jour": round(iofc_ / vl_ / jours_, 2) if vl_ else 0,
             # RC-FIN-41 — la MO devient un coût unitaire (registre Personnel)
@@ -1420,7 +1426,7 @@ def _indicateurs(ctx):
             valeur_m1=m1["conc_per_vp"], direction="down"),
         row("Concentré / Vache Lactante", cur["conc_per_vl"], "kg/tête",
             valeur_m1=m1["conc_per_vl"], direction="down"),
-        row("L/C — Lait / Concentré", cur["lc"], "L/kg",
+        row(f"L/C — Lait / Concentré (cible {cfg_lc_cible:g})", cur["lc"], "L/kg",
             indicator=_kpi_ind_range(cur["lc"], cfg_lc_min, cfg_lc_max,
                                      low_alarm=cfg_lc_alm_lo,
                                      high_alarm=cfg_lc_alm_hi),
@@ -1467,9 +1473,11 @@ def _indicateurs(ctx):
             valeur_m1=m1["resultat"], direction="up"),
         row("Coût Complet / L (toutes charges)", cur["cout_complet_l"], "DT/L",
             valeur_m1=m1["cout_complet_l"], direction="down"),
-        row("IOFC — CA Lait − Coût Alimentaire", cur["iofc"], "DT",
+        row("Coût du Litre hors Amortissement", cur["cout_hors_amort_l"], "DT/L",
+            valeur_m1=m1["cout_hors_amort_l"], direction="down"),
+        row("IOFC (Income Over Feed Cost) — CA Lait − Coût Alimentaire", cur["iofc"], "DT",
             valeur_m1=m1["iofc"], direction="up"),
-        row("IOFC / Vache Lactante / Jour", cur["iofc_vl_jour"], "DT/VL/j",
+        row("IOFC (Income Over Feed Cost) / Vache Lactante / Jour", cur["iofc_vl_jour"], "DT/VL/j",
             indicator=_kpi_ind(cur["iofc_vl_jour"] or None,
                                green_min=cfg_iofc_min,
                                orange_min=cfg_iofc_omn),

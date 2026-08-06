@@ -21,6 +21,14 @@ JS_FIELDS = {
     "objectif_cout_litre_alarme": 0.85,
     "pfe_iofc_jour_min": 3.0,
     "pfe_iofc_jour_orange_min": 1.5,
+    # Seuils L/C (réunion 05/08/2026 : rouge < 1,8, cible 2,2). Reports color
+    # thresholds server-side today; these are exposed pre-emptively for future
+    # client-side use (house rule: JS_FIELDS is the only channel to client code).
+    "pfe_lc_optimal_min": 2.0,
+    "pfe_lc_optimal_max": 2.4,
+    "pfe_lc_alarm_min": 1.8,
+    "pfe_lc_alarm_max": 3.0,
+    "pfe_lc_cible": 2.2,
 }
 
 

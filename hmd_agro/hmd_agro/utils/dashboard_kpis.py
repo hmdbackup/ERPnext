@@ -56,7 +56,8 @@ def get_lc_ratio():
         ratio,
         green_low=float(get_config("pfe_lc_optimal_min", default=2.0)),
         green_high=float(get_config("pfe_lc_optimal_max", default=2.4)),
-        low_alarm=float(get_config("pfe_lc_alarm_min", default=1.5)),
+        # Réunion 05/08/2026 : rouge sous 1,8 — patch v1_8/update_lc_seuils
+        low_alarm=float(get_config("pfe_lc_alarm_min", default=1.8)),
         high_alarm=float(get_config("pfe_lc_alarm_max", default=3.0)),
     )
     return {"value": ratio, "fieldtype": "Float", "indicator": indicator}

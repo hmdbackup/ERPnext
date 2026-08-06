@@ -10,7 +10,10 @@ Run: bench execute hmd_agro.hmd_agro.tests.test_indicateurs_report.run_all_tests
 import frappe
 from frappe.utils import getdate
 
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _indicateurs
+from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import (
+    _indicateurs, _kpi_ind_range,
+)
+from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.tests._sle_seed_helpers import (
     migrate_test_aliments, seed_test_distribution, clean_test_stock,
 )
@@ -249,6 +252,50 @@ def test_persistance_indicator_set(results):
               f"Got indicator={ind!r}", results)
 
 
+def test_lc_alarm_18(results):
+    """Réunion 05/08/2026 : L/C rouge sous 1,8 (patch v1_8/update_lc_seuils),
+    et la ligne L/C affiche la cible (pfe_lc_cible, défaut 2.2)."""
+    log("Seuil L/C alarme 1.8 (rouge) + cible dans le libellé", "HEAD")
+    alarm_min = float(get_config("pfe_lc_alarm_min", default=1.8))
+    check(alarm_min >= 1.8,
+          f"pfe_lc_alarm_min = {alarm_min} (>= 1.8, seedé par v1_8)",
+          f"pfe_lc_alarm_min = {alarm_min} (attendu >= 1.8)", results)
+    check(_kpi_ind_range(1.7, 2.0, 2.4, low_alarm=1.8, high_alarm=3.0) == "Red",
+          "L/C 1.7 → ROUGE (sous l'alarme 1.8)", "L/C 1.7 pas ROUGE", results)
+    check(_kpi_ind_range(1.9, 2.0, 2.4, low_alarm=1.8, high_alarm=3.0) == "Orange",
+          "L/C 1.9 → ORANGE (entre alarme et optimal)", "L/C 1.9 pas ORANGE", results)
+    check(_kpi_ind_range(2.2, 2.0, 2.4, low_alarm=1.8, high_alarm=3.0) == "Green",
+          "L/C 2.2 (cible) → VERT", "L/C 2.2 pas VERT", results)
+    _, rows = _indicateurs(CTX_END)
+    lc = _find(rows, "L/C")
+    check(lc is not None and "cible" in lc["indicateur"],
+          f"Libellé L/C porte la cible ({lc['indicateur'] if lc else None})",
+          f"Libellé L/C sans cible: {lc}", results)
+
+
+def test_cout_hors_amort(results):
+    """Coût du Litre hors Amortissement = (charges − amortissements) / prod."""
+    log("Coût du Litre hors Amortissement — cohérence arithmétique", "HEAD")
+    _, rows = _indicateurs(CTX_END)
+    hors = _find(rows, "Coût du Litre hors Amortissement")
+    check(hors is not None, "Ligne présente", "Ligne absente", results)
+    if hors is None:
+        return
+    complet = _find(rows, "Coût Complet / L")
+    charges = _find(rows, "Charges Totales")["valeur"] or 0
+    amort = _find(rows, "Dotations aux Amortissements")["valeur"] or 0
+    prod = _find(rows, "Production Totale")["valeur"] or 0
+    attendu = round((charges - amort) / prod, 3) if prod else 0
+    check(abs((hors["valeur"] or 0) - attendu) < 0.005,
+          f"Valeur = {hors['valeur']} (attendu {attendu})",
+          f"Valeur = {hors['valeur']}, attendu {attendu}", results)
+    check((hors["valeur"] or 0) <= (complet["valeur"] or 0),
+          "Hors amortissement <= Coût Complet",
+          f"hors={hors['valeur']} > complet={complet['valeur']}", results)
+    check(hors.get("direction") == "down", "direction='down' (moins = mieux)",
+          f"direction={hors.get('direction')}", results)
+
+
 # ─── Runner ───
 
 def run_all_tests():
@@ -277,6 +324,8 @@ def run_all_tests():
         test_lc_indicator_set(results)
         test_persistance_indicator_set(results)
         test_midmonth_caps(results)
+        test_lc_alarm_18(results)
+        test_cout_hors_amort(results)
     finally:
         _cleanup()
 
