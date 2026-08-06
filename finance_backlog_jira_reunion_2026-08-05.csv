@@ -109,3 +109,19 @@ Story,FIN-S93 Cout de revient genisse et facturation interne du lait,,Couts geni
 Contenu: facturation interne du lait bu (lait_veau valorise vers l'atelier genisses), couts ration par lot, quote-part mecanique (cout horaire equipement), main d'oeuvre ventilee par atelier, aide a la decision vendre vs elever.
 
 Statut: specification livree (spec_cout_genisse_facturation_interne.md) - implementation a planifier apres validation des questions ouvertes (prix du lait interne, comptes de cession, courbe d'allaitement, prix de marche, perimetre males, taux de perte).",finance reunion-2026-08-05
+Story,FIN-S94 Multi-acheteurs lait avec profil de prix par acheteur,,Recettes,"En tant que gerant, je vends le lait a plusieurs acheteurs (aujourd'hui 2 acheteurs externes payants + l'atelier genisses en interne) et je veux un profil de prix par acheteur.
+
+Criteres d'acceptation (transcription reunion 05/08/2026):
+- N acheteurs configurables; par acheteur: profil prix unique OU par paliers (bonus quantite), pas de paiement qualite pour l'instant.
+- Ventilation du lait vendu par acheteur (evolution Bilan Lait Journalier), un Decompte Lait Mensuel fige PAR acheteur (lever la contrainte mono-acheteur ERR-DLM-04, scoper existing_decompte et _decompte_couvrant par acheteur).
+- Reglement en fin de mois sur moyenne mensuelle; prix temporaire accepte le temps de finaliser avec l'acheteur (statut PROVISOIRE existant).
+- La destination interne atelier genisses est couverte par FIN-S93 (facturation interne), pas par une facture client.
+
+Statut: a faire - PRIORITE REHAUSSEE (besoin actuel confirme par la transcription, pas un besoin futur).",finance reunion-2026-08-05
+Story,FIN-S95 Renommer le rapport « mensuel » en rapport periodique,,Pilotage,"En tant qu'utilisateur, je veux que le rapport ne s'appelle plus « Rapport Mensuel » car il est journalier / hebdomadaire / par quinzaine (transcription: « Rabi a3mlaha zid n7i mensuel mena. 7otou rapport »).
+
+Criteres d'acceptation:
+- Renommer le rapport (et ses raccourcis Workspace / liens) sans casser les URLs existantes ni les tests.
+- Verifier la coherence avec le nouveau « Rapport Performance » (Semaine/Mois) pour eviter deux noms proches.
+
+Statut: a faire (quick win).",finance reunion-2026-08-05

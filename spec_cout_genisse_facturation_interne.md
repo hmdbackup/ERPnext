@@ -244,3 +244,30 @@ Total ≈ **12 j**. Tests inclus dans chaque story (`tests/test_genisses_*.py`).
 8. **Forfait 2 500 TND** : d'accord pour le remplacer, à terme, par le coût
    calculé à l'entrée à l'actif (FIN-S86) — ou le garder comme valeur
    comptable et n'utiliser le calculé qu'en pilotage ?
+
+---
+
+## Addendum 06/08/2026 — réponses extraites de la transcription intégrale
+
+La transcription complète de la réunion tranche plusieurs questions ouvertes :
+
+1. **Valorisation du lait interne** : la pratique historique de la ferme est
+   le **coût du litre** (« on estime le coût du litre, donc on multiplie »),
+   pas le prix de vente. Proposition retenue par défaut : coût du litre hors
+   amortissement, avec le manque à gagner (prix grille) affiché à titre
+   indicatif. Reste à confirmer (question A5 de
+   `reunion_2026-08-05/questions_samir.md`).
+2. **Courbe d'allaitement** : 6–7 L/j pendant les 3 premiers mois (dit
+   explicitement) → le défaut 6,5 L/j × 90 j de cette spec est validé de fait.
+3. **Prix de marché de départ** : velle ~5 jours ≈ 3000–3200 DT ; génisse
+   élevée ~2 ans ≈ 3000–3500 DT. L'écart entre estimations manuelles
+   (gérant/vétérinaire/ingénieur) atteignait ~3000 DT — c'est la justification
+   métier de l'outil.
+4. **Scénarios de l'aide à la décision** : ajouter la **vente à ~5 jours** aux
+   scénarios 3 mois et 18–22 mois (l'âge de sortie réel a atteint 22 mois les
+   mauvaises années — fertilité, qualité du concentré).
+5. **Fréquence** : calcul en continu (consultable mensuellement) ; la ferme le
+   faisait 1×/an manuellement.
+6. **Articulation multi-acheteurs** : la vente interne à l'atelier génisses est
+   la « 3e destination » du lait (2 acheteurs externes payants + interne) —
+   voir story FIN-S94 pour la partie acheteurs externes.
