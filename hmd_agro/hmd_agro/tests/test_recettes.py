@@ -4,7 +4,10 @@ EPIC C — tests recettes (FIN-S20/S21/S22/S24).
 Covers:
   1. compute_milk_rate: grille qualité en vigueur, repli prix plat sinon
   2. generate_milk_invoice: agrégation BLJ.lait_vendu (TB/TP pondérés),
-     Sales Invoice émise, idempotence (marqueur remarks → re-run no-op)
+     Sales Invoice émise, idempotence (marqueur remarks → re-run no-op).
+     NON-RÉGRESSION MONO-ACHETEUR (FIN-S94) : sans ventilation par acheteur,
+     un seul acheteur — `client_lait_defaut` — et une seule facture, comme
+     avant. `generate_milk_invoice` rend désormais une LISTE de factures.
   3. Vente animal: statut → VENDU poste la facture depuis prix_vente ;
      retour à ACTIF l'annule (écriture compensatoire) ; sortie sans prix
      → pas de facture, pas de blocage (CF-FIN-21)
@@ -147,11 +150,16 @@ def _run_inner():
     _blj("2031-01-02", 500, tb=4.1, tp=3.2)
     _blj("2031-01-03", 0)
     frappe.db.commit()
-    si_name = facturation_lait.generate_milk_invoice(BLJ_DEBUT, BLJ_FIN)
-    _check(bool(si_name), f"Facture lait créée ({si_name})", results)
+    factures = facturation_lait.generate_milk_invoice(BLJ_DEBUT, BLJ_FIN)
+    si_name = factures[0] if factures else None
+    _check(len(factures) == 1,
+           f"Sans ventilation → une seule facture, un seul acheteur ({si_name})",
+           results)
     if si_name:
         si = frappe.get_doc("Sales Invoice", si_name)
         _check(si.docstatus == 1, "Facture lait soumise", results)
+        _check(si.customer == facturation_lait.client_lait_defaut(),
+               f"Acheteur = config client_lait_defaut ({si.customer})", results)
         _check(abs(si.items[0].qty - 1500.0) < 0.001,
                f"Volume agrégé = {si.items[0].qty} L (attendu 1500)", results)
         _check(abs(si.items[0].rate - facturation_lait.compute_milk_rate(3.9, 3.2)) < 0.001,
@@ -162,7 +170,7 @@ def _run_inner():
                f"Produit imputé sur 701 (Ventes de lait) : {income}", results)
     # idempotence
     again = facturation_lait.generate_milk_invoice(BLJ_DEBUT, BLJ_FIN)
-    _check(again == si_name, "Re-run → même facture, pas de doublon (RG-FIN-11)",
+    _check(again == [si_name], "Re-run → même facture, pas de doublon (RG-FIN-11)",
            results)
     count = len(frappe.get_all("Sales Invoice",
                 filters={"remarks": ["like", f"%LAIT_FACT_{BLJ_DEBUT}%"],

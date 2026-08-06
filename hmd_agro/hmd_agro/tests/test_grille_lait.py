@@ -16,6 +16,10 @@ Couvre :
   7. FIN-B1 : palier VOLUME (bonus quantité, bornes en litres/mois) ;
      immutabilité de la grille référencée par un décompte figé (ERR-GRL-06,
      suppression ERR-GRL-07), clôture par date_fin toujours permise
+  8. FIN-S94 : grilles concurrentes PAR ACHETEUR — deux acheteurs peuvent
+     avoir chacun leur grille sur la même période (ERR-GRL-05 scopé), et
+     `grille_active` applique la précédence « grille de l'acheteur, sinon
+     grille générale, jamais celle d'un autre acheteur »
 
 Run: bench --site hmd.agro execute hmd_agro.hmd_agro.tests.test_grille_lait.run
 """
@@ -35,6 +39,9 @@ FIN_GRILLE = "2034-12-31"
 BLJ_DEBUT = "2033-05-01"
 BLJ_FIN = "2033-05-05"
 SANS_GRILLE = "2019-06-30"
+# Acheteurs du socle recettes (setup.finance.recettes) — créés si absents.
+ACHETEUR_A = "Centrale Laitière"
+ACHETEUR_B = "Client Divers"
 
 
 # Grilles de production suspendues le temps du test (une grille ouverte
@@ -111,6 +118,15 @@ def _grille(suffixe, paliers=None, **kwargs):
     }
     payload.update(kwargs)
     return frappe.get_doc(payload).insert(ignore_permissions=True)
+
+
+def _customer(nom):
+    """Le socle recettes crée ces clients ; on ne les supprime jamais (des
+    factures s'y accrochent) — on se contente de garantir leur présence."""
+    if not frappe.db.exists("Customer", nom):
+        frappe.get_doc({"doctype": "Customer", "customer_name": nom,
+                        "customer_type": "Company"}).insert(ignore_permissions=True)
+    return nom
 
 
 def _blj(date, production, vendu, ci=0, veau=0, tb=None, tp=None):
@@ -201,7 +217,44 @@ def _run_inner():
            grille_active("2035-06-15").name != grille.name,
            "Une grille expirée ne s'applique plus", results)
     _throws(lambda: _grille("Concurrente", active=1),
-            "ERR-GRL-05", "Deux grilles actives sur la même période refusées", results)
+            "ERR-GRL-05", "Deux grilles générales actives sur la même période "
+            "refusées", results)
+
+    # ── 3b. FIN-S94 — une grille par acheteur
+    _customer(ACHETEUR_A)
+    _customer(ACHETEUR_B)
+    # Une grille nominative coexiste avec la grille générale : ce n'est plus
+    # un conflit, chacune vise un périmètre différent.
+    try:
+        grille_a = _grille("Acheteur A", active=1, centrale=ACHETEUR_A, paliers=[
+            {"critere": "TB", "borne_min": 4.0, "borne_max": None, "prime": 0.100}])
+        _check(True, f"Grille propre à « {ACHETEUR_A} » acceptée malgré la "
+                     f"grille générale active", results)
+    except Exception as exc:
+        grille_a = None
+        _check(False, f"Grille par acheteur refusée à tort : {exc}", results)
+    # …mais deux grilles pour LE MÊME acheteur restent interdites.
+    _throws(lambda: _grille("Acheteur A bis", active=1, centrale=ACHETEUR_A),
+            "ERR-GRL-05",
+            f"Deux grilles actives pour « {ACHETEUR_A} » refusées", results)
+
+    if grille_a:
+        resolue_a = grille_active("2034-06-15", acheteur=ACHETEUR_A)
+        _check(resolue_a and resolue_a.name == grille_a.name,
+               "L'acheteur qui a sa grille est servi par la sienne", results)
+        resolue_b = grille_active("2034-06-15", acheteur=ACHETEUR_B)
+        _check(resolue_b and resolue_b.name == grille.name,
+               "Un acheteur sans grille retombe sur la grille générale, "
+               "jamais sur celle d'un autre", results)
+        sans_acheteur = grille_active("2034-06-15")
+        _check(sans_acheteur and sans_acheteur.name == grille.name,
+               "Sans acheteur précisé, la grille générale l'emporte", results)
+        _check(compute_milk_rate(tb_moyen=4.5, date="2034-06-15",
+                                 acheteur=ACHETEUR_A) == 1.600,
+               "Le prix suit la grille de l'acheteur (1.600 vs 1.560)", results)
+        _check(compute_milk_rate(tb_moyen=4.5, date="2034-06-15",
+                                 acheteur=ACHETEUR_B) == 1.560,
+               "L'acheteur sans grille est payé au tarif général (1.560)", results)
 
     # ── 4. compute_milk_rate
     _check(compute_milk_rate(tb_moyen=4.5, date="2034-06-15") == 1.560,

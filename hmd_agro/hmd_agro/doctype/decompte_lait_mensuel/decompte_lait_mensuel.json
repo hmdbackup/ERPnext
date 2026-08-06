@@ -56,11 +56,12 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Acheteur réglé par ce décompte. Un même mois donne un décompte (et une facture) PAR ACHETEUR : c'est la clé qui empêche de régler deux fois le même lait au même acheteur.",
    "fieldname": "acheteur",
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Acheteur (centrale)",
+   "label": "Acheteur",
    "options": "Customer"
   },
   {
@@ -69,7 +70,7 @@
    "label": "Volumes & qualité"
   },
   {
-   "description": "Litres vendus sur la période (somme des Bilans Lait Journaliers).",
+   "description": "Litres vendus à cet acheteur sur la période (ventilation des Bilans Lait Journaliers ; à défaut de ventilation, la totalité du lait vendu).",
    "fieldname": "volume_litres",
    "fieldtype": "Float",
    "in_list_view": 1,

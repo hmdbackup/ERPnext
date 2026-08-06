@@ -21,6 +21,10 @@ HMD_DOCTYPES = [
 	"Grille Prix Lait", "Grille Prix Lait Palier",
 	# Finance — historisation stricte des recettes lait (FIN-B1)
 	"Decompte Lait Mensuel",
+	# Finance — vente du lait à plusieurs acheteurs (FIN-S94)
+	"Bilan Lait Journalier", "Bilan Lait Vente",
+	# Finance — heures d'utilisation & coût mécanique des équipements (FIN-S96)
+	"Utilisation Equipement",
 ]
 
 # Custom Fields posés par HMD sur des DocTypes ERPNext core (le filtre

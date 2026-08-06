@@ -50,10 +50,12 @@
    "unique": 1
   },
   {
+   "description": "Acheteur auquel cette grille s'applique. Vide = grille générale, utilisée pour tout acheteur qui n'a pas sa propre grille.",
    "fieldname": "centrale",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Centrale (client)",
+   "in_standard_filter": 1,
+   "label": "Acheteur (centrale)",
    "options": "Customer"
   },
   {
@@ -73,7 +75,7 @@
   },
   {
    "default": "0",
-   "description": "Une seule grille active à la fois sur une période donnée.",
+   "description": "Une seule grille active à la fois sur une période donnée POUR UN MÊME ACHETEUR (deux acheteurs peuvent avoir chacun la sienne).",
    "fieldname": "active",
    "fieldtype": "Check",
    "in_list_view": 1,

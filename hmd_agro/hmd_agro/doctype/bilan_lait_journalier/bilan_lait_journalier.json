@@ -11,6 +11,9 @@
   "consommation_interne",
   "column_break_lv",
   "lait_veau",
+  "section_ventilation",
+  "ventilation_intro",
+  "ventes",
   "section_composition",
   "taux_tb_moyen",
   "column_break_taux",
@@ -39,13 +42,14 @@
   },
   {
    "default": "0",
-   "description": "Lait vendu ce jour-là (litres).",
+   "description": "Total du lait vendu ce jour-là (litres), tous acheteurs confondus. Rempli automatiquement dès qu'une ventilation par acheteur est saisie ci-dessous ; saisie libre sinon.",
    "fieldname": "lait_vendu",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "Lait Vendu",
+   "label": "Lait Vendu (total)",
    "non_negative": 1,
-   "precision": "1"
+   "precision": "1",
+   "read_only_depends_on": "eval:(doc.ventes || []).length > 0"
   },
   {
    "default": "0",
@@ -70,6 +74,24 @@
    "label": "Lait Veau (LV)",
    "non_negative": 1,
    "precision": "1"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_ventilation",
+   "fieldtype": "Section Break",
+   "label": "Ventilation par acheteur"
+  },
+  {
+   "fieldname": "ventilation_intro",
+   "fieldtype": "HTML",
+   "options": "<p class=\"text-muted small\">Le lait part chez plusieurs acheteurs : une ligne par acheteur et par jour. Le <b>Lait Vendu (total)</b> devient alors la somme de ces lignes, et chaque acheteur est décompté et facturé séparément en fin de mois. Laisser vide si tout le lait part chez un seul acheteur.<br>L'atelier génisses n'est <b>pas</b> un acheteur : le lait bu par les veaux se saisit dans « Lait Veau (LV) ».</p>"
+  },
+  {
+   "description": "Une ligne par acheteur. La somme des litres alimente le total vendu du jour.",
+   "fieldname": "ventes",
+   "fieldtype": "Table",
+   "label": "Ventes par acheteur",
+   "options": "Bilan Lait Vente"
   },
   {
    "fieldname": "section_composition",

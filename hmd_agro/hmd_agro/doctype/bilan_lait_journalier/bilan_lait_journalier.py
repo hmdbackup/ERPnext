@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt
 
@@ -7,8 +8,42 @@ from hmd_agro.hmd_agro.utils.config import get_config
 
 class BilanLaitJournalier(Document):
     def validate(self):
+        self.validate_ventilation()
         self.validate_taux()
         self.set_ecart_litres()
+
+    def validate_ventilation(self):
+        """FIN-S94 — le lait du jour peut partir chez plusieurs acheteurs.
+
+        La ventilation (table `ventes`) dit QUI a pris QUOI ; `lait_vendu`
+        reste LE total vendu du jour et devient la somme automatique de la
+        table dès qu'elle est remplie. C'est volontaire : `_period_volumes`,
+        le contrôle de cohérence, le rapport périodique et le rapport performance
+        lisent tous `lait_vendu` — leur faire lire la table serait les casser
+        pour rien. Table vide = saisie libre, comportement mono-acheteur
+        historique inchangé.
+        """
+        lignes = [ligne for ligne in (self.ventes or [])
+                  if ligne.acheteur or flt(ligne.litres)]
+        if not lignes:
+            return
+        vus = {}
+        for ligne in lignes:
+            if not ligne.acheteur:
+                frappe.throw(
+                    _("ERR-BLJ-01 : ligne {0} de la ventilation — l'acheteur "
+                      "est obligatoire dès qu'on saisit des litres.")
+                    .format(ligne.idx)
+                )
+            if ligne.acheteur in vus:
+                frappe.throw(
+                    _("ERR-BLJ-02 : l'acheteur « {0} » apparaît deux fois "
+                      "(lignes {1} et {2}) — une seule ligne par acheteur et "
+                      "par jour, sinon le décompte mensuel double le volume.")
+                    .format(ligne.acheteur, vus[ligne.acheteur], ligne.idx)
+                )
+            vus[ligne.acheteur] = ligne.idx
+        self.lait_vendu = round(sum(flt(ligne.litres) for ligne in lignes), 1)
 
     def set_ecart_litres(self):
         """Écart = production saisie − (vendu + consommation interne + veau).
@@ -37,7 +72,7 @@ class BilanLaitJournalier(Document):
 
     def _propagate_taux_to_traites(self):
         """Fan out the daily herd TB/TP averages to every Traite of self.date.
-        Fields stay aligned so rapport_mensuel's AVG(NULLIF(taux_tb, 0)) keeps
+        Fields stay aligned so rapport_periodique's AVG(NULLIF(taux_tb, 0)) keeps
         returning the daily value without changing the report."""
         frappe.db.sql("""
             UPDATE `tabTraite`

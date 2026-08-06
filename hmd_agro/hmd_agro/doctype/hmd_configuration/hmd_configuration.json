@@ -38,6 +38,9 @@
   "section_bilan_lait",
   "ecart_lait_seuil_negatif_l",
   "ecart_lait_seuil_perte_pct",
+  "section_vente_lait",
+  "vente_lait_intro",
+  "client_lait_defaut",
   "section_seuils_pfe",
   "pfe_lc_optimal_min",
   "pfe_lc_optimal_max",
@@ -320,6 +323,23 @@
    "non_negative": 1,
    "precision": "1",
    "description": "Si l'écart positif > valeur % de la production totale, la cellule passe en ORANGE. Indique une perte/oubli de saisie suspect."
+  },
+  {
+   "fieldname": "section_vente_lait",
+   "fieldtype": "Section Break",
+   "label": "Vente du lait (FIN-S94)"
+  },
+  {
+   "fieldname": "vente_lait_intro",
+   "fieldtype": "HTML",
+   "options": "<p class=\"text-muted small\">Le lait peut partir chez plusieurs acheteurs : la répartition se saisit jour par jour dans le <b>Bilan Lait Journalier</b> (table « Ventes par acheteur »), et chaque acheteur reçoit son propre décompte et sa propre facture en fin de mois. L'acheteur ci-dessous ne sert que lorsqu'aucune répartition n'est saisie.</p>"
+  },
+  {
+   "default": "Centrale Laitière",
+   "description": "Acheteur retenu pour la facture du lait quand aucune ventilation par acheteur n'a été saisie sur la période (cas mono-acheteur). Doit correspondre à un Client existant.",
+   "fieldname": "client_lait_defaut",
+   "fieldtype": "Data",
+   "label": "Acheteur de lait par défaut"
   },
   {
    "fieldname": "section_seuils_pfe",

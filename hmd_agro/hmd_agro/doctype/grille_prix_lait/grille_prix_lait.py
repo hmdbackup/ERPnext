@@ -35,6 +35,26 @@ soumis référence la grille, ses valeurs de prix ne bougent plus — le décomp
 est un instantané et la grille qui l'a produit doit rester lisible telle
 quelle. Toute évolution = clôturer la grille (`date_fin`) et en créer une
 nouvelle versionnée par dates.
+
+Plusieurs acheteurs (FIN-S94) : le lait ne part plus chez une seule centrale.
+Le champ `centrale` porte l'acheteur auquel la grille s'applique ; une grille
+SANS centrale est une **grille générale**, valable pour tout acheteur qui n'a
+pas la sienne. D'où la règle de précédence de `grille_active(date, acheteur)` :
+
+  1. grille active à la date ET dont la `centrale` est cet acheteur ;
+  2. sinon grille active à la date SANS centrale (grille générale) ;
+  3. sinon aucune grille → repli prix plat (`compute_milk_rate`).
+
+Jamais la grille d'un AUTRE acheteur : ce serait facturer un client au tarif
+négocié par un autre. Sans acheteur précisé (appel de pilotage : contrôle de
+cohérence, prix indicatif), la lecture reste globale — grille générale
+d'abord, puis n'importe quelle grille active — pour ne pas perdre le prix
+affiché quand une seule grille nominative existe.
+
+L'unicité (ERR-GRL-05) suit la même logique : deux grilles actives ne peuvent
+se chevaucher que si elles visent des acheteurs différents. Deux grilles pour
+le MÊME acheteur — ou deux grilles générales — restent interdites, sinon le
+prix du litre dépendrait de l'ordre de lecture.
 """
 import frappe
 from frappe import _
@@ -118,18 +138,26 @@ class GrillePrixLait(Document):
                     )
 
     def validate_unicite_active(self):
-        """Une seule grille active peut couvrir une date donnée (RG-FIN-13) :
-        sinon le prix du litre dépendrait de l'ordre de lecture."""
+        """Une seule grille active par acheteur peut couvrir une date donnée
+        (RG-FIN-13) : sinon le prix du litre dépendrait de l'ordre de lecture.
+
+        FIN-S94 — le contrôle est scopé par `centrale` : deux acheteurs
+        différents ont chacun leur grille sur la même période, c'est le cas
+        nominal. Restent interdits : deux grilles pour le même acheteur, et
+        deux grilles générales (sans centrale), qui se disputeraient les
+        acheteurs sans grille nominative."""
         if not self.active:
             return
         concurrentes = frappe.db.sql("""
             SELECT name, date_debut, IFNULL(date_fin, %(infini)s) AS date_fin
             FROM `tabGrille Prix Lait`
             WHERE active = 1 AND name != %(nom)s
+              AND IFNULL(centrale, '') = %(centrale)s
               AND date_debut <= %(fin)s
               AND IFNULL(date_fin, %(infini)s) >= %(debut)s
         """, {
             "nom": self.name or "",
+            "centrale": self.centrale or "",
             "debut": self.date_debut,
             "fin": self.date_fin or DATE_INFINIE,
             "infini": DATE_INFINIE,
@@ -138,8 +166,12 @@ class GrillePrixLait(Document):
             autre = concurrentes[0]
             frappe.throw(
                 _("ERR-GRL-05 : la grille « {0} » est déjà active sur cette "
-                  "période ({1} → {2}). Désactiver l'une des deux.")
-                .format(autre.name, autre.date_debut, autre.date_fin)
+                  "période ({1} → {2}) pour {3}. Désactiver l'une des deux, "
+                  "ou préciser un acheteur (centrale) différent sur chacune.")
+                .format(autre.name, autre.date_debut, autre.date_fin,
+                        _("l'acheteur « {0} »").format(self.centrale)
+                        if self.centrale
+                        else _("les acheteurs sans grille dédiée (grille générale)"))
             )
 
     def validate_immutabilite(self):
@@ -245,15 +277,36 @@ class GrillePrixLait(Document):
         }
 
 
-def grille_active(date=None):
-    """La grille en vigueur à une date (None si aucune). Lecture unique et
-    partagée : facturation, KPI et contrôle de cohérence lisent la même."""
+def grille_active(date=None, acheteur=None):
+    """La grille en vigueur à une date pour un acheteur (None si aucune).
+    Lecture unique et partagée : facturation, KPI et contrôle de cohérence
+    lisent la même.
+
+    Précédence (FIN-S94, cf. docstring du module) :
+      • `acheteur` fourni  → sa grille nominative d'abord, sinon la grille
+        générale (sans centrale). Jamais la grille d'un autre acheteur.
+      • `acheteur` absent  → lecture de pilotage : grille générale d'abord,
+        sinon n'importe quelle grille active (comportement historique, pour
+        que le prix indicatif reste affiché quand la seule grille du site est
+        nominative).
+    À rang de précédence égal, la grille la plus récemment entrée en vigueur
+    l'emporte.
+    """
     date = getdate(date or today())
-    nom = frappe.db.sql("""
-        SELECT name FROM `tabGrille Prix Lait`
+    params = {"date": date, "infini": DATE_INFINIE, "acheteur": acheteur or ""}
+    if acheteur:
+        filtre_acheteur = ("AND IFNULL(centrale, '') IN (%(acheteur)s, '')")
+    else:
+        filtre_acheteur = ""
+    nom = frappe.db.sql(f"""
+        SELECT name,
+               CASE WHEN IFNULL(centrale, '') = %(acheteur)s THEN 0 ELSE 1 END
+                   AS priorite
+        FROM `tabGrille Prix Lait`
         WHERE active = 1 AND date_debut <= %(date)s
           AND IFNULL(date_fin, %(infini)s) >= %(date)s
-        ORDER BY date_debut DESC
+          {filtre_acheteur}
+        ORDER BY priorite ASC, date_debut DESC
         LIMIT 1
-    """, {"date": date, "infini": DATE_INFINIE})
+    """, params)
     return frappe.get_doc("Grille Prix Lait", nom[0][0]) if nom else None
