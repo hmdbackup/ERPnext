@@ -125,3 +125,12 @@ Criteres d'acceptation:
 - Verifier la coherence avec le nouveau « Rapport Performance » (Semaine/Mois) pour eviter deux noms proches.
 
 Statut: a faire (quick win).",finance reunion-2026-08-05
+Story,FIN-S96 Saisie des heures d'utilisation par equipement et imputation au cout du litre,,Immobilisations,"En tant que gerant, je veux saisir les heures d'utilisation de chaque equipement (« le tracteur a travaille 1 h ou 5 h dans la journee ») pour imputer un cout horaire forfaitaire aux ateliers et au cout du litre.
+
+Decision de la reunion 05/08/2026 (option 2 retenue en seance):
+- Cout horaire forfaitaire par equipement = amortissement + maintenance + carburant, 25 DT/h par defaut (config equipement_cout_horaire_defaut, champ Asset.cout_horaire deja livres en FIN-S91).
+- Saisie des heures par utilisation/journee: DocType Utilisation Equipement (equipement Link Asset, date, heures, atelier Cost Center, notes) — vue analytique, pas d'ecriture GL (le reel amortissement 68x + entretien 615 est deja au Grand Livre; eviter le double comptage).
+- Imputation: heures x cout horaire ventile par atelier -> quote-part mecanique dans le rapport de performance et le cout du litre (vue analytique), et brique mecanique du cout genisse (FIN-S93).
+- Repercussion sur le cout du litre: obligatoire (reunion).
+
+Statut: a faire (specifie par la reunion elle-meme).",finance reunion-2026-08-05

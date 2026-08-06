@@ -251,12 +251,10 @@ Total ≈ **12 j**. Tests inclus dans chaque story (`tests/test_genisses_*.py`).
 
 La transcription complète de la réunion tranche plusieurs questions ouvertes :
 
-1. **Valorisation du lait interne** : la pratique historique de la ferme est
-   le **coût du litre** (« on estime le coût du litre, donc on multiplie »),
-   pas le prix de vente. Proposition retenue par défaut : coût du litre hors
-   amortissement, avec le manque à gagner (prix grille) affiché à titre
-   indicatif. Reste à confirmer (question A5 de
-   `reunion_2026-08-05/questions_samir.md`).
+1. **Valorisation du lait interne — TRANCHÉ** : au **coût du litre** (pratique
+   historique explicite : « on estime le coût du litre, donc on multiplie »).
+   Retenu : coût du litre hors amortissement, manque à gagner (prix grille)
+   affiché à titre indicatif.
 2. **Courbe d'allaitement** : 6–7 L/j pendant les 3 premiers mois (dit
    explicitement) → le défaut 6,5 L/j × 90 j de cette spec est validé de fait.
 3. **Prix de marché de départ** : velle ~5 jours ≈ 3000–3200 DT ; génisse
@@ -271,3 +269,10 @@ La transcription complète de la réunion tranche plusieurs questions ouvertes :
 6. **Articulation multi-acheteurs** : la vente interne à l'atelier génisses est
    la « 3e destination » du lait (2 acheteurs externes payants + interne) —
    voir story FIN-S94 pour la partie acheteurs externes.
+
+7. **Quote-part mécanique — TRANCHÉ (« option 2 » en séance)** : heures
+   d'utilisation saisies par utilisation/journée × coût horaire forfaitaire de
+   l'équipement (25 DT/h défaut, configurable par équipement) → story FIN-S96.
+8. **Comptes de cession : non bloquants** — l'outil est du pilotage interne
+   (« la comptabilité officielle reste chez l'expert-comptable »), les comptes
+   6061/7068x restent hors états officiels.
