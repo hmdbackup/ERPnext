@@ -10,7 +10,7 @@ frappe.query_reports["Rapport Performance"] = {
             fieldname: "periode",
             label: __("Période"),
             fieldtype: "Select",
-            options: "Semaine\nMois",
+            options: "Jour\nSemaine\nQuinzaine\nMois",
             default: "Mois",
             reqd: 1
         },

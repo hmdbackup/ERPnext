@@ -17,3 +17,5 @@ hmd_agro.patches.v1_8.init_rh_defaults
 hmd_agro.patches.v1_8.backfill_decompte_lait
 hmd_agro.patches.v1_8.update_lc_seuils
 hmd_agro.patches.v1_8.init_equipement_cout_horaire
+hmd_agro.patches.v1_8.set_langue_francaise
+hmd_agro.patches.v1_8.appliquer_taux_charges_30

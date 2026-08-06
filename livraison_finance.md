@@ -1,8 +1,10 @@
 # Livraison Finance — HMD Agro (contrôle de gestion sur ERPNext natif)
 
 Branche : `finance/socle-comptable` (basée sur `origin/main`).
-Suite de tests finance : **206/206 verts** (13 modules). Chaque commit référence
-ses stories Jira `FIN-S*` (backlog `finance_backlog_jira.csv`).
+Suite de tests : **408/408 verts** (18 modules — 336 tests finance + 72 tests
+du flux E2E `test_full_flow`), exécutés sur bench le 06/08/2026. Chaque commit
+référence ses stories Jira `FIN-S*` (backlogs `finance_backlog_jira.csv` et
+`finance_backlog_jira_reunion_2026-08-05.csv`).
 
 ## Commits ↔ stories
 
@@ -33,18 +35,34 @@ Backlog dédié : `finance_backlog_jira_reunion_2026-08-05.csv` ; compte-rendu :
 | `593bc01` | S92 | Version 0.2.0, erpnext épinglé v15.95.2, build `--no-cache`, DEPLOY.md révisé, `runbook_alignement_versions.md` (cause racine du site obsolète) |
 | *(ce commit)* | S93 | Spécification coût de revient génisse + facturation interne (`spec_cout_genisse_facturation_interne.md`) — implémentation après validation |
 
-Validation du 05/08/2026 (bench local, après `bench migrate` — patches v1_8
-OK, décompte de juillet backfillé) : **17 modules finance verts, 336 tests**
-(dont nouveaux : `test_decompte_lait` 37/37, `test_rapport_performance` 17/17,
-`test_tableau_amortissement` 19/19 ; `test_personnel` passe à 54/54,
-`test_grille_lait` à 35/35, `test_cheptel` à 25/25) + `test_full_flow`
-E2E **72/72**.
+### Audit avant revue client (06/08/2026)
+
+Une vérification adversariale (revue de code + exécution réelle sur bench) a
+trouvé **trois défauts que M. Samir aurait vus**, tous corrigés :
+
+| Défaut trouvé | Correction |
+|---|---|
+| **Les 30 % de charges patronales ne s'appliquaient jamais.** Le gel de l'historique (S83) avait figé l'ancien taux 16,57 % pour *tous* les mois, y compris à venir : août calculait encore 936 DT au lieu de 1 695 DT. | Patch `v1_8/appliquer_taux_charges_30` : le changement de taux est journalisé comme un **événement daté** (16,57 % jusqu'au 31/07, 30 % à partir du 01/08) et le coût employeur de chaque fiche est recalculé. Vérifié : juin/juillet 16,57 %, août/septembre 30 %. |
+| **Interface mi-française mi-anglaise** — le reproche exact de la réunion : la langue du site était `en`, donc tout l'écran ERPNext natif (Actif, Écriture de Journal, colonnes, boutons) restait en anglais. | Patch `v1_8/set_langue_francaise` : langue du site et des comptes en français, symbole TND `د.ت` → `DT`. Vérifié à l'écran : « Nom de l'Actif », « Statut », « Lieu », « Vue liste ». |
+| **Aucun écran finance dans le menu HMD AGRO** — ni Personnel, ni les nouveaux rapports : il fallait connaître l'URL (en réunion : « Personnels c'est devenu où ? »). | Section **Finance & Gestion** ajoutée au workspace + les 3 rapports finance dans « Rapports » ; cartes `L_C` / `PL_VL` renommées en clair. |
+
+Également corrigé : granularités **Jour / Semaine / Quinzaine / Mois** sur le
+Rapport Performance (demande « il faut que ce soit flexible »), libellé
+« cible 2,2 » en écriture française, paie de juillet postée (la Main d'Œuvre
+n'apparaissait nulle part), facture lait en double annulée (11→17 et 14→20
+juillet se chevauchaient).
+
+⚠️ **À traiter avant toute démo** (`FIN-S99`) : le jeu de données de
+démonstration fausse les indicateurs — les 25 animaux sont dans un seul lot
+nourri à la ration vache laitière (9 kg de concentré/jour chacun) alors que
+6 vaches seulement produisent, d'où L/C 0,66 et coût du litre 3,37 DT. Le
+calcul est juste, les données ne le sont pas : allotir par lot ou charger le
+backup de la base réelle.
 
 Décisions client en attente (réunion 05/08) : bande provisoire `99999` à
 confirmer auprès de l'autorité d'identification ; primes soumises CNSS ou
 non ; saisie des heures d'utilisation des équipements ; questions ouvertes de
-la spec génisse ; fusion `finance/socle-comptable` → `main` + rebuild serveur
-(runbook).
+la spec génisse ; rebuild du serveur selon le runbook.
 
 ## Epic H — ce qui manquait encore
 
@@ -139,17 +157,23 @@ fichiers produits à la main :
 ## Tests
 
 ```bash
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_valorisation_cmp.run     #  7/7
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_cost_flow.run            #  9/9
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_semence_dual_write.run   # 13/13
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_stock_integration.run    #  7/7
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_recettes.run             # 16/16
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_immobilisations.run      # 13/13
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_finance_kpis.run         # 14/14
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_roles_finance.run        #  8/8
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_personnel.run            # 28/28
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_maintenance.run          # 26/26
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_grille_lait.run          # 28/28
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_cheptel.run              # 22/22
-bench --site <site> execute hmd_agro.hmd_agro.tests.test_controle_coherence.run   # 15/15
+# 18 modules — 408 tests, tous verts au 06/08/2026
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_valorisation_cmp.run       #  7/7
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_cost_flow.run              #  9/9
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_semence_dual_write.run     # 13/13
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_stock_integration.run      #  7/7
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_recettes.run               # 16/16
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_immobilisations.run        # 13/13
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_finance_kpis.run           # 14/14
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_roles_finance.run          #  8/8
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_personnel.run              # 54/54
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_maintenance.run            # 26/26
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_grille_lait.run            # 35/35
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_cheptel.run                # 25/25
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_controle_coherence.run     # 15/15
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_decompte_lait.run          # 37/37
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_rapport_performance.run    # 17/17
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_tableau_amortissement.run  # 19/19
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_indicateurs_report.run_all_tests  # 21/21
+bench --site <site> execute hmd_agro.hmd_agro.tests.test_full_flow.run_all_tests    # 72/72
 ```

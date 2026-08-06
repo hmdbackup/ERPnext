@@ -134,3 +134,34 @@ Decision de la reunion 05/08/2026 (option 2 retenue en seance):
 - Repercussion sur le cout du litre: obligatoire (reunion).
 
 Statut: a faire (specifie par la reunion elle-meme).",finance reunion-2026-08-05
+Story,FIN-S97 Interface entierement en francais,,Exploitation,"En tant qu'utilisateur, je veux une interface entierement en francais (M. Samir en reunion : « fama onglets b'francais wel chay tkhalet » puis « lezemna nq3dou bel francais »).
+
+Cause racine: la langue du site etait « en » et chaque compte utilisateur portait « en » en surcharge, donc toute l'interface ERPNext native (Actif, Ecriture de Journal, colonnes de liste, boutons) restait en anglais alors que nos propres DocTypes etaient en francais.
+
+Criteres d'acceptation:
+- System Settings.language = fr et comptes existants bascules (patch v1_8 set_langue_francaise, idempotent, une langue choisie deliberement est respectee).
+- Verifie: « Nom de l'Actif », « Statut », « Categorie d'Actif », « Lieu », « Vue liste », « Derniere Mise a Jour ».
+- Symbole monetaire TND: د.ت remplace par DT (la ferme parle en dinars DT, nos rapports libellent deja en DT).
+
+Statut: livre.",finance reunion-2026-08-05
+Story,FIN-S98 Acces finance depuis le tableau de bord HMD AGRO,,Exploitation,"En tant qu'utilisateur, je veux atteindre les ecrans finance depuis le menu HMD AGRO (en reunion, personne ne retrouvait le registre des salaries : « Personnels c'est devenu ou ? »).
+
+Criteres d'acceptation:
+- Nouvelle section « Finance & Gestion » : Personnel, Prime Personnel, Grille Prix Lait, Decompte Lait Mensuel, Immobilisations, Configuration HMD.
+- Section « Rapports » completee : Rapport Performance, Tableau Amortissement, Controle Coherence Finance.
+- Cartes du tableau de bord lisibles : « L_C » -> « Lait / Concentre (L/kg) - cible 2,2 », « PL_VL » -> « Production / Vache Lactante (L) ».
+
+Statut: livre (fixture workspace).",finance reunion-2026-08-05
+Story,FIN-S99 Jeu de donnees de demonstration realiste,,Exploitation,"En tant que demonstrateur, je veux que les indicateurs affiches soient credibles pour un eleveur, sinon la demo decredibilise l'outil.
+
+Constat sur l'instance de demo (code correct, donnees fausses):
+- Les 25 animaux actifs sont dans UN SEUL lot qui recoit la ration vache laitiere (9 kg de concentre/jour chacun), veaux et genisses compris, alors que 6 vaches seulement sont en lactation -> L/C 0,66 (rouge), cout alimentaire 2,96 DT/L, cout complet 3,37 DT/L, IOFC negatif.
+- Le lait n'est saisi que du 11 au 20 juillet alors que les rations couvrent mai a aout -> tout rapport mensuel compare 10 jours de lait a 31 jours de concentre.
+- Deux factures lait se chevauchaient (11->17 et 14->20 juillet) : la plus ancienne a ete annulee.
+
+Criteres d'acceptation:
+- Allotement par lot (VL en lactation, taries, genisses, velles) avec ration adaptee par lot.
+- Saisie lait continue sur la periode de demonstration.
+- Ou, alternative retenue avec le client: charger le backup de la base reelle (demande a Sami, deja en attente).
+
+Statut: a faire AVANT toute demo client.",finance reunion-2026-08-05

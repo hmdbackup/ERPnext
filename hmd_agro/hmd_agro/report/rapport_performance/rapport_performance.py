@@ -63,9 +63,18 @@ def execute(filters=None):
     return COLUMNS, data
 
 
+def _fr(valeur):
+    """Nombre en écriture française (virgule décimale) pour les libellés."""
+    return f"{valeur:g}".replace(".", ",")
+
+
 def period_bounds(periode, date):
-    """(debut, fin) of the period containing `date` — full ISO week (Mon-Sun)
-    or full calendar month."""
+    """(debut, fin) of the period containing `date` — a single day, a full ISO
+    week (Mon-Sun), a calendar fortnight (1-15 / 16-fin) or a full month.
+    Les quatre granularités demandées en réunion (« journalier, hebdomadaire,
+    par quinzaine… il faut que ce soit flexible »)."""
+    if periode == "Jour":
+        return date, date
     if periode == "Semaine":
         # Lazy import — rapport_mensuel owns the canonical week-bounds helper
         # (same precedent as dashboard_kpis importing report internals).
@@ -74,6 +83,12 @@ def period_bounds(periode, date):
         )
         return _iso_week_bounds(date)
     nb_jours = monthrange(date.year, date.month)[1]
+    if periode == "Quinzaine":
+        if date.day <= 15:
+            return (getdate(f"{date.year}-{date.month:02d}-01"),
+                    getdate(f"{date.year}-{date.month:02d}-15"))
+        return (getdate(f"{date.year}-{date.month:02d}-16"),
+                getdate(f"{date.year}-{date.month:02d}-{nb_jours}"))
     debut = getdate(f"{date.year}-{date.month:02d}-01")
     fin = getdate(f"{date.year}-{date.month:02d}-{nb_jours}")
     return debut, fin
@@ -182,7 +197,7 @@ def _alimentation(debut, fin, prod):
         _row(s, "Coût Concentré", round(frais_conc, 2), "DT"),
         _row(s, "Coût Fourrage", round(frais_four, 2), "DT"),
         _row(s, "Coût Alimentaire Total", round(frais_total, 2), "DT"),
-        _row(s, f"L/C — Lait / Concentré (cible {cfg_lc_cible:g})", lc, "L/kg",
+        _row(s, f"L/C — Lait / Concentré (cible {_fr(cfg_lc_cible)})", lc, "L/kg",
              indicator=lc_ind),
     ]
     return rows, {"frais_alim_total": frais_total}
