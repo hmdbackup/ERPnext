@@ -76,8 +76,11 @@ def ecart_lait(date_debut, date_fin, prix_litre=None):
     saisie − vendu − consommation interne − lait veau) mais n'était jamais
     chiffré : on savait combien de litres s'évaporaient, pas ce que ça coûtait.
 
-    Valorisé au prix du litre de la période — **la même grille que la facture**
-    (`facturation_lait.compute_milk_rate`), sinon la perte et le CA ne
+    Valorisé au prix du litre de la période — **le même prix que la facture** :
+    d'abord le `Decompte Lait Mensuel` soumis couvrant la période (prix figé,
+    FIN-B1 — éditer une grille ne réécrit plus un mois clôturé), et seulement
+    pour une période jamais décomptée le calcul en direct
+    (`facturation_lait.compute_milk_rate`). Sinon la perte et le CA ne
     parleraient pas la même monnaie. C'est un manque à gagner : aucune écriture
     comptable n'est postée (le lait n'est pas suivi en stock).
 
@@ -86,7 +89,8 @@ def ecart_lait(date_debut, date_fin, prix_litre=None):
     valorisé, seulement compté et remonté.
 
     Retourne {litres, litres_perdus, litres_negatifs, valeur, pct_production,
-              production, prix_litre, jours}
+              production, prix_litre, prix_source, decompte, jours}
+    (prix_source : FOURNI / DECOMPTE / LIVE — d'où sort le prix du litre)
     """
     row = frappe.db.sql("""
         SELECT COALESCE(SUM(ecart_litres), 0) AS net,
@@ -107,12 +111,23 @@ def ecart_lait(date_debut, date_fin, prix_litre=None):
     perdus = float(row.perdus or 0)
     production = float(row.production or 0)
 
+    prix_source = "FOURNI"
+    decompte = None
     if prix_litre is None:
-        from hmd_agro.hmd_agro.utils.facturation_lait import compute_milk_rate
+        # FIN-B1 — frozen history first: the submitted Decompte covering the
+        # period carries THE settled price. Only a never-settled/open period
+        # falls back to the live grid computation.
+        decompte = _decompte_couvrant(date_debut, date_fin)
+        if decompte:
+            prix_litre = decompte.prix_final
+            prix_source = "DECOMPTE"
+        else:
+            from hmd_agro.hmd_agro.utils.facturation_lait import compute_milk_rate
 
-        tb = (row.somme_tb / row.vol_tb) if row.vol_tb else None
-        tp = (row.somme_tp / row.vol_tp) if row.vol_tp else None
-        prix_litre = compute_milk_rate(tb, tp, date=date_fin)
+            tb = (row.somme_tb / row.vol_tb) if row.vol_tb else None
+            tp = (row.somme_tp / row.vol_tp) if row.vol_tp else None
+            prix_litre = compute_milk_rate(tb, tp, date=date_fin)
+            prix_source = "LIVE"
 
     return {
         "litres": round(float(row.net or 0), 1),
@@ -122,5 +137,26 @@ def ecart_lait(date_debut, date_fin, prix_litre=None):
         "pct_production": round(perdus / production * 100, 2) if production else 0,
         "production": round(production, 1),
         "prix_litre": float(prix_litre),
+        "prix_source": prix_source,
+        "decompte": decompte.name if decompte else None,
         "jours": int(row.jours or 0),
     }
+
+
+def _decompte_couvrant(date_debut, date_fin):
+    """Submitted Decompte Lait Mensuel whose period covers [debut, fin] —
+    the frozen settled price (FIN-B1). None if never settled.
+    Phase-1 single-buyer: multi-acheteur will require scoping this lookup
+    (and the ERR-DLM-04 overlap check) by acheteur."""
+    if not frappe.db.table_exists("Decompte Lait Mensuel"):
+        return None
+    return frappe.db.get_value(
+        "Decompte Lait Mensuel",
+        {
+            "docstatus": 1,
+            "periode_debut": ["<=", str(date_debut)],
+            "periode_fin": [">=", str(date_fin)],
+        },
+        ["name", "prix_final"],
+        as_dict=True,
+    )

@@ -13,6 +13,9 @@ Couvre :
   4. `compute_milk_rate` : grille prioritaire, repli prix plat documenté
   5. `Bilan Lait Journalier` calcule son écart quelle que soit la source
   6. `ecart_lait` : litres perdus, valorisation, %, écart négatif non valorisé
+  7. FIN-B1 : palier VOLUME (bonus quantité, bornes en litres/mois) ;
+     immutabilité de la grille référencée par un décompte figé (ERR-GRL-06,
+     suppression ERR-GRL-07), clôture par date_fin toujours permise
 
 Run: bench --site hmd.agro execute hmd_agro.hmd_agro.tests.test_grille_lait.run
 """
@@ -60,6 +63,12 @@ def _restaurer_grilles_reelles():
 
 
 def _cleanup():
+    # Les décomptes figés d'abord : une grille référencée refuse sa
+    # suppression (ERR-GRL-07). Hard delete SQL — docstatus 1 ne s'efface pas
+    # par l'API (même pattern que les Sales Invoice de test_recettes).
+    if frappe.db.table_exists("Decompte Lait Mensuel"):
+        frappe.db.sql("""DELETE FROM `tabDecompte Lait Mensuel`
+                         WHERE periode_debut BETWEEN '2034-01-01' AND '2034-12-31'""")
     for name in frappe.get_all("Grille Prix Lait",
                                filters={"nom_grille": ["like", f"{PREFIXE}%"]},
                                pluck="name"):
@@ -234,6 +243,55 @@ def _run_inner():
     vide = finance_kpis.ecart_lait("2038-01-01", "2038-01-31")
     _check(vide["litres_perdus"] == 0 and vide["valeur"] == 0,
            "Période sans bilan lait → 0 honnête", results)
+
+    # ── 7. FIN-B1 — palier VOLUME (bonus quantité) + immutabilité
+    grille_vol = _grille("Volume", paliers=[
+        {"critere": "VOLUME", "borne_min": 0, "borne_max": 10000, "prime": 0},
+        {"critere": "VOLUME", "borne_min": 10000, "borne_max": None, "prime": 0.020},
+    ])
+    _check(grille_vol.prix_du_litre(volume=12000) == 1.520,
+           "VOLUME ≥ 10000 L/mois → bonus quantité (1.520)", results)
+    _check(grille_vol.prix_du_litre(volume=5000) == 1.500,
+           "VOLUME sous le seuil → prix de base (1.500)", results)
+    _check(grille_vol.prix_du_litre() == 1.500,
+           "Sans volume fourni → aucun bonus quantité", results)
+
+    # Un décompte figé référence la grille → ses champs de prix se figent.
+    dlm = frappe.get_doc({
+        "doctype": "Decompte Lait Mensuel",
+        "periode_debut": "2034-02-01", "periode_fin": "2034-02-28",
+        "volume_litres": 12000, "grille": grille_vol.name,
+        "prix_base": 1.500, "prime_quantite": 0.020,
+    }).insert(ignore_permissions=True)
+    dlm.submit()
+    frappe.db.commit()
+
+    def _modifier_prix():
+        doc = frappe.get_doc("Grille Prix Lait", grille_vol.name)
+        doc.prix_base = 1.700
+        doc.save(ignore_permissions=True)
+
+    def _modifier_paliers():
+        doc = frappe.get_doc("Grille Prix Lait", grille_vol.name)
+        doc.paliers[1].prime = 0.050
+        doc.save(ignore_permissions=True)
+
+    _throws(_modifier_prix, "ERR-GRL-06",
+            "Grille référencée par un décompte figé : prix_base gelé", results)
+    _throws(_modifier_paliers, "ERR-GRL-06",
+            "Grille référencée par un décompte figé : paliers gelés", results)
+    _throws(lambda: frappe.delete_doc("Grille Prix Lait", grille_vol.name,
+                                      ignore_permissions=True),
+            "ERR-GRL-07",
+            "Grille référencée par un décompte figé : suppression refusée", results)
+    try:
+        doc = frappe.get_doc("Grille Prix Lait", grille_vol.name)
+        doc.date_fin = "2034-06-30"
+        doc.save(ignore_permissions=True)
+        _check(True, "Clôturer la grille (date_fin) reste permis — "
+                     "versionnement par dates", results)
+    except Exception as exc:
+        _check(False, f"Clôture par date_fin refusée à tort : {exc}", results)
 
     print("\n" + "=" * 70)
     print(f"  RÉSULTATS: {results['pass']}/{results['pass'] + results['fail']} passés, "

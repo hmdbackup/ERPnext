@@ -45,6 +45,12 @@ def _cleanup():
         frappe.db.sql("DELETE FROM `tabGL Entry` WHERE voucher_no=%s", je)
         frappe.db.sql("DELETE FROM `tabJournal Entry Account` WHERE parent=%s", je)
         frappe.db.sql("DELETE FROM `tabJournal Entry` WHERE name=%s", je)
+    # FIN-B1 : la facturation fige aussi un Decompte Lait Mensuel — hard
+    # delete SQL (docstatus 1 ne s'efface pas par l'API).
+    if frappe.db.table_exists("Decompte Lait Mensuel"):
+        frappe.db.sql("""DELETE FROM `tabDecompte Lait Mensuel`
+                         WHERE periode_debut BETWEEN %s AND %s""",
+                      (BLJ_DEBUT, BLJ_FIN))
     frappe.db.sql("DELETE FROM `tabBilan Lait Journalier` WHERE date BETWEEN %s AND %s",
                   (BLJ_DEBUT, BLJ_FIN))
     frappe.db.commit()

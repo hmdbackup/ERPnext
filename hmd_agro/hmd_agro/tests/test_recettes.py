@@ -40,6 +40,12 @@ def _cleanup():
             filters={"remarks": ["like", f"%ANIMAL_VENTE_{TN}%"]},
             pluck="name"):
         _hard_delete_si(si)
+    # FIN-B1 : la facturation fige aussi un Decompte Lait Mensuel — hard
+    # delete SQL (docstatus 1 ne s'efface pas par l'API).
+    if frappe.db.table_exists("Decompte Lait Mensuel"):
+        frappe.db.sql("""DELETE FROM `tabDecompte Lait Mensuel`
+                         WHERE periode_debut BETWEEN %s AND %s""",
+                      (BLJ_DEBUT, BLJ_FIN))
     frappe.db.sql("DELETE FROM `tabBilan Lait Journalier` WHERE date BETWEEN %s AND %s",
                   (BLJ_DEBUT, BLJ_FIN))
     frappe.db.sql("DELETE FROM `tabAnimal` WHERE identification_tn LIKE %s", f"{TN}%")

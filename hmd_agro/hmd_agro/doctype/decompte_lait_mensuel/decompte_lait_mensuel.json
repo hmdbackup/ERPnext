@@ -1,0 +1,248 @@
+{
+ "actions": [],
+ "autoname": "format:DLM-{periode_debut}-{##}",
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_periode",
+  "periode_debut",
+  "periode_fin",
+  "column_break_periode",
+  "acheteur",
+  "section_volumes",
+  "volume_litres",
+  "column_break_volumes",
+  "tb_moyen",
+  "tp_moyen",
+  "section_prix",
+  "grille",
+  "prix_base",
+  "prime_qualite",
+  "column_break_prix",
+  "prime_quantite",
+  "prix_final",
+  "montant",
+  "section_ajustement",
+  "ajustement_manuel",
+  "column_break_ajustement",
+  "ajustement_motif",
+  "section_facture",
+  "facture",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_periode",
+   "fieldtype": "Section Break",
+   "label": "Période"
+  },
+  {
+   "fieldname": "periode_debut",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Début de période",
+   "reqd": 1
+  },
+  {
+   "fieldname": "periode_fin",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fin de période",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_periode",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "acheteur",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Acheteur (centrale)",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "section_volumes",
+   "fieldtype": "Section Break",
+   "label": "Volumes & qualité"
+  },
+  {
+   "description": "Litres vendus sur la période (somme des Bilans Lait Journaliers).",
+   "fieldname": "volume_litres",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Volume vendu (L)",
+   "precision": "1"
+  },
+  {
+   "fieldname": "column_break_volumes",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Moyenne pondérée par les litres vendus.",
+   "fieldname": "tb_moyen",
+   "fieldtype": "Float",
+   "label": "TB moyen (%)",
+   "precision": "2"
+  },
+  {
+   "description": "Moyenne pondérée par les litres vendus.",
+   "fieldname": "tp_moyen",
+   "fieldtype": "Float",
+   "label": "TP moyen (%)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "section_prix",
+   "fieldtype": "Section Break",
+   "label": "Prix"
+  },
+  {
+   "description": "Grille qualité appliquée. Vide = repli prix plat (aucune grille en vigueur).",
+   "fieldname": "grille",
+   "fieldtype": "Link",
+   "label": "Grille de prix",
+   "options": "Grille Prix Lait"
+  },
+  {
+   "fieldname": "prix_base",
+   "fieldtype": "Currency",
+   "label": "Prix de base (TND/L)",
+   "options": "TND",
+   "precision": "3"
+  },
+  {
+   "description": "Primes/pénalités TB, TP, germes, cellules (plafond et plancher de la grille inclus).",
+   "fieldname": "prime_qualite",
+   "fieldtype": "Currency",
+   "label": "Prime qualité (TND/L)",
+   "options": "TND",
+   "precision": "3"
+  },
+  {
+   "fieldname": "column_break_prix",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Bonus quantité : palier VOLUME de la grille, bornes en litres vendus sur le mois.",
+   "fieldname": "prime_quantite",
+   "fieldtype": "Currency",
+   "label": "Prime quantité (TND/L)",
+   "options": "TND",
+   "precision": "3"
+  },
+  {
+   "description": "prix_base + prime qualité + prime quantité + ajustement manuel.",
+   "fieldname": "prix_final",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Prix final (TND/L)",
+   "options": "TND",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "description": "volume × prix final.",
+   "fieldname": "montant",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Montant (TND)",
+   "options": "TND",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_ajustement",
+   "fieldtype": "Section Break",
+   "label": "Ajustement manuel"
+  },
+  {
+   "description": "Correction négociée avec la centrale, en TND/L (négative pour une retenue). Modifiable tant que le décompte est en brouillon.",
+   "fieldname": "ajustement_manuel",
+   "fieldtype": "Currency",
+   "label": "Ajustement manuel (TND/L)",
+   "options": "TND",
+   "precision": "3"
+  },
+  {
+   "fieldname": "column_break_ajustement",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Obligatoire dès qu'un ajustement est saisi : on doit pouvoir dire six mois plus tard pourquoi.",
+   "fieldname": "ajustement_motif",
+   "fieldtype": "Small Text",
+   "label": "Motif de l'ajustement",
+   "mandatory_depends_on": "eval:flt(doc.ajustement_manuel)"
+  },
+  {
+   "fieldname": "section_facture",
+   "fieldtype": "Section Break",
+   "label": "Facture"
+  },
+  {
+   "fieldname": "facture",
+   "fieldtype": "Link",
+   "label": "Facture de vente",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Decompte Lait Mensuel",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Decompte Lait Mensuel",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "periode_debut",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

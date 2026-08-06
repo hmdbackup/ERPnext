@@ -24,14 +24,35 @@ Prix résultant (RC-FIN-13) :
 `statut = PROVISOIRE` signale des valeurs indicatives non confirmées par la
 centrale : la facture et le contrôle de cohérence le rappellent, pour qu'un
 prix d'attente ne soit jamais lu comme un prix contractuel.
+
+Bonus quantité (FIN-B1) : le critère `VOLUME` s'exprime en **litres vendus sur
+le mois** (paliers uniquement, pas d'indexation linéaire) — la centrale prime
+les gros apporteurs. La prime VOLUME entre dans le plafond de prime comme les
+autres critères.
+
+Immutabilité (FIN-B1, ERR-GRL-06/07) : dès qu'un `Decompte Lait Mensuel`
+soumis référence la grille, ses valeurs de prix ne bougent plus — le décompte
+est un instantané et la grille qui l'a produit doit rester lisible telle
+quelle. Toute évolution = clôturer la grille (`date_fin`) et en créer une
+nouvelle versionnée par dates.
 """
 import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt, getdate, today
 
-CRITERES = ("TB", "TP", "GERMES", "CELLULES")
+CRITERES = ("TB", "TP", "GERMES", "CELLULES", "VOLUME")
 DATE_INFINIE = "2999-12-31"
+
+# Fields frozen once a submitted Decompte references the grid (ERR-GRL-06).
+# `date_fin`, `active`, `statut`, notes stay editable — closing/annotating a
+# grid never rewrites a settled price.
+CHAMPS_FIGES_PRIX = (
+    "prix_base", "plancher_prix", "plafond_prime",
+    "tb_reference", "prime_tb_par_point",
+    "tp_reference", "prime_tp_par_point",
+    "date_debut",
+)
 
 
 class GrillePrixLait(Document):
@@ -40,6 +61,17 @@ class GrillePrixLait(Document):
         self.validate_prix()
         self.validate_paliers()
         self.validate_unicite_active()
+        self.validate_immutabilite()
+
+    def on_trash(self):
+        fige = self._decompte_fige()
+        if fige:
+            frappe.throw(
+                _("ERR-GRL-07 : la grille est référencée par le décompte lait "
+                  "figé « {0} » — suppression interdite. La désactiver ou la "
+                  "clôturer (date de fin).")
+                .format(fige)
+            )
 
     def validate_dates(self):
         if self.date_fin and getdate(self.date_fin) < getdate(self.date_debut):
@@ -110,11 +142,63 @@ class GrillePrixLait(Document):
                 .format(autre.name, autre.date_debut, autre.date_fin)
             )
 
+    def validate_immutabilite(self):
+        """FIN-B1 (ERR-GRL-06) — a grid referenced by a submitted Decompte is
+        a frozen pricing fact: its price fields and paliers can't change.
+        Versioning happens by dates (close this grid, create the next one)."""
+        if self.is_new():
+            return
+        fige = self._decompte_fige()
+        if not fige:
+            return
+        avant = self.get_doc_before_save()
+        if not avant:
+            return
+        modifies = [
+            self.meta.get_label(champ) for champ in CHAMPS_FIGES_PRIX
+            if self._valeur_champ(avant, champ) != self._valeur_champ(self, champ)
+        ]
+        if self._signature_paliers(avant) != self._signature_paliers(self):
+            modifies.append(_("Paliers"))
+        if modifies:
+            frappe.throw(
+                _("ERR-GRL-06 : la grille est référencée par le décompte lait "
+                  "figé « {0} » — {1} n'est plus modifiable. Clôturer cette "
+                  "grille (date de fin) et créer une nouvelle grille "
+                  "versionnée par dates.")
+                .format(fige, ", ".join(modifies))
+            )
+
+    def _decompte_fige(self):
+        """Name of a submitted Decompte referencing this grid, or None."""
+        if not frappe.db.table_exists("Decompte Lait Mensuel"):
+            return None
+        return frappe.db.get_value(
+            "Decompte Lait Mensuel",
+            {"grille": self.name, "docstatus": 1},
+            "name",
+        )
+
+    @staticmethod
+    def _valeur_champ(doc, champ):
+        if champ == "date_debut":
+            return str(getdate(doc.get(champ))) if doc.get(champ) else ""
+        return flt(doc.get(champ))
+
+    @staticmethod
+    def _signature_paliers(doc):
+        return sorted(
+            (p.critere, flt(p.borne_min), flt(p.borne_max or 0), flt(p.prime))
+            for p in (doc.get("paliers") or [])
+        )
+
     # ── moteur de prix ──────────────────────────────────────────────────────
 
     def prime_critere(self, critere, valeur):
         """Prime TND/L pour un critère mesuré. Palier prioritaire ; à défaut,
-        indexation linéaire ; 0 si le critère n'est pas indexé."""
+        indexation linéaire (TB/TP seulement) ; 0 si le critère n'est pas
+        indexé. Pour VOLUME, `valeur` = litres vendus sur le mois (FIN-B1) —
+        paliers uniquement, pas d'indexation de secours."""
         if valeur is None:
             return 0.0
         valeur = flt(valeur)
@@ -131,13 +215,16 @@ class GrillePrixLait(Document):
             return (valeur - flt(self.tp_reference)) * flt(self.prime_tp_par_point)
         return 0.0
 
-    def prix_du_litre(self, tb=None, tp=None, germes=None, cellules=None, detail=False):
-        """Prix du litre selon la grille (RC-FIN-13)."""
+    def prix_du_litre(self, tb=None, tp=None, germes=None, cellules=None,
+                      volume=None, detail=False):
+        """Prix du litre selon la grille (RC-FIN-13). `volume` = litres vendus
+        sur le mois, pour le bonus quantité (palier VOLUME, FIN-B1)."""
         primes = {
             "TB": self.prime_critere("TB", tb),
             "TP": self.prime_critere("TP", tp),
             "GERMES": self.prime_critere("GERMES", germes),
             "CELLULES": self.prime_critere("CELLULES", cellules),
+            "VOLUME": self.prime_critere("VOLUME", volume),
         }
         prime_totale = sum(primes.values())
         if flt(self.plafond_prime) and prime_totale > flt(self.plafond_prime):
