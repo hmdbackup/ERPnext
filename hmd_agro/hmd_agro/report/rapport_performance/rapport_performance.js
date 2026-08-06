@@ -1,6 +1,6 @@
 // Rapport Performance (Phase 4) — synthèse hebdo / mensuelle consolidée.
 // La coloration de la colonne `valeur` reprend le formatter des Indicateurs
-// du Rapport Mensuel (indicator Green/Orange/Red calculé côté Python contre
+// du Rapport Periodique (indicator Green/Orange/Red calculé côté Python contre
 // les seuils PFE de HMD Configuration) ; `valeur` reste un Float natif pour
 // que l'export CSV/Excel alimente le template Excel sans nettoyage.
 
@@ -28,7 +28,7 @@ frappe.query_reports["Rapport Performance"] = {
             return default_formatter(value, row, column, data);
         }
         let html = default_formatter(value, row, column, data);
-        // KPI coloring — same palette/weights as Rapport Mensuel Indicateurs.
+        // KPI coloring — same palette/weights as Rapport Periodique Indicateurs.
         if (column.fieldname === "valeur" && data && data.indicator) {
             const colors = {Green: "green", Orange: "orange", Red: "red"};
             const c = colors[data.indicator];

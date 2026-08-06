@@ -8,12 +8,15 @@ Float so the native CSV/Excel export feeds the Excel template cleanly
 (réunion 05/08/2026 : export vers template Excel plutôt que PDF).
 
 Sources — always the canonical primitives, never re-derived:
-    live_state count_* / effectif_on_date   — herd events, reconstructed
-    Traite / Bilan Lait Journalier          — production volumes
-    rapport_mensuel._aliment_data_per_lot   — SLE-based feed costs (lazy
-                                              import, dashboard_kpis precedent)
-    finance_kpis.gl_sums                    — GL sums per SCE family
-    maintenance_utils.cout_maintenance      — équipement interventions
+    live_state count_* / effectif_on_date     — herd events, reconstructed
+    Traite / Bilan Lait Journalier            — production volumes
+    rapport_periodique._aliment_data_per_lot  — SLE-based feed costs (lazy
+                                                import, dashboard_kpis precedent)
+    rapport_periodique.couverture_lait        — garde-fou « période incomplète »
+    finance_kpis.gl_sums                      — GL sums per SCE family
+    maintenance_utils.cout_maintenance        — équipement interventions
+    maintenance_utils.cout_utilisation        — heures machine valorisées
+                                                (vue ANALYTIQUE, cf. _charges)
 
 A period with no postings honestly returns 0 — same stance as gl_sums.
 """
@@ -27,7 +30,9 @@ from hmd_agro.hmd_agro.utils.live_state import (
     effectif_on_date, count_velages, count_naissances,
     count_avortements_mort_nes, count_achats, count_exits,
 )
-from hmd_agro.hmd_agro.utils.maintenance_utils import cout_maintenance
+from hmd_agro.hmd_agro.utils.maintenance_utils import (
+    cout_maintenance, cout_utilisation,
+)
 
 
 COLUMNS = [
@@ -51,15 +56,31 @@ def execute(filters=None):
     # Only count days that actually happened (open week/month in progress).
     fin = min(fin, today_dt)
 
+    # Garde-fou « période incomplète » (FIN-S95) — le rapport périodique possède
+    # la lecture canonique de la couverture de saisie du lait (lazy import,
+    # précédent dashboard_kpis).
+    from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
+        couverture_lait, neutraliser_indicateurs_lait,
+    )
+    couverture = couverture_lait(debut, fin)
+    # Coût mécanique de la période — vue ANALYTIQUE, cf. _charges / maintenance_utils.
+    meca = cout_utilisation(debut, fin)
+
     data = []
     data.extend(_mouvements_cheptel(debut, fin))
-    prod_rows, prod_ctx = _production(debut, fin)
+    prod_rows, prod_ctx = _production(debut, fin, couverture)
     data.extend(prod_rows)
     alim_rows, alim_ctx = _alimentation(debut, fin, prod_ctx["prod"])
     data.extend(alim_rows)
     gl = gl_sums(debut, fin)
-    data.extend(_charges(debut, fin, gl))
-    data.extend(_couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx))
+    data.extend(_charges(debut, fin, gl, meca))
+    data.extend(_couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx, meca))
+
+    # Trou de saisie avéré : on annonce la couleur en tête de tableau et on
+    # éteint la coloration des ratios faussés — sans masquer une seule valeur.
+    if not couverture["complete"]:
+        neutraliser_indicateurs_lait(data)
+        data.insert(0, _row("Avertissement", couverture["message"], None, ""))
     return COLUMNS, data
 
 
@@ -76,9 +97,9 @@ def period_bounds(periode, date):
     if periode == "Jour":
         return date, date
     if periode == "Semaine":
-        # Lazy import — rapport_mensuel owns the canonical week-bounds helper
+        # Lazy import — rapport_periodique owns the canonical week-bounds helper
         # (same precedent as dashboard_kpis importing report internals).
-        from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import (
+        from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
             _iso_week_bounds,
         )
         return _iso_week_bounds(date)
@@ -139,7 +160,7 @@ def _mouvements_cheptel(debut, fin):
 
 # ─── (ii) Production ─────────────────────────────────────────────────────────
 
-def _production(debut, fin):
+def _production(debut, fin, couverture):
     prod = float(frappe.db.sql("""
         SELECT SUM(quantite_litres) FROM `tabTraite`
         WHERE date_traite BETWEEN %s AND %s
@@ -164,6 +185,11 @@ def _production(debut, fin):
         _row(s, "Consommation Interne", round(float(blj.conso), 1), "L"),
         _row(s, "Lait Veau", round(float(blj.veau), 1), "L"),
         _row(s, "Écart Lait", round(float(blj.ecart), 1), "L"),
+        # Toujours affichée : 31/31 rassure autant que 10/31 alerte, et sans
+        # elle personne ne peut savoir si un ratio bas vient du troupeau ou
+        # d'un retard de saisie.
+        _row(s, "Couverture des Données (lait)", couverture["jours_saisis"],
+             f"jours sur {couverture['jours_periode']}"),
     ]
     return rows, {"prod": prod, "vl": vl}
 
@@ -171,9 +197,9 @@ def _production(debut, fin):
 # ─── (iii) Alimentation ──────────────────────────────────────────────────────
 
 def _alimentation(debut, fin, prod):
-    """Feed costs + L/C, from the canonical SLE-based walker of the monthly
+    """Feed costs + L/C, from the canonical SLE-based walker of the periodic
     report (lazy in-function import — dashboard_kpis precedent)."""
-    from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import (
+    from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
         _aliment_data_per_lot, _kpi_ind_range,
     )
     d = _aliment_data_per_lot(debut, fin)
@@ -205,7 +231,18 @@ def _alimentation(debut, fin, prod):
 
 # ─── (iv) Charges ────────────────────────────────────────────────────────────
 
-def _charges(debut, fin, gl):
+def _charges(debut, fin, gl, meca):
+    """Charges de la période, lues au Grand Livre.
+
+    FIN-S96 — les deux lignes mécaniques (« Heures d'Équipement », « Coût
+    d'Utilisation Mécanique ») sont une vue ANALYTIQUE et NON une charge de
+    plus : le coût horaire forfaitaire d'un équipement agrège amortissement +
+    entretien + mazout, or ces trois-là sont DÉJÀ dans les charges ci-dessus
+    (68x, 615, achats de carburant). Les additionner à « Charges Totales »
+    compterait deux fois la même dépense — c'est pourquoi elles restent hors
+    du total et pourquoi leur libellé le rappelle à l'écran.
+    Voir l'encadré en tête de `utils/maintenance_utils.py`.
+    """
     maint = cout_maintenance(debut, fin)
     s = "Charges"
     return [
@@ -217,13 +254,17 @@ def _charges(debut, fin, gl):
         _row(s, "Charges Totales", round(gl["charges"], 2), "DT"),
         _row(s, "EBE — Excédent Brut d'Exploitation", round(gl["ebe"], 2), "DT"),
         _row(s, "Résultat de la Période", round(gl["resultat"], 2), "DT"),
+        _row(s, "Heures d'Équipement", meca["heures"], "h"),
+        _row(s, "Coût d'Utilisation Mécanique (vue analytique — déjà compris "
+                "dans les charges ci-dessus, ne pas additionner)",
+             round(meca["total"], 2), "DT"),
     ]
 
 
 # ─── (v) Coûts unitaires ─────────────────────────────────────────────────────
 
-def _couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx):
-    from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _kpi_ind
+def _couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx, meca):
+    from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import _kpi_ind
 
     prod = prod_ctx["prod"]
     vl = prod_ctx["vl"]
@@ -231,6 +272,10 @@ def _couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx):
     jours = max((fin - debut).days + 1, 1)
 
     cout_alim_l = round(frais_alim / prod, 3) if prod else 0
+    # FIN-S96 — le coût mécanique au litre est une CLÉ DE RÉPARTITION : il
+    # n'entre PAS dans `cout_complet_l` (amortissement et entretien y sont déjà
+    # via les charges du Grand Livre). Cf. `_charges` et maintenance_utils.
+    cout_meca_l = round(meca["total"] / prod, 3) if prod else 0
     cout_complet_l = round(gl["charges"] / prod, 3) if prod else 0
     cout_hors_amort_l = (round((gl["charges"] - gl["amortissements"]) / prod, 3)
                          if prod else 0)
@@ -252,6 +297,8 @@ def _couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx):
     return [
         _row(s, "Coût Alimentaire / L", cout_alim_l, "DT/L",
              indicator=cout_alim_ind),
+        _row(s, "Coût Mécanique / L (vue analytique — non additionnable au "
+                "coût complet)", cout_meca_l, "DT/L"),
         _row(s, "Coût Complet / L (toutes charges)", cout_complet_l, "DT/L"),
         _row(s, "Coût du Litre hors Amortissement", cout_hors_amort_l, "DT/L"),
         _row(s, "IOFC (Income Over Feed Cost) — CA Lait − Coût Alimentaire",

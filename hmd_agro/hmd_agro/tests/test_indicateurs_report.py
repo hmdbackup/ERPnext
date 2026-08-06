@@ -1,5 +1,5 @@
 """
-Tests unitaires — Rapport Mensuel / Indicateurs
+Tests unitaires — Rapport Periodique / Indicateurs
 
 Vache counts = snapshot at date_filter (reconstructed from events).
 Production / Concentré / MS = cumulative date_debut → date_filter.
@@ -10,8 +10,9 @@ Run: bench execute hmd_agro.hmd_agro.tests.test_indicateurs_report.run_all_tests
 import frappe
 from frappe.utils import getdate
 
-from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import (
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
     _indicateurs, _kpi_ind_range,
+    INDICATEURS_SENSIBLES_LAIT, couverture_lait, neutraliser_indicateurs_lait,
 )
 from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.tests._sle_seed_helpers import (
@@ -296,11 +297,112 @@ def test_cout_hors_amort(results):
           f"direction={hors.get('direction')}", results)
 
 
+def test_couverture_complete(results):
+    """FIN-S95 — 31 jours de traite sur 31 : aucune alarme parasite, la
+    coloration des indicateurs reste ACTIVE (ne pas perdre les vraies alertes)."""
+    log("Couverture complète — pas d'avertissement, couleurs conservées", "HEAD")
+    couv = couverture_lait("2024-03-01", "2024-03-31")
+    check(couv["jours_saisis"] == 31 and couv["jours_periode"] == 31,
+          f"Couverture 31/31 ({couv['jours_saisis']}/{couv['jours_periode']})",
+          f"Couverture {couv['jours_saisis']}/{couv['jours_periode']}", results)
+    check(couv["complete"] and couv["message"] is None,
+          "complete=True, aucun message", f"complete={couv['complete']}", results)
+
+    _, rows = _indicateurs(CTX_END)
+    check(not any(r["indicateur"].startswith("⚠") for r in rows),
+          "Aucune ligne d'avertissement", "Un avertissement est apparu à tort",
+          results)
+    ligne_couv = _find(rows, "Couverture des Données (lait)")
+    check(ligne_couv is not None and ligne_couv["valeur"] == 31,
+          "Ligne « Couverture des Données (lait) » = 31 jours",
+          f"Got {ligne_couv}", results)
+    check(ligne_couv is not None and ligne_couv["unite"] == "jours sur 31",
+          "Unité « jours sur 31 »",
+          f"Got {ligne_couv['unite'] if ligne_couv else None}", results)
+    lc = _find(rows, "L/C")
+    if lc and lc["valeur"]:
+        check(lc["indicator"] in ("Green", "Orange", "Red"),
+              f"L/C garde sa couleur ({lc['indicator']}) sur période complète",
+              f"L/C indicator={lc['indicator']!r} alors que la période est complète",
+              results)
+
+
+def test_neutralisation_ciblee(results):
+    """La neutralisation ne touche QUE la famille « lait » : un indicateur
+    étranger au lait (persistance, écart, entretien) garde sa couleur."""
+    log("Neutralisation ciblée — seuls les indicateurs lait perdent la couleur", "HEAD")
+    lignes = [
+        {"indicateur": "L/C — Lait / Concentré (cible 2,2)", "indicator": "Red"},
+        {"indicateur": "Coût Alimentaire / L", "indicator": "Red"},
+        {"indicateur": "Coût Complet / L (toutes charges)", "indicator": "Orange"},
+        {"indicateur": "Coût du Litre hors Amortissement", "indicator": "Orange"},
+        {"indicateur": "IOFC (Income Over Feed Cost) / Vache Lactante / Jour",
+         "indicator": "Red"},
+        {"indicateur": "Efficacité Alimentaire (sur MS)", "indicator": "Red"},
+        {"indicateur": "Persistance moyenne", "indicator": "Red"},
+        {"indicateur": "Entretien / Produit Brut", "indicator": "Orange"},
+    ]
+    neutraliser_indicateurs_lait(lignes)
+    eteints = [l["indicateur"] for l in lignes if not l["indicator"]]
+    check(len(eteints) == 6, f"6 indicateurs lait éteints ({len(eteints)})",
+          f"Éteints: {eteints}", results)
+    check(lignes[-2]["indicator"] == "Red" and lignes[-1]["indicator"] == "Orange",
+          "Persistance et Entretien gardent leur couleur (hors famille lait)",
+          f"Got {lignes[-2]['indicator']!r} / {lignes[-1]['indicator']!r}", results)
+    check(all(any(l["indicateur"].startswith(p) for p in INDICATEURS_SENSIBLES_LAIT)
+              for l in lignes if not l["indicator"]),
+          "Tous les éteints appartiennent à INDICATEURS_SENSIBLES_LAIT",
+          "Un indicateur hors liste a été éteint", results)
+
+
+def test_couverture_trouee(results):
+    """Reproduction du cas réel constaté en base (juillet 2026) : le lait n'est
+    saisi que la moitié des jours alors que les rations sont distribuées tous
+    les jours. Le L/C s'effondre et passe au ROUGE — c'est un TROU DE SAISIE,
+    pas un problème de troupeau. Le rapport doit l'annoncer et éteindre la
+    couleur, SANS masquer une seule valeur.
+
+    DESTRUCTIF (supprime les traites du 16 au 31) : à lancer en dernier."""
+    log("Période trouée — avertissement + indicateurs neutralisés", "HEAD")
+    frappe.db.sql("""DELETE FROM `tabTraite`
+                     WHERE animal LIKE %s AND date_traite >= '2024-03-16'""",
+                  f"{PREFIX}%")
+    frappe.db.commit()
+
+    couv = couverture_lait("2024-03-01", "2024-03-31")
+    check(couv["jours_saisis"] == 15 and not couv["complete"],
+          f"Couverture 15/31 et complete=False ({couv['jours_saisis']}/31)",
+          f"Got {couv['jours_saisis']}/{couv['jours_periode']}, "
+          f"complete={couv['complete']}", results)
+    check(couv["message"] and "15 jours sur 31" in couv["message"],
+          f"Message explicite : {couv['message']}", f"Got {couv['message']!r}",
+          results)
+
+    _, rows = _indicateurs(CTX_END)
+    check(rows and rows[0]["indicateur"].startswith("⚠"),
+          "Avertissement en TÊTE de section",
+          f"Première ligne = {rows[0]['indicateur'] if rows else None}", results)
+    ligne_couv = _find(rows, "Couverture des Données (lait)")
+    check(ligne_couv is not None and ligne_couv["valeur"] == 15,
+          "Ligne de couverture = 15 jours", f"Got {ligne_couv}", results)
+
+    restants = [r["indicateur"] for r in rows if r.get("indicator")
+                and r["indicateur"].startswith(INDICATEURS_SENSIBLES_LAIT)]
+    check(not restants, "Aucun indicateur lait n'est encore coloré",
+          f"Encore colorés : {restants}", results)
+
+    lc = _find(rows, "L/C")
+    check(lc is not None and lc["valeur"] > 0,
+          f"La VALEUR du L/C reste affichée ({lc['valeur'] if lc else None}) — "
+          "on neutralise la couleur, jamais le chiffre",
+          f"Got {lc}", results)
+
+
 # ─── Runner ───
 
 def run_all_tests():
     print("\n" + "=" * 60)
-    print("  RAPPORT MENSUEL / INDICATEURS — TESTS")
+    print("  RAPPORT PERIODIQUE / INDICATEURS — TESTS")
     print("=" * 60)
     results = {"pass": 0, "fail": 0}
 
@@ -326,6 +428,10 @@ def run_all_tests():
         test_midmonth_caps(results)
         test_lc_alarm_18(results)
         test_cout_hors_amort(results)
+        test_couverture_complete(results)
+        test_neutralisation_ciblee(results)
+        # DESTRUCTIF (supprime les traites du 16 au 31) — toujours en dernier.
+        test_couverture_trouee(results)
     finally:
         _cleanup()
 

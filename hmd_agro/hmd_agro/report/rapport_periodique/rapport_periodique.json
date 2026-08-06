@@ -13,11 +13,11 @@
  "modified": "2026-04-11 18:41:03.153303",
  "modified_by": "Administrator",
  "module": "HMD AGRO",
- "name": "Rapport Mensuel",
+ "name": "Rapport Periodique",
  "owner": "Administrator",
  "prepared_report": 0,
  "ref_doctype": "Animal",
- "report_name": "Rapport Mensuel",
+ "report_name": "Rapport Periodique",
  "report_type": "Script Report",
  "roles": [
   {

@@ -19,7 +19,10 @@ function add_date_arrows(report, fieldname) {
     }, 100);
 }
 
-frappe.query_reports["Rapport Mensuel"] = {
+// FIN-S95 — le rapport ne s'appelle plus « Mensuel » : il se lit au jour, à la
+// semaine ou à la quinzaine (réunion du 05/08/2026). Nom technique sans accent,
+// comme « Controle Coherence Finance ».
+frappe.query_reports["Rapport Periodique"] = {
     onload(report) {
         add_date_arrows(report, "date");
         if (report.__buttons_added) return;
@@ -169,13 +172,13 @@ frappe.query_reports["Rapport Mensuel"] = {
 
 function open_import_dialog(report) {
     const d = new frappe.ui.Dialog({
-        title: __("Importer un Rapport Mensuel"),
+        title: __("Importer un classeur Excel mensuel"),
         fields: [
             {
                 fieldname: "info",
                 fieldtype: "HTML",
                 options: `<div style="color:var(--text-muted);font-size:13px;margin-bottom:10px;">
-                    Importer un fichier Excel au format Rapport Mensuel (1 onglet par jour, nommés "01".."31").
+                    Importer un fichier Excel au format historique de la ferme (1 onglet par jour, nommés "01".."31").
                     L'année et le mois sont détectés automatiquement après chargement du fichier.
                 </div>`
             },

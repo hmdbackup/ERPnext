@@ -1,6 +1,6 @@
 """Workspace dashboard KPI cards.
 
-Mirrors the per-period KPIs from rapport_mensuel `_indicateurs` but at fixed
+Mirrors the per-period KPIs from rapport_periodique `_indicateurs` but at fixed
 windows tuned for the workspace card use case:
     - PL/VL: yesterday (single day, matches Production Journaliere pattern)
     - L/C:   7-day rolling (smoother than 1 day so PFE seuils make sense)
@@ -39,7 +39,7 @@ def get_lc_ratio():
     """L/C — litres of milk per kg of concentré over a 7-day rolling window
     (ending yesterday). Indicator color uses the PFE seuils so the card stays
     consistent with the Indicateurs section of the monthly report."""
-    from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import (
+    from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
         _aliment_data_per_lot, _kpi_ind_range,
     )
     # _aliment_data_per_lot does date arithmetic (date - date), so pass date

@@ -1,5 +1,5 @@
 """
-Rapport Reproduction — Multi-section report (modeled after Rapport Mensuel).
+Rapport Reproduction — Multi-section report (modeled after Rapport Periodique).
 Each section reads LIVE data from Animal + linked event tables (Velage,
 Lactation, Insemination, Avortement), with all event lookups capped at the
 selected date_filter so the report reflects "as of date X".
@@ -636,7 +636,7 @@ def _bilan_annuel(ctx):
     Current year is partial (Jan 1 → date_filter); past years are full
     (Jan 1 → Dec 31). Mirrors Excel BILAN_annuel."""
     from hmd_agro.hmd_agro.utils.live_state import effectif_on_date
-    from hmd_agro.hmd_agro.report.rapport_mensuel.rapport_mensuel import _aliment_data_per_lot
+    from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import _aliment_data_per_lot
 
     # Cap at today so future date_filter doesn't produce phantom future-year rows
     date_filter = min(ctx["date_filter"], getdate(today()))

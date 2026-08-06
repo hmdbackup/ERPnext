@@ -8,6 +8,11 @@ Covers:
   3. Valeurs : Production Totale (Traite) et Lait Vendu (Bilan Lait
      Journalier) en delta par rapport à la baseline (les totaux cheptel
      incluent les données réelles de la base)
+  4. FIN-S95 — garde-fou « période incomplète » : mars 2019 est saisi tous
+     les jours (aucun avertissement, couleurs conservées) tandis que janvier
+     2019 ne l'est que 2 jours (avertissement + couleurs éteintes)
+  5. FIN-S96 — imputation du coût mécanique (heures, DT, DT/L) en VUE
+     ANALYTIQUE : elle ne doit jamais gonfler le coût complet du litre
 
 Fixtures isolées sur mars 2019 (période passée, avant tout backfill SLE —
 les coûts alimentaires y valent honnêtement 0, ce que le rapport assume).
@@ -22,11 +27,18 @@ from frappe.utils import getdate
 from hmd_agro.hmd_agro.report.rapport_performance.rapport_performance import (
     execute, period_bounds,
 )
+from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
+    INDICATEURS_SENSIBLES_LAIT, couverture_lait,
+)
+from hmd_agro.hmd_agro.utils.maintenance_utils import cout_utilisation
 
 PREFIX = "TEST-PERF-"
 MOIS_DATE = "2019-03-15"
 SEM_DATE = "2019-03-06"        # mercredi → semaine ISO 04/03 - 10/03
 BLJ_DATES = ["2019-03-01", "2019-03-02", "2019-03-03"]
+# Janvier 2019 : lait saisi 2 jours sur 31 — le trou de saisie à détecter.
+TROU_DATE = "2019-01-15"
+TROU_TRAITE_DATES = ["2019-01-02", "2019-01-03"]
 
 _created = []
 
@@ -172,6 +184,101 @@ def test_valeurs_semaine(results, base_prod_sem):
            results)
 
 
+def test_couverture_complete(results):
+    """Mars 2019 : 31 jours de traite sur 31 → aucun avertissement, et la
+    coloration des indicateurs reste ACTIVE (sinon on perd les vraies alertes)."""
+    print("  ----  Garde-fou — période complète : pas d'alarme parasite")
+    couv = couverture_lait("2019-03-01", "2019-03-31")
+    _check(couv["jours_saisis"] == 31 and couv["complete"],
+           f"Couverture 31/31 et complete=True (got {couv['jours_saisis']}/31)",
+           results)
+    _, rows = execute({"periode": "Mois", "date": MOIS_DATE})
+    _check(not any(r["section"] == "Avertissement" for r in rows),
+           "Aucune ligne « Avertissement »", results)
+    ligne = _find(rows, "Production", "Couverture des Données (lait)")
+    _check(ligne is not None and ligne["valeur"] == 31
+           and ligne["unite"] == "jours sur 31",
+           f"Ligne « Couverture des Données (lait) » = 31 jours sur 31 "
+           f"(got {ligne})", results)
+
+
+def test_couverture_trouee(results):
+    """Janvier 2019 : lait saisi 2 jours sur 31 alors que le reste du rapport
+    couvre le mois entier. Le rapport doit le DIRE en tête de tableau et
+    éteindre la coloration des ratios faussés — sans masquer une valeur."""
+    print("  ----  Garde-fou — période trouée : avertissement + couleurs éteintes")
+    couv = couverture_lait("2019-01-01", "2019-01-31")
+    _check(couv["jours_saisis"] == 2 and not couv["complete"],
+           f"Couverture 2/31 et complete=False (got {couv['jours_saisis']}/31)",
+           results)
+
+    _, rows = execute({"periode": "Mois", "date": TROU_DATE})
+    _check(rows and rows[0]["section"] == "Avertissement"
+           and rows[0]["indicateur"].startswith("⚠"),
+           f"Avertissement en TÊTE de tableau "
+           f"(got {rows[0]['section'] if rows else None})", results)
+    _check(rows and "2 jours sur 31" in (rows[0]["indicateur"] or ""),
+           "Le message chiffre le trou (« 2 jours sur 31 »)", results)
+    ligne = _find(rows, "Production", "Couverture des Données (lait)")
+    _check(ligne is not None and ligne["valeur"] == 2,
+           f"Ligne de couverture = 2 jours (got {ligne})", results)
+
+    colores = [r["indicateur"] for r in rows if r.get("indicator")
+               and r["indicateur"].startswith(INDICATEURS_SENSIBLES_LAIT)]
+    _check(not colores, f"Aucun indicateur lait coloré (restants: {colores})",
+           results)
+    prod = _find(rows, "Production", "Production Totale")
+    _check(prod is not None and prod["valeur"] is not None,
+           "Les VALEURS restent affichées (on éteint la couleur, pas le chiffre)",
+           results)
+
+
+def test_cout_mecanique(results):
+    """FIN-S96 — heures machine, coût mécanique et coût mécanique/L.
+
+    Contrat central : c'est une VUE ANALYTIQUE. L'amortissement et l'entretien
+    sont déjà dans les charges du Grand Livre — le coût mécanique ne doit donc
+    entrer NI dans « Charges Totales » NI dans « Coût Complet / L ». Le libellé
+    doit le rappeler à l'écran pour qu'on ne l'additionne pas à la main.
+    """
+    print("  ----  Coût mécanique — imputation analytique (FIN-S96)")
+    _, rows = execute({"periode": "Mois", "date": MOIS_DATE})
+
+    heures = _find(rows, "Charges", "Heures d'Équipement")
+    _check(heures is not None and heures["unite"] == "h",
+           f"Ligne « Heures d'Équipement » en h (got {heures})", results)
+    meca = _find(rows, "Charges", "Coût d'Utilisation Mécanique")
+    _check(meca is not None and meca["unite"] == "DT",
+           f"Ligne « Coût d'Utilisation Mécanique » en DT (got {meca})", results)
+    _check(meca is not None and "analytique" in meca["indicateur"],
+           "Le libellé annonce la vue analytique (anti double-comptage)", results)
+    meca_l = _find(rows, "Coûts Unitaires", "Coût Mécanique / L")
+    _check(meca_l is not None and meca_l["unite"] == "DT/L",
+           f"Ligne « Coût Mécanique / L » en DT/L (got {meca_l})", results)
+    _check(meca_l is not None and "non additionnable" in meca_l["indicateur"],
+           "Le libellé du coût unitaire interdit l'addition au coût complet",
+           results)
+
+    # Le coût complet reste STRICTEMENT charges GL / litres : le mécanique
+    # n'y entre pas. On le revérifie arithmétiquement.
+    charges = (_find(rows, "Charges", "Charges Totales") or {}).get("valeur") or 0
+    prod = (_find(rows, "Production", "Production Totale") or {}).get("valeur") or 0
+    complet = (_find(rows, "Coûts Unitaires", "Coût Complet / L")
+               or {}).get("valeur") or 0
+    attendu = round(charges / prod, 3) if prod else 0
+    _check(abs(complet - attendu) < 0.005,
+           f"Coût Complet / L = charges GL / litres ({complet} vs {attendu}) — "
+           "le coût mécanique n'est pas ajouté", results)
+
+    # Lecture source : sans saisie (ou sans le DocType), zéro honnête.
+    lecture = cout_utilisation("2019-03-01", "2019-03-31")
+    _check(set(lecture) == {"total", "heures", "par_atelier", "par_equipement"},
+           f"cout_utilisation retourne la structure attendue ({sorted(lecture)})",
+           results)
+    _check(lecture["total"] == 0 and lecture["heures"] == 0,
+           "Période sans saisie → 0 honnête (posture gl_sums)", results)
+
+
 def test_periode_future(results):
     print("  ----  Période future — ligne INFO, pas de faux zéros")
     _, rows = execute({"periode": "Mois", "date": "2099-01-15"})
@@ -213,6 +320,9 @@ def _run_inner():
     for day in range(1, 32):
         for c in cows:
             _traite(c, f"2019-03-{day:02d}", 10)
+    # Janvier 2019 volontairement troué : 2 jours de lait sur 31.
+    for d in TROU_TRAITE_DATES:
+        _traite(cows[0], d, 10)
     blj_days = _seed_blj()
     frappe.db.commit()
 
@@ -220,6 +330,9 @@ def _run_inner():
     test_period_bounds(results)
     test_valeurs_mois(results, base_prod, base_vendu, blj_days)
     test_valeurs_semaine(results, base_prod_sem)
+    test_couverture_complete(results)
+    test_couverture_trouee(results)
+    test_cout_mecanique(results)
     test_periode_future(results)
 
     _cleanup()

@@ -1188,6 +1188,91 @@ def _alimentation(ctx):
     return columns, data
 
 
+# ─── Garde-fou « période incomplète » ────────────────────────────────────────
+#
+# Constat sur la base (juillet 2026) : le lait n'est saisi que 10 jours sur 31
+# alors que les rations sont distribuées TOUS les jours. Résultat : le L/C
+# tombe à 0,66 et s'affiche en ROUGE, le coût du litre explose — on croit à un
+# problème de troupeau alors que c'est un TROU DE SAISIE. En production la
+# saisie prendra du retard un jour ou l'autre : le rapport doit le DIRE plutôt
+# que d'alarmer à tort.
+#
+# Indicateurs concernés : ceux dont le lait est au numérateur (ou au
+# dénominateur d'un coût) alors que le dénominateur (concentré, MS, charges)
+# est, lui, saisi tous les jours. Un jour de lait manquant les fausse
+# mécaniquement. On neutralise leur COULEUR — jamais leur valeur : on n'invente
+# rien, on refuse seulement de crier au loup sur un chiffre qu'on sait tronqué.
+INDICATEURS_SENSIBLES_LAIT = (
+    "L/C",
+    "Efficacité Alimentaire",
+    "Coût Alimentaire / L",
+    "Coût Complet / L",
+    "Coût du Litre hors Amortissement",
+    "IOFC",
+)
+
+
+def couverture_lait(date_debut, date_fin):
+    """Jours de la période où du lait a réellement été saisi, sur le total.
+
+    Un jour compte dès qu'il porte une Traite OU un Bilan Lait Journalier —
+    les deux voies de saisie du lait ; l'UNION dédoublonne les journées.
+
+    Retourne {"jours_saisis", "jours_periode", "jours_manquants",
+              "complete": bool, "message": str|None}.
+
+    `complete` tolère `couverture_lait_tolerance_jours` jours d'écart (défaut
+    1) : le lait du jour courant n'est saisi qu'en fin de journée, sans quoi
+    tout rapport ouvert le matin s'auto-déclarerait incomplet et perdrait ses
+    vraies alertes. En dessous de la tolérance, la coloration reste normale.
+    """
+    debut, fin = getdate(date_debut), getdate(date_fin)
+    jours_periode = (fin - debut).days + 1
+    if jours_periode <= 0:
+        return {"jours_saisis": 0, "jours_periode": 0, "jours_manquants": 0,
+                "complete": True, "message": None}
+
+    jours_saisis = int(frappe.db.sql("""
+        SELECT COUNT(*) FROM (
+            SELECT date_traite AS jour FROM `tabTraite`
+            WHERE date_traite BETWEEN %(debut)s AND %(fin)s
+            UNION
+            SELECT `date` AS jour FROM `tabBilan Lait Journalier`
+            WHERE `date` BETWEEN %(debut)s AND %(fin)s
+        ) jours_avec_lait
+    """, {"debut": debut, "fin": fin})[0][0] or 0)
+
+    jours_manquants = max(jours_periode - jours_saisis, 0)
+    tolerance = int(get_config("couverture_lait_tolerance_jours", default=1))
+    complete = jours_manquants <= tolerance
+
+    message = None
+    if not complete:
+        message = (
+            f"⚠ Données incomplètes : lait saisi sur {jours_saisis} jours sur "
+            f"{jours_periode} — les ratios ci-dessous sont sous-estimés et les "
+            f"coûts au litre surestimés. Compléter la saisie du lait avant de "
+            f"conclure ; la coloration des indicateurs concernés est suspendue."
+        )
+    return {"jours_saisis": jours_saisis, "jours_periode": jours_periode,
+            "jours_manquants": jours_manquants, "complete": complete,
+            "message": message}
+
+
+def neutraliser_indicateurs_lait(lignes, cle="indicateur"):
+    """Vide l'`indicator` (la couleur) des lignes faussées par un trou de
+    saisie du lait. Les VALEURS restent affichées telles quelles.
+
+    À n'appeler QUE lorsque `couverture_lait(...)["complete"]` est faux :
+    neutraliser sans écart réel ferait perdre les vraies alertes.
+    """
+    for ligne in lignes:
+        libelle = ligne.get(cle) or ""
+        if libelle.startswith(INDICATEURS_SENSIBLES_LAIT):
+            ligne["indicator"] = ""
+    return lignes
+
+
 # ─── Indicateurs ─────────────────────────────────────────────────────────────
 
 def _kpi_ind(value, green_max=None, orange_max=None, green_min=None, orange_min=None):
@@ -1536,6 +1621,20 @@ def _indicateurs(ctx):
             row("Cheptel — Valeur Nette (VNC)", cheptel["net"], "DT"),
         ])
 
+    # ── Garde-fou « période incomplète » (FIN-S95) — cf. couverture_lait.
+    # La couverture est affichée TOUJOURS (31/31 rassure autant que 10/31
+    # alerte) ; l'avertissement et la neutralisation des couleurs n'arrivent
+    # que s'il y a un vrai trou de saisie, sinon on perdrait les vraies alertes.
+    couverture = couverture_lait(date_debut, date_filter)
+    entete = [row("Couverture des Données (lait)", couverture["jours_saisis"],
+                  f"jours sur {couverture['jours_periode']}")]
+    if not couverture["complete"]:
+        neutraliser_indicateurs_lait(data)
+        avertissement = row(couverture["message"], None, "")
+        avertissement["is_header"] = 1
+        entete.insert(0, avertissement)
+    data = entete + data
+
     return columns, data
 
 
@@ -1571,6 +1670,9 @@ def _tout(ctx):
         # section — otherwise the KPI coloring is silently lost in "Tout".
         data.append({"label": row["indicateur"],
                      "valeur": f"{val} {unite}" if val is not None else unite,
-                     "indicator": row.get("indicator")})
+                     "indicator": row.get("indicator"),
+                     # L'avertissement « données incomplètes » est un en-tête :
+                     # sans ce report de is_header il passerait inaperçu ici.
+                     "is_header": row.get("is_header")})
 
     return columns, data
