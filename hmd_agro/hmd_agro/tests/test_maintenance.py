@@ -13,6 +13,14 @@ Couvre :
      datés (échéances réellement calculées)
   7. `annuler_intervention` : annulation symétrique document + écriture
 
+FIN-S96 — heures d'utilisation et coût mécanique (ERR-UTIL-01 → 05) :
+  8. Validations de saisie : heures ≤ 0, heures > 24, équipement non soumis,
+     date future, atelier groupe
+  9. Calcul du coût : taux de la fiche équipement, puis repli sur le défaut
+     de configuration (25 DT/h)
+ 10. `cout_utilisation` : agrégation par atelier et par équipement, et
+     période vide = 0 honnête
+
 Pré-requis site : socle comptable + setup.finance.maintenance.
 
 Run: bench --site hmd.agro execute hmd_agro.hmd_agro.tests.test_maintenance.run
@@ -28,7 +36,9 @@ from hmd_agro.hmd_agro.utils import finance_kpis, maintenance_utils
 COMPANY = "hmd-agro"
 ITEM_TEST = "ZZTEST-EQUIP"
 ASSET_TEST = "ZZTEST Équipement"
+ASSET_BROUILLON = "ZZTEST Équipement brouillon"
 PREFIXE_REF = "ZZTEST_MNT"
+PREFIXE_ASSET = "ZZTEST Équipement"
 
 
 def _abbr():
@@ -46,7 +56,11 @@ def _cleanup():
             frappe.db.sql("DELETE FROM `tabJournal Entry Account` WHERE parent=%s", je)
             frappe.db.sql("DELETE FROM `tabJournal Entry` WHERE name=%s", je)
         frappe.db.sql("DELETE FROM `tabAsset Repair` WHERE name=%s", repair)
-    for asset in frappe.get_all("Asset", filters={"asset_name": ASSET_TEST}, pluck="name"):
+    for asset in frappe.get_all(
+            "Asset", filters={"asset_name": ["like", f"{PREFIXE_ASSET}%"]}, pluck="name"):
+        if frappe.db.table_exists("Utilisation Equipement"):
+            frappe.db.sql(
+                "DELETE FROM `tabUtilisation Equipement` WHERE equipement=%s", asset)
         frappe.db.sql("DELETE FROM `tabAsset Maintenance Log` WHERE asset_name=%s", asset)
         frappe.db.sql("DELETE FROM `tabAsset Maintenance Task` WHERE parent=%s", asset)
         frappe.db.sql("DELETE FROM `tabAsset Maintenance` WHERE name=%s", asset)
@@ -72,7 +86,7 @@ def _throws(fn, code, msg, results):
         _check(code in str(exc), f"{msg} → {code}", results)
 
 
-def _asset_test():
+def _asset_test(nom=ASSET_TEST, submit=True):
     if not frappe.db.exists("Item", ITEM_TEST):
         frappe.get_doc({
             "doctype": "Item", "item_code": ITEM_TEST, "item_name": "Équipement de test",
@@ -82,7 +96,7 @@ def _asset_test():
         }).insert(ignore_permissions=True)
     asset = frappe.get_doc({
         "doctype": "Asset", "company": COMPANY, "item_code": ITEM_TEST,
-        "asset_name": ASSET_TEST, "location": "Ferme HMD",
+        "asset_name": nom, "location": "Ferme HMD",
         "cost_center": f"Lait - {_abbr()}",
         "is_existing_asset": 1, "calculate_depreciation": 0,
         "gross_purchase_amount": 12000,
@@ -90,8 +104,24 @@ def _asset_test():
         "available_for_use_date": str(add_days(today(), -400)),
     })
     asset.insert(ignore_permissions=True)
-    asset.submit()
+    if submit:
+        asset.submit()
     return asset.name
+
+
+def _utilisation(equipement, heures, atelier, date=None, operateur=None):
+    """FIN-S96 — une saisie d'heures d'utilisation (insert, pas de submit)."""
+    doc = frappe.get_doc({
+        "doctype": "Utilisation Equipement",
+        "equipement": equipement,
+        "date": date or today(),
+        "heures": heures,
+        "atelier": atelier,
+        "operateur": operateur,
+        "notes": "ZZTEST",
+    })
+    doc.insert(ignore_permissions=True)
+    return doc
 
 
 def _numeros(je_name):
@@ -232,6 +262,79 @@ def _run_inner():
     _check(abs((apres["cout"] - base_cout) - 510) < 0.01,
            f"Coût d'entretien ramené à 510 TND après annulation "
            f"({apres['cout'] - base_cout:.2f})", results)
+
+    # ── 8. FIN-S96 — garde-fous de la saisie des heures
+    lait = f"Lait - {_abbr()}"
+    traction = (f"Traction - {_abbr()}"
+                if frappe.db.exists("Cost Center", f"Traction - {_abbr()}") else lait)
+    groupe = frappe.db.get_value(
+        "Cost Center", {"company": COMPANY, "is_group": 1}, "name")
+
+    _throws(lambda: _utilisation(asset, 0, lait),
+            "ERR-UTIL-01", "Heures nulles refusées", results)
+    _throws(lambda: _utilisation(asset, -3, lait),
+            "ERR-UTIL-01", "Heures négatives refusées", results)
+    _throws(lambda: _utilisation(asset, 30, lait),
+            "ERR-UTIL-02", "Plus de 24 h sur une journée refusé", results)
+    brouillon = _asset_test(ASSET_BROUILLON, submit=False)
+    _throws(lambda: _utilisation(brouillon, 2, lait),
+            "ERR-UTIL-03", "Équipement non soumis refusé", results)
+    _throws(lambda: _utilisation(asset, 2, lait, date=add_days(today(), 3)),
+            "ERR-UTIL-04", "Date d'utilisation future refusée", results)
+    if groupe:
+        _throws(lambda: _utilisation(asset, 2, groupe),
+                "ERR-UTIL-05", "Atelier groupe refusé", results)
+
+    # ── 9. FIN-S96 — coût mécanique : repli config puis taux de la fiche
+    base_util = maintenance_utils.cout_utilisation(debut, fin)
+    frappe.db.set_value("Asset", asset, "cout_horaire", 0, update_modified=False)
+    _check(abs(maintenance_utils.cout_horaire(asset) - 25) < 0.001,
+           "Sans taux sur la fiche → défaut de configuration (25 DT/h)", results)
+    u1 = _utilisation(asset, 4, lait)
+    _check(abs(u1.cout_horaire_applique - 25) < 0.001 and abs(u1.cout_total - 100) < 0.001,
+           f"4 h × 25 DT/h = 100 TND ({u1.cout_total})", results)
+
+    frappe.db.set_value("Asset", asset, "cout_horaire", 40, update_modified=False)
+    _check(abs(maintenance_utils.cout_horaire(asset) - 40) < 0.001,
+           "Taux de la fiche équipement prioritaire (40 DT/h)", results)
+    u2 = _utilisation(asset, 2, traction)
+    u3 = _utilisation(asset, 1, lait)
+    _check(abs(u2.cout_total - 80) < 0.001 and abs(u3.cout_total - 40) < 0.001,
+           f"2 h et 1 h × 40 DT/h = 80 et 40 TND ({u2.cout_total}, {u3.cout_total})",
+           results)
+    _check(abs(frappe.db.get_value("Utilisation Equipement", u1.name,
+                                   "cout_total") - 100) < 0.001,
+           "Taux figé à la saisie : changer la fiche ne réécrit pas le passé",
+           results)
+
+    # ── 10. FIN-S96 — agrégations et période vide
+    util = maintenance_utils.cout_utilisation(debut, fin)
+    _check(abs((util["total"] - base_util["total"]) - 220) < 0.01,
+           f"cout_utilisation = 100 + 80 + 40 = 220 TND "
+           f"({util['total'] - base_util['total']:.2f})", results)
+    _check(abs((util["heures"] - base_util["heures"]) - 7) < 0.01,
+           f"7 h cumulées sur la période ({util['heures'] - base_util['heures']:.2f})",
+           results)
+    par_eq = util["par_equipement"].get(asset, {})
+    _check(abs(par_eq.get("heures", 0) - 7) < 0.01
+           and abs(par_eq.get("cout", 0) - 220) < 0.01,
+           f"Par équipement : 7 h / 220 TND ({par_eq})", results)
+    delta_lait = (util["par_atelier"].get(lait, 0)
+                  - base_util["par_atelier"].get(lait, 0))
+    delta_traction = (util["par_atelier"].get(traction, 0)
+                      - base_util["par_atelier"].get(traction, 0))
+    if traction == lait:
+        _check(abs(delta_lait - 220) < 0.01,
+               f"Par atelier : 220 TND sur {lait} (atelier Traction absent)", results)
+    else:
+        _check(abs(delta_lait - 140) < 0.01 and abs(delta_traction - 80) < 0.01,
+               f"Par atelier : 140 TND Lait / 80 TND Traction "
+               f"({delta_lait:.2f} / {delta_traction:.2f})", results)
+
+    vide = maintenance_utils.cout_utilisation("2000-01-01", "2000-01-31")
+    _check(vide["total"] == 0 and vide["heures"] == 0
+           and vide["par_atelier"] == {} and vide["par_equipement"] == {},
+           "Période sans saisie → 0 honnête, aucun atelier inventé", results)
 
     print("\n" + "=" * 70)
     print(f"  RÉSULTATS: {results['pass']}/{results['pass'] + results['fail']} passés, "

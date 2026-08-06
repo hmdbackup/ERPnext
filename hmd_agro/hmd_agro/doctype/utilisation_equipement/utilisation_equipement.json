@@ -1,0 +1,160 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:UTIL-{#####}",
+ "creation": "2026-08-06 09:00:00.000000",
+ "description": "Heures réellement travaillées par un équipement, valorisées à son coût horaire forfaitaire (amortissement + maintenance + mazout). VUE ANALYTIQUE UNIQUEMENT : aucune écriture comptable n'est générée — l'amortissement (68x) et l'entretien (615) sont déjà au Grand Livre. Ce document sert à RÉPARTIR ce coût entre les ateliers, pas à le créer une seconde fois.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "equipement",
+  "date",
+  "heures",
+  "column_break_saisie",
+  "atelier",
+  "operateur",
+  "section_cout",
+  "cout_intro",
+  "cout_horaire_applique",
+  "column_break_cout",
+  "cout_total",
+  "section_notes",
+  "notes"
+ ],
+ "fields": [
+  {
+   "description": "L'équipement utilisé (tracteur, remorque, groupe électrogène…). Il doit être soumis dans le registre des immobilisations.",
+   "fieldname": "equipement",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Équipement",
+   "options": "Asset",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "description": "Jour d'utilisation. Une date future est refusée : on ne saisit que des heures déjà faites.",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "description": "Heures réellement travaillées ce jour-là (0 à 24). Ex. « le tracteur a travaillé 1 h » ou « 5 h ».",
+   "fieldname": "heures",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Heures d'utilisation",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_saisie",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Atelier auquel imputer ces heures (Lait, Cultures - Fourrage, Traction…). Un centre de coûts groupe est refusé.",
+   "fieldname": "atelier",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Atelier d'imputation",
+   "options": "Cost Center",
+   "reqd": 1
+  },
+  {
+   "description": "Conducteur / opérateur (facultatif).",
+   "fieldname": "operateur",
+   "fieldtype": "Link",
+   "label": "Opérateur",
+   "options": "Personnel"
+  },
+  {
+   "fieldname": "section_cout",
+   "fieldtype": "Section Break",
+   "label": "Coût mécanique (analytique)"
+  },
+  {
+   "fieldname": "cout_intro",
+   "fieldtype": "HTML",
+   "options": "<p class=\"text-muted small\">Coût horaire <b>forfaitaire</b> de l'équipement : amortissement + maintenance + mazout. Il vient de la fiche de l'équipement (champ « Coût horaire ») ou, à défaut, du défaut de la configuration HMD (25 DT/h).<br><b>Aucune écriture comptable n'est produite ici.</b> L'amortissement et l'entretien sont déjà au Grand Livre : ce coût sert uniquement à répartir la charge mécanique entre les ateliers et à la faire remonter dans le coût du litre.</p>"
+  },
+  {
+   "description": "Taux retenu au moment de la saisie : celui de la fiche équipement, sinon le défaut de la configuration (25 DT/h).",
+   "fieldname": "cout_horaire_applique",
+   "fieldtype": "Currency",
+   "label": "Coût horaire appliqué (TND/h)",
+   "options": "TND",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cout",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Heures × coût horaire appliqué.",
+   "fieldname": "cout_total",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Coût mécanique (TND)",
+   "options": "TND",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "description": "Travail effectué, parcelle, incident… (facultatif).",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-06 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Utilisation Equipement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "equipement,date,atelier",
+ "sort_field": "date",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

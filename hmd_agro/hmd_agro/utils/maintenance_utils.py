@@ -17,10 +17,29 @@ Ce module relie les deux :
     périodiques ; ERPNext génère les `Asset Maintenance Log` à échéance.
 
   • `cout_maintenance` / `interventions_planifiees` — les lectures qui
-    alimentent le Rapport Mensuel et le contrôle de cohérence.
+    alimentent le Rapport Periodique et le contrôle de cohérence.
+
+  • `cout_horaire` / `cout_utilisation` (FIN-S96) — le coût mécanique : les
+    heures saisies dans « Utilisation Equipement » valorisées au coût horaire
+    forfaitaire de chaque équipement.
 
 Idempotence (pattern maison) : passer `reference` ; une intervention portant
 déjà cette référence est retournée telle quelle, sans doublon.
+
+━━ FIN-S96 — POURQUOI LE COÛT HORAIRE NE POSTE RIEN (le piège) ━━━━━━━━━━━━━━
+Le coût horaire forfaitaire d'un équipement = amortissement + maintenance +
+mazout (25 DT/h par défaut, réunion du 05/08/2026, « option 2 »). Or ces trois
+charges sont DÉJÀ au Grand Livre : l'amortissement par les écritures 68x
+(`Asset Depreciation Schedule`), l'entretien par le compte 615
+(`enregistrer_intervention` ci-dessus), le carburant par ses propres achats.
+Elles sont donc DÉJÀ dans le coût complet du litre.
+
+Poster une écriture à partir des heures d'utilisation compterait ces charges
+UNE SECONDE FOIS. `cout_utilisation` est par construction une vue purement
+ANALYTIQUE : elle RÉPARTIT entre ateliers une charge déjà comptabilisée. Les
+rapports qui l'affichent doivent la présenter comme une clé de répartition —
+jamais l'additionner aux charges du Grand Livre.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Run:
     bench --site hmd.agro execute \\
@@ -315,17 +334,70 @@ def _prochaine_echeance(periodicite, date_debut):
 # ─── Lectures ────────────────────────────────────────────────────────────────
 
 def cout_horaire(asset_name):
-    """Coût horaire d'un équipement en DT/h (TASK B3).
+    """Coût horaire forfaitaire d'un équipement en DT/h (TASK B3, FIN-S96).
 
+    Forfait « option 2 » de la réunion du 05/08/2026 : amortissement +
+    maintenance + mazout dans un seul taux.
     Résolution : `Asset.cout_horaire` s'il est renseigné, sinon le défaut
     `equipement_cout_horaire_defaut` de HMD Configuration (25 DT/h).
-    NOTE : la saisie des heures d'utilisation par équipement n'est pas
-    encore conçue — ce résolveur ne fait que fournir le taux.
+    Consommé par `Utilisation Equipement.validate` (qui fige le taux sur la
+    ligne) et par `cout_utilisation` ci-dessous.
     """
     valeur = flt(frappe.db.get_value("Asset", asset_name, "cout_horaire"))
     if valeur:
         return valeur
     return flt(get_config("equipement_cout_horaire_defaut", default=25))
+
+
+def cout_utilisation(date_debut, date_fin):
+    """Coût mécanique de la période, réparti par atelier et par équipement.
+
+    Lit les saisies « Utilisation Equipement » (heures réellement travaillées)
+    valorisées au taux figé sur chaque ligne. C'est LA lecture que les rapports
+    appellent — ils n'ont pas à connaître le DocType.
+
+    RAPPEL (cf. l'encadré en tête de module) : aucune écriture n'est produite
+    et ce montant NE S'AJOUTE PAS aux charges du Grand Livre — amortissement et
+    entretien y figurent déjà. C'est une clé de répartition entre ateliers.
+
+    Retourne {"total": DT, "heures": h,
+              "par_atelier": {cost_center: DT},
+              "par_equipement": {asset: {"heures": h, "cout": DT}}}
+    Une période sans saisie retourne des zéros — même posture honnête que
+    `cout_maintenance` / `gl_sums`.
+    """
+    vide = {"total": 0.0, "heures": 0.0, "par_atelier": {}, "par_equipement": {}}
+    # The DocType may not exist yet on a site migrated from an older version.
+    if not frappe.db.table_exists("Utilisation Equipement"):
+        return vide
+
+    lignes = frappe.db.sql("""
+        SELECT equipement, atelier,
+               COALESCE(SUM(heures), 0) AS heures,
+               COALESCE(SUM(cout_total), 0) AS cout
+        FROM `tabUtilisation Equipement`
+        WHERE docstatus < 2 AND `date` BETWEEN %s AND %s
+        GROUP BY equipement, atelier
+    """, (getdate(date_debut), getdate(date_fin)), as_dict=True)
+    if not lignes:
+        return vide
+
+    par_atelier = {}
+    par_equipement = {}
+    for ligne in lignes:
+        cout = float(ligne.cout or 0)
+        heures = float(ligne.heures or 0)
+        par_atelier[ligne.atelier] = round(par_atelier.get(ligne.atelier, 0) + cout, 3)
+        agg = par_equipement.setdefault(ligne.equipement, {"heures": 0.0, "cout": 0.0})
+        agg["heures"] = round(agg["heures"] + heures, 2)
+        agg["cout"] = round(agg["cout"] + cout, 3)
+
+    return {
+        "total": round(sum(float(ligne.cout or 0) for ligne in lignes), 3),
+        "heures": round(sum(float(ligne.heures or 0) for ligne in lignes), 2),
+        "par_atelier": par_atelier,
+        "par_equipement": par_equipement,
+    }
 
 
 def cout_maintenance(date_debut, date_fin):
