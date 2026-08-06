@@ -146,9 +146,17 @@ fichiers produits à la main :
 3. **Facturation lait** : la ferme facture (job mensuel actif) OU import du
    décompte centrale — ne jamais activer les deux (RG-FIN-12).
 4. **Date de bascule + balances réelles** pour dérouler `BASCULE.md`.
-5. **Backup BD réelle** (demande à Sami) : l'outil de validation existe
-   désormais — restaurer la base, lancer le contrôle de cohérence, traiter
-   les ERREUR puis les ALERTE.
+5. **Données réelles** — ⚠️ ce n'est PAS une attente externe. En réunion du
+   05/08/2026, l'engagement a été pris **côté développement** : « *ma3neha
+   mouch sa3ib, n7otoulkom les données réelles li ntab3ouhom* » (« ce n'est
+   pas difficile, on vous met les données réelles que vous suivez »). Aucune
+   demande de backup n'a été adressée à qui que ce soit pendant cette
+   réunion — la mention « demande à Sami » de la livraison du 19/07 relève
+   d'un contexte antérieur. Question ouverte à trancher : **quelle source
+   réelle est accessible** (base du site de production, base sur laquelle
+   travaille Siwar, ou l'export Excel que le rapport journalier remplace).
+   L'outil de validation existe : restaurer, lancer le contrôle de
+   cohérence, traiter les ERREUR puis les ALERTE.
 6. **Taux de charges patronales** — tranché en réunion 05/08/2026 : 30 %
    par défaut (`taux_charges_patronales_pct`, patch v1_8), surchargeable par
    salarié sur la fiche Personnel. Les **salaires réels** restent à confirmer

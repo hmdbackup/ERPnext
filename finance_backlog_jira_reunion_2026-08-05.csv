@@ -162,6 +162,6 @@ Constat sur l'instance de demo (code correct, donnees fausses):
 Criteres d'acceptation:
 - Allotement par lot (VL en lactation, taries, genisses, velles) avec ration adaptee par lot.
 - Saisie lait continue sur la periode de demonstration.
-- Ou, alternative retenue avec le client: charger le backup de la base reelle (demande a Sami, deja en attente).
+- Source des donnees reelles a trancher (base du site de production, base de Siwar, ou export Excel remplace par le rapport journalier). ATTENTION: ce n'est pas une attente externe — l'engagement a ete pris cote developpement en reunion (« ma3neha mouch sa3ib, n7otoulkom les donnees reelles li ntab3ouhom »). Aucune demande de backup n'a ete adressee a un tiers pendant la reunion du 05/08.
 
 Statut: a faire AVANT toute demo client.",finance reunion-2026-08-05
