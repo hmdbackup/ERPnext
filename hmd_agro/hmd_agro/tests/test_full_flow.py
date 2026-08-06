@@ -46,6 +46,7 @@ def run_all_tests():
         test_insemination_validation(results, ctx)
         test_insemination_reussie(results, ctx)
         test_velage(results, ctx)
+        test_boucle_officielle(results, ctx)
         test_lactation(results, ctx)
         test_traite(results, ctx)
         test_traite_validation(results, ctx)
@@ -377,6 +378,66 @@ def test_velage(results, ctx):
     assert_test(a.etat_gestation == "VIDE", "Mother → VIDE", f"etat: {a.etat_gestation}", results)
     assert_test(a.id_ia_fecondante is None, "id_ia_fecondante cleared", "", results)
     assert_test(a.etat_lactation == "EN_PRODUCTION", "etat_lactation = EN_PRODUCTION", f"etat: {a.etat_lactation}", results)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# PART 3b: IDENTIFICATION PROVISOIRE → BOUCLE OFFICIELLE (TASK A1)
+# ═══════════════════════════════════════════════════════════════════
+
+def test_boucle_officielle(results, ctx):
+    print("\n── Part 3b: Identification provisoire → boucle officielle ──")
+
+    calf = ctx.get("calf")
+    if not calf:
+        log("No calf from velage, skipping", "WARN")
+        return
+
+    from hmd_agro.hmd_agro.doctype.animal.animal import enregistrer_boucle_officielle
+
+    doc = frappe.get_doc("Animal", calf)
+    assert_test(doc.identification_provisoire == 1,
+        "Auto-generated calf ID flagged provisoire",
+        f"identification_provisoire: {doc.identification_provisoire}", results)
+    assert_test(doc.name.startswith("99999") and len(doc.name) == 10
+        and int(doc.name) >= 9999900001,
+        f"Auto-ID in reserved 99999-band, floor 9999900001 ({doc.name})",
+        f"unexpected auto-ID: {doc.name}", results)
+
+    # Invalid boucle format refused (ERR-ANI-02)
+    try:
+        enregistrer_boucle_officielle(calf, "12AB")
+        assert_test(False, "", "Invalid boucle format should fail", results)
+    except Exception:
+        assert_test(True, "Invalid boucle format blocked (ERR-ANI-02)", "", results)
+
+    # Boucle already used by another animal refused (ERR-ANI-03)
+    try:
+        enregistrer_boucle_officielle(calf, ctx["animal"])
+        assert_test(False, "", "Duplicate boucle should fail", results)
+    except Exception:
+        assert_test(True, "Duplicate boucle blocked (ERR-ANI-03)", "", results)
+
+    # Register the official boucle → rename + flag cleared
+    boucle = f"91{RUN_ID}05"
+    enregistrer_boucle_officielle(calf, boucle)
+    frappe.db.commit()
+    ctx["calf"] = boucle
+
+    assert_test(frappe.db.exists("Animal", boucle) is not None,
+        f"Calf renamed to official boucle {boucle}", "Rename failed", results)
+    flag = frappe.db.get_value("Animal", boucle, "identification_provisoire")
+    assert_test(not flag, "Provisional flag cleared after registration",
+        f"flag still: {flag}", results)
+    assert_test(frappe.db.get_value("Animal", boucle, "nom_metier") == boucle[-4:],
+        "nom_metier recomputed from official boucle",
+        f"nom_metier: {frappe.db.get_value('Animal', boucle, 'nom_metier')}", results)
+
+    # Once official, the boucle flow refuses to run again (ERR-ANI-04)
+    try:
+        enregistrer_boucle_officielle(boucle, f"91{RUN_ID}06")
+        assert_test(False, "", "Re-registering an official boucle should fail", results)
+    except Exception:
+        assert_test(True, "Official ID not replaceable (ERR-ANI-04)", "", results)
 
 
 # ═══════════════════════════════════════════════════════════════════

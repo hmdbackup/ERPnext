@@ -146,7 +146,9 @@ def creer_actif_cheptel(animal_name, submit=True):
         "doctype": "Asset",
         "company": COMPANY,
         "item_code": ITEM_CHEPTEL,
-        "asset_name": f"Vache {animal_name}",
+        # The users know cows by their working number (nom_metier, last 4
+        # digits), not the 10-digit national ID — title the asset with it.
+        "asset_name": f"Vache {animal.nom_metier or animal.name}",
         "asset_category": CATEGORIE_ASSET,
         "location": LOCATION,
         "cost_center": _cost_center_lait(),

@@ -142,22 +142,40 @@ class Velage(Document):
 
     def _create_calf(self, sexe, identification, poids, mother, pere, num):
         """Create a single calf Animal + optional Pesee"""
-        # Generate ID if not provided — find highest numeric ID and add 1
+        # No ear-tag yet at calving (réunion 2026-08): auto-generate a
+        # PROVISIONAL ID in the "99999"-prefixed band (5 nines + 5-digit
+        # sequence, floor 9999900001). The wider "99" prefix collides with
+        # REAL Tunisian boucles — the herd already holds 999-series numbers
+        # like 9990000122 — whereas the 999-series only reaches 99999xxxxx
+        # after ~10M issued boucles. Band choice still to be confirmed with
+        # the identification authority. MAX+1 is seeded from provisional IDs
+        # only (never from real animals), and the exists() loop guards
+        # against any residual collision. The official boucle replaces it
+        # later via Animal.enregistrer_boucle_officielle.
+        provisoire = 0
         if not identification:
             max_id = frappe.db.sql(
                 """SELECT MAX(CAST(identification_tn AS UNSIGNED)) as max_id
                    FROM `tabAnimal`
-                   WHERE identification_tn REGEXP '^[0-9]{10}$'""",
+                   WHERE identification_provisoire = 1
+                     AND identification_tn REGEXP '^99999[0-9]{5}$'""",
                 as_dict=True
             )
             last_num = int(max_id[0].max_id or 0) if max_id and max_id[0].max_id else 0
-            identification = str(last_num + 1).zfill(10)
+            if last_num < 9999900000:
+                last_num = 9999900000
+            candidate = last_num + 1
+            while frappe.db.exists("Animal", str(candidate).zfill(10)):
+                candidate += 1
+            identification = str(candidate).zfill(10)
+            provisoire = 1
 
         categorie = "VEAU" if sexe == "M" else "VELLE"
 
         calf = frappe.get_doc({
             "doctype": "Animal",
             "identification_tn": identification,
+            "identification_provisoire": provisoire,
             "categorie": categorie,
             "sexe": sexe,
             "race": mother.race,

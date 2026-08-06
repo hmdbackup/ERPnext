@@ -212,6 +212,9 @@ def _run_inner():
            "Immobilisation soumise dans la catégorie « Cheptel reproducteur »", results)
     _check(doc.id_animal == nee_ici,
            "L'immobilisation pointe vers l'animal (clé d'idempotence)", results)
+    nom_metier_nee = frappe.db.get_value("Animal", nee_ici, "nom_metier")
+    _check(bool(nom_metier_nee) and doc.asset_name == f"Vache {nom_metier_nee}",
+           f"asset_name porte le N° travail ({doc.asset_name})", results)
     _check(flt(doc.gross_purchase_amount) == forfait
            and flt(doc.opening_accumulated_depreciation) == 0,
            "Vêlage il y a 6 mois → aucune annuité déjà courue", results)
@@ -225,6 +228,23 @@ def _run_inner():
            f"Vêlage il y a 30 mois → 2 annuités d'ouverture ({attendu} TND)", results)
     _check(reprise.opening_number_of_booked_depreciations == 2,
            "Nombre d'annuités déjà courues transmis à ERPNext", results)
+
+    # ── 4bis. TASK A1 : l'asset_name suit le N° travail
+    # Rename (boucle changée — Administrator est System Manager, autorisé)
+    nouveau_tn = f"{PREFIXE_TN}801"
+    frappe.rename_doc("Animal", nee_ici, nouveau_tn)
+    nee_ici = nouveau_tn
+    frappe.db.commit()
+    _check(frappe.db.get_value("Asset", asset_nee, "asset_name")
+           == f"Vache {nouveau_tn[-4:]}",
+           "Rename de l'animal → asset_name propagé (after_rename)", results)
+    # Changement d'identification_fr → nom_metier change → asset retitré
+    animal_doc = frappe.get_doc("Animal", nee_ici)
+    animal_doc.identification_fr = "9988001177"
+    animal_doc.save(ignore_permissions=True)
+    _check(frappe.db.get_value("Asset", asset_nee, "asset_name") == "Vache 1177",
+           "Changement d'identification_fr → asset_name resynchronisé (on_update)",
+           results)
 
     # ── 5/6. Idempotence et éligibilité
     _check(cv.creer_actif_cheptel(nee_ici) == asset_nee,

@@ -13,6 +13,7 @@
   "identification_tn",
   "nom_metier",
   "identification_fr",
+  "identification_provisoire",
   "column_break_id",
   "race",
   "nom",
@@ -98,6 +99,13 @@
    "fieldtype": "Data",
    "label": "Identification FR",
    "unique": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "identification_provisoire",
+   "fieldtype": "Check",
+   "label": "Identification provisoire",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_id",
@@ -378,7 +386,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-24 17:13:08.799840",
+ "modified": "2026-08-05 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "HMD AGRO",
  "name": "Animal",

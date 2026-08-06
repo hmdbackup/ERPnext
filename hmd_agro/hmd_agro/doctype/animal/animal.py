@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import cint
 import re
 
 
@@ -122,9 +123,19 @@ class Animal(Document):
                 )
     
     def before_rename(self, old_name, new_name, merge=False):
-        """Validate new name format on rename"""
+        """Validate new name format on rename; lock official identifications"""
         if not re.match(r'^\d{10}$', new_name):
             frappe.throw("L'identification TN doit être 10 chiffres (ex: 1234567890).")
+        # Réunion 2026-08: the official ear-tag number is immutable. Only a
+        # provisional ID (auto-set at calving) may be replaced by the real
+        # boucle — via enregistrer_boucle_officielle or a System Manager.
+        provisoire = frappe.db.get_value("Animal", old_name, "identification_provisoire")
+        if not cint(provisoire) and "System Manager" not in frappe.get_roles():
+            frappe.throw(
+                "ERR-ANI-01: L'identification officielle n'est pas modifiable. "
+                "Seul un identifiant provisoire (posé au vêlage) peut être "
+                "remplacé par la boucle officielle."
+            )
 
     def after_rename(self, old_name, new_name, merge=False):
         """Update nom_metier after document is renamed"""
@@ -136,8 +147,10 @@ class Animal(Document):
             nom_metier = new_name[-4:]
         else:
             nom_metier = ""
-        
+
         frappe.db.set_value("Animal", new_name, "nom_metier", nom_metier, update_modified=False)
+        # RC-FIN-55: the cheptel Asset carries the working number in its title
+        sync_asset_names(new_name, nom_metier)
 
 
     
@@ -148,8 +161,16 @@ class Animal(Document):
         self._close_active_records_on_exit()
         self._sync_sale_invoice_on_exit()
         self._sync_actif_cheptel_on_exit()
+        self._sync_asset_names_on_update()
         self._update_lot_counts()
         self._track_lot_change()
+
+    def _sync_asset_names_on_update(self):
+        """RC-FIN-55: keep Asset.asset_name aligned with the working number
+        whenever nom_metier changes (e.g. identification_fr edited)."""
+        if not self.has_value_changed("nom_metier"):
+            return
+        sync_asset_names(self.name, self.nom_metier)
 
     def _sync_sale_invoice_on_exit(self):
         """RG-FIN-20 / CF-FIN-21: statut → VENDU/REFORME posts the Sales
@@ -272,6 +293,47 @@ class Animal(Document):
             if old_doc and old_doc.id_lot and old_doc.id_lot != self.id_lot:
                 update_lot_animal_count(old_doc.id_lot)
 
+
+
+def sync_asset_names(animal_name, nom_metier):
+    """Retitle the cheptel Asset(s) of an animal to 'Vache <nom_metier or id>'.
+    Uses db.set_value because cheptel Assets are submitted documents; guarded
+    against no-op writes."""
+    cible = f"Vache {nom_metier or animal_name}"
+    for asset in frappe.get_all("Asset",
+                                filters={"id_animal": animal_name},
+                                fields=["name", "asset_name"]):
+        if asset.asset_name == cible:
+            continue
+        frappe.db.set_value("Asset", asset.name, "asset_name", cible,
+                            update_modified=False)
+
+
+@frappe.whitelist()
+def enregistrer_boucle_officielle(animal, boucle):
+    """Replace a provisional identification (auto-set at calving) with the
+    official ear-tag number: rename the Animal, clear the provisional flag.
+    The before_rename guard stays open because the animal is provisoire."""
+    if not frappe.has_permission("Animal", "write", doc=animal):
+        frappe.throw("Permission insuffisante pour modifier cet animal.",
+                     frappe.PermissionError)
+    boucle = (boucle or "").strip()
+    if not re.match(r'^\d{10}$', boucle):
+        frappe.throw("ERR-ANI-02: La boucle officielle doit être 10 chiffres (ex: 1234567890).")
+    if frappe.db.exists("Animal", boucle):
+        frappe.throw(f"ERR-ANI-03: La boucle {boucle} est déjà utilisée par un autre animal.")
+    if not cint(frappe.db.get_value("Animal", animal, "identification_provisoire")):
+        frappe.throw(
+            "ERR-ANI-04: Cet animal n'a pas d'identification provisoire — "
+            "l'identification officielle n'est pas modifiable."
+        )
+
+    frappe.rename_doc("Animal", animal, boucle)
+    frappe.db.set_value("Animal", boucle, "identification_provisoire", 0,
+                        update_modified=False)
+    frappe.msgprint(f"Boucle officielle {boucle} enregistrée.",
+                    indicator="green", alert=True)
+    return boucle
 
 
 @frappe.whitelist()

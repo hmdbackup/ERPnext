@@ -66,6 +66,35 @@ frappe.ui.form.on("Animal", {
                 frappe.new_doc("Traitement");
             }, __("Activité"));
         }
+        // Provisional ID (set at calving) → official ear-tag registration
+        if (!frm.is_new() && cint(frm.doc.identification_provisoire)) {
+            frm.dashboard.set_headline(
+                __("Identification provisoire ({0}) - en attente de la boucle officielle",
+                    [frm.doc.name]),
+                "orange"
+            );
+            frm.add_custom_button(__("Enregistrer boucle officielle"), function() {
+                frappe.prompt({
+                    fieldname: "boucle",
+                    fieldtype: "Data",
+                    label: __("Boucle officielle (10 chiffres)"),
+                    reqd: 1
+                }, function(values) {
+                    frappe.call({
+                        method: "hmd_agro.hmd_agro.doctype.animal.animal.enregistrer_boucle_officielle",
+                        args: {
+                            animal: frm.doc.name,
+                            boucle: values.boucle
+                        },
+                        callback: function(r) {
+                            if (r.message) {
+                                frappe.set_route("Form", "Animal", r.message);
+                            }
+                        }
+                    });
+                }, __("Boucle officielle"), __("Enregistrer"));
+            });
+        }
         if (!frm.is_new()) {
             frm.add_custom_button(__("Pesée"), function() {
                 frappe.route_options = { animal: frm.doc.name };
