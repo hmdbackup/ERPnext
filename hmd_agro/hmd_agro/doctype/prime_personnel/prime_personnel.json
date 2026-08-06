@@ -1,0 +1,100 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:PRIME-{#####}",
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "personnel",
+  "periode",
+  "column_break_prime",
+  "montant",
+  "motif",
+  "date_attribution"
+ ],
+ "fields": [
+  {
+   "fieldname": "personnel",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Salarié",
+   "options": "Personnel",
+   "reqd": 1
+  },
+  {
+   "description": "Mois de paie auquel la prime se rattache, au format AAAA-MM (ex. 2026-08). Elle entre dans la masse salariale de ce mois.",
+   "fieldname": "periode",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Période (AAAA-MM)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_prime",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "montant",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Montant (TND)",
+   "options": "TND",
+   "reqd": 1
+  },
+  {
+   "description": "Ex. AID, RENDEMENT, EXCEPTIONNELLE… Le triplet (salarié, période, motif) doit être unique.",
+   "fieldname": "motif",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Motif"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date_attribution",
+   "fieldtype": "Date",
+   "label": "Date d'attribution"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Prime Personnel",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "personnel,periode,motif",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

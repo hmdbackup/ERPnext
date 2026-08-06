@@ -22,10 +22,12 @@ Note : le module Payroll d'ERPNext (app `hrms`) n'est pas installé sur
 l'instance. Si la ferme l'adopte un jour, ce registre devient la table de
 correspondance vers `Employee` — la ventilation analytique reste ici.
 """
+import json
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import flt, getdate, today
+from frappe.utils import cint, flt, getdate, strip_html, today
 
 from hmd_agro.hmd_agro.utils.config import get_config
 
@@ -49,6 +51,13 @@ ATELIER_PAR_ROLE = {
 
 TOLERANCE_PCT = 0.01
 
+# Remuneration fields journalled in the immutable salary history (A2).
+CHAMPS_REMUNERATION = (
+    "salaire_brut_mensuel", "taux_activite_pct",
+    "taux_charges_patronales_pct", "soumis_cnss",
+)
+CHAMPS_HISTORIQUE = ("date_effet",) + CHAMPS_REMUNERATION + ("motif",)
+
 
 class Personnel(Document):
     def validate(self):
@@ -58,6 +67,8 @@ class Personnel(Document):
         self.validate_statut()
         self.validate_ateliers()
         self.validate_repartition()
+        self.proteger_historique()
+        self.maintenir_historique()
         self.set_cout_employeur()
 
     # ── saisie ──────────────────────────────────────────────────────────────
@@ -84,6 +95,12 @@ class Personnel(Document):
             frappe.throw(
                 _("ERR-PERS-05 : le taux d'activité doit être compris entre 0 (exclu) "
                   "et 100 % (saisi : {0}).").format(self.taux_activite_pct)
+            )
+        if self.taux_charges_patronales_pct is not None and \
+                not (0 <= flt(self.taux_charges_patronales_pct) <= 100):
+            frappe.throw(
+                _("ERR-PERS-08 : le taux de charges patronales doit être compris "
+                  "entre 0 et 100 % (saisi : {0}).").format(self.taux_charges_patronales_pct)
             )
 
     def validate_dates(self):
@@ -142,6 +159,83 @@ class Personnel(Document):
                 )
             vus.add(ligne.atelier)
 
+    # ── historique de salaire (A2) ──────────────────────────────────────────
+
+    def proteger_historique(self):
+        """History rows are an immutable journal (posted months were built
+        from them) : any edit or deletion of an existing row is rejected.
+        Escape hatch : a System Manager may edit or delete the MOST RECENT
+        row only (fix a same-day typo, journal a correction) — older rows
+        stay frozen for everyone."""
+        if self.is_new():
+            return
+        db_rows = frappe.get_all(
+            "Personnel Salaire Historique",
+            filters={"parent": self.name, "parenttype": "Personnel"},
+            fields=["name", "idx"] + list(CHAMPS_HISTORIQUE),
+        )
+        if not db_rows:
+            return
+        est_system_manager = "System Manager" in frappe.get_roles()
+        derniere = max(db_rows, key=lambda r: cint(r["idx"]))["name"]
+        actuels = {r.name: r for r in (self.historique_salaires or []) if r.name}
+        for db_row in db_rows:
+            if est_system_manager and db_row["name"] == derniere:
+                continue
+            row = actuels.get(db_row["name"])
+            if not row:
+                frappe.throw(
+                    _("ERR-PERS-09 : l'historique de salaire est immuable — "
+                      "suppression de la ligne du {0} refusée.").format(db_row["date_effet"])
+                )
+            for champ in CHAMPS_HISTORIQUE:
+                if _differe(champ, row.get(champ), db_row.get(champ)):
+                    frappe.throw(
+                        _("ERR-PERS-09 : l'historique de salaire est immuable — "
+                          "modification de la ligne du {0} (champ {1}) refusée. "
+                          "Changer la rémunération sur la fiche : une nouvelle "
+                          "ligne sera ajoutée.").format(db_row["date_effet"], champ)
+                    )
+
+    def maintenir_historique(self):
+        """Append-only salary journal. On hire : one « situation initiale »
+        row. Afterwards : any change to a remuneration field appends a row
+        dated `date_effet_modification` (or today when empty — the field is
+        cleared after use) — the past is never rewritten, and
+        `masse_salariale` reads the row effective for the month it computes."""
+        if self.is_new():
+            if not self.historique_salaires:
+                self._append_historique(self.date_embauche or today(),
+                                        "Situation initiale")
+            self.date_effet_modification = None
+            return
+        avant = frappe.db.get_value(
+            "Personnel", self.name, CHAMPS_REMUNERATION, as_dict=True)
+        if not avant:
+            self.date_effet_modification = None
+            return
+        if any(_differe(champ, self.get(champ), avant.get(champ))
+               for champ in CHAMPS_REMUNERATION):
+            self._append_historique(self.date_effet_modification or today(),
+                                    "Modification de la rémunération")
+        self.date_effet_modification = None
+
+    def _append_historique(self, date_effet, motif):
+        """Journal one remuneration snapshot. The employer-charge rate is
+        RESOLVED here (per-employee override or the CURRENT global rate) and
+        frozen into the row : a later change of the global rate must not
+        rewrite closed months — `masse_salariale` reads the stored rate
+        as-is. A non-CNSS employee freezes 0."""
+        taux_fige = self.taux_charges_effectif() if cint(self.soumis_cnss) else 0.0
+        self.append("historique_salaires", {
+            "date_effet": getdate(date_effet),
+            "salaire_brut_mensuel": flt(self.salaire_brut_mensuel),
+            "taux_activite_pct": flt(self.taux_activite_pct or 100),
+            "taux_charges_patronales_pct": flt(taux_fige),
+            "soumis_cnss": cint(self.soumis_cnss),
+            "motif": motif,
+        })
+
     # ── dérivé ──────────────────────────────────────────────────────────────
 
     def set_cout_employeur(self):
@@ -152,7 +246,15 @@ class Personnel(Document):
         brut = flt(self.salaire_brut_mensuel) * flt(self.taux_activite_pct or 100) / 100.0
         if not avec_charges or not self.soumis_cnss:
             return brut
-        return brut * (1 + taux_charges_patronales() / 100.0)
+        return brut * (1 + self.taux_charges_effectif() / 100.0)
+
+    def taux_charges_effectif(self):
+        """Taux de charges patronales applicable à CE salarié : sa valeur
+        propre si renseignée (> 0), sinon le taux global de HMD Configuration.
+        Un salarié exonéré se décoche `soumis_cnss` (0 = « non renseigné »)."""
+        if flt(self.taux_charges_patronales_pct):
+            return flt(self.taux_charges_patronales_pct)
+        return taux_charges_patronales()
 
     def ventilation(self):
         """{cost_center: part en %} — la table si elle existe, sinon 100 %
@@ -162,10 +264,23 @@ class Personnel(Document):
         return {self.atelier: 100.0}
 
 
+def _differe(champ, a, b):
+    """Field-aware comparison for remuneration/history values (dates vs
+    numerics vs text) — avoids false « changed » on type round-trips."""
+    if champ == "date_effet":
+        return (getdate(a) if a else None) != (getdate(b) if b else None)
+    if champ == "soumis_cnss":
+        return cint(a) != cint(b)
+    if champ == "motif":
+        return (a or "") != (b or "")
+    return abs(flt(a) - flt(b)) > 0.0001
+
+
 def taux_charges_patronales():
-    """Taux de charges patronales (%) — CNSS régime agricole amélioré par
-    défaut. Jamais un littéral : HMD Configuration → Personnel."""
-    return flt(get_config("taux_charges_patronales_pct", default=16.57))
+    """Taux de charges patronales (%) global — surchargeable salarié par
+    salarié via `Personnel.taux_charges_patronales_pct`. Jamais un littéral :
+    HMD Configuration → Personnel (30 % — décision M. Samir, 05/08/2026)."""
+    return flt(get_config("taux_charges_patronales_pct", default=30))
 
 
 def cost_center_name(nom_court):
@@ -177,6 +292,50 @@ def cost_center_name(nom_court):
         return None
     complet = f"{nom_court} - {abbr}"
     return complet if frappe.db.exists("Cost Center", complet) else None
+
+
+@frappe.whitelist()
+def attribuer_prime_bulk(personnels, montant, periode, motif=None):
+    """Create one `Prime Personnel` per selected employee (listview action
+    « Attribuer une prime »). Validation (montant > 0, période AAAA-MM,
+    doublons, mois non posté) is enforced by the Prime Personnel controller —
+    each insert runs under its own savepoint, so a failure on one employee
+    rolls back only its own row and does not block the others."""
+    from hmd_agro.hmd_agro.utils.charges_utils import existing_entry
+
+    if isinstance(personnels, str):
+        personnels = json.loads(personnels)
+
+    # Fail fast : same guard as ERR-PRIME-04 (Prime Personnel.validate) —
+    # inutile de boucler si tout le mois est déjà posté au Grand Livre.
+    je_existante = existing_entry(periode)
+    if je_existante:
+        frappe.throw(
+            _("ERR-PRIME-04 : les salaires de {0} sont déjà postés au Grand "
+              "Livre ({1}) — annuler ou régulariser cette écriture avant "
+              "d'attribuer une prime sur ce mois.").format(periode, je_existante)
+        )
+
+    created, errors = 0, []
+    for i, nom in enumerate(personnels):
+        savepoint = f"prime_bulk_{i}"
+        frappe.db.savepoint(savepoint)
+        try:
+            frappe.get_doc({
+                "doctype": "Prime Personnel",
+                "personnel": nom,
+                "montant": flt(montant),
+                "periode": periode,
+                "motif": motif or "",
+                "date_attribution": today(),
+            }).insert()
+            created += 1
+        except Exception as exc:
+            frappe.db.rollback(save_point=savepoint)
+            libelle = frappe.db.get_value("Personnel", nom, "nom_complet") or nom
+            errors.append({"personnel": libelle, "error": strip_html(str(exc))})
+
+    return {"created": created, "errors": errors}
 
 
 @frappe.whitelist()

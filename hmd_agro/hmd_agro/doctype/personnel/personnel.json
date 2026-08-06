@@ -24,7 +24,11 @@
   "taux_activite_pct",
   "column_break_remuneration",
   "soumis_cnss",
+  "taux_charges_patronales_pct",
   "cout_employeur_mensuel",
+  "date_effet_modification",
+  "section_historique",
+  "historique_salaires",
   "section_ventilation",
   "atelier",
   "repartition_intro",
@@ -147,11 +151,39 @@
    "label": "Soumis aux charges patronales (CNSS)"
   },
   {
+   "depends_on": "eval:doc.soumis_cnss",
+   "description": "Vide → taux global de HMD Configuration (30% par défaut)",
+   "fieldname": "taux_charges_patronales_pct",
+   "fieldtype": "Percent",
+   "label": "Taux de charges patronales (%)",
+   "precision": "2"
+  },
+  {
    "description": "Salaire brut × taux d'activité + charges patronales. Calculé automatiquement.",
    "fieldname": "cout_employeur_mensuel",
    "fieldtype": "Currency",
    "label": "Coût employeur mensuel",
    "options": "TND",
+   "read_only": 1
+  },
+  {
+   "description": "Date d'effet de la prochaine modification de rémunération — vide = aujourd'hui",
+   "fieldname": "date_effet_modification",
+   "fieldtype": "Date",
+   "label": "Date d'effet de la modification"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_historique",
+   "fieldtype": "Section Break",
+   "label": "Historique de salaire"
+  },
+  {
+   "description": "Journal immuable de la rémunération : une ligne est ajoutée automatiquement à chaque changement (salaire, activité, CNSS, taux de charges — taux figé au moment du changement). Les lignes passées ne se modifient jamais ; seul un System Manager peut corriger ou supprimer la toute dernière ligne.",
+   "fieldname": "historique_salaires",
+   "fieldtype": "Table",
+   "label": "Historique de salaire",
+   "options": "Personnel Salaire Historique",
    "read_only": 1
   },
   {
@@ -194,7 +226,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-21 09:00:00.000000",
+ "modified": "2026-08-06 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "HMD AGRO",
  "name": "Personnel",

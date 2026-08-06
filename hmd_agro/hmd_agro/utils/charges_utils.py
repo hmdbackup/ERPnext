@@ -36,7 +36,7 @@ Run:
 import json
 
 import frappe
-from frappe.utils import get_first_day, get_last_day, getdate, today
+from frappe.utils import cint, flt, get_first_day, get_last_day, getdate, today
 
 from hmd_agro.hmd_agro.utils.stock_utils import DEFAULT_COMPANY as COMPANY
 
@@ -70,24 +70,72 @@ def existing_entry(periode):
 
 # ─── Masse salariale depuis le registre Personnel (FIN-S42) ──────────────────
 
+def _remuneration_effective(nom, doc, date_reference):
+    """Rémunération en vigueur à `date_reference` (A2) : la dernière ligne
+    d'historique dont `date_effet` <= date_reference. Les lignes stockent le
+    taux de charges patronales RÉSOLU au moment du changement (figé par
+    `Personnel._append_historique`) : il est utilisé tel quel, SANS repli sur
+    le taux global du jour — c'est ce qui empêche un changement du taux
+    global de réécrire les charges des mois déjà postés. Les champs vivants
+    de la fiche ne servent que de repli quand l'historique est vide (fiches
+    d'avant la migration v1_8) ; sur ce chemin legacy seulement, un taux
+    salarié vide se résout sur le taux global actuel."""
+    from hmd_agro.hmd_agro.doctype.personnel.personnel import taux_charges_patronales
+
+    lignes = frappe.get_all(
+        "Personnel Salaire Historique",
+        filters={"parent": nom, "parenttype": "Personnel",
+                 "date_effet": ["<=", date_reference]},
+        fields=["salaire_brut_mensuel", "taux_activite_pct",
+                "taux_charges_patronales_pct", "soumis_cnss"],
+        order_by="date_effet desc, idx desc",
+        limit=1,
+    )
+    if lignes:
+        source = lignes[0]
+        taux_charges = flt(source.taux_charges_patronales_pct)
+    else:
+        source = doc
+        taux_charges = flt(doc.taux_charges_patronales_pct) or taux_charges_patronales()
+    return {
+        "salaire": flt(source.salaire_brut_mensuel),
+        "taux_activite": flt(source.taux_activite_pct or 100),
+        "taux_charges": taux_charges,
+        "soumis_cnss": cint(source.soumis_cnss),
+    }
+
+
+def _primes_de(nom, periode):
+    """[{name, montant, motif}] — primes du salarié rattachées au mois."""
+    return frappe.get_all(
+        "Prime Personnel",
+        filters={"personnel": nom, "periode": periode},
+        fields=["name", "montant", "motif"],
+        order_by="name",
+    )
+
+
 def masse_salariale(periode):
     """Reconstruit la masse salariale du mois depuis le registre `Personnel`.
 
+    La rémunération de chaque salarié est celle **en vigueur sur le mois**
+    (historique de salaire immuable — A2) ; les primes du mois (`Prime
+    Personnel`) s'ajoutent au brut (640) et entrent dans l'assiette des
+    charges patronales (647) seulement si le salarié est soumis CNSS.
+
     Retourne :
         {
-          "salaires":        {cost_center: brut prorata},
+          "salaires":        {cost_center: brut prorata + primes},
           "charges_sociales":{cost_center: charges patronales prorata},
           "effectif":        nombre de salariés comptés,
-          "lignes":          [{personnel, nom, role, jours, brut, charges}, …],
+          "lignes":          [{personnel, nom, role, jours, brut, primes,
+                               charges, detail_primes}, …],
         }
     Un mois sans salarié actif retourne des dicts vides — 0 honnête, même
     posture que les coûts SLE.
     """
-    from hmd_agro.hmd_agro.doctype.personnel.personnel import taux_charges_patronales
-
     premier, dernier = _bornes(periode)
     jours_mois = (dernier - premier).days + 1
-    taux_cnss = taux_charges_patronales()
 
     # Présent sur le mois = embauché avant la fin ET pas encore sorti au début.
     noms = frappe.db.sql_list("""
@@ -106,8 +154,14 @@ def masse_salariale(periode):
         if jours <= 0:
             continue
         prorata = jours / jours_mois
-        brut = doc.cout_mensuel(avec_charges=False) * prorata
-        charge = brut * taux_cnss / 100.0 if doc.soumis_cnss else 0.0
+        remu = _remuneration_effective(nom, doc, dernier)
+        # Taux déjà résolu par _remuneration_effective : figé (historique)
+        # ou legacy (fiche + repli global) — pas de second repli ici.
+        taux = remu["taux_charges"]
+        primes_lignes = _primes_de(nom, periode)
+        primes = sum(flt(p.montant) for p in primes_lignes)
+        brut = remu["salaire"] * remu["taux_activite"] / 100.0 * prorata + primes
+        charge = brut * taux / 100.0 if remu["soumis_cnss"] else 0.0
         if brut <= 0 and charge <= 0:
             continue
         for cc, part in doc.ventilation().items():
@@ -117,7 +171,12 @@ def masse_salariale(periode):
             charges[cc] = charges.get(cc, 0.0) + charge * part / 100.0
         lignes.append({
             "personnel": nom, "nom": doc.nom_complet, "role": doc.role_personnel,
-            "jours": jours, "brut": round(brut, 3), "charges": round(charge, 3),
+            "jours": jours, "brut": round(brut, 3), "primes": round(primes, 3),
+            "charges": round(charge, 3),
+            "detail_primes": [
+                {"prime": p.name, "montant": flt(p.montant), "motif": p.motif}
+                for p in primes_lignes
+            ],
         })
 
     return {

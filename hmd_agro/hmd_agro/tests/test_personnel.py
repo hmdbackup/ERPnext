@@ -10,6 +10,14 @@ Couvre :
   4. `post_salaires` depuis le registre : écriture 640/647 ↔ 421/453
      équilibrée, ventilée, idempotente
   5. Le chemin « montants forcés » (reprise d'historique) reste intact
+  6. A2 : taux de charges surchargeable par salarié (ERR-PERS-08), historique
+     de salaire immuable (ERR-PERS-09), masse salariale au salaire de
+     l'époque, primes (`Prime Personnel`, `attribuer_prime_bulk`,
+     ERR-PRIME-01/02/03)
+  7. Gel du taux de charges : un mois clôturé reste au taux historique après
+     changement du taux global ; prime sur mois posté refusée (ERR-PRIME-04) ;
+     `date_effet_modification` respectée puis vidée ; escape hatch System
+     Manager sur la DERNIÈRE ligne d'historique seulement
 
 Pré-requis site : socle comptable (comptes 640/647/421/453 + ateliers).
 
@@ -18,8 +26,9 @@ Run: bench --site hmd.agro execute hmd_agro.hmd_agro.tests.test_personnel.run
 import traceback
 
 import frappe
-from frappe.utils import get_first_day, get_last_day, getdate, today
+from frappe.utils import add_days, flt, get_first_day, get_last_day, getdate, today
 
+from hmd_agro.hmd_agro.doctype.personnel.personnel import attribuer_prime_bulk
 from hmd_agro.hmd_agro.utils import charges_utils, finance_kpis
 
 PREFIXE = "ZZTEST"
@@ -39,15 +48,36 @@ def _periode():
     return f"{d.year}-{d.month:02d}"
 
 
-def _cleanup():
-    for name in frappe.get_all(
-            "Personnel", filters={"nom_complet": ["like", f"{PREFIXE}%"]}, pluck="name"):
-        frappe.delete_doc("Personnel", name, force=True, ignore_permissions=True)
-    je = charges_utils.existing_entry(_periode())
+def _purge_je(periode):
+    """Retire l'écriture SALAIRES_<periode> (marqueur d'idempotence) pour
+    pouvoir re-tester le mois."""
+    je = charges_utils.existing_entry(periode)
     if je:
         frappe.db.sql("DELETE FROM `tabGL Entry` WHERE voucher_no=%s", je)
         frappe.db.sql("DELETE FROM `tabJournal Entry Account` WHERE parent=%s", je)
         frappe.db.sql("DELETE FROM `tabJournal Entry` WHERE name=%s", je)
+
+
+def _set_taux_global(valeur):
+    frappe.db.set_single_value(
+        "HMD Configuration", "taux_charges_patronales_pct", valeur)
+    # get_single_value met la valeur en cache par requête — l'invalider pour
+    # que la lecture suivante voie le nouveau taux.
+    getattr(frappe.db, "value_cache", {}).pop("HMD Configuration", None)
+
+
+def _cleanup():
+    test_pers = frappe.get_all(
+        "Personnel", filters={"nom_complet": ["like", f"{PREFIXE}%"]}, pluck="name")
+    if test_pers:
+        for prime in frappe.get_all(
+                "Prime Personnel", filters={"personnel": ["in", test_pers]},
+                pluck="name"):
+            frappe.delete_doc("Prime Personnel", prime, force=True,
+                              ignore_permissions=True)
+    for name in test_pers:
+        frappe.delete_doc("Personnel", name, force=True, ignore_permissions=True)
+    _purge_je(_periode())
     frappe.db.commit()
 
 
@@ -103,7 +133,7 @@ def _run_inner():
     premier, dernier = get_first_day(today()), get_last_day(today())
     jours_mois = (dernier - premier).days + 1
     taux = float(frappe.db.get_single_value(
-        "HMD Configuration", "taux_charges_patronales_pct") or 16.57)
+        "HMD Configuration", "taux_charges_patronales_pct") or 30)
 
     base = charges_utils.masse_salariale(periode)
 
@@ -226,6 +256,186 @@ def _run_inner():
     _check(all(frappe.db.get_value("Account", l.account, "account_number") in ("640", "421")
                for l in forcee.accounts),
            "Montants forcés : uniquement 640/421 (pas de charges patronales)", results)
+    # ERR-PRIME-04 bloque toute prime tant que le mois est posté : purger
+    # l'écriture forcée avant de tester les primes du mois courant.
+    _purge_je(periode)
+
+    # ── 6. A2 — taux surchargeable, historique immuable, primes
+    print("\n  — A2 : charges surchargeables / historique / primes —")
+
+    p_taux = _personnel("Taux Special", salaire_brut_mensuel=1000,
+                        taux_charges_patronales_pct=10)
+    _check(abs(p_taux.cout_employeur_mensuel - 1100) < 0.01,
+           f"Taux surchargé 10 % → coût employeur "
+           f"{p_taux.cout_employeur_mensuel:.2f}", results)
+    _throws(lambda: _personnel("Taux Hors Borne", taux_charges_patronales_pct=150),
+            "ERR-PERS-08", "Taux de charges > 100 % refusé", results)
+
+    _check(len(p_taux.historique_salaires) == 1
+           and getdate(p_taux.historique_salaires[0].date_effet)
+           == getdate(p_taux.date_embauche),
+           "Ligne d'historique initiale créée à l'embauche", results)
+
+    p_taux.salaire_brut_mensuel = 1500
+    p_taux.save(ignore_permissions=True)
+    _check(len(p_taux.historique_salaires) == 2
+           and getdate(p_taux.historique_salaires[-1].date_effet) == getdate(today())
+           and abs(p_taux.historique_salaires[-1].salaire_brut_mensuel - 1500) < 0.01,
+           "Changement de salaire → nouvelle ligne d'historique datée du jour",
+           results)
+
+    def _editer_histo():
+        doc = frappe.get_doc("Personnel", p_taux.name)
+        doc.historique_salaires[0].salaire_brut_mensuel = 999
+        doc.save(ignore_permissions=True)
+    _throws(_editer_histo, "ERR-PERS-09",
+            "Modification d'une ligne d'historique passée refusée", results)
+
+    def _supprimer_histo():
+        doc = frappe.get_doc("Personnel", p_taux.name)
+        doc.historique_salaires = [r for r in doc.historique_salaires if r.idx != 1]
+        doc.save(ignore_permissions=True)
+    _throws(_supprimer_histo, "ERR-PERS-09",
+            "Suppression d'une ligne d'historique passée refusée", results)
+
+    # Masse salariale au salaire de l'époque (mois passé ≠ mois courant)
+    debut_prec = get_first_day(add_days(premier, -1))
+    periode_prec = f"{debut_prec.year}-{debut_prec.month:02d}"
+    p_retro = _personnel("Retro", salaire_brut_mensuel=1000, soumis_cnss=0,
+                         date_embauche=str(debut_prec))
+    p_retro.salaire_brut_mensuel = 2000
+    p_retro.save(ignore_permissions=True)
+
+    masse_prec = charges_utils.masse_salariale(periode_prec)
+    ligne_retro = next(l for l in masse_prec["lignes"] if l["nom"].endswith("Retro"))
+    _check(abs(ligne_retro["brut"] - 1000) < 0.01,
+           f"Mois passé calculé au salaire de l'époque "
+           f"({ligne_retro['brut']:.2f})", results)
+    masse_cour = charges_utils.masse_salariale(periode)
+    ligne_retro_cour = next(l for l in masse_cour["lignes"]
+                            if l["nom"].endswith("Retro"))
+    _check(abs(ligne_retro_cour["brut"] - 2000) < 0.01,
+           f"Mois courant calculé au nouveau salaire "
+           f"({ligne_retro_cour['brut']:.2f})", results)
+
+    # Primes : attribution en masse puis intégration à la masse salariale
+    res = attribuer_prime_bulk([p_taux.name, p_retro.name],
+                               montant=50, periode=periode, motif="Aid")
+    _check(res["created"] == 2 and not res["errors"],
+           "attribuer_prime_bulk crée une prime par salarié sélectionné", results)
+
+    masse_primes = charges_utils.masse_salariale(periode)
+    ligne_taux = next(l for l in masse_primes["lignes"]
+                      if l["nom"].endswith("Taux Special"))
+    _check(abs(ligne_taux["primes"] - 50) < 0.01,
+           "La prime du mois apparaît sur la ligne du salarié", results)
+    _check(abs(ligne_taux["brut"] - 1550) < 0.01,
+           f"Brut = salaire en vigueur + prime ({ligne_taux['brut']:.2f})", results)
+    _check(abs(ligne_taux["charges"] - 155) < 0.01,
+           f"Charges au taux surchargé 10 % sur salaire + prime "
+           f"({ligne_taux['charges']:.2f})", results)
+    ligne_retro_prime = next(l for l in masse_primes["lignes"]
+                             if l["nom"].endswith("Retro"))
+    _check(ligne_retro_prime["charges"] == 0,
+           "Prime d'un salarié non assujetti → aucune charge patronale", results)
+
+    _throws(lambda: frappe.get_doc({
+        "doctype": "Prime Personnel", "personnel": p_taux.name,
+        "periode": periode, "montant": 50, "motif": "Aid",
+    }).insert(ignore_permissions=True),
+        "ERR-PRIME-03", "Prime en double (salarié, période, motif) refusée",
+        results)
+    _throws(lambda: frappe.get_doc({
+        "doctype": "Prime Personnel", "personnel": p_taux.name,
+        "periode": periode, "montant": -5,
+    }).insert(ignore_permissions=True),
+        "ERR-PRIME-01", "Prime à montant négatif refusée", results)
+    _throws(lambda: frappe.get_doc({
+        "doctype": "Prime Personnel", "personnel": p_taux.name,
+        "periode": "08-2026", "montant": 10,
+    }).insert(ignore_permissions=True),
+        "ERR-PRIME-02", "Période mal formée refusée", results)
+
+    # ── 7. Gel du taux, date d'effet, mois posté, escape hatch
+    print("\n  — Gel du taux / date d'effet / mois posté / escape hatch SM —")
+
+    # a) Un mois clôturé reste au taux historique après changement du global
+    taux_orig = frappe.db.get_single_value(
+        "HMD Configuration", "taux_charges_patronales_pct")
+    p_gel = _personnel("Gel Taux", salaire_brut_mensuel=1000,
+                       date_embauche=str(debut_prec))
+    _check(abs(flt(p_gel.historique_salaires[0].taux_charges_patronales_pct)
+               - taux) < 0.01,
+           f"La ligne d'historique fige le taux résolu ({taux} %)", results)
+    attendu_charges = 1000 * taux / 100.0
+    try:
+        _set_taux_global(taux + 10)
+        masse_gel = charges_utils.masse_salariale(periode_prec)
+        ligne_gel = next(l for l in masse_gel["lignes"]
+                         if l["nom"].endswith("Gel Taux"))
+        _check(abs(ligne_gel["charges"] - attendu_charges) < 0.01,
+               f"Mois clôturé au taux historique {taux} % malgré le passage "
+               f"du taux global à {taux + 10} % ({ligne_gel['charges']:.2f})",
+               results)
+    finally:
+        _set_taux_global(taux_orig)
+
+    # b) date_effet_modification datée sur la nouvelle ligne, puis vidée
+    date_retro = add_days(premier, -10)
+    p_gel.date_effet_modification = str(date_retro)
+    p_gel.salaire_brut_mensuel = 1300
+    p_gel.save(ignore_permissions=True)
+    _check(getdate(p_gel.historique_salaires[-1].date_effet)
+           == getdate(date_retro),
+           "date_effet_modification portée sur la nouvelle ligne d'historique",
+           results)
+    _check(not p_gel.date_effet_modification,
+           "date_effet_modification vidée après usage", results)
+
+    # c) Prime sur un mois dont les salaires sont déjà postés → ERR-PRIME-04
+    je_poste = charges_utils.post_salaires(periode)
+    _check(bool(je_poste), "Mois courant re-posté pour le test ERR-PRIME-04",
+           results)
+    _throws(lambda: frappe.get_doc({
+        "doctype": "Prime Personnel", "personnel": p_gel.name,
+        "periode": periode, "montant": 20, "motif": "Retard",
+    }).insert(ignore_permissions=True),
+        "ERR-PRIME-04", "Prime sur un mois déjà posté refusée", results)
+    _throws(lambda: attribuer_prime_bulk([p_gel.name], montant=20,
+                                         periode=periode, motif="Retard"),
+            "ERR-PRIME-04",
+            "attribuer_prime_bulk refuse d'emblée un mois déjà posté", results)
+    _purge_je(periode)
+
+    # d) Escape hatch : seul un System Manager, seulement la DERNIÈRE ligne
+    try:
+        doc_sm = frappe.get_doc("Personnel", p_gel.name)
+        doc_sm.historique_salaires[-1].motif = "Correction (escape hatch SM)"
+        doc_sm.save(ignore_permissions=True)
+        _check(True, "System Manager : édition de la DERNIÈRE ligne autorisée",
+               results)
+    except Exception as exc:
+        _check(False, f"System Manager : édition de la dernière ligne "
+                      f"refusée ({exc})", results)
+
+    def _editer_ancienne_ligne():
+        doc = frappe.get_doc("Personnel", p_gel.name)
+        doc.historique_salaires[0].salaire_brut_mensuel = 999
+        doc.save(ignore_permissions=True)
+    _throws(_editer_ancienne_ligne, "ERR-PERS-09",
+            "System Manager : une ligne PASSÉE reste verrouillée", results)
+
+    def _editer_derniere_sans_sm():
+        frappe.set_user("Guest")
+        try:
+            doc = frappe.get_doc("Personnel", p_gel.name)
+            doc.historique_salaires[-1].salaire_brut_mensuel = 1
+            doc.save(ignore_permissions=True)
+        finally:
+            frappe.set_user("Administrator")
+    _throws(_editer_derniere_sans_sm, "ERR-PERS-09",
+            "Sans System Manager : même la dernière ligne reste verrouillée",
+            results)
 
     print("\n" + "=" * 70)
     print(f"  RÉSULTATS: {results['pass']}/{results['pass'] + results['fail']} passés, "
