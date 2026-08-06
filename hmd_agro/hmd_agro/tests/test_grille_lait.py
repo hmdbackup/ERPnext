@@ -263,6 +263,9 @@ def _run_inner():
         "volume_litres": 12000, "grille": grille_vol.name,
         "prix_base": 1.500, "prime_quantite": 0.020,
     }).insert(ignore_permissions=True)
+    # Fixture decompte with no invoice: bypass the ERR-DLM-06 submit guard
+    # the same way generate_milk_invoice does.
+    dlm.flags.from_facturation = True
     dlm.submit()
     frappe.db.commit()
 

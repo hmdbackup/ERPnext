@@ -224,30 +224,37 @@ def post_salaires(periode, montants_par_atelier=None, submit=True):
               f"({'registre Personnel vide' if effectif == 0 else 'montants nuls'})")
         return None
 
+    # Accumulate the ROUNDED line amounts: crediting round(sum(unrounded))
+    # against per-line round() debits can drift by 0.01 and ERPNext rejects
+    # an unbalanced Journal Entry. 2 decimals, not 3: ERPNext checks the
+    # debit/credit balance at the currency display precision (2), so lines
+    # carrying millimes can round unevenly between the two sides.
     accounts, total_brut, total_charges = [], 0.0, 0.0
     for atelier, montant in salaires.items():
+        montant = round(montant, 2)
         accounts.append({
             "account": _compte(COMPTE_SALAIRES, "Salaires"),
-            "debit_in_account_currency": round(montant, 3),
+            "debit_in_account_currency": montant,
             "cost_center": _cost_center(atelier),
         })
         total_brut += montant
     for atelier, montant in charges.items():
+        montant = round(montant, 2)
         accounts.append({
             "account": _compte(COMPTE_CHARGES_SOCIALES, "Charges sociales"),
-            "debit_in_account_currency": round(montant, 3),
+            "debit_in_account_currency": montant,
             "cost_center": _cost_center(atelier),
         })
         total_charges += montant
 
     accounts.append({
         "account": _compte(COMPTE_PERSONNEL, "Personnel - rémunérations dues"),
-        "credit_in_account_currency": round(total_brut, 3),
+        "credit_in_account_currency": round(total_brut, 2),
     })
     if total_charges:
         accounts.append({
             "account": _compte(COMPTE_ORGANISMES_SOCIAUX, "Organismes sociaux"),
-            "credit_in_account_currency": round(total_charges, 3),
+            "credit_in_account_currency": round(total_charges, 2),
         })
 
     je = frappe.get_doc({

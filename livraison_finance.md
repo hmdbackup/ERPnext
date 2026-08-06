@@ -33,11 +33,12 @@ Backlog dédié : `finance_backlog_jira_reunion_2026-08-05.csv` ; compte-rendu :
 | `593bc01` | S92 | Version 0.2.0, erpnext épinglé v15.95.2, build `--no-cache`, DEPLOY.md révisé, `runbook_alignement_versions.md` (cause racine du site obsolète) |
 | *(ce commit)* | S93 | Spécification coût de revient génisse + facturation interne (`spec_cout_genisse_facturation_interne.md`) — implémentation après validation |
 
-Nouveaux tests (à exécuter sur bench après `migrate` — non exécutés ici) :
-`test_decompte_lait`, `test_rapport_performance`, `test_tableau_amortissement`,
-et extensions de `test_cheptel`, `test_full_flow`, `test_personnel`,
-`test_grille_lait`, `test_recettes`, `test_finance_kpis`,
-`test_indicateurs_report`.
+Validation du 05/08/2026 (bench local, après `bench migrate` — patches v1_8
+OK, décompte de juillet backfillé) : **17 modules finance verts, 336 tests**
+(dont nouveaux : `test_decompte_lait` 37/37, `test_rapport_performance` 17/17,
+`test_tableau_amortissement` 19/19 ; `test_personnel` passe à 54/54,
+`test_grille_lait` à 35/35, `test_cheptel` à 25/25) + `test_full_flow`
+E2E **72/72**.
 
 Décisions client en attente (réunion 05/08) : bande provisoire `99999` à
 confirmer auprès de l'autorité d'identification ; primes soumises CNSS ou
