@@ -162,16 +162,74 @@ Then repeat steps 3 → 7. The `down -v` flag destroys data volumes; the system 
 
 ---
 
+## Version pinning policy
+
+`apps.json` is strict JSON (no comments), so the policy lives here:
+
+- **erpnext** is pinned to the exact tag **`v15.95.2`** — never a floating branch
+  like `version-15`. A floating branch means two builds of the "same" image can
+  contain different ERPNext code, and nobody can tell which build a server runs.
+  To upgrade ERPNext: change the tag in `apps.json`, rebuild, test, deploy.
+- **hmd_agro** stays on branch **`main`** of `hmdbackup/ERPnext` — main is our
+  release branch: only merged, validated work lands there. What identifies a
+  build is `hmd_agro.__version__` (bumped on every release) + `git log -1` in
+  the image.
+- **frappe** is still built from the floating `version-15` branch
+  (`FRAPPE_BRANCH` in `build-hmd.sh`). **TODO:** after the next working build,
+  capture `bench version` output and pin `FRAPPE_BRANCH` to that exact frappe
+  tag (e.g. `v15.x.y`) — do not guess a tag without verifying it builds.
+- `ERPNEXT_VERSION` in `.env` / `.env.hmd` is **informational only** once
+  `CUSTOM_IMAGE` is set: the compose stack runs the custom image, whose erpnext
+  version was fixed by `apps.json` at build time. Keep it aligned with
+  `apps.json` for readability, nothing more.
+
+---
+
 ## Updates
 
-**App code change** — push to `hmdbackup/ERPnext` (main), then on the server:
+**App code change** — the flow is always: merge/push to `main` → rebuild
+**without cache** → recreate containers → migrate → clear caches → verify.
+
+**1.** Push the validated code to `hmdbackup/ERPnext` branch `main`.
+
+**2.** On the server, rebuild the image. `build-hmd.sh` now defaults to
+`--no-cache` — a cached build can silently reuse an old git-clone layer and
+ship stale code, which is exactly the failure mode we are eliminating.
 ```bash
-bash build-hmd.sh
-docker compose --env-file .env up -d
+bash build-hmd.sh --no-cache
+```
+
+**3.** Recreate the containers so they actually run the new image
+(`up -d` alone can keep old containers if compose thinks nothing changed):
+```bash
+docker compose --env-file .env up -d --force-recreate
+```
+
+**4.** Run the migrations (patches, schema sync, fixtures):
+```bash
 docker compose exec backend bench --site hmd.agro migrate
 ```
 
-**Frappe / ERPNext version change** — edit `ERPNEXT_VERSION` in `.env`, then run the same 3 commands above.
+**5.** Clear server-side caches:
+```bash
+docker compose exec backend bench --site hmd.agro clear-cache
+docker compose exec backend bench --site hmd.agro clear-website-cache
+```
+
+**6.** Verify the deployed versions:
+```bash
+docker compose exec backend bench version
+# Expected: erpnext 15.95.2, frappe 15.x.y, hmd_agro 0.2.0
+docker compose exec backend git -C apps/hmd_agro log -1 --oneline
+# Expected: the commit you just pushed to main
+```
+If `bench version` does not show `hmd_agro 0.2.0` (or the current release
+version) or the `git log -1` commit is not the pushed one, the build used a
+stale layer — rerun step 2 (ensure `--no-cache`) and steps 3–6.
+
+**ERPNext version change** — edit the erpnext `branch` tag in `apps.json`
+(exact tag, e.g. `v15.96.0`), update `ERPNEXT_VERSION` in `.env`/`.env.hmd` to
+match (informational), then run steps 2–6 above.
 
 **`frappe_docker` infrastructure update** —
 ```bash
@@ -180,6 +238,18 @@ git pull
 docker compose pull
 docker compose --env-file .env up -d
 ```
+
+### Vérification de version côté utilisateur
+
+After every deployment, each user (desk) must confirm they are on the new build:
+
+1. **Hard refresh** the browser: `Ctrl+Shift+R` (Windows/Linux) or
+   `Cmd+Shift+R` (macOS) — a normal refresh can keep old cached JS.
+2. Open **Help (?) → À propos** (About) in the desk toolbar.
+3. Check the app versions listed there: **Frappe Framework**, **ERPNext**
+   (`v15.95.2`) and **HMD Agro** (`0.2.0`). Every user must see the **same
+   triplet** — if one user sees different numbers, their browser cache is stale
+   (redo the hard refresh) or they are hitting a different server.
 
 ---
 

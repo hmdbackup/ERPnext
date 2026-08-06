@@ -1,7 +1,7 @@
 [
   {
     "url": "https://github.com/frappe/erpnext",
-    "branch": "version-15"
+    "branch": "v15.95.2"
   },
   {
     "url": "https://github.com/hmdbackup/ERPnext",
