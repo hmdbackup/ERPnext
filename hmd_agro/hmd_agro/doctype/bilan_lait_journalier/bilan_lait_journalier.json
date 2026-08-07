@@ -22,6 +22,8 @@
   "production_totale_saisie",
   "column_break_recon",
   "ecart_litres",
+  "section_alimentation",
+  "concentre_kg",
   "section_notes",
   "notes"
  ],
@@ -153,6 +155,18 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
+  },
+  {
+   "fieldname": "section_alimentation",
+   "fieldtype": "Section Break",
+   "label": "Alimentation"
+  },
+  {
+   "fieldname": "concentre_kg",
+   "fieldtype": "Float",
+   "label": "Concentré Distribué (kg)",
+   "description": "Quantité de concentré réellement distribuée au cheptel ce jour-là, relevée par la ferme. Sert de source au KPI L/C quand elle est saisie.",
+   "non_negative": 1
   }
  ],
  "index_web_pages_for_search": 0,

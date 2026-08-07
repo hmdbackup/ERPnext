@@ -1375,6 +1375,20 @@ def _indicateurs(ctx):
         d_ = _aliment_data_per_lot(start, end)
         concentre_ = d_["cumulative_concentre_cheptel"] if d_ else 0
         ms_total_ = d_["cumulative_ms_cheptel"] if d_ else 0
+        # Le concentré relevé chaque jour par la ferme (Bilan Lait Journalier)
+        # prime sur la reconstitution théorique issue des rations : c'est une
+        # mesure, pas un plan. Elle couvre aussi les périodes antérieures au
+        # backfill SLE du 16/04/2026, où la reconstitution rend 0 — sans elle
+        # le L/C reste muet sur tout l'historique. Fallback inchangé quand la
+        # ferme n'a rien relevé.
+        concentre_mesure_ = float(frappe.db.sql("""
+            SELECT SUM(concentre_kg) FROM `tabBilan Lait Journalier`
+            WHERE date BETWEEN %s AND %s
+        """, (start, end))[0][0] or 0)
+        source_concentre_ = "rations"
+        if concentre_mesure_ > 0:
+            concentre_ = concentre_mesure_
+            source_concentre_ = "relevé ferme"
         # Cost rows source from SLE — see _consumption_from_sle. Pre-backfill
         # periods naturally return 0 (no SLE), matching the production stance.
         frais_conc_ = d_["cumulative_concentre_cost"] if d_ else 0
@@ -1426,6 +1440,7 @@ def _indicateurs(ctx):
                                  if gl_["produits"] else 0),
             "vp": vp_, "vl": vl_, "vt": vt_,
             "prod": prod_, "concentre": concentre_, "ms_total": ms_total_,
+            "source_concentre": source_concentre_,
             "lmv": round(prod_ / vp_, 1) if vp_ else 0,
             "pl_vl": round(prod_ / vl_, 1) if vl_ else 0,
             "lc": round(prod_ / concentre_, 2) if concentre_ else 0,
@@ -1511,7 +1526,8 @@ def _indicateurs(ctx):
                                      high_alarm=cfg_pers_alm_hi)),
 
         # ── Alimentation
-        row(f"Concentré Total ({period})", round(cur["concentre"], 1), "kg",
+        row(f"Concentré Total ({period}) — source : {cur['source_concentre']}",
+            round(cur["concentre"], 1), "kg",
             valeur_m1=round(m1["concentre"], 1)),
         row("Concentré / Vache Présente", cur["conc_per_vp"], "kg/tête",
             valeur_m1=m1["conc_per_vp"], direction="down"),

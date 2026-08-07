@@ -201,6 +201,50 @@ def test_concentre_delta(results, base_conc):
     check(delta == 868, "Δ Concentré = 868kg (Foin FOURRAGE excluded)",
           f"Got Δ={delta}", results)
 
+def test_concentre_source_mesure(results):
+    """Le concentré relevé par la ferme prime sur la reconstitution rations.
+
+    Sans relevé : source « rations » (reconstitution SLE). Dès qu'un Bilan Lait
+    Journalier porte un concentre_kg sur la période, c'est lui qui alimente le
+    L/C — une mesure vaut mieux qu'un plan, et elle couvre l'historique
+    antérieur au backfill SLE où la reconstitution rend 0.
+    """
+    log("Concentré — le relevé ferme prime sur les rations", "HEAD")
+    _, rows = _indicateurs(CTX_END)
+    avant = _find(rows, "Concentré Total")
+    check("source : rations" in avant["indicateur"],
+          "sans relevé → source « rations »",
+          f"libellé inattendu : {avant['indicateur']}", results)
+
+    bljs = []
+    try:
+        for jour, kg in (("2024-03-10", 400.0), ("2024-03-11", 350.0)):
+            doc = frappe.get_doc({
+                "doctype": "Bilan Lait Journalier",
+                "date": jour, "production_totale_saisie": 1000.0,
+                "lait_vendu": 1000.0, "concentre_kg": kg,
+            })
+            doc.insert(ignore_permissions=True)
+            bljs.append(doc.name)
+        frappe.db.commit()
+
+        _, rows = _indicateurs(CTX_END)
+        apres = _find(rows, "Concentré Total")
+        check("source : relevé ferme" in apres["indicateur"],
+              "avec relevé → source « relevé ferme »",
+              f"libellé inattendu : {apres['indicateur']}", results)
+        check(apres["valeur"] == 750.0,
+              "Concentré = 750 kg (somme des relevés, pas la reconstitution)",
+              f"Got {apres['valeur']}", results)
+        lc = _find(rows, "L/C")["valeur"]
+        check(lc > 0, f"L/C recalculé sur le relevé (={lc})", f"L/C={lc}", results)
+    finally:
+        for name in bljs:
+            frappe.delete_doc("Bilan Lait Journalier", name, force=True,
+                              ignore_permissions=True)
+        frappe.db.commit()
+
+
 def test_efficacite_alim_delta(results):
     log("Efficacité Alim — sensible value (> 0)", "HEAD")
     _, rows = _indicateurs(CTX_END)
@@ -421,6 +465,7 @@ def run_all_tests():
         test_vache_counts_delta(results, base_vp, base_vl, base_vt)
         test_production_delta(results, base_prod)
         test_concentre_delta(results, base_conc)
+        test_concentre_source_mesure(results)
         test_efficacite_alim_delta(results)
         test_ratios(results)
         test_lc_indicator_set(results)
