@@ -433,6 +433,51 @@ def cout_maintenance(date_debut, date_fin):
     }
 
 
+def interventions_realisees(date_debut, date_fin, equipement=None, atelier=None):
+    """Détail ligne à ligne des interventions de la période.
+
+    `cout_maintenance` ci-dessus AGRÈGE (un montant, des compteurs) ; celle-ci
+    DÉTAILLE. Les deux vivent ici pour la même raison : les rapports consomment
+    ce module et n'ont pas à connaître `Asset Repair` — même posture que
+    `cout_utilisation` vis-à-vis de « Utilisation Equipement ».
+
+    Le montant lu est `total_repair_cost` (coût de réparation + pièces
+    consommées), celui-là même que `cout_maintenance` totalise : les deux
+    lectures ne peuvent donc pas diverger l'une de l'autre.
+
+    Args:
+        equipement: restreint à un Asset (optionnel)
+        atelier:    restreint à un Cost Center (optionnel)
+
+    Retourne une liste de dicts, les plus récentes d'abord, à coût décroissant
+    à date égale. Une période sans intervention retourne [] — même posture
+    honnête que `cout_maintenance` / `cout_utilisation`.
+    """
+    conditions = ""
+    params = [COMPANY, getdate(date_debut), getdate(date_fin)]
+    if equipement:
+        conditions += " AND rep.asset = %s"
+        params.append(equipement)
+    if atelier:
+        conditions += " AND rep.cost_center = %s"
+        params.append(atelier)
+
+    return frappe.db.sql(f"""
+        SELECT rep.name, rep.asset, ast.asset_name,
+               DATE(COALESCE(rep.completion_date, rep.failure_date)) AS date,
+               rep.description, rep.type_intervention, rep.cost_center AS atelier,
+               COALESCE(rep.total_repair_cost, 0) AS cout,
+               rep.personnel, rep.downtime AS arret
+        FROM `tabAsset Repair` rep
+        LEFT JOIN `tabAsset` ast ON ast.name = rep.asset
+        WHERE rep.docstatus = 1 AND rep.company = %s
+          AND DATE(COALESCE(rep.completion_date, rep.failure_date))
+              BETWEEN %s AND %s
+          {conditions}
+        ORDER BY date DESC, cout DESC
+    """, params, as_dict=True)
+
+
 def interventions_planifiees(jours=30):
     """Tâches de maintenance préventive dues dans les `jours` à venir (ou déjà
     en retard). Alimente le contrôle de cohérence et le pilotage."""
