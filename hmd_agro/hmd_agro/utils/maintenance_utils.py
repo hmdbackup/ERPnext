@@ -478,15 +478,34 @@ def interventions_realisees(date_debut, date_fin, equipement=None, atelier=None)
     """, params, as_dict=True)
 
 
-def interventions_planifiees(jours=30):
+def interventions_planifiees(jours=30, equipement=None, atelier=None):
     """Tâches de maintenance préventive dues dans les `jours` à venir (ou déjà
-    en retard). Alimente le contrôle de cohérence et le pilotage."""
+    en retard). Alimente le contrôle de cohérence et le pilotage.
+
+    `equipement` / `atelier` restreignent le périmètre, pour qu'un rapport
+    filtré ne puisse pas afficher un bloc préventif qui contredit son propre
+    filtre. Piège ERPNext : dans « Asset Maintenance Log », `asset_name` est un
+    Link vers Asset (pas un libellé) ; l'atelier, lui, n'existe que sur l'Asset,
+    d'où la jointure.
+    """
     from frappe.utils import add_days
 
-    return frappe.db.sql("""
-        SELECT name, asset_name, task_name, due_date, maintenance_status
-        FROM `tabAsset Maintenance Log`
-        WHERE maintenance_status IN ('Planned', 'Overdue')
-          AND due_date <= %s
-        ORDER BY due_date ASC
-    """, (add_days(today(), int(jours)),), as_dict=True)
+    conditions = ""
+    params = [add_days(today(), int(jours))]
+    if equipement:
+        conditions += " AND log.asset_name = %s"
+        params.append(equipement)
+    if atelier:
+        conditions += " AND ast.cost_center = %s"
+        params.append(atelier)
+
+    return frappe.db.sql(f"""
+        SELECT log.name, log.asset_name, log.task_name, log.due_date,
+               log.maintenance_status
+        FROM `tabAsset Maintenance Log` log
+        LEFT JOIN `tabAsset` ast ON ast.name = log.asset_name
+        WHERE log.maintenance_status IN ('Planned', 'Overdue')
+          AND log.due_date <= %s
+          {conditions}
+        ORDER BY log.due_date ASC
+    """, params, as_dict=True)

@@ -47,9 +47,12 @@ from hmd_agro.hmd_agro.utils.maintenance_utils import (
 )
 
 # Horizon du bloc préventif, en jours. Le défaut 30 est celui de
-# `interventions_planifiees` et du contrôle de cohérence — il préserve le
-# comportement tant que le champ n'existe pas dans HMD Configuration, et le
-# rend réglable le jour où on l'y ajoute.
+# `interventions_planifiees`. Le contrôle de cohérence, lui, appelle
+# `interventions_planifiees(0)` : il ne regarde que les retards, pas l'horizon —
+# changer cette valeur ne le déplacera donc pas.
+# Le champ n'existe pas encore dans HMD Configuration : `get_config` retombe sur
+# ce défaut (comportement garanti par test_hmd_config.test_get_config_falls_back),
+# et l'horizon devient réglable le jour où on ajoute le champ.
 HORIZON_PREVENTIF_DEFAUT = 30
 
 COLUMNS = [
@@ -87,15 +90,19 @@ def execute(filters=None):
 
     today_dt = getdate(today())
     if debut > today_dt:
-        return COLUMNS, [_row("INFO", libelle="Pas encore de données pour "
-                                             "cette période.")]
+        # Aucune intervention réalisée ni rapprochement possible sur une période
+        # à venir — mais le préventif, lui, est « à ce jour » : le masquer
+        # cacherait les retards au moment précis où l'on prépare un planning.
+        return COLUMNS, ([_row("INFO", libelle="Pas encore d'intervention sur "
+                                               "cette période.")]
+                         + _preventif(equipement, atelier))
     # On ne compte que les jours réellement écoulés (mois en cours).
     fin = min(fin, today_dt)
 
     lignes = interventions_realisees(debut, fin, equipement, atelier)
 
     data = _realisees(lignes)
-    data.extend(_preventif())
+    data.extend(_preventif(equipement, atelier))
     data.extend(_rapprochement(debut, fin, lignes, equipement, atelier))
     return COLUMNS, data
 
@@ -149,17 +156,21 @@ def _nb_equipements(lignes):
 
 # ─── (ii) Préventif dû ou en retard ──────────────────────────────────────────
 
-def _preventif():
-    """Tâches de maintenance préventive dues sous 30 jours ou déjà en retard.
+def _preventif(equipement=None, atelier=None):
+    """Tâches de maintenance préventive dues sous N jours ou déjà en retard.
 
-    Volontairement NON filtré par la période du rapport : une échéance est un
+    Volontairement NON filtré par la PÉRIODE du rapport : une échéance est un
     fait à venir, la borner au mois affiché reviendrait à cacher les retards
     dès qu'on consulte un mois passé.
+
+    En revanche il RESPECTE les filtres Équipement et Atelier : un bloc qui
+    listerait tout le parc sous un filtre équipement ferait lire au gérant des
+    retards qui ne concernent pas la machine qu'il regarde.
     """
     jours = cint(get_config("maintenance_horizon_jours",
                             default=HORIZON_PREVENTIF_DEFAUT))
     s = f"Préventif (à ce jour, {jours} j)"
-    taches = interventions_planifiees(jours)
+    taches = interventions_planifiees(jours, equipement, atelier)
     if not taches:
         return [_row(s, libelle="Aucune tâche préventive due ou en retard.")]
 

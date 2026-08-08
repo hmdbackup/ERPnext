@@ -35,7 +35,9 @@ from frappe.utils import add_days, getdate, today
 from hmd_agro.hmd_agro.report.rapport_interventions.rapport_interventions import (
     COLUMNS, execute,
 )
-from hmd_agro.hmd_agro.utils.maintenance_utils import enregistrer_intervention
+from hmd_agro.hmd_agro.utils.maintenance_utils import (
+    enregistrer_intervention, planifier_maintenance,
+)
 
 COMPANY = "hmd-agro"
 ITEM_TEST = "ZZTEST-EQUIP-RINT"
@@ -89,6 +91,11 @@ def _cleanup():
     for asset in frappe.get_all(
             "Asset", filters={"asset_name": ["like", f"{PREFIXE_ASSET}%"]},
             pluck="name"):
+        frappe.db.sql("DELETE FROM `tabAsset Maintenance Log` WHERE asset_name=%s",
+                      asset)
+        frappe.db.sql("DELETE FROM `tabAsset Maintenance Task` WHERE parent=%s",
+                      asset)
+        frappe.db.sql("DELETE FROM `tabAsset Maintenance` WHERE name=%s", asset)
         frappe.db.sql("DELETE FROM `tabAsset Activity` WHERE asset=%s", asset)
         frappe.db.sql("DELETE FROM `tabAsset` WHERE name=%s", asset)
     frappe.db.commit()
@@ -199,10 +206,14 @@ def _test_ligne_et_total(asset, results):
                "elle porte l'atelier de l'équipement", results)
         _check(ligne["type"] == "PREVENTIVE", "elle porte son type", results)
     total = _ligne(rows, "TOTAL —")
-    _check(total is not None and total["cout"] >= 300,
-           "la ligne TOTAL existe et inclut l'intervention", results)
-    _check(total is not None and "1 intervention(s)" in total["libelle"],
-           "le TOTAL compte 1 intervention", results)
+    # Montant exact, pas « au moins » : mai 2025 est vierge, le total est
+    # parfaitement déterministe. Et libellé comparé en entier — « 1 » est une
+    # sous-chaîne de « 11 », un `in` laisserait passer une régression.
+    _check(total is not None and total["cout"] == 300,
+           "la ligne TOTAL vaut exactement 300 DT", results)
+    _check(total is not None
+           and total["libelle"] == "TOTAL — 1 intervention(s), 1 équipement(s)",
+           "le TOTAL compte 1 intervention sur 1 équipement", results)
 
 
 def _test_brouillon_exclu(asset, results):
@@ -215,7 +226,9 @@ def _test_brouillon_exclu(asset, results):
     _check(_ligne(rows, "ZZTEST Brouillon à ignorer") is None,
            "le brouillon est absent du rapport (docstatus = 1 exigé)", results)
     total = _ligne(rows, "TOTAL —")
-    _check(total is not None and "1 intervention(s)" in total["libelle"],
+    _check(total is not None
+           and total["libelle"] == "TOTAL — 1 intervention(s), 1 équipement(s)"
+           and total["cout"] == 300,
            "le TOTAL n'a pas bougé", results)
 
 
@@ -294,11 +307,45 @@ def _test_filtre_masque_rapprochement(asset, results):
 
 
 def _test_periode_future(results):
-    print("\n[9] Une période future le dit")
+    print("\n[9] Une période future le dit, sans cacher le préventif")
     futur = add_days(getdate(today()), 400)
     rows = _rows({"periode": "Mois", "date": str(futur)})
-    _check(len(rows) == 1 and rows[0]["section"] == "INFO",
-           "une seule ligne INFO, aucun chiffre inventé", results)
+    _check(rows and rows[0]["section"] == "INFO",
+           "une ligne INFO en tête, aucun chiffre inventé", results)
+    _check(not any(r["section"] == "Réalisées" for r in rows),
+           "aucune intervention réalisée annoncée sur un mois à venir", results)
+    _check(not any(r["section"] == "Rapprochement" for r in rows),
+           "aucun rapprochement sur un mois à venir", results)
+    # Le préventif est « à ce jour » : le masquer cacherait les retards au
+    # moment précis où l'on prépare le planning des mois suivants.
+    _check(any(r["section"].startswith("Préventif") for r in rows),
+           "le bloc préventif reste visible", results)
+
+
+def _test_preventif_respecte_le_filtre(asset, results):
+    print("\n[10] Le bloc préventif respecte le filtre Équipement")
+    autre = _asset_test(f"{PREFIXE_ASSET} second")
+    # Périodicité hebdomadaire : l'échéance tombe dans les 30 jours de
+    # l'horizon, sinon la tâche ne remonterait pas et le test ne prouverait rien.
+    planifier_maintenance(asset, [
+        {"tache": "ZZTEST Preventif A", "periodicite": "Weekly",
+         "date_debut": str(today())}])
+    planifier_maintenance(autre, [
+        {"tache": "ZZTEST Preventif B", "periodicite": "Weekly",
+         "date_debut": str(today())}])
+
+    # Sans filtre, les DEUX doivent apparaître — sinon le test qui suit
+    # passerait pour une mauvaise raison (rien à filtrer).
+    tous = _rows()
+    _check(_ligne(tous, "ZZTEST Preventif A") is not None
+           and _ligne(tous, "ZZTEST Preventif B") is not None,
+           "sans filtre, les deux tâches préventives remontent", results)
+
+    filtre = _rows(dict(FILTRES_MOIS, equipement=asset))
+    _check(_ligne(filtre, "ZZTEST Preventif A") is not None,
+           "avec filtre, la tâche de l'équipement filtré reste", results)
+    _check(_ligne(filtre, "ZZTEST Preventif B") is None,
+           "avec filtre, la tâche de l'AUTRE équipement disparaît", results)
 
 
 def run():
@@ -330,6 +377,7 @@ def _run_inner():
     _test_atelier_absent(asset, results)
     _test_filtre_masque_rapprochement(asset, results)
     _test_periode_future(results)
+    _test_preventif_respecte_le_filtre(asset, results)
 
     print("\n" + "-" * 70)
     print(f"  {results['pass']} OK / {results['fail']} FAIL")
