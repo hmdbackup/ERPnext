@@ -229,6 +229,11 @@ cd /home/hmd/hmd-deploy/frappe_docker  ====>Pensez a remplacer par le chemin de 
 docker compose --env-file .env exec backend bench --site hmd.agro restore \
   sites/hmd.agro/private/backups/20260806_153527-hmd_agro-database.sql.gz    ===>(Pensez à remplacer 20260806_153527 par le nom de votre fichier de sauvegarde cible
 ```
+Ps to use SFTP: copy data to home directory and then change permission (you need to be root)
+```bash
+sudo cp -r /var/lib/docker/volumes/frappe_docker_sites/_data/hmd.agro/private/backups /home/hmd/backups_hmd
+sudo chown -R hmd:hmd /home/hmd/backups_hmd
+```
 ---
 
 ### Reset everything
