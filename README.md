@@ -224,9 +224,11 @@ docker compose exec backend bench --site hmd.agro backup --with-files
 /home/hmd/hmd-deploy/frappe_docker
 ```
 ### Restaure only data and keep local config (il faut adapter avec le chemin local et le nom du fichier de backup):
+```bash
 cd /home/hmd/hmd-deploy/frappe_docker  ====>Pensez a remplacer par le chemin de votre installation locale
 docker compose --env-file .env exec backend bench --site hmd.agro restore \
   sites/hmd.agro/private/backups/20260806_153527-hmd_agro-database.sql.gz    ===>(Pensez à remplacer 20260806_153527 par le nom de votre fichier de sauvegarde cible
+```
 ---
 
 ### Reset everything
