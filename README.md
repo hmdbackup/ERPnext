@@ -209,13 +209,20 @@ docker compose exec backend bench --site hmd.agro migrate
 
 ### Backups
 
-Automatic every 6 hours (stored in `sites/hmd.agro/private/backups`).
+Automatic every 6 hours (stored in `sites/hmd.agro/private/backups`).==>DOES NOT WORK TO BE FIXED
 
 Manual backup:
 ```bash
 docker compose exec backend bench --site hmd.agro backup --with-files
 ```
-
+==>The backups are in 
+```bash
+/var/lib/docker/volumes/frappe_docker_sites/_data/hmd.agro/private/backups
+```
+==>To lunch backup manually use the provided  querry on this path : 
+```bash
+/home/hmd/hmd-deploy/frappe_docker
+```
 ---
 
 ### Reset everything
