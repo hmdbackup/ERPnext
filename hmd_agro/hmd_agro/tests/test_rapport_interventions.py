@@ -175,9 +175,15 @@ def _test_structure(results):
     print("\n[1] Structure")
     rows = _rows()
     attendus = ["section", "date", "equipement", "designation", "type",
-                "libelle", "atelier", "intervenant", "cout"]
+                "libelle", "atelier", "intervenant", "cout",
+                "nb_interventions", "nb_equipements"]
     _check([c["fieldname"] for c in COLUMNS] == attendus,
-           "les 9 colonnes attendues, dans l'ordre", results)
+           "les 11 colonnes attendues, dans l'ordre", results)
+    types = {c["fieldname"]: c["fieldtype"] for c in COLUMNS}
+    _check(types.get("nb_interventions") == "Int"
+           and types.get("nb_equipements") == "Int",
+           "les deux compteurs sont des entiers (triables, exportables)",
+           results)
     _check(_section(rows, "Réalisées"), "section « Réalisées » présente", results)
     _check(_section(rows, "Préventif"), "section « Préventif » présente", results)
     _check(_section(rows, "Rapprochement"),
@@ -188,6 +194,60 @@ def _test_structure(results):
     _check(prev and "à ce jour" in prev[0]["section"],
            "la section Préventif annonce qu'elle n'est pas bornée par la période",
            results)
+
+
+def _test_mois_vide_affiche_zero(results):
+    """Critère 5 — un mois sans intervention affiche ZÉRO, pas une erreur.
+
+    Appelé AVANT toute création : mai 2025 est encore vierge à ce moment-là,
+    ce qui rend le total absolu (0) déterministe plutôt que « au moins ».
+    """
+    print("\n[1b] Un mois sans intervention affiche zéro")
+    rows = _rows()
+    realisees = _section(rows, "Réalisées")
+    _check(_ligne(realisees, "Aucune intervention saisie") is not None,
+           "la phrase « aucune intervention » est affichée", results)
+    total = _ligne(realisees, "TOTAL —")
+    _check(total is not None, "une ligne TOTAL est présente malgré le vide",
+           results)
+    if total:
+        _check(total["cout"] == 0 and total["nb_interventions"] == 0
+               and total["nb_equipements"] == 0,
+               "le TOTAL vaut 0 DT / 0 intervention / 0 équipement", results)
+    # Et surtout : pas d'erreur, le rapport reste complet.
+    _check(_section(rows, "Rapprochement") != [],
+           "le rapprochement reste calculé sur un mois vide", results)
+
+
+def _test_periode_en_cours_annoncee(results):
+    """Le mois EN COURS s'arrête à aujourd'hui — le rapport doit le dire.
+
+    Sans cet avertissement, le TOTAL d'un mois entamé se lit comme celui du
+    mois entier, et l'écart au 615 paraît anormalement négatif.
+    """
+    print("\n[10b] Le mois en cours annonce qu'il est tronqué")
+    aujourdhui = getdate(today())
+    rows = execute({"periode": "Mois", "date": str(aujourdhui)})[1]
+    info = _ligne(rows, "Période en cours")
+    dernier_jour = _fin_de_mois(aujourdhui)
+    if aujourdhui < dernier_jour:
+        _check(info is not None,
+               "un mois entamé annonce que les chiffres sont arrêtés à ce jour",
+               results)
+        if info:
+            _check(aujourdhui.strftime("%d/%m/%Y") in info["libelle"],
+                   "l'avertissement cite la date d'arrêt", results)
+    else:
+        # Dernier jour du mois : il n'y a rien à tronquer, donc rien à annoncer.
+        _check(info is None,
+               "le dernier jour du mois, aucun avertissement n'est affiché",
+               results)
+
+
+def _fin_de_mois(date):
+    from calendar import monthrange
+    return getdate(f"{date.year}-{date.month:02d}-"
+                   f"{monthrange(date.year, date.month)[1]}")
 
 
 def _test_ligne_et_total(asset, results):
@@ -214,6 +274,17 @@ def _test_ligne_et_total(asset, results):
     _check(total is not None
            and total["libelle"] == "TOTAL — 1 intervention(s), 1 équipement(s)",
            "le TOTAL compte 1 intervention sur 1 équipement", results)
+    # Critère 2 — les compteurs doivent être des NOMBRES, pas seulement du texte
+    # dans le libellé : c'est ce qui les rend triables et exportables.
+    _check(total is not None and total["nb_interventions"] == 1
+           and total["nb_equipements"] == 1,
+           "le TOTAL porte les compteurs en colonnes chiffrées (1 et 1)",
+           results)
+    detail = _ligne(rows, "ZZTEST Vidange moteur")
+    _check(detail is not None and detail["nb_interventions"] is None
+           and detail["nb_equipements"] is None,
+           "les lignes de détail laissent les compteurs vides (pas de double "
+           "comptage à l'export)", results)
 
 
 def _test_brouillon_exclu(asset, results):
@@ -369,6 +440,7 @@ def _run_inner():
     asset = _asset_test(f"{PREFIXE_ASSET} principal")
 
     _test_structure(results)
+    _test_mois_vide_affiche_zero(results)
     _test_ligne_et_total(asset, results)
     _test_brouillon_exclu(asset, results)
     _test_rapprochement_sans_ecart(results)
@@ -378,6 +450,7 @@ def _run_inner():
     _test_filtre_masque_rapprochement(asset, results)
     _test_periode_future(results)
     _test_preventif_respecte_le_filtre(asset, results)
+    _test_periode_en_cours_annoncee(results)
 
     print("\n" + "-" * 70)
     print(f"  {results['pass']} OK / {results['fail']} FAIL")

@@ -70,6 +70,16 @@ COLUMNS = [
     {"fieldname": "intervenant", "label": "Intervenant", "fieldtype": "Link",
      "options": "Personnel", "width": 130},
     {"fieldname": "cout", "label": "Coût", "fieldtype": "Currency", "width": 120},
+    # Critère 2 — « il totalise : nombre d'interventions, nombre d'équipements ».
+    # Ces deux compteurs vivaient dans le LIBELLÉ du TOTAL : lisibles à l'écran,
+    # mais ni triables ni exploitables à l'export, donc le critère n'était rempli
+    # qu'à moitié. Ils deviennent des colonnes typées, renseignées sur la seule
+    # ligne TOTAL — les lignes de détail les laissent vides plutôt que d'y
+    # répéter « 1 », qui se serait additionné dans un tableur.
+    {"fieldname": "nb_interventions", "label": "Nb Interventions",
+     "fieldtype": "Int", "width": 130},
+    {"fieldname": "nb_equipements", "label": "Nb Équipements",
+     "fieldtype": "Int", "width": 130},
 ]
 
 
@@ -97,21 +107,35 @@ def execute(filters=None):
                                                "cette période.")]
                          + _preventif(equipement, atelier))
     # On ne compte que les jours réellement écoulés (mois en cours).
+    fin_periode = fin
     fin = min(fin, today_dt)
 
     lignes = interventions_realisees(debut, fin, equipement, atelier)
 
-    data = _realisees(lignes)
+    data = []
+    # Mois en cours : la liste s'arrête à aujourd'hui. Le taire donnait un
+    # TOTAL qu'on prenait pour celui du mois entier — et un rapprochement au
+    # 615 mécaniquement plus bas que la facture du mois. On le DIT, comme le
+    # bloc préventif annonce déjà qu'il n'est pas borné par la période.
+    if fin_periode > fin:
+        data.append(_row("INFO", libelle=(
+            f"Période en cours : chiffres arrêtés au {fin.strftime('%d/%m/%Y')} "
+            f"(fin de période le {fin_periode.strftime('%d/%m/%Y')}) — "
+            f"les totaux ne couvrent pas encore le mois entier.")))
+    data.extend(_realisees(lignes))
     data.extend(_preventif(equipement, atelier))
     data.extend(_rapprochement(debut, fin, lignes, equipement, atelier))
     return COLUMNS, data
 
 
 def _row(section, date=None, equipement=None, designation=None, type_=None,
-         libelle=None, atelier=None, intervenant=None, cout=None, indicator=""):
+         libelle=None, atelier=None, intervenant=None, cout=None,
+         nb_interventions=None, nb_equipements=None, indicator=""):
     return {"section": section, "date": date, "equipement": equipement,
             "designation": designation, "type": type_, "libelle": libelle,
             "atelier": atelier, "intervenant": intervenant, "cout": cout,
+            "nb_interventions": nb_interventions,
+            "nb_equipements": nb_equipements,
             "indicator": indicator}
 
 
@@ -120,7 +144,16 @@ def _row(section, date=None, equipement=None, designation=None, type_=None,
 def _realisees(lignes):
     s = "Réalisées"
     if not lignes:
-        return [_row(s, libelle="Aucune intervention saisie sur la période.")]
+        # Critère 5 — « un mois sans intervention affiche zéro, pas une erreur ».
+        # La phrase seule ne remplissait le critère qu'à moitié : elle explique
+        # l'absence mais ne donne pas le chiffre, et l'export ne portait alors
+        # aucune ligne de total. On rend les DEUX — la phrase pour l'écran, le
+        # TOTAL à 0 pour le tableur et pour le lecteur qui cherche un nombre.
+        return [
+            _row(s, libelle="Aucune intervention saisie sur la période."),
+            _row(s, libelle="TOTAL — 0 intervention(s), 0 équipement(s)",
+                 cout=0.0, nb_interventions=0, nb_equipements=0),
+        ]
 
     rows = []
     for ligne in lignes:
@@ -144,9 +177,11 @@ def _realisees(lignes):
             intervenant=ligne.personnel,
             cout=flt(ligne.cout),
         ))
+    nb_equip = _nb_equipements(lignes)
     rows.append(_row(s, libelle=f"TOTAL — {len(lignes)} intervention(s), "
-                                f"{_nb_equipements(lignes)} équipement(s)",
-                     cout=round(sum(flt(l.cout) for l in lignes), 2)))
+                                f"{nb_equip} équipement(s)",
+                     cout=round(sum(flt(l.cout) for l in lignes), 2),
+                     nb_interventions=len(lignes), nb_equipements=nb_equip))
     return rows
 
 
@@ -224,7 +259,7 @@ def _rapprochement(debut, fin, lignes, equipement, atelier):
 
 def _libelle_ecart(ecart):
     if not ecart:
-        return "Écart — aucun, chaque dirham d'entretien est rattaché"
+        return "Écart — aucun, chaque dinar d'entretien est rattaché"
     if ecart > 0:
         return ("Écart — entretien comptabilisé SANS intervention saisie "
                 "(facture non rattachée à un équipement)")
