@@ -1,0 +1,455 @@
+<title>Maquettes SCRUM-9/10/11</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#F6F7F4; --surface:#FFFFFF; --surface-2:#EFF1EC; --surface-3:#E7EBE4;
+  --ink:#18201A; --ink-2:#5A665C; --ink-3:#7E8A80;
+  --line:#D9DFD7; --line-strong:#B7C1B5;
+  --accent:#2E6B4F; --accent-soft:#E2EDE6;
+  --warn:#8E6211; --warn-soft:#F6EBD6;
+  --crit:#9C2F27; --crit-soft:#F7E2E0;
+  --ok:#2E6B4F; --ok-soft:#E2EDE6;
+  --shadow:0 1px 2px rgba(24,32,26,.06), 0 8px 24px -16px rgba(24,32,26,.30);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#121613; --surface:#191F1B; --surface-2:#1F2621; --surface-3:#252E28;
+    --ink:#E6EDE6; --ink-2:#9BA89D; --ink-3:#7C887F;
+    --line:#2B342E; --line-strong:#3D4840;
+    --accent:#7BC49E; --accent-soft:#1D2C24;
+    --warn:#D5A257; --warn-soft:#2C2517;
+    --crit:#E08B81; --crit-soft:#2E1D1B;
+    --ok:#7BC49E; --ok-soft:#1D2C24;
+    --shadow:0 1px 2px rgba(0,0,0,.40), 0 8px 24px -16px rgba(0,0,0,.70);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#121613; --surface:#191F1B; --surface-2:#1F2621; --surface-3:#252E28;
+  --ink:#E6EDE6; --ink-2:#9BA89D; --ink-3:#7C887F;
+  --line:#2B342E; --line-strong:#3D4840;
+  --accent:#7BC49E; --accent-soft:#1D2C24;
+  --warn:#D5A257; --warn-soft:#2C2517;
+  --crit:#E08B81; --crit-soft:#2E1D1B;
+  --ok:#7BC49E; --ok-soft:#1D2C24;
+  --shadow:0 1px 2px rgba(0,0,0,.40), 0 8px 24px -16px rgba(0,0,0,.70);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+.page{max-width:1140px; margin:0 auto; padding:0 24px 96px; display:flex; flex-direction:column; gap:56px}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+/* ── En-tête ───────────────────────────────────────────── */
+.masthead{padding:56px 0 0; display:flex; flex-direction:column; gap:20px}
+.eyebrow{
+  margin:0; font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:500;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--accent);
+}
+.masthead h1{
+  margin:0; font-family:"Fraunces",Georgia,serif; font-weight:600;
+  font-size:clamp(2.1rem,4.6vw,3.1rem); line-height:1.08; letter-spacing:-.015em;
+  text-wrap:balance;
+}
+.masthead .standfirst{margin:0; max-width:62ch; color:var(--ink-2); font-size:1.02rem}
+.meta{
+  display:flex; flex-wrap:wrap; gap:0; margin-top:8px;
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+}
+.meta div{
+  flex:1 1 180px; padding:12px 20px 12px 0; border-right:1px solid var(--line);
+}
+.meta div:last-child{border-right:0}
+.meta dt{
+  margin:0 0 2px; font-family:"IBM Plex Mono",monospace; font-size:10.5px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3);
+}
+.meta dd{margin:0; font-size:.92rem; font-weight:500}
+
+.avis{
+  display:flex; gap:14px; align-items:flex-start; padding:16px 18px;
+  background:var(--warn-soft); border-left:3px solid var(--warn); border-radius:2px;
+}
+.avis p{margin:0; font-size:.9rem; color:var(--ink)}
+.avis strong{color:var(--warn)}
+
+/* ── Bloc User Story ───────────────────────────────────── */
+.us{display:flex; flex-direction:column; gap:22px; scroll-margin-top:24px}
+.us-head{display:flex; flex-direction:column; gap:8px}
+.key{
+  margin:0; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600;
+  letter-spacing:.08em; color:var(--accent);
+  display:inline-flex; align-self:flex-start; align-items:center; gap:8px;
+}
+.key::after{content:""; width:56px; height:1px; background:var(--line-strong)}
+.us-head h2{
+  margin:0; font-family:"Fraunces",Georgia,serif; font-weight:600;
+  font-size:clamp(1.45rem,2.6vw,1.9rem); line-height:1.15; letter-spacing:-.01em;
+}
+.us-head .lede{margin:0; max-width:70ch; color:var(--ink-2); font-size:.95rem}
+
+/* ── Cadre « écran » ───────────────────────────────────── */
+.screen{
+  margin:0; background:var(--surface); border:1px solid var(--line);
+  border-radius:4px; box-shadow:var(--shadow); overflow:hidden;
+}
+.chrome{
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px;
+  padding:12px 16px; background:var(--surface-2); border-bottom:1px solid var(--line);
+}
+.chrome .path{
+  font-size:.86rem; font-weight:600; margin-right:auto;
+}
+.chrome .path span{color:var(--ink-3); font-weight:400}
+.chip{
+  font-family:"IBM Plex Mono",monospace; font-size:11px; padding:3px 9px;
+  background:var(--surface); border:1px solid var(--line-strong); border-radius:3px;
+  color:var(--ink-2); white-space:nowrap;
+}
+.chip b{color:var(--ink); font-weight:600}
+
+.grid-wrap{overflow-x:auto}
+table{
+  border-collapse:collapse; width:100%; min-width:920px;
+  font-size:12.5px; font-variant-numeric:tabular-nums;
+}
+thead th{
+  position:sticky; top:0; background:var(--surface-3); color:var(--ink-2);
+  font-weight:600; font-size:11px; letter-spacing:.03em; text-align:left;
+  padding:9px 10px; border-bottom:1px solid var(--line-strong); white-space:nowrap;
+}
+tbody td{padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:baseline}
+tbody tr:last-child td{border-bottom:0}
+.num{text-align:right; font-family:"IBM Plex Mono",monospace; font-size:12px}
+.lbl{white-space:nowrap}
+.vide{color:var(--ink-3)}
+.vide::after{content:"—"}
+tr.total td{background:var(--surface-2); font-weight:600; border-top:1px solid var(--line-strong)}
+tr.sous td{background:var(--surface-2)}
+tr.rupture td{
+  padding:5px 10px; background:var(--accent-soft); color:var(--accent);
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600;
+  letter-spacing:.1em; text-transform:uppercase;
+}
+tr.ellipse td{text-align:center; color:var(--ink-3); font-size:11px; letter-spacing:.3em}
+
+.pill{
+  display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:10px;
+  font-weight:600; letter-spacing:.06em; padding:2px 7px; border-radius:2px;
+  background:var(--surface-3); color:var(--ink-2);
+}
+.pill.red{background:var(--crit-soft); color:var(--crit)}
+.pill.amber{background:var(--warn-soft); color:var(--warn)}
+.pill.green{background:var(--ok-soft); color:var(--ok)}
+
+.dot{
+  display:inline-block; width:8px; height:8px; border-radius:50%;
+  margin-right:7px; vertical-align:1px; background:var(--ink-3);
+}
+.dot.red{background:var(--crit)} .dot.amber{background:var(--warn)} .dot.green{background:var(--ok)}
+
+.bandeau td{
+  background:var(--warn-soft); color:var(--warn); font-weight:500; font-size:12px;
+  border-bottom:1px solid var(--line);
+}
+
+/* ── Repères de lecture ────────────────────────────────── */
+.cx{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:15px; height:15px; margin-left:6px; border-radius:50%;
+  background:var(--accent); color:var(--surface);
+  font-family:"IBM Plex Mono",monospace; font-size:9.5px; font-weight:600;
+  vertical-align:1px;
+}
+
+.notes{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:2px;
+  background:var(--line); border:1px solid var(--line);
+}
+.notes .note{
+  background:var(--surface); padding:14px 16px; display:flex; gap:11px; align-items:flex-start;
+}
+.notes .cx{margin:2px 0 0}
+.notes p{margin:0; font-size:.87rem; color:var(--ink-2)}
+.notes p b{color:var(--ink); font-weight:600}
+
+/* ── À trancher ────────────────────────────────────────── */
+.decide{
+  background:var(--surface-2); border:1px solid var(--line); border-radius:4px;
+  padding:18px 20px; display:flex; flex-direction:column; gap:12px;
+}
+.decide h3{
+  margin:0; font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3);
+}
+.decide ul{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px}
+.decide li{display:flex; gap:11px; align-items:flex-start; font-size:.9rem}
+.decide li::before{
+  content:""; flex:0 0 auto; width:13px; height:13px; margin-top:4px;
+  border:1.5px solid var(--line-strong); border-radius:2px; background:var(--surface);
+}
+.decide li b{font-weight:600}
+.decide li span{color:var(--ink-2)}
+
+/* ── Pied ──────────────────────────────────────────────── */
+.pied{
+  border-top:1px solid var(--line); padding-top:24px;
+  display:flex; flex-direction:column; gap:14px;
+}
+.pied h2{
+  margin:0; font-family:"Fraunces",Georgia,serif; font-weight:600; font-size:1.3rem;
+}
+.pied p{margin:0; max-width:70ch; font-size:.9rem; color:var(--ink-2)}
+.pied code{
+  font-family:"IBM Plex Mono",monospace; font-size:.82rem;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:2px; padding:1px 5px;
+}
+</style>
+
+<div class="page">
+
+<header class="masthead">
+  <p class="eyebrow">HMD AGRO · Sprint Finance · Definition of Ready, critère 2</p>
+  <h1>Maquettes des trois rapports à valider</h1>
+  <p class="standfirst">Ce que les trois écrans afficheront une fois le mois entièrement saisi.
+    Colonnes, libellés et ordre des lignes sont ceux du code livré : ce qui reste à trancher,
+    ce sont les règles métier listées sous chaque maquette.</p>
+  <dl class="meta">
+    <div><dt>Période figurée</dt><dd>Juin 2026 — mois complet</dd></div>
+    <div><dt>À valider par</dt><dd>M. Samir (métier), Aymen (lead)</dd></div>
+    <div><dt>Échéance</dt><dd>Avant la démo de lundi</dd></div>
+    <div><dt>Version</dt><dd>21/08/2026</dd></div>
+  </dl>
+  <div class="avis">
+    <p><strong>Chiffres d'illustration.</strong> Les montants et volumes ci-dessous sont
+      cohérents entre eux mais reconstitués : sur le site réel, juin 2026 n'a que 26 jours de
+      bilan lait sur 30 et un Grand Livre encore partiel. Ce sont les <em>règles d'affichage</em>
+      qui sont soumises à validation, pas les valeurs.</p>
+  </div>
+</header>
+
+<!-- ══════════════════ SCRUM-9 ══════════════════ -->
+<section class="us" id="scrum-9">
+  <div class="us-head">
+    <p class="key">SCRUM-9</p>
+    <h2>Production laitière, jour par jour et par vache</h2>
+    <p class="lede">Le litre par vache et par jour, avec les deux dénominateurs demandés en revue
+      (vaches lactantes / vaches présentes) et la ventilation du lait — vendu, auto-consommé,
+      donné aux veaux, écart.</p>
+  </div>
+
+  <figure class="screen">
+    <figcaption class="chrome">
+      <span class="path">Rapports <span>›</span> Rapport Périodique <span>› section Production</span></span>
+      <span class="chip">Date <b>30/06/2026</b></span>
+      <span class="chip">Période <b>Mois</b></span>
+      <span class="chip">Section <b>Production</b></span>
+      <span class="chip">Granularité <b>Quinzaine</b></span>
+    </figcaption>
+    <div class="grid-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Jour / Période</th><th>VL</th><th>VP</th><th>Production (L)</th>
+            <th>Moy/VL (L/j)</th><th>Moy/VP (L/j)</th><th>TB</th><th>TP</th>
+            <th>Commercialisé (L)</th><th>Auto-conso (L)</th><th>Lait Veau (L)</th><th>Écart (L)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="lbl">1</td><td class="num">97<span class="cx">1</span></td><td class="num">119</td><td class="num">1 643,0</td><td class="num">16,9</td><td class="num">13,8</td><td class="num vide"></td><td class="num vide"></td><td class="num">1 571,0</td><td class="num">32,0</td><td class="num">35,0</td><td class="num">5,0</td></tr>
+          <tr><td class="lbl">2</td><td class="num">97</td><td class="num">119</td><td class="num">1 626,0</td><td class="num">16,8</td><td class="num">13,7</td><td class="num vide"></td><td class="num vide"></td><td class="num">1 554,0</td><td class="num">30,0</td><td class="num">35,0</td><td class="num">7,0</td></tr>
+          <tr><td class="lbl">3</td><td class="num">96</td><td class="num">118</td><td class="num">1 587,0</td><td class="num">16,5</td><td class="num">13,5</td><td class="num vide"></td><td class="num vide"></td><td class="num">1 518,0</td><td class="num">30,0</td><td class="num">35,0</td><td class="num">4,0</td></tr>
+          <tr><td class="lbl">4</td><td class="num">96</td><td class="num">118</td><td class="num">1 569,0</td><td class="num">16,3</td><td class="num">13,3</td><td class="num vide"></td><td class="num vide"></td><td class="num">1 502,0</td><td class="num">28,0</td><td class="num">35,0</td><td class="num">4,0</td></tr>
+          <tr><td class="lbl">5</td><td class="num">96</td><td class="num">118</td><td class="num">1 511,0</td><td class="num">15,7</td><td class="num">12,8</td><td class="num">3,68 %</td><td class="num">3,15 %</td><td class="num">1 394,0</td><td class="num">30,0</td><td class="num">35,0</td><td class="num"><span class="pill amber">52,0</span><span class="cx">2</span></td></tr>
+          <tr class="ellipse"><td colspan="12">· · ·</td></tr>
+          <tr class="sous"><td class="lbl">Q1 (1 → 15)</td><td class="num vide"></td><td class="num vide"></td><td class="num">23 197,0</td><td class="num vide"></td><td class="num vide"></td><td class="num vide"></td><td class="num vide"></td><td class="num">22 164,0</td><td class="num">445,0</td><td class="num">525,0</td><td class="num">63,0</td></tr>
+          <tr><td class="lbl">16</td><td class="num">95</td><td class="num">117</td><td class="num">1 502,0</td><td class="num">15,8</td><td class="num">12,8</td><td class="num vide"></td><td class="num vide"></td><td class="num">1 436,0</td><td class="num">29,0</td><td class="num">35,0</td><td class="num">2,0</td></tr>
+          <tr><td class="lbl">17</td><td class="num">95</td><td class="num">117</td><td class="num">1 483,0</td><td class="num">15,6</td><td class="num">12,7</td><td class="num vide"></td><td class="num vide"></td><td class="num vide"><span class="cx">3</span></td><td class="num vide"></td><td class="num vide"></td><td class="num vide"></td></tr>
+          <tr class="ellipse"><td colspan="12">· · ·</td></tr>
+          <tr class="sous"><td class="lbl">Q2 (16 → 30)</td><td class="num vide"></td><td class="num vide"></td><td class="num">22 247,0</td><td class="num vide"></td><td class="num vide"></td><td class="num vide"></td><td class="num vide"></td><td class="num">21 264,0</td><td class="num">445,0</td><td class="num">525,0</td><td class="num">13,0</td></tr>
+          <tr class="total"><td class="lbl">Total (VL/VP = moy.)<span class="cx">4</span></td><td class="num">96</td><td class="num">118</td><td class="num">45 444,0</td><td class="num">15,8</td><td class="num">12,8</td><td class="num">3,68 %</td><td class="num">3,15 %</td><td class="num">43 428,0</td><td class="num">890,0</td><td class="num">1 050,0</td><td class="num">76,0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </figure>
+
+  <div class="notes">
+    <div class="note"><span class="cx">1</span><p><b>VL et VP sont recalculés chaque jour</b> à partir des vêlages, tarissements et sorties — ils bougent en cours de mois, exactement comme le troupeau.</p></div>
+    <div class="note"><span class="cx">2</span><p><b>L'écart du jour est affiché tel quel.</b> Les ~50 L signalés en revue apparaissent ici en orange sans être corrigés en silence.</p></div>
+    <div class="note"><span class="cx">3</span><p><b>Jour sans bilan lait : cellules vides, jamais des zéros.</b> Un 0 se lirait « rien vendu ce jour-là » ; le vide se lit « pas encore saisi ».</p></div>
+    <div class="note"><span class="cx">4</span><p><b>La ligne Total porte des moyennes pour VL/VP</b> et des sommes pour les litres ; elle n'additionne que les jours réellement saisis.</p></div>
+  </div>
+
+  <div class="decide">
+    <h3>À trancher avec M. Samir</h3>
+    <ul>
+      <li><b>Dénominateur de référence.</b><span>Le KPI officiel de la ferme est-il L/VL (vaches en lactation) ou L/VP (vaches présentes) ? Les deux restent affichés, mais un seul doit servir de référence dans les comparaisons mensuelles.</span></li>
+      <li><b>TB / TP.</b><span>Renseignés uniquement les jours de contrôle laitier, ou reportés sur tout le mois ?</span></li>
+      <li><b>Seuil d'alerte sur l'écart.</b><span>À partir de combien de litres par jour l'écart devient-il une anomalie à signaler — 50 L, comme évoqué en revue ?</span></li>
+      <li><b>Reconstitution du troupeau.</b><span>Point bloquant pour lundi : les 95 vaches importées n'ont pas d'événement de vêlage, donc VL vaut 0 sur le site réel. Il faut soit importer les dates de vêlage, soit annoncer la colonne comme non représentative pendant la démo.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════════════ SCRUM-10 ══════════════════ -->
+<section class="us" id="scrum-10">
+  <div class="us-head">
+    <p class="key">SCRUM-10</p>
+    <h2>Charges par atelier et coût du litre, ligne par ligne</h2>
+    <p class="lede">La demande de la revue : « le rapport doit détailler le coût du lait ligne par
+      ligne pour rapprochement comptable ». Chaque poste porte son numéro de compte, et le total
+      ventilé se recompte à l'écran contre les charges du Grand Livre.</p>
+  </div>
+
+  <figure class="screen">
+    <figcaption class="chrome">
+      <span class="path">Rapports <span>›</span> Rapport de Performance</span>
+      <span class="chip">Date <b>30/06/2026</b></span>
+      <span class="chip">Période <b>Mois</b></span>
+      <span class="chip">Périmètre coût du litre <b>LAIT_QUOTE_PART</b></span>
+    </figcaption>
+    <div class="grid-wrap">
+      <table>
+        <thead>
+          <tr><th style="width:44%">Indicateur</th><th style="width:14%">Valeur</th><th style="width:10%">Unité</th><th style="width:16%">M-1 même période</th><th style="width:16%">Δ %</th></tr>
+        </thead>
+        <tbody>
+          <tr class="rupture"><td colspan="5">Charges</td></tr>
+          <tr><td>Ration &amp; Aliments (601)</td><td class="num">41 260,00</td><td>DT</td><td class="num">39 880,00</td><td class="num">+3,5 %</td></tr>
+          <tr><td>Entretien &amp; Réparations (615)</td><td class="num">2 715,00</td><td>DT</td><td class="num">1 940,00</td><td class="num">+39,9 %</td></tr>
+          <tr><td>Charges Totales</td><td class="num">112 100,00</td><td>DT</td><td class="num">108 430,00</td><td class="num">+3,4 %</td></tr>
+
+          <tr class="rupture"><td colspan="5">Charges par Atelier</td></tr>
+          <tr><td>Lait — Troupeau Laitier<span class="cx">1</span></td><td class="num">62 620,00</td><td>DT</td><td class="num">60 910,00</td><td class="num">+2,8 %</td></tr>
+          <tr><td>Culture Fourragère &amp; Traction</td><td class="num">21 350,00</td><td>DT</td><td class="num">20 780,00</td><td class="num">+2,7 %</td></tr>
+          <tr><td>Génisses &amp; Élevage</td><td class="num">12 780,00</td><td>DT</td><td class="num">12 410,00</td><td class="num">+3,0 %</td></tr>
+          <tr><td>Frais Généraux</td><td class="num">9 840,00</td><td>DT</td><td class="num">9 620,00</td><td class="num">+2,3 %</td></tr>
+          <tr><td>Frigorifique</td><td class="num">4 260,00</td><td>DT</td><td class="num">3 990,00</td><td class="num">+6,8 %</td></tr>
+          <tr><td><span class="dot amber"></span>Non imputé — écriture sans atelier<span class="cx">2</span></td><td class="num">1 250,00</td><td>DT</td><td class="num">720,00</td><td class="num">+73,6 %</td></tr>
+          <tr class="total"><td>Total ventilé — doit égaler « Charges Totales »<span class="cx">3</span></td><td class="num">112 100,00</td><td>DT</td><td class="num">108 430,00</td><td class="num">+3,4 %</td></tr>
+
+          <tr class="rupture"><td colspan="5">Coût du Lait (détail)</td></tr>
+          <tr><td>Ration &amp; Aliments (601)</td><td class="num">41 260,00</td><td>DT</td><td class="num">39 880,00</td><td class="num">+3,5 %</td></tr>
+          <tr><td>Santé &amp; Vétérinaire (602)</td><td class="num">3 180,00</td><td>DT</td><td class="num">2 940,00</td><td class="num">+8,2 %</td></tr>
+          <tr><td>Mécanique — Entretien (615)</td><td class="num">620,00</td><td>DT</td><td class="num">480,00</td><td class="num">+29,2 %</td></tr>
+          <tr><td>Personnel (64x)</td><td class="num">12 900,00</td><td>DT</td><td class="num">12 900,00</td><td class="num">0,0 %</td></tr>
+          <tr><td>Amortissements (68x)</td><td class="num">3 860,00</td><td>DT</td><td class="num">3 860,00</td><td class="num">0,0 %</td></tr>
+          <tr><td>Charges financières (66x)</td><td class="num">800,00</td><td>DT</td><td class="num">850,00</td><td class="num">−5,9 %</td></tr>
+          <tr><td>Autres charges d'exploitation<span class="cx">4</span></td><td class="num">0,00</td><td>DT</td><td class="num">0,00</td><td class="num vide"></td></tr>
+          <tr class="sous"><td>Sous-total — charges directes atelier Lait</td><td class="num">62 620,00</td><td>DT</td><td class="num">60 910,00</td><td class="num">+2,8 %</td></tr>
+          <tr><td>Quote-part des charges générales (Frais Généraux) — clé 61,98 % des charges directes<span class="cx">5</span></td><td class="num">6 099,23</td><td>DT</td><td class="num">5 962,40</td><td class="num">+2,3 %</td></tr>
+          <tr class="total"><td>TOTAL — charges retenues pour le coût du litre</td><td class="num">68 719,23</td><td>DT</td><td class="num">66 872,40</td><td class="num">+2,8 %</td></tr>
+          <tr><td><span class="dot amber"></span>Rappel — charges non imputées, exclues du coût du litre</td><td class="num">1 250,00</td><td>DT</td><td class="num">720,00</td><td class="num">+73,6 %</td></tr>
+
+          <tr class="rupture"><td colspan="5">Coûts Unitaires</td></tr>
+          <tr><td>Coût Alimentaire / L</td><td class="num">0,908</td><td>DT/L</td><td class="num">0,895</td><td class="num">+1,5 %</td></tr>
+          <tr><td>Coût Mécanique / L (vue analytique — non additionnable au coût complet)<span class="cx">6</span></td><td class="num">0,060</td><td>DT/L</td><td class="num">0,044</td><td class="num">+36,4 %</td></tr>
+          <tr class="total"><td>Coût Complet / L (atelier Lait + quote-part des charges générales)</td><td class="num">1,512</td><td>DT/L</td><td class="num">1,501</td><td class="num">+0,7 %</td></tr>
+          <tr><td>Coût du Litre hors Amortissement</td><td class="num">1,427</td><td>DT/L</td><td class="num">1,414</td><td class="num">+0,9 %</td></tr>
+          <tr><td>IOFC — CA Lait − Coût Alimentaire</td><td class="num">8 682,20</td><td>DT</td><td class="num">8 210,00</td><td class="num">+5,8 %</td></tr>
+          <tr><td>IOFC / Vache Lactante / Jour</td><td class="num">3,01</td><td>DT/VL/j</td><td class="num">2,87</td><td class="num">+4,9 %</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </figure>
+
+  <div class="notes">
+    <div class="note"><span class="cx">1</span><p><b>Un atelier par centre de coût.</b> Les écritures sont lues avec leur centre de coût, ce que le rapport ignorait jusqu'ici.</p></div>
+    <div class="note"><span class="cx">2</span><p><b>« Non imputé » s'affiche même à zéro.</b> Une ligne absente se lit « rien à signaler » ; une ligne à 0 se lit « vérifié, il n'y en a pas ».</p></div>
+    <div class="note"><span class="cx">3</span><p><b>Le total se recompte à l'écran.</b> S'il s'écarte des Charges Totales, la ligne passe au rouge et le dit — pas seulement dans les tests.</p></div>
+    <div class="note"><span class="cx">4</span><p><b>Tous les postes restent affichés, même à zéro</b>, pour que la forme du tableau ne change pas d'un mois sur l'autre.</p></div>
+    <div class="note"><span class="cx">5</span><p><b>La clé de répartition est écrite en toutes lettres.</b> Ici : part du Lait dans les charges directes des ateliers, hors Frais Généraux.</p></div>
+    <div class="note"><span class="cx">6</span><p><b>Le coût mécanique ne s'additionne pas au coût complet</b> — il y est déjà compris via le compte 615. Un test protège cette règle.</p></div>
+  </div>
+
+  <div class="decide">
+    <h3>À trancher avec M. Samir</h3>
+    <ul>
+      <li><b>Nom exact du centre de coût « frigénerie ».</b><span>« Frigorifique » est provisoire. La fromagerie annoncée en revue viendra s'ajouter à la même liste.</span></li>
+      <li><b>Clé de la quote-part.</b><span>Répartir les Frais Généraux au prorata des charges directes (proposé ici) ou au prorata des litres produits ?</span></li>
+      <li><b>Périmètre de référence du coût du litre.</b><span>Trois périmètres sont paramétrables — atelier Lait seul, atelier Lait + quote-part, toutes charges. Lequel devient la valeur officielle communiquée ?</span></li>
+      <li><b>Saisie d'une charge avec répartition en %.</b><span>La revue demande un montant réparti entre ateliers à 100 %. ERPNext le fait nativement (« Cost Center Allocation ») ; à confirmer avant de l'activer.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════════════ SCRUM-11 ══════════════════ -->
+<section class="us" id="scrum-11">
+  <div class="us-head">
+    <p class="key">SCRUM-11</p>
+    <h2>Interventions mécaniques et entretien préventif</h2>
+    <p class="lede">Ce qui a été fait sur le mois, ce qui arrive dans les 30 jours, et le
+      rapprochement entre les interventions saisies et le compte 615 du Grand Livre.</p>
+  </div>
+
+  <figure class="screen">
+    <figcaption class="chrome">
+      <span class="path">Rapports <span>›</span> Rapport des Interventions</span>
+      <span class="chip">Date <b>30/06/2026</b></span>
+      <span class="chip">Période <b>Mois</b></span>
+      <span class="chip">Équipement <b>Tous</b></span>
+      <span class="chip">Atelier <b>Tous</b></span>
+    </figcaption>
+    <div class="grid-wrap">
+      <table>
+        <thead>
+          <tr><th>Section</th><th>Date</th><th>Équipement</th><th>Désignation</th><th>Type</th><th>Libellé</th><th>Atelier</th><th>Intervenant</th><th>Coût</th><th>Nb Interventions</th><th>Nb Équipements</th></tr>
+        </thead>
+        <tbody>
+          <tr class="rupture"><td colspan="11">Réalisées</td></tr>
+          <tr><td class="lbl">Réalisées</td><td class="lbl">06/06/2026</td><td class="lbl">ACC-ASS-2026-00003</td><td>Tracteur Massey 385</td><td><span class="pill green">PRÉVENTIVE</span></td><td>Vidange moteur + filtres</td><td class="lbl">Culture Fourragère</td><td>Atelier Ben Salah</td><td class="num">340,00</td><td class="num vide"></td><td class="num vide"></td></tr>
+          <tr><td class="lbl">Réalisées</td><td class="lbl">11/06/2026</td><td class="lbl">ACC-ASS-2026-00007</td><td>Tank à lait 3 000 L</td><td><span class="pill amber">CURATIVE</span></td><td>Remplacement sonde de température</td><td class="lbl">Lait — Troupeau</td><td>Frigotech</td><td class="num">620,00</td><td class="num vide"></td><td class="num vide"></td></tr>
+          <tr><td class="lbl">Réalisées</td><td class="lbl">18/06/2026</td><td class="lbl">ACC-ASS-2026-00012</td><td>Groupe électrogène 60 kVA</td><td><span class="pill green">PRÉVENTIVE</span></td><td>Contrôle 250 h + filtre à air</td><td class="lbl">Frais Généraux</td><td>Interne</td><td class="num">180,00</td><td class="num vide"></td><td class="num vide"></td></tr>
+          <tr><td class="lbl">Réalisées</td><td class="lbl">23/06/2026</td><td class="lbl">ACC-ASS-2026-00003</td><td>Tracteur Massey 385</td><td><span class="pill amber">CURATIVE</span></td><td>Réparation circuit hydraulique</td><td class="lbl">Culture Fourragère</td><td>Atelier Ben Salah</td><td class="num">1 480,00</td><td class="num vide"></td><td class="num vide"></td></tr>
+          <tr><td class="lbl">Réalisées</td><td class="lbl">27/06/2026</td><td class="lbl">ACC-ASS-2026-00019</td><td>Remorque épandeuse</td><td><span class="pill green">PRÉVENTIVE</span></td><td>Graissage + contrôle pneus</td><td class="lbl">Culture Fourragère</td><td>Interne</td><td class="num">95,00</td><td class="num vide"></td><td class="num vide"></td></tr>
+          <tr class="total"><td class="lbl">Réalisées</td><td class="vide"></td><td class="vide"></td><td class="vide"></td><td class="vide"></td><td>TOTAL — 5 intervention(s), 4 équipement(s)</td><td class="vide"></td><td class="vide"></td><td class="num">2 715,00</td><td class="num">5<span class="cx">1</span></td><td class="num">4</td></tr>
+
+          <tr class="rupture"><td colspan="11">Préventif (à ce jour, 30 j)</td></tr>
+          <tr><td class="lbl">Préventif</td><td class="lbl">28/06/2026</td><td class="lbl">ACC-ASS-2026-00016</td><td>Pompe à vide salle de traite</td><td><span class="pill red">EN RETARD</span><span class="cx">2</span></td><td>Contrôle mensuel de dépression</td><td class="lbl">Lait — Troupeau</td><td class="vide"></td><td class="num vide"></td><td class="num vide"></td><td class="num vide"></td></tr>
+          <tr><td class="lbl">Préventif</td><td class="lbl">05/07/2026</td><td class="lbl">ACC-ASS-2026-00003</td><td>Tracteur Massey 385</td><td><span class="pill amber">À VENIR</span></td><td>Vidange 500 h</td><td class="lbl">Culture Fourragère</td><td class="vide"></td><td class="num vide"></td><td class="num vide"></td><td class="num vide"></td></tr>
+          <tr><td class="lbl">Préventif</td><td class="lbl">14/07/2026</td><td class="lbl">ACC-ASS-2026-00007</td><td>Tank à lait 3 000 L</td><td><span class="pill">À VENIR</span></td><td>Nettoyage du condenseur</td><td class="lbl">Lait — Troupeau</td><td class="vide"></td><td class="num vide"></td><td class="num vide"></td><td class="num vide"></td></tr>
+
+          <tr class="rupture"><td colspan="11">Rapprochement</td></tr>
+          <tr><td class="lbl">Rapprochement</td><td class="vide"></td><td class="vide"></td><td class="vide"></td><td class="vide"></td><td>Entretien au Grand Livre (compte 615)</td><td class="vide"></td><td class="vide"></td><td class="num">2 715,00</td><td class="num vide"></td><td class="num vide"></td></tr>
+          <tr><td class="lbl">Rapprochement</td><td class="vide"></td><td class="vide"></td><td class="vide"></td><td class="vide"></td><td>Somme des interventions saisies</td><td class="vide"></td><td class="vide"></td><td class="num">2 715,00</td><td class="num vide"></td><td class="num vide"></td></tr>
+          <tr class="total"><td class="lbl">Rapprochement</td><td class="vide"></td><td class="vide"></td><td class="vide"></td><td class="vide"></td><td><span class="dot green"></span>Écart — aucun, chaque dinar d'entretien est rattaché<span class="cx">3</span></td><td class="vide"></td><td class="vide"></td><td class="num">0,00</td><td class="num vide"></td><td class="num vide"></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </figure>
+
+  <div class="notes">
+    <div class="note"><span class="cx">1</span><p><b>Le compte d'interventions et d'équipements est une colonne</b>, pas une phrase noyée dans le libellé : il s'exporte et se compare d'un mois à l'autre.</p></div>
+    <div class="note"><span class="cx">2</span><p><b>Une échéance dépassée s'affiche en rouge</b> et reste dans la liste au lieu d'en disparaître — c'est précisément celle-là qu'il faut voir.</p></div>
+    <div class="note"><span class="cx">3</span><p><b>Le rapprochement est fait par le rapport.</b> Si la somme des interventions ne retombe pas sur le compte 615, l'écart s'affiche au lieu d'être découvert à la clôture.</p></div>
+  </div>
+
+  <div class="decide">
+    <h3>À trancher avec M. Samir</h3>
+    <ul>
+      <li><b>Fenêtre du préventif.</b><span>30 jours à venir, ou un horizon plus long pour anticiper les commandes de pièces ?</span></li>
+      <li><b>Déclencheurs d'entretien.</b><span>La revue cite trois modes — nombre de jours, heures de marche, fréquence. Lesquels sont réellement suivis sur le terrain, équipement par équipement ?</span></li>
+      <li><b>Statuts d'équipement.</b><span>« Prêt à partir / à vérifier / en panne » : à confirmer comme liste officielle avant de l'ajouter à la fiche équipement.</span></li>
+      <li><b>Coût des pièces.</b><span>Le coût affiché est celui de l'intervention. Faut-il distinguer main-d'œuvre et pièces, comme le fait la facture de l'atelier extérieur ?</span></li>
+    </ul>
+  </div>
+</section>
+
+<footer class="pied">
+  <h2>Comment lire ces maquettes</h2>
+  <p>Elles sont produites à partir du code réellement livré : les colonnes, les libellés et
+    l'ordre des sections sont ceux que le rapport affiche. Ce qui change encore, ce sont les
+    règles listées sous chaque écran — une fois tranchées, elles se paramètrent sans nouveau
+    développement, via <code>HMD Configuration</code>.</p>
+  <p>Pour ouvrir les écrans réels sur le site de démonstration :
+    <code>Rapport Périodique</code>, <code>Rapport de Performance</code> et
+    <code>Rapport des Interventions</code>, période <b>Mois</b>, date au dernier jour du mois.</p>
+</footer>
+
+</div>
