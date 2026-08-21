@@ -25,7 +25,9 @@ from frappe.utils import add_days, getdate, today
 from calendar import monthrange
 
 from hmd_agro.hmd_agro.utils.config import get_config
-from hmd_agro.hmd_agro.utils.finance_kpis import gl_sums
+from hmd_agro.hmd_agro.utils.finance_kpis import (
+    ATELIER_FRAIS_GENERAUX, charges_lait, gl_sums, gl_sums_par_atelier,
+)
 from hmd_agro.hmd_agro.utils.live_state import (
     effectif_on_date, count_velages, count_naissances,
     count_avortements_mort_nes, count_achats, count_exits,
@@ -74,7 +76,12 @@ def execute(filters=None):
     data.extend(alim_rows)
     gl = gl_sums(debut, fin)
     data.extend(_charges(debut, fin, gl, meca))
-    data.extend(_couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx, meca))
+    # SCRUM-10 — l'axe atelier, jusqu'ici absent de toute lecture du Grand Livre.
+    ventilation = gl_sums_par_atelier(debut, fin)
+    data.extend(_charges_par_atelier(ventilation, gl))
+    lait = charges_lait(debut, fin)
+    data.extend(_cout_lait_detail(ventilation, lait))
+    data.extend(_couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx, meca, lait))
 
     # Trou de saisie avéré : on annonce la couleur en tête de tableau et on
     # éteint la coloration des ratios faussés — sans masquer une seule valeur.
@@ -261,9 +268,93 @@ def _charges(debut, fin, gl, meca):
     ]
 
 
+# ─── (iv bis) Charges par atelier — SCRUM-10 ─────────────────────────────────
+
+def _charges_par_atelier(ventilation, gl):
+    """Critères 1 et 5 — les charges ventilées par atelier, « non imputé » visible.
+
+    Jusqu'ici la lecture du Grand Livre ignorait le centre de coût : les cinq
+    ateliers existaient, les écritures les portaient, et personne ne s'en
+    servait. Le coût complet au litre en payait le prix (cf. `_couts_unitaires`).
+
+    Le poste « Non imputé » est affiché MÊME À ZÉRO. Une ligne absente se lit
+    « rien à signaler » ; une ligne à 0 se lit « vérifié, il n'y en a pas ».
+    Sur un rapport qui sert au rapprochement comptable, la nuance compte.
+
+    La ligne de contrôle finale rejoue la somme : si la ventilation et le total
+    du Grand Livre divergent, c'est visible à l'écran, pas seulement en test.
+    """
+    s = "Charges par Atelier"
+    rows = []
+    for nom, atelier in sorted(ventilation["ateliers"].items(),
+                               key=lambda kv: -kv[1]["total"]):
+        rows.append(_row(s, nom, round(atelier["total"], 2), "DT"))
+
+    non_impute = round(ventilation["non_impute"]["total"], 2)
+    rows.append(_row(
+        s, "Non imputé — écriture sans atelier", non_impute, "DT",
+        indicator="Orange" if non_impute else ""))
+
+    ventile = round(ventilation["total"], 2)
+    ecart = round(ventile - round(gl["charges"], 2), 2)
+    rows.append(_row(
+        s,
+        "Total ventilé — doit égaler « Charges Totales »" if not ecart
+        else "⚠ Total ventilé ≠ Charges Totales — écart à investiguer",
+        ventile, "DT", indicator="" if not ecart else "Red"))
+    return rows
+
+
+# ─── (iv ter) Coût du lait, ligne par ligne — SCRUM-10 ───────────────────────
+
+def _cout_lait_detail(ventilation, lait):
+    """Le coût du lait poste par poste, pour rapprochement comptable.
+
+    Demande explicite de la revue reporting : « le rapport doit détailler le
+    coût du lait ligne par ligne pour rapprochement comptable ». Un total seul
+    ne se rapproche de rien — le comptable a besoin de retrouver ses comptes.
+
+    Tous les postes sont affichés, y compris à zéro : la forme du tableau
+    reste stable d'un mois à l'autre, sans quoi comparer deux mois oblige à
+    réaligner les lignes à la main.
+    """
+    s = "Coût du Lait (détail)"
+    rows = []
+    for cle, libelle in ventilation["postes"]:
+        rows.append(_row(s, libelle, round(lait["postes"].get(cle, 0.0), 2), "DT"))
+
+    rows.append(_row(s, "Sous-total — charges directes atelier Lait",
+                     lait["direct"], "DT"))
+    if lait["perimetre"] == "LAIT_QUOTE_PART":
+        rows.append(_row(
+            s,
+            f"Quote-part des charges générales ({ATELIER_FRAIS_GENERAUX}) — "
+            f"clé {_fr(lait['cle_pct'])} % des charges directes",
+            lait["quote_part"], "DT"))
+    rows.append(_row(s, "TOTAL — charges retenues pour le coût du litre",
+                     lait["total"], "DT"))
+    if lait["non_impute"]:
+        # Jamais réparti : imputer au lait une charge dont on ignore la
+        # destination fabriquerait un coût de revient faux et invérifiable.
+        rows.append(_row(
+            s, "Rappel — charges non imputées, exclues du coût du litre",
+            lait["non_impute"], "DT", indicator="Orange"))
+    return rows
+
+
 # ─── (v) Coûts unitaires ─────────────────────────────────────────────────────
 
-def _couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx, meca):
+# Libellé du coût complet selon le périmètre retenu — il DOIT être à l'écran :
+# le même nombre ne veut pas dire la même chose selon ce qu'on y a mis, et le
+# lecteur n'a aucun moyen de le deviner.
+_LIBELLE_PERIMETRE = {
+    "LAIT_QUOTE_PART": "atelier Lait + quote-part des charges générales",
+    "LAIT_SEUL": "atelier Lait seul",
+    "TOUTES_CHARGES": "toutes charges de la ferme — surestimé pour le lait",
+}
+
+
+def _couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx, meca, lait):
     from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import _kpi_ind
 
     prod = prod_ctx["prod"]
@@ -276,8 +367,14 @@ def _couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx, meca):
     # n'entre PAS dans `cout_complet_l` (amortissement et entretien y sont déjà
     # via les charges du Grand Livre). Cf. `_charges` et maintenance_utils.
     cout_meca_l = round(meca["total"] / prod, 3) if prod else 0
-    cout_complet_l = round(gl["charges"] / prod, 3) if prod else 0
-    cout_hors_amort_l = (round((gl["charges"] - gl["amortissements"]) / prod, 3)
+    # SCRUM-10 — le coût complet ne divise plus TOUTES les charges de la ferme
+    # (génisses, cultures, traction, frais généraux compris) par les seuls
+    # litres de lait : il retient le périmètre décidé en revue reporting.
+    # L'ancien calcul restait consultable via le périmètre TOUTES_CHARGES.
+    charges_retenues = lait["total"]
+    amort_lait = lait["postes"].get("amortissements", 0.0)
+    cout_complet_l = round(charges_retenues / prod, 3) if prod else 0
+    cout_hors_amort_l = (round((charges_retenues - amort_lait) / prod, 3)
                          if prod else 0)
     iofc = gl["ca_lait"] - frais_alim
     iofc_vl_jour = round(iofc / vl / jours, 2) if vl else 0
@@ -299,7 +396,8 @@ def _couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx, meca):
              indicator=cout_alim_ind),
         _row(s, "Coût Mécanique / L (vue analytique — non additionnable au "
                 "coût complet)", cout_meca_l, "DT/L"),
-        _row(s, "Coût Complet / L (toutes charges)", cout_complet_l, "DT/L"),
+        _row(s, f"Coût Complet / L ({_LIBELLE_PERIMETRE[lait['perimetre']]})",
+             cout_complet_l, "DT/L"),
         _row(s, "Coût du Litre hors Amortissement", cout_hors_amort_l, "DT/L"),
         _row(s, "IOFC (Income Over Feed Cost) — CA Lait − Coût Alimentaire",
              round(iofc, 2), "DT"),
