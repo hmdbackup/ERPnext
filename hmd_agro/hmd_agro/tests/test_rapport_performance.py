@@ -35,10 +35,18 @@ from hmd_agro.hmd_agro.utils.maintenance_utils import cout_utilisation
 PREFIX = "TEST-PERF-"
 MOIS_DATE = "2019-03-15"
 SEM_DATE = "2019-03-06"        # mercredi → semaine ISO 04/03 - 10/03
-BLJ_DATES = ["2019-03-01", "2019-03-02", "2019-03-03"]
+# Un jour n'est « saisi » que s'il porte une Traite ET un Bilan Lait Journalier
+# renseigné (revue reporting : « saisie quotidienne obligatoire : traite et
+# bilan journalier complet »). Mars 2019 porte donc les DEUX sur ses 31 jours —
+# auparavant trois bilans suffisaient parce que l'un OU l'autre comptait, ce
+# qui laissait passer un mois « complet » sans aucune ventilation du lait.
+BLJ_DATES = [f"2019-03-{jour:02d}" for jour in range(1, 32)]
 # Janvier 2019 : lait saisi 2 jours sur 31 — le trou de saisie à détecter.
 TROU_DATE = "2019-01-15"
 TROU_TRAITE_DATES = ["2019-01-02", "2019-01-03"]
+# Les mêmes deux jours portent aussi leur bilan : sans lui la couverture
+# tomberait à 0/31 et le test ne vérifierait plus un trou PARTIEL.
+TROU_BLJ_DATES = list(TROU_TRAITE_DATES)
 
 _created = []
 
@@ -91,15 +99,21 @@ def _traite(animal_name, date, litres):
     _created.append(("Traite", doc.name))
 
 
-def _seed_blj():
-    """One BLJ per date (100 L vendus). A date already carrying a real BLJ is
-    skipped — the expected delta counts only what we actually created."""
+def _seed_blj(dates=None):
+    """One BLJ per date (100 L produits, 100 L vendus). A date already carrying
+    a real BLJ is skipped — the expected delta counts only what we created.
+
+    `production_totale_saisie` est OBLIGATOIRE pour que le jour compte comme
+    saisi : un bilan créé puis laissé vide ne prouve rien, et `couverture_lait`
+    l'ignore délibérément.
+    """
     created_days = 0
-    for d in BLJ_DATES:
+    for d in (dates if dates is not None else BLJ_DATES):
         if frappe.db.exists("Bilan Lait Journalier", {"date": d}):
             continue
         doc = frappe.get_doc({
-            "doctype": "Bilan Lait Journalier", "date": d, "lait_vendu": 100,
+            "doctype": "Bilan Lait Journalier", "date": d,
+            "production_totale_saisie": 100, "lait_vendu": 100,
         })
         doc.insert(ignore_permissions=True)
         _created.append(("Bilan Lait Journalier", doc.name))
@@ -324,6 +338,7 @@ def _run_inner():
     for d in TROU_TRAITE_DATES:
         _traite(cows[0], d, 10)
     blj_days = _seed_blj()
+    _seed_blj(TROU_BLJ_DATES)
     frappe.db.commit()
 
     test_structure(results)

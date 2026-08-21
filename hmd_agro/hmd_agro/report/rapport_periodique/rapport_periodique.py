@@ -246,14 +246,47 @@ def _future_stub(extras=()):
 # ─── Production ──────────────────────────────────────────────────────────────
 
 def _production(ctx):
+    """SCRUM-9 — production du mois, jour par jour.
+
+    Trois règles portées par cette fonction, chacune payée par un défaut réel :
+
+    1. **La ventilation quotidienne est lue au Bilan Lait Journalier**
+       (commercialisé / auto-consommation / lait veau / écart). Un jour qui
+       porte une Traite mais AUCUN bilan laisse ces cases VIDES — jamais 0 :
+       écrire « 0 L commercialisé » là où on ne sait rien est un mensonge
+       silencieux, et il se propagerait au total.
+
+    2. **Les jours à venir ne comptent pas dans les dénominateurs.** Le mois en
+       cours compte ses vaches sur les 31 jours du calendrier alors que le lait
+       ne couvre que les jours écoulés : le dénominateur gonflait, et plus on
+       ouvrait le rapport tôt dans le mois, plus la moyenne paraissait basse.
+
+    3. **L'effectif du total est une MOYENNE de la période**, pas l'effectif du
+       dernier jour (réunion reporting : « nombre de vaches présentes calculé
+       en moyenne sur la durée du rapport »). Sur un troupeau qui vêle et tarit,
+       les deux chiffres diffèrent et rien ne disait lequel on lisait.
+
+    Deux dénominateurs sont affichés côte à côte — vaches LACTANTES (VL) et
+    vaches PRÉSENTES (VP = lactantes + taries) — parce que la réunion demande
+    les deux et qu'ils ne racontent pas la même chose : le premier mesure la
+    conduite du troupeau en lait, le second le rendement de l'atelier entier.
+    """
     columns = [
-        {"fieldname": "jour", "label": "Jour", "fieldtype": "Data", "width": 60},
+        {"fieldname": "jour", "label": "Jour / Période", "fieldtype": "Data", "width": 150},
         {"fieldname": "nb_lactantes", "label": "VL", "fieldtype": "Int", "width": 60},
+        {"fieldname": "nb_presentes", "label": "VP", "fieldtype": "Int", "width": 60},
         {"fieldname": "production", "label": "Production (L)", "fieldtype": "Float", "precision": 1, "width": 110},
-        {"fieldname": "moyenne", "label": "Moy/VL (L)", "fieldtype": "Float", "precision": 1, "width": 100},
+        # L'unité est dans le libellé : deux écrans affichaient « production par
+        # vache » à un facteur 30 l'un de l'autre (par jour vs sur le mois) sans
+        # rien pour les distinguer.
+        {"fieldname": "moyenne", "label": "Moy/VL (L/j)", "fieldtype": "Float", "precision": 1, "width": 100},
+        {"fieldname": "moyenne_vp", "label": "Moy/VP (L/j)", "fieldtype": "Float", "precision": 1, "width": 100},
         {"fieldname": "taux_tb", "label": "TB", "fieldtype": "Percent", "precision": 2, "width": 80},
         {"fieldname": "taux_tp", "label": "TP", "fieldtype": "Percent", "precision": 2, "width": 80},
         {"fieldname": "commercialise", "label": "Commercialisé (L)", "fieldtype": "Float", "precision": 1, "width": 120},
+        {"fieldname": "auto_consommation", "label": "Auto-conso (L)", "fieldtype": "Float", "precision": 1, "width": 110},
+        {"fieldname": "lait_veau", "label": "Lait Veau (L)", "fieldtype": "Float", "precision": 1, "width": 110},
+        {"fieldname": "ecart", "label": "Écart (L)", "fieldtype": "Float", "precision": 1, "width": 100},
     ]
 
     if _is_future(ctx):
@@ -271,28 +304,71 @@ def _production(ctx):
 
     daily_map = {d.jour: d for d in daily}
 
-    # Per-day historical lactating-cow count (reconstructed from events)
-    vl_by_day = {
-        j: effectif_on_date(add_days(ctx["date_debut"], j - 1))["Vaches - Lact."]
-        for j in range(1, ctx["nb_jours"] + 1)
-    }
+    # Ventilation quotidienne (critère 2). Même lecture que `finance_kpis.
+    # ecart_lait` : pas de filtre docstatus, le bilan n'est pas soumissible.
+    bilans = frappe.db.sql("""
+        SELECT DAY(`date`) AS jour, lait_vendu, consommation_interne,
+               lait_veau, ecart_litres
+        FROM `tabBilan Lait Journalier`
+        WHERE `date` BETWEEN %s AND %s
+    """, (ctx["date_debut"], ctx["date_fin"]), as_dict=True)
+    bilan_map = {b.jour: b for b in bilans}
+
+    today_dt = getdate(today())
+
+    # Effectifs reconstruits depuis les événements, UNIQUEMENT sur les jours
+    # écoulés (règle 2). Un jour absent de ces dicts est un jour à venir.
+    vl_by_day, vp_by_day = {}, {}
+    for j in range(1, ctx["nb_jours"] + 1):
+        if add_days(ctx["date_debut"], j - 1) > today_dt:
+            break
+        eff = effectif_on_date(add_days(ctx["date_debut"], j - 1))
+        vl_by_day[j] = eff["Vaches - Lact."]
+        vp_by_day[j] = eff["Vaches - Lact."] + eff["Vaches - Tarie"]
+
     total_cow_days = sum(vl_by_day.values())
-    nb_vl_end = vl_by_day[ctx["nb_jours"]]
+    total_presente_days = sum(vp_by_day.values())
+    jours_ecoules = len(vl_by_day)
 
     data = []
     total_prod = 0
+    totaux_ventilation = {"commercialise": 0.0, "auto_consommation": 0.0,
+                          "lait_veau": 0.0, "ecart": 0.0}
+    jours_avec_bilan = 0
+
     for j in range(1, ctx["nb_jours"] + 1):
+        a_venir = j not in vl_by_day
         d = daily_map.get(j, {})
         prod = float(d.get("prod") or 0)
-        total_prod += prod
-        nb_vl = vl_by_day[j]
+        nb_vl = vl_by_day.get(j)
+        nb_vp = vp_by_day.get(j)
+        bilan = bilan_map.get(j)
+
+        if not a_venir:
+            total_prod += prod
+        if bilan and not a_venir:
+            jours_avec_bilan += 1
+            totaux_ventilation["commercialise"] += float(bilan.lait_vendu or 0)
+            totaux_ventilation["auto_consommation"] += float(bilan.consommation_interne or 0)
+            totaux_ventilation["lait_veau"] += float(bilan.lait_veau or 0)
+            totaux_ventilation["ecart"] += float(bilan.ecart_litres or 0)
+
         data.append({
-            "jour": j, "nb_lactantes": nb_vl,
-            "production": round(prod, 1),
-            "moyenne": round(prod / nb_vl, 1) if nb_vl and prod else 0,
+            "jour": j,
+            "nb_lactantes": nb_vl,
+            "nb_presentes": nb_vp,
+            "production": round(prod, 1) if not a_venir else None,
+            "moyenne": (round(prod / nb_vl, 1) if nb_vl and prod
+                        else (None if a_venir else 0)),
+            "moyenne_vp": (round(prod / nb_vp, 1) if nb_vp and prod
+                           else (None if a_venir else 0)),
             "taux_tb": round(float(d.get("tb") or 0), 2) or None,
             "taux_tp": round(float(d.get("tp") or 0), 2) or None,
-            "commercialise": None,
+            # Règle 1 — pas de bilan, pas de chiffre. Vide ≠ zéro.
+            "commercialise": float(bilan.lait_vendu or 0) if bilan else None,
+            "auto_consommation": float(bilan.consommation_interne or 0) if bilan else None,
+            "lait_veau": float(bilan.lait_veau or 0) if bilan else None,
+            "ecart": float(bilan.ecart_litres or 0) if bilan else None,
         })
 
     # Quinzaine/Hebdomadaire summary rows (kg + L/VL/jour per period). Every
@@ -300,17 +376,18 @@ def _production(ctx):
     # (those rows have empty production / moyenne). Matches Alimentation's
     # column behavior — the table shape stays stable across the month.
     granularite = ctx.get("granularite") or "Quotidien"
-    today_dt = getdate(today())
     for label, start, end in _build_period_spans(granularite, ctx["date_debut"], ctx["nb_jours"]):
         span_end = min(end, today_dt)
         walked = span_end >= start
         sp_prod = 0.0
         sp_cow_days = 0
+        sp_presente_days = 0
         if walked:
             d = start
             while d <= span_end:
                 sp_prod += float(daily_map.get(d.day, {}).get("prod") or 0)
                 sp_cow_days += vl_by_day.get(d.day, 0)
+                sp_presente_days += vp_by_day.get(d.day, 0)
                 d = add_days(d, 1)
         # Future spans (not yet walked) → empty cells. Walked spans → real
         # numbers, possibly 0 when cows are present but no traites yet.
@@ -318,12 +395,26 @@ def _production(ctx):
             "jour": label, "is_total": 1, "tint": "orange",
             "production": round(sp_prod, 1) if walked else None,
             "moyenne": round(sp_prod / sp_cow_days, 1) if (walked and sp_cow_days) else None,
+            "moyenne_vp": round(sp_prod / sp_presente_days, 1) if (walked and sp_presente_days) else None,
         })
 
+    # Règle 3 — l'effectif du total est la MOYENNE des jours écoulés, et le
+    # libellé le dit : sans ça, le lecteur ne peut pas savoir s'il regarde une
+    # moyenne ou l'effectif d'un jour donné.
+    vl_moyen = round(total_cow_days / jours_ecoules) if jours_ecoules else 0
+    vp_moyen = round(total_presente_days / jours_ecoules) if jours_ecoules else 0
     data.append({
-        "jour": "Total", "is_total": 1, "nb_lactantes": nb_vl_end,
+        "jour": "Total (VL/VP = moy.)", "is_total": 1,
+        "nb_lactantes": vl_moyen,
+        "nb_presentes": vp_moyen,
         "production": round(total_prod, 1),
         "moyenne": round(total_prod / total_cow_days, 1) if total_cow_days else 0,
+        "moyenne_vp": round(total_prod / total_presente_days, 1) if total_presente_days else 0,
+        # Les totaux de ventilation ne portent que sur les jours RENSEIGNÉS :
+        # sommer des cases vides comme des zéros donnerait un « commercialisé »
+        # faussement bas et un rapprochement comptable ininterprétable.
+        **{cle: round(valeur, 1) if jours_avec_bilan else None
+           for cle, valeur in totaux_ventilation.items()},
     })
 
     chart = {
@@ -1215,8 +1306,19 @@ INDICATEURS_SENSIBLES_LAIT = (
 def couverture_lait(date_debut, date_fin):
     """Jours de la période où du lait a réellement été saisi, sur le total.
 
-    Un jour compte dès qu'il porte une Traite OU un Bilan Lait Journalier —
-    les deux voies de saisie du lait ; l'UNION dédoublonne les journées.
+    Un jour compte quand il porte une Traite **ET** un Bilan Lait Journalier
+    renseigné — les deux sont exigés (revue reporting : « saisie quotidienne
+    obligatoire : traite et bilan journalier complet »).
+
+    Auparavant l'un OU l'autre suffisait, et l'indicateur rassurait plus qu'il
+    ne le devait : un mois pouvait afficher « 31 jours sur 31 » alors que la
+    ventilation vendu / auto-consommé / veaux était entièrement vide, donc que
+    le rapprochement comptable était impossible. Compter les deux voies rend
+    l'indicateur plus sévère — c'est le but : il mesure désormais la saisie
+    dont les rapports ont réellement besoin.
+
+    « Renseigné » = le bilan porte une production totale saisie non nulle. Un
+    bilan créé puis laissé vide ne prouve rien et ne doit pas compter.
 
     Retourne {"jours_saisis", "jours_periode", "jours_manquants",
               "complete": bool, "message": str|None}.
@@ -1234,11 +1336,12 @@ def couverture_lait(date_debut, date_fin):
 
     jours_saisis = int(frappe.db.sql("""
         SELECT COUNT(*) FROM (
-            SELECT date_traite AS jour FROM `tabTraite`
-            WHERE date_traite BETWEEN %(debut)s AND %(fin)s
-            UNION
-            SELECT `date` AS jour FROM `tabBilan Lait Journalier`
-            WHERE `date` BETWEEN %(debut)s AND %(fin)s
+            SELECT DISTINCT t.date_traite AS jour
+            FROM `tabTraite` t
+            JOIN `tabBilan Lait Journalier` b
+              ON b.`date` = t.date_traite
+             AND b.production_totale_saisie > 0
+            WHERE t.date_traite BETWEEN %(debut)s AND %(fin)s
         ) jours_avec_lait
     """, {"debut": debut, "fin": fin})[0][0] or 0)
 
@@ -1249,10 +1352,11 @@ def couverture_lait(date_debut, date_fin):
     message = None
     if not complete:
         message = (
-            f"⚠ Données incomplètes : lait saisi sur {jours_saisis} jours sur "
-            f"{jours_periode} — les ratios ci-dessous sont sous-estimés et les "
-            f"coûts au litre surestimés. Compléter la saisie du lait avant de "
-            f"conclure ; la coloration des indicateurs concernés est suspendue."
+            f"⚠ Données incomplètes : traite ET bilan lait saisis sur "
+            f"{jours_saisis} jours sur {jours_periode} — les ratios ci-dessous "
+            f"sont sous-estimés et les coûts au litre surestimés. Compléter la "
+            f"saisie du lait avant de conclure ; la coloration des indicateurs "
+            f"concernés est suspendue."
         )
     return {"jours_saisis": jours_saisis, "jours_periode": jours_periode,
             "jours_manquants": jours_manquants, "complete": complete,

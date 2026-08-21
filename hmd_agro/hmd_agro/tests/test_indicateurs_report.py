@@ -117,6 +117,17 @@ def _traite(animal_name, date, litres, lot):
     doc.db_insert()
     _created.append(("Traite", doc.name))
 
+def _blj(date_str, production=100.0, concentre=0.0):
+    """Bilan Lait Journalier du jour — la couverture exige traite ET bilan."""
+    doc = frappe.get_doc({
+        "doctype": "Bilan Lait Journalier", "date": date_str,
+        "production_totale_saisie": production, "lait_vendu": production,
+        "concentre_kg": concentre,
+    })
+    doc.insert(ignore_permissions=True)
+    _created.append(("Bilan Lait Journalier", doc.name))
+    return doc.name
+
 def _cleanup():
     # Drop SEs / SLE / Bin / Items BEFORE the Aliment so the chain unwinds
     # cleanly. clean_test_stock is idempotent and only touches TEST-IND- rows.
@@ -138,6 +149,8 @@ def _setup():
     frappe.db.sql("DELETE FROM `tabAnimal` WHERE identification_tn LIKE %s", f"{PREFIX}%")
     frappe.db.sql("DELETE FROM `tabTraite` WHERE animal LIKE %s", f"{PREFIX}%")
     frappe.db.sql("DELETE FROM `tabVelage` WHERE animal LIKE %s", f"{PREFIX}%")
+    frappe.db.sql("DELETE FROM `tabBilan Lait Journalier` WHERE `date` "
+                  "BETWEEN '2024-03-01' AND '2024-03-31'")
     frappe.db.commit()
 
     # 2 concentrés + 1 fourrage to verify the type filter
@@ -152,6 +165,9 @@ def _setup():
         date_str = f"2024-03-{day:02d}"
         for c in cows:
             _traite(c.name, date_str, 25, lot)
+        # SCRUM-9 : la couverture compte les jours où la traite ET le bilan
+        # lait sont saisis — un mois de traites sans bilan n'est plus complet.
+        _blj(date_str)
     frappe.db.commit()
 
     # R2: SLE-based report needs Items + Stock Entries for the test period.
@@ -216,16 +232,14 @@ def test_concentre_source_mesure(results):
           "sans relevé → source « rations »",
           f"libellé inattendu : {avant['indicateur']}", results)
 
-    bljs = []
+    # Les bilans du mois sont déjà semés par _setup (concentré à 0) : on
+    # renseigne le relevé sur deux jours, puis on le remet à 0 — les
+    # supprimer casserait la couverture 31/31 des tests suivants.
+    releves = {"2024-03-10": 400.0, "2024-03-11": 350.0}
     try:
-        for jour, kg in (("2024-03-10", 400.0), ("2024-03-11", 350.0)):
-            doc = frappe.get_doc({
-                "doctype": "Bilan Lait Journalier",
-                "date": jour, "production_totale_saisie": 1000.0,
-                "lait_vendu": 1000.0, "concentre_kg": kg,
-            })
-            doc.insert(ignore_permissions=True)
-            bljs.append(doc.name)
+        for jour, kg in releves.items():
+            frappe.db.set_value("Bilan Lait Journalier", f"BLJ-{jour}",
+                                "concentre_kg", kg, update_modified=False)
         frappe.db.commit()
 
         _, rows = _indicateurs(CTX_END)
@@ -239,9 +253,9 @@ def test_concentre_source_mesure(results):
         lc = _find(rows, "L/C")["valeur"]
         check(lc > 0, f"L/C recalculé sur le relevé (={lc})", f"L/C={lc}", results)
     finally:
-        for name in bljs:
-            frappe.delete_doc("Bilan Lait Journalier", name, force=True,
-                              ignore_permissions=True)
+        for jour in releves:
+            frappe.db.set_value("Bilan Lait Journalier", f"BLJ-{jour}",
+                                "concentre_kg", 0.0, update_modified=False)
         frappe.db.commit()
 
 
