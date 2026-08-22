@@ -67,7 +67,7 @@ def ligne(x1, y1, x2, y2, trait=GRIS):
 
 def texte(x, y, contenu, taille=16, police=MANUSCRITE, couleur=ENCRE, align="left"):
     lignes = contenu.split("\n")
-    w = max(len(l) for l in lignes) * taille * (LARGEUR_CAR if police == MONO else 0.55)
+    w = max(len(l) for l in lignes) * taille * (LARGEUR_CAR if police == MONO else 0.62)
     h = len(lignes) * taille * INTERLIGNE
     e = _base(x, y, w, h, type="text", strokeColor=couleur, text=contenu,
               fontSize=taille, fontFamily=police, textAlign=align,
@@ -106,7 +106,7 @@ def fenetre(x, y, w, h, titre, sous_titre, chemin, filtres):
     texte(x + 24, y + 92, sous_titre, taille=15, couleur=GRIS)
     cx = x + 24
     for libelle, valeur in filtres:
-        largeur = max(len(f"{libelle} : {valeur}") * 8 + 20, 90)
+        largeur = max(round(len(f"{libelle} : {valeur}") * 9.5) + 24, 96)
         rect(cx, y + 126, largeur, 30, fond="transparent", trait=GRIS)
         texte(cx + 10, y + 133, f"{libelle} : {valeur}", taille=13, couleur=GRIS)
         cx += largeur + 12
@@ -166,7 +166,7 @@ pense_bete(24, note["y"] + note["height"] + 18, 640,
 Y = 900
 texte(0, Y, "SCRUM-10 — Charges par atelier et coût du litre", taille=22, couleur=VERT)
 Y += 44
-bas = fenetre(0, Y, 1180, 900,
+bas = fenetre(0, Y, 1300, 730,
               "Rapport de Performance — Charges & Coût du Lait",
               "Les charges ventilées par atelier, puis le coût du lait poste par poste pour rapprochement comptable.",
               "hmd.agro  ›  Rapports  ›  Rapport de Performance",
@@ -211,7 +211,7 @@ texte(780, Y + 178,
       "③  Le total se recompte à l'écran et passe\n    au rouge s'il diverge.\n\n"
       "④  La clé de quote-part est écrite en\n    toutes lettres.",
       taille=14)
-pense_bete(780, Y + 470, 380,
+pense_bete(780, Y + 470, 470,
            "• Nom exact du centre « frigénerie »\n"
            "• Clé de quote-part : charges directes ou litres ?\n"
            "• Périmètre officiel du coût du litre\n"
@@ -222,7 +222,7 @@ pense_bete(780, Y + 470, 380,
 Y = 2000
 texte(0, Y, "SCRUM-11 — Interventions mécaniques et entretien préventif", taille=22, couleur=VERT)
 Y += 44
-bas = fenetre(0, Y, 1500, 660,
+bas = fenetre(0, Y, 1360, 660,
               "Rapport des Interventions",
               "Ce qui a été fait sur le mois, ce qui arrive sous 30 jours, et le rapprochement avec le compte 615.",
               "hmd.agro  ›  Rapports  ›  Rapport des Interventions",
