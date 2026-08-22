@@ -169,8 +169,14 @@ def _hauteur_carte(corps=None, chiffre=None, note=None, **_):
     return h
 
 
-def carte(x, y, w, lettre, titre, corps=None, chiffre=None, note=None, hauteur=None):
-    """Une des deux versions proposées. Le chiffre est ce qu'on désigne."""
+def carte(x, y, w, lettre, titre, corps=None, chiffre=None, note=None,
+          hauteur=None, defaut=False):
+    """Une des deux versions proposées. Le chiffre est ce qu'on désigne.
+
+    `defaut` marque celle que le système applique DÉJÀ. Sans elle, les deux
+    cartes se valent et il faut trancher pour que quoi que ce soit avance ;
+    avec elle, ne rien dire reste une réponse — et il sait laquelle.
+    """
     lignes = corps.split("\n") if corps else []
     lignes_note = note.split("\n") if note else []
     h = hauteur or _hauteur_carte(corps, chiffre, note)
@@ -178,6 +184,10 @@ def carte(x, y, w, lettre, titre, corps=None, chiffre=None, note=None, hauteur=N
     rect(x, y, 34, 30, fond=BLEU_PALE, trait=GRIS, arrondi=False)
     texte(x + 12, y + 6, lettre, taille=16)
     texte(x + 48, y + 6, titre, taille=16)
+    if defaut:
+        largeur = round(len("PAR DÉFAUT") * 12 * LARGEUR_MAN) + 22
+        rect(x + w - largeur - 10, y + 5, largeur, 24, fond=VERT_PALE, trait=VERT)
+        texte(x + w - largeur, y + 10, "PAR DÉFAUT", taille=12, couleur=VERT)
     yy = y + 44
     if lignes:
         texte(x + 16, yy, corps, taille=13, police=MONO)
@@ -206,6 +216,33 @@ def egaliser_paires():
         haute = max(c["height"] for c in cartes_du_rang)
         for c in cartes_du_rang:
             c["height"] = haute
+
+
+def etat_actuel(x, y, contenu, largeur=960):
+    """Aucune des deux versions n'est en place : la valeur par défaut est
+    « rien ». Le taire laisserait croire qu'un des deux cadres tourne déjà.
+
+    Le texte est replié dans la colonne de gauche : au-delà, il passerait
+    sous la question, qui occupe la colonne de droite au même niveau.
+    """
+    mots, lignes, courante = f"Aujourd'hui : {contenu}".split(), [], ""
+    for mot in mots:
+        essai = f"{courante} {mot}".strip()
+        if len(essai) * 14 * LARGEUR_MAN > largeur and courante:
+            lignes.append(courante)
+            courante = mot
+        else:
+            courante = essai
+    lignes.append(courante)
+    texte(x, y, "\n".join(lignes), taille=14, couleur=GRIS)
+    return y + len(lignes) * 14 * INTERLIGNE
+
+
+def legende_defaut(x, y):
+    texte(x, y, "Le cadre marqué PAR DÉFAUT est ce que le système fait "
+                "aujourd'hui — si personne ne tranche, c'est ce qui restera.",
+          taille=13, couleur=GRIS)
+    return y + 13 * INTERLIGNE
 
 
 def question(x, y, w, contenu, hauteur_reponse=96):
@@ -237,7 +274,8 @@ Y = pastille_provenance(
     0, Y,
     "Liste d'équipements donnée en exemple — un seul équipement est aujourd'hui "
     "saisi dans le système. Les trois interventions du bas sont réelles.",
-    reel=False) + 22
+    reel=False) + 8
+Y = legende_defaut(0, Y) + 14
 
 haut_fenetre = Y
 bas = fenetre(0, Y, LARGE, 380,
@@ -285,11 +323,15 @@ q = question(COL2, Y, LARGEUR_Q,
              "Le tracteur Massey tousse au démarrage,\n"
              "mais il roule encore et il part demain.\n\n"
              "Tu le mets où ?")
-Y = max(a, b, q) + 44
+Y = etat_actuel(0, max(a, b) + 12,
+                "aucune des deux — le système ne connaît que le statut "
+                "comptable d'ERPNext (en service, cédé, mis au rebut). "
+                "L'état mécanique n'existe nulle part.")
+Y = max(Y, q) + 44
 
 # ── 1.2 — fenêtre du préventif ───────────────────────────────────────────────
 Y = titre_arbitrage(0, Y, "②", "Jusqu'où on regarde devant ?")
-a = carte(0, Y, COL, "A", "Les 30 prochains jours",
+a = carte(0, Y, COL, "A", "Les 30 prochains jours", defaut=True,
           corps="06/08  Pompe à vide   EN RETARD\n"
                 "05/09  John Deere     à venir\n"
                 "10/09  Tank à lait    à venir",
@@ -311,7 +353,7 @@ Y = max(a, b, q) + 44
 
 # ── 1.3 — main-d'œuvre et pièces ─────────────────────────────────────────────
 Y = titre_arbitrage(0, Y, "③", "Faut-il séparer les pièces de la main-d'œuvre ?")
-a = carte(0, Y, COL, "A", "Un seul montant",
+a = carte(0, Y, COL, "A", "Un seul montant", defaut=True,
           corps="06/06  Vidange moteur + filtres\n"
                 "       Tracteur              340,00\n"
                 "09/07  Courroie alternateur  185,00\n"
@@ -347,7 +389,8 @@ Y = pastille_provenance(
     0, Y,
     "Montants donnés en exemple — la comptabilité de juin ne contient encore que "
     "340 DT. Seuls les 45 444 litres produits sont réels.",
-    reel=False) + 22
+    reel=False) + 8
+Y = legende_defaut(0, Y) + 14
 
 haut_fenetre = Y
 bas = fenetre(0, Y, LARGE, 420,
@@ -379,6 +422,7 @@ Y = haut_fenetre + 420 + 40
 # ── 2.1 — la clé de répartition des frais généraux ───────────────────────────
 Y = titre_arbitrage(0, Y, "①", "Le gardien et l'électricité, le lait en porte combien ?")
 a = carte(0, Y, COL, "A", "Au prorata de ce que dépense\n     chaque atelier",
+          defaut=True,
           corps="Frais généraux du mois     9 000,00\n"
                 "Le lait dépense 65 % du total\n"
                 "  → le lait en porte        5 885,00\n"
@@ -404,7 +448,7 @@ Y = max(a, b, q) + 44
 
 # ── 2.2 — l'atelier « Autre » ────────────────────────────────────────────────
 Y = titre_arbitrage(0, Y, "②", "Les charges que personne n'a encore attribuées")
-a = carte(0, Y, COL, "A", "Mises de côté",
+a = carte(0, Y, COL, "A", "Mises de côté", defaut=True,
           corps="Autre — en attente         1 850,00\n"
                 "  ⤷ exclues du coût du litre\n\n"
                 "Charges du lait            39 885,00",
@@ -438,14 +482,16 @@ Y = pastille_provenance(
     0, Y,
     "Chiffres réels — juin 2026, extraits du site hmd.agro. Aucun nombre de cette "
     "planche n'a été inventé.",
-    reel=True) + 22
+    reel=True) + 8
+Y = legende_defaut(0, Y) + 14
 
 haut_fenetre = Y
 bas = fenetre(0, Y, LARGE, 430,
               "Production laitière",
               "Le même lait, compté à deux endroits — et ce qui reste entre les deux.",
               "hmd.agro  ›  Rapports  ›  Rapport Périodique  ›  Production",
-              [("Date", "30/06/2026"), ("Période", "Mois")])
+              [("Date", "30/06/2026"), ("Section", "Production"),
+               ("Granularité", "Quotidien"), ("Période", "Jour")])
 
 bas = tableau(
     24, bas,
@@ -478,7 +524,7 @@ Y = bandeau_alerte(
 
 # ── 3.1 — quelle source fait foi ─────────────────────────────────────────────
 Y = titre_arbitrage(0, Y, "①", "Deux comptages du même lait, 9 959 litres d'écart")
-a = carte(0, Y, COL, "A", "La somme des traites",
+a = carte(0, Y, COL, "A", "La somme des traites", defaut=True,
           corps="Relevé vache par vache, matin et soir\n"
                 "30 jours sur 30\n\n"
                 "Juin                        45 444 L\n"
@@ -527,11 +573,14 @@ q = question(COL2, Y, LARGEUR_Q,
              "ça vient d'où ?\n\n"
              "Et à partir de combien tu veux qu'on t'appelle ?",
              hauteur_reponse=90)
-Y = max(a, b, q) + 44
+Y = etat_actuel(0, max(a, b) + 12,
+                "aucune des deux — l'écart est affiché dans le tableau, "
+                "il n'a jamais déclenché la moindre alerte.")
+Y = max(Y, q) + 44
 
 # ── 3.3 — TB / TP ────────────────────────────────────────────────────────────
 Y = titre_arbitrage(0, Y, "③", "Le taux de matière grasse : rien n'est saisi")
-a = carte(0, Y, COL, "A", "Affiché seulement les jours mesurés",
+a = carte(0, Y, COL, "A", "Affiché seulement les jours mesurés", defaut=True,
           corps="12/06   TB 3,72   TP 3,15\n"
                 "13/06     —         —\n"
                 "14/06     —         —\n"
