@@ -1,0 +1,31 @@
+Bonjour à tous 👋
+
+Retour de la deuxième séance avec M. Samir, mercredi 26/08. Deux écrans sur trois ont été revus ; les maquettes reprises sont dans le PDF joint (maquettes_2026-08-26.pdf).
+
+*1 — Charges par atelier et coût du litre*
+• *La décision du 24/08 sur les frais généraux est remplacée.* Plus de clé unique ni de couple « dépenses / recettes » : chaque charge porte sa propre répartition en pourcentages par atelier (ex. un gardien d'étable → 100 % Lait ; un gardien parc + fromagerie → 50 / 50). Autant de lignes « atelier + % » qu'il faut, et *l'enregistrement est bloqué tant que le total ne fait pas 100 %*.
+• La clé se fixe *une seule fois* (au 31/12, à la clôture), par le comptable, sur la facture. Volume concerné : *5 à 10 factures maximum*. L'écran d'arbitrage mensuel est abandonné.
+• La saisie est maquettée *geste par geste*, comme le comptable la fera dans ERPNext : il ouvre la facture d'achat, saisit la ligne, le bloc « Répartition par atelier » apparaît, il ajoute les ateliers et leurs %, enregistre (refusé tant que ce n'est pas 100 %), et le mois suivant il *duplique* la facture — la répartition est déjà là.
+• Deux nouveaux ateliers à prévoir : *Brebis* et *Fromagerie* — de la configuration de centres de coût, pas du code.
+• Périodes : ajouter *l'année en Year to Date* aux options jour / semaine / mois. Le mois est bien calendaire (le 15 juillet donne juillet entier) — c'est déjà le comportement actuel, rien à corriger.
+• Une case sans valeur affiche un *tiret*, jamais 0.
+
+*2 — Parc et interventions*
+• L'écran est *validé tel quel* : les trois états du matériel, le préventif à 30 jours, pièces / main-d'œuvre séparées, et la séparation *réalisées (historique) / à venir*.
+• Trois actions à ajouter sur une intervention déjà faite : *Dupliquer* (refaire une vidange sans tout ressaisir : on change la date, on vérifie, on enregistre), *Planifier* (une intervention à date future, qui reste ouverte) et *Supprimer* (en cas d'erreur de saisie).
+• Règle : *ce qui est terminé ne se modifie plus* — on duplique.
+• Là aussi la saisie est maquettée *geste par geste* : le chef de parc déclare la panne (la machine passe « En panne »), complète la fiche une fois la réparation faite (pièces, main-d'œuvre, intervenant) et la soumet (la machine repasse « Prêt ») ; le comptable saisit la facture du réparateur comme toute facture et la rattache à la fiche ; le tractoriste saisit ses heures. Dupliquer, Planifier, Supprimer sont les gestes 4 à 6. À noter : aujourd'hui aucun écran de saisie n'existe, les fiches naissent par le code.
+• Les deux dernières colonnes s'appellent en clair Nb Interventions / Nb Équipements — c'était la maquette qui abrégeait, le code est déjà bon.
+• Le rapprochement reste une simple lecture : « la différence entre ce qu'on a dépensé et ce dont on n'a pas exactement les traces ». Rien de plus à construire dessus.
+
+*3 — Production laitière : US annulée*
+• *L'US est annulée* (« on annule cette User Story »). Le calcul des écarts de production n'a pas de valeur de contrôle : l'erreur cumulée des lectures manuelles fausse les chiffres. Aucune alerte à construire, l'écran ne sera pas développé — SCRUM-9 est clôturé dans Jira.
+• Deux questions lui survivent parce qu'elles pèsent sur le coût du litre : quel comptage fait référence (somme des traites ou bilan de la ferme), et les vêlages de juin non saisis (0 vache lactante).
+
+*Ce qui reste ouvert*
+• « Année » = Year to Date (du 1ᵉʳ janvier à la date choisie) et non l'année civile — à confirmer d'un mot, le comparatif A-1 en dépend.
+• M. Samir a lancé « après on fera la même chose pour les recettes » : noté, hors périmètre du sprint.
+• Une intervention supprimée : effacée, ou annulée et gardée en trace ?
+• Qui écrit la charge d'entretien au 615 : la facture du réparateur rattachée à la fiche (ce que montre la maquette), ou la fiche elle-même à la soumission ? Pas les deux — à trancher avec le comptable.
+
+Les pourcentages des maquettes sont une illustration reprise de ses exemples ; aucune répartition réelle n'est saisie, le coût du litre affiché bougera.
