@@ -13,9 +13,17 @@ Covers:
      2019 ne l'est que 2 jours (avertissement + couleurs éteintes)
   5. FIN-S96 — imputation du coût mécanique (heures, DT, DT/L) en VUE
      ANALYTIQUE : elle ne doit jamais gonfler le coût complet du litre
+  6. Période « Année » = Year to Date (réunion 26/08/2026) et
+     `previous_period_bounds` : veille / S-1 / Q-1 / M-1 / A-1 même période
+  7. Colonnes comparatives (maquettes 24/08 + 26/08) : `precedent` libellé
+     selon la période, `ecart_pct` signé sur un couple connu, vide sans base
+     de comparaison, lignes INFO / Avertissement sans comparatif
+  8. Section « Frais Généraux — répartition par atelier » présente
 
 Fixtures isolées sur mars 2019 (période passée, avant tout backfill SLE —
-les coûts alimentaires y valent honnêtement 0, ce que le rapport assume).
+les coûts alimentaires y valent honnêtement 0, ce que le rapport assume) ;
+le comparatif s'appuie sur deux écritures de novembre / décembre 2025
+(exercice ACTIF, aucune écriture réelle en 2025 — préfixe ZZTEST_PERF).
 
 Run: bench --site <site> execute hmd_agro.hmd_agro.tests.test_rapport_performance.run
 """
@@ -25,7 +33,8 @@ import frappe
 from frappe.utils import getdate
 
 from hmd_agro.hmd_agro.report.rapport_performance.rapport_performance import (
-    execute, period_bounds,
+    LABELS_PRECEDENT, SECTION_FRAIS_GENERAUX, execute, period_bounds,
+    previous_period_bounds,
 )
 from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
     INDICATEURS_SENSIBLES_LAIT, couverture_lait,
@@ -33,8 +42,19 @@ from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
 from hmd_agro.hmd_agro.utils.maintenance_utils import cout_utilisation
 
 PREFIX = "TEST-PERF-"
+COMPANY = "hmd-agro"
+PREFIXE_JE = "ZZTEST_PERF"
 MOIS_DATE = "2019-03-15"
 SEM_DATE = "2019-03-06"        # mercredi → semaine ISO 04/03 - 10/03
+COLONNES_ATTENDUES = ["section", "indicateur", "valeur", "precedent",
+                      "ecart_pct", "unite"]
+# Comparatif : main-d'œuvre 100 en novembre 2025, 150 en décembre → +50 %.
+COMP_DATE_PREC = "2025-11-10"
+COMP_DATE = "2025-12-10"
+COMP_DATE_RAPPORT = "2025-12-15"
+COMP_MO_PREC = 100
+COMP_MO = 150
+COMP_ECART_ATTENDU = 50.0
 # Un jour n'est « saisi » que s'il porte une Traite ET un Bilan Lait Journalier
 # renseigné (revue reporting : « saisie quotidienne obligatoire : traite et
 # bilan journalier complet »). Mars 2019 porte donc les DEUX sur ses 31 jours —
@@ -121,6 +141,44 @@ def _seed_blj(dates=None):
     return created_days
 
 
+def _acc(numero):
+    return frappe.db.get_value("Account", {"account_number": numero,
+                                           "company": COMPANY}, "name")
+
+
+def _cc(nom):
+    return f"{nom} - {frappe.db.get_value('Company', COMPANY, 'abbr')}"
+
+
+def _charge(compte, montant, date, suffixe):
+    """Une charge au compte `compte`, atelier Lait, datée `date` — le support
+    du comparatif M / M-1 (même pattern que test_ventilation_atelier)."""
+    cc = _cc("Lait")
+    je = frappe.get_doc({
+        "doctype": "Journal Entry", "company": COMPANY,
+        "voucher_type": "Journal Entry", "posting_date": date,
+        "user_remark": f"{PREFIXE_JE}_{suffixe}",
+        "accounts": [
+            {"account": _acc(compte), "debit_in_account_currency": montant,
+             "cost_center": cc},
+            {"account": _acc("54"), "credit_in_account_currency": montant,
+             "cost_center": cc},
+        ],
+    })
+    je.insert(ignore_permissions=True)
+    je.submit()
+    return je.name
+
+
+def _cleanup_ecritures():
+    for je in frappe.get_all("Journal Entry",
+                             filters={"user_remark": ["like", f"%{PREFIXE_JE}%"]},
+                             pluck="name"):
+        frappe.db.sql("DELETE FROM `tabGL Entry` WHERE voucher_no=%s", je)
+        frappe.db.sql("DELETE FROM `tabJournal Entry Account` WHERE parent=%s", je)
+        frappe.db.sql("DELETE FROM `tabJournal Entry` WHERE name=%s", je)
+
+
 def _cleanup():
     for dt, name in reversed(_created):
         frappe.db.sql(f"DELETE FROM `tab{dt}` WHERE name=%s", name)
@@ -128,26 +186,35 @@ def _cleanup():
     frappe.db.sql("DELETE FROM `tabTraite` WHERE animal LIKE %s", f"{PREFIX}%")
     frappe.db.sql("DELETE FROM `tabVelage` WHERE animal LIKE %s", f"{PREFIX}%")
     frappe.db.sql("DELETE FROM `tabAnimal` WHERE name LIKE %s", f"{PREFIX}%")
+    _cleanup_ecritures()
     frappe.db.commit()
 
 
 # ─── Tests ───
 
 def test_structure(results):
-    print("  ----  Structure — colonnes typées + 5 sections")
+    print("  ----  Structure — colonnes typées + sections")
     cols, rows = execute({"periode": "Mois", "date": MOIS_DATE})
     names = [c["fieldname"] for c in cols]
-    _check(names == ["section", "indicateur", "valeur", "unite"],
-           f"Colonnes = section/indicateur/valeur/unite (got {names})", results)
-    valeur_col = cols[2]
-    _check(valeur_col["fieldtype"] == "Float" and valeur_col.get("precision") == 2,
-           "Colonne valeur = Float precision 2 (export Excel propre)", results)
+    _check(names == COLONNES_ATTENDUES,
+           f"Colonnes = {'/'.join(COLONNES_ATTENDUES)} (got {names})", results)
+    for col in (cols[2], cols[3]):
+        _check(col["fieldtype"] == "Float" and col.get("precision") == 2,
+               f"Colonne {col['fieldname']} = Float precision 2 (export Excel propre)",
+               results)
+    _check(cols[3]["label"] == LABELS_PRECEDENT["Mois"] == "M-1",
+           f"Colonne précédent libellée « M-1 » pour un mois (got {cols[3]['label']})",
+           results)
+    _check(cols[4]["fieldtype"] == "Percent" and cols[4]["label"] == "Écart %",
+           "Colonne « Écart % » en Percent", results)
     sections = {r["section"] for r in rows}
-    for s in ("Cheptel", "Production", "Alimentation", "Charges", "Coûts Unitaires"):
+    for s in ("Cheptel", "Production", "Alimentation", "Charges",
+              "Charges par Atelier", SECTION_FRAIS_GENERAUX,
+              "Coût du Lait (détail)", "Coûts Unitaires"):
         _check(s in sections, f"Section « {s} » présente", results)
-    non_numeric = [r for r in rows
-                   if r["valeur"] is not None
-                   and not isinstance(r["valeur"], (int, float))]
+    non_numeric = [r for r in rows for champ in ("valeur", "precedent", "ecart_pct")
+                   if r[champ] is not None
+                   and not isinstance(r[champ], (int, float))]
     _check(not non_numeric,
            f"Toutes les valeurs sont numériques ({len(non_numeric)} non conformes)",
            results)
@@ -162,6 +229,38 @@ def test_period_bounds(results):
     _check((str(debut), str(fin)) == ("2019-03-04", "2019-03-10"),
            f"Semaine ISO : lundi 04/03 → dimanche 10/03 (got {debut} → {fin})",
            results)
+    debut, fin = period_bounds("Année", getdate(MOIS_DATE))
+    _check((str(debut), str(fin)) == ("2019-01-01", "2019-03-15"),
+           f"Année = Year to Date : 01/01 → date choisie (got {debut} → {fin})",
+           results)
+
+
+def _bornes_prec(periode, debut, fin):
+    d, f = previous_period_bounds(periode, getdate(debut), getdate(fin))
+    return str(d), str(f)
+
+
+def test_previous_period_bounds(results):
+    print("  ----  Période précédente — veille / S-1 / Q-1 / M-1 / A-1")
+    cas = (
+        ("Jour", "2019-03-01", "2019-03-01", ("2019-02-28", "2019-02-28"),
+         "Jour → la veille, même à cheval sur le mois"),
+        ("Semaine", "2019-03-04", "2019-03-10", ("2019-02-25", "2019-03-03"),
+         "Semaine → la semaine ISO précédente"),
+        ("Quinzaine", "2019-03-16", "2019-03-31", ("2019-03-01", "2019-03-15"),
+         "Quinzaine 16-31 → la 1-15 du même mois"),
+        ("Quinzaine", "2019-03-01", "2019-03-15", ("2019-02-16", "2019-02-28"),
+         "Quinzaine 1-15 → la 16-fin du mois précédent"),
+        ("Mois", "2019-03-01", "2019-03-31", ("2019-02-01", "2019-02-28"),
+         "Mois → le mois précédent entier"),
+        ("Année", "2019-01-01", "2019-03-15", ("2018-01-01", "2018-03-15"),
+         "Année → le même Year to Date un an plus tôt"),
+        ("Année", "2024-01-01", "2024-02-29", ("2023-01-01", "2023-02-28"),
+         "Année bissextile : le 29/02 retombe sur le 28/02"),
+    )
+    for periode, debut, fin, attendu, msg in cas:
+        obtenu = _bornes_prec(periode, debut, fin)
+        _check(obtenu == attendu, f"{msg} (got {obtenu})", results)
 
 
 def test_valeurs_mois(results, base_prod, base_vendu, blj_days):
@@ -298,6 +397,40 @@ def test_periode_future(results):
     _, rows = execute({"periode": "Mois", "date": "2099-01-15"})
     _check(len(rows) == 1 and rows[0]["section"] == "INFO",
            "Période future → une seule ligne INFO", results)
+    _check(rows[0]["precedent"] is None and rows[0]["ecart_pct"] is None,
+           "La ligne INFO ne porte pas de comparatif", results)
+
+
+def test_comparatif(results):
+    """Décembre 2025 contre novembre 2025 : main-d'œuvre 150 vs 100 → +50 %.
+    Le reste des charges vaut 0 des deux côtés → pas de base, écart vide."""
+    print("  ----  Colonnes comparatives — M-1 et Écart % sur un couple connu")
+    _, rows = execute({"periode": "Mois", "date": COMP_DATE_RAPPORT})
+    mo = _find(rows, "Charges", "Main d'Œuvre (64x)")
+    _check(mo is not None and mo["valeur"] == COMP_MO and mo["precedent"] == COMP_MO_PREC,
+           f"Main d'Œuvre : valeur {COMP_MO}, M-1 {COMP_MO_PREC} (got {mo})", results)
+    _check(mo is not None and mo["ecart_pct"] == COMP_ECART_ATTENDU,
+           f"Écart % = +{COMP_ECART_ATTENDU} (got {mo and mo['ecart_pct']})", results)
+    entretien = _find(rows, "Charges", "Entretien & Réparations (615)")
+    _check(entretien is not None and entretien["ecart_pct"] is None,
+           "Précédent nul → Écart % vide, jamais un 0 inventé", results)
+    # Décembre 2025 n'a aucun lait saisi : l'avertissement est en tête, sans
+    # comparatif, et les ratios lait perdent aussi leur Δ % (base tronquée).
+    _check(rows[0]["section"] == "Avertissement" and rows[0]["precedent"] is None
+           and rows[0]["ecart_pct"] is None,
+           "La ligne Avertissement est en tête, sans comparatif", results)
+    sensibles = [r for r in rows if r["indicateur"].startswith(INDICATEURS_SENSIBLES_LAIT)]
+    _check(sensibles and all(r["precedent"] is None and r["ecart_pct"] is None
+                             for r in sensibles),
+           "Période trouée → les ratios lait n'ont ni précédent ni Écart %",
+           results)
+    cols, rows = execute({"periode": "Année", "date": COMP_DATE_RAPPORT})
+    _check(cols[3]["label"] == LABELS_PRECEDENT["Année"],
+           f"Année : colonne précédent = « {LABELS_PRECEDENT['Année']} »", results)
+    mo = _find(rows, "Charges", "Main d'Œuvre (64x)")
+    _check(mo is not None and mo["valeur"] >= COMP_MO + COMP_MO_PREC,
+           f"Année = Year to Date : la main-d'œuvre cumule nov. + déc. (got {mo})",
+           results)
 
 
 # ─── Runner ───
@@ -339,16 +472,21 @@ def _run_inner():
         _traite(cows[0], d, 10)
     blj_days = _seed_blj()
     _seed_blj(TROU_BLJ_DATES)
+    # Comparatif M / M-1 : deux écritures de main-d'œuvre, novembre et décembre 2025.
+    _charge("640", COMP_MO_PREC, COMP_DATE_PREC, "MO_PREC")
+    _charge("640", COMP_MO, COMP_DATE, "MO")
     frappe.db.commit()
 
     test_structure(results)
     test_period_bounds(results)
+    test_previous_period_bounds(results)
     test_valeurs_mois(results, base_prod, base_vendu, blj_days)
     test_valeurs_semaine(results, base_prod_sem)
     test_couverture_complete(results)
     test_couverture_trouee(results)
     test_cout_mecanique(results)
     test_periode_future(results)
+    test_comparatif(results)
 
     _cleanup()
 

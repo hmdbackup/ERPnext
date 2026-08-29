@@ -78,6 +78,8 @@
   "section_personnel_cheptel",
   "section_personnel",
   "taux_charges_patronales_pct",
+  "section_frais_generaux",
+  "repartition_fg_obligatoire",
   "section_cheptel",
   "cheptel_intro",
   "cheptel_mode",
@@ -634,6 +636,18 @@
    "description": "Taux employeur par défaut appliqué aux salariés du registre Personnel cochés « Soumis aux charges patronales » (30% par défaut — réunion 05/08/2026). Surchargeable individuellement sur la fiche Personnel. Alimente le compte 647."
   },
   {
+   "fieldname": "section_frais_generaux",
+   "fieldtype": "Section Break",
+   "label": "Frais généraux — répartition par charge (SCRUM-10)"
+  },
+  {
+   "fieldname": "repartition_fg_obligatoire",
+   "fieldtype": "Check",
+   "label": "Répartition obligatoire des charges Frais Généraux",
+   "default": "0",
+   "description": "Activé : une ligne de facture d'achat ou d'écriture imputée à Frais Généraux ne peut pas être enregistrée sans répartition à 100 % par atelier. Désactivé (défaut) : la répartition est facultative ; une charge non répartie reste à Frais Généraux et sort du coût du litre (réunion 26/08/2026)."
+  },
+  {
    "fieldname": "section_cheptel",
    "fieldtype": "Section Break",
    "label": "Cheptel — valorisation (FIN-S31)"
@@ -675,7 +689,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-08-06 12:00:00.000000",
+ "modified": "2026-08-28 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "HMD AGRO",
  "name": "HMD Configuration",

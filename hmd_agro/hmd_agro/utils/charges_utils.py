@@ -274,6 +274,8 @@ def post_salaires(periode, montants_par_atelier=None, submit=True):
             + f" ({source})"
         ),
     })
+    # Automatic entry: exempt from strict FG split mode (ERR-FIN-17).
+    je.flags.ignore_repartition_fg = True
     je.insert(ignore_permissions=True)
     if submit:
         je.submit()

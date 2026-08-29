@@ -1,20 +1,24 @@
 """
-SCRUM-11 — Rapport Interventions : les interventions mécaniques de la période.
+SCRUM-11 — Rapport Interventions : le parc et ses interventions.
 
 `maintenance_utils` sait depuis FIN-S32 enregistrer une intervention et en
 totaliser le coût, mais rien ne les LISTAIT : le Rapport Performance n'en
 affiche que le montant agrégé et le nombre. Un gérant qui voyait
 « Interventions sur Équipements : 7 » ne pouvait pas savoir lesquelles.
 
-Trois blocs :
+Quatre blocs (maquettes validées le 26/08/2026) :
 
-  1. **Réalisées** — une ligne par intervention de la période
-     (`interventions_realisees`), avec total.
-  2. **Préventif** — les tâches dues ou en retard (`interventions_planifiees`).
-     ⚠ Ce bloc est « à ce jour », PAS « sur la période » : ERPNext date les
-     `Asset Maintenance Log` à leur échéance, laquelle est par nature dans le
-     futur. Le libellé de section le dit à l'écran plutôt que de laisser
-     croire à un filtrage par période.
+  0. **Parc — état du matériel** — une ligne par équipement, « à ce jour » :
+     PRÊT / EN ATTENTE DE MAINTENANCE / EN PANNE, dernière intervention
+     terminée, prochaine échéance, heures d'utilisation sur la période
+     (`etat_parc`). Une ligne de synthèse compte les états.
+  1. **Réalisées** — une ligne par intervention validée de la période
+     (`interventions_realisees`), pièces / main-d'œuvre / coût, avec total.
+  2. **Préventif** — les échéances dues ou en retard : tâches ERPNext
+     (PLANIFIÉE) et fiches « À venir » (`interventions_planifiees`).
+     ⚠ Ce bloc est « à ce jour », PAS « sur la période » : une échéance est par
+     nature dans le futur. Le libellé de section le dit à l'écran plutôt que
+     de laisser croire à un filtrage par période.
   3. **Rapprochement** — l'écart entre le compte 615 du Grand Livre et la somme
      des interventions saisies.
 
@@ -43,17 +47,42 @@ from frappe.utils import cint, flt, getdate, today
 
 from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.utils.maintenance_utils import (
-    cout_maintenance, interventions_planifiees, interventions_realisees,
+    ECHEANCE_FICHE, PARC_EN_ATTENTE, PARC_EN_PANNE, PARC_PRET, cout_maintenance,
+    etat_parc, interventions_planifiees, interventions_realisees,
 )
 
-# Horizon du bloc préventif, en jours. Le défaut 30 est celui de
-# `interventions_planifiees`. Le contrôle de cohérence, lui, appelle
-# `interventions_planifiees(0)` : il ne regarde que les retards, pas l'horizon —
-# changer cette valeur ne le déplacera donc pas.
+# Horizon du bloc préventif ET de l'état « en attente de maintenance », en
+# jours. Le défaut 30 est celui de `interventions_planifiees`. Le contrôle de
+# cohérence, lui, appelle `interventions_planifiees(0)` : il ne regarde que les
+# retards, pas l'horizon — changer cette valeur ne le déplacera donc pas.
 # Le champ n'existe pas encore dans HMD Configuration : `get_config` retombe sur
 # ce défaut (comportement garanti par test_hmd_config.test_get_config_falls_back),
 # et l'horizon devient réglable le jour où on ajoute le champ.
 HORIZON_PREVENTIF_DEFAUT = 30
+
+SECTION_PARC = "Parc — état du matériel"
+SECTION_REALISEES = "Réalisées"
+SECTION_RAPPROCHEMENT = "Rapprochement"
+SECTION_INFO = "INFO"
+
+# Ce que le lecteur voit pour chaque état du parc, et la couleur (`indicator`,
+# calculé ici — jamais dans le JS) qui l'accompagne.
+LIBELLES_ETAT_PARC = {
+    PARC_PRET: "PRÊT",
+    PARC_EN_ATTENTE: "EN ATTENTE DE MAINTENANCE",
+    PARC_EN_PANNE: "EN PANNE",
+}
+INDICATEURS_ETAT_PARC = {
+    PARC_PRET: "Green",
+    PARC_EN_ATTENTE: "Orange",
+    PARC_EN_PANNE: "Red",
+}
+# Une échéance : tâche ERPNext, fiche planifiée, ou l'une des deux dépassée.
+TYPE_ECHEANCE_LOG = "PLANIFIÉE"
+TYPE_ECHEANCE_FICHE = "À VENIR"
+TYPE_ECHEANCE_RETARD = "EN RETARD"
+
+INTERVENANT_INTERNE = "Interne"
 
 COLUMNS = [
     {"fieldname": "section", "label": "Section", "fieldtype": "Data", "width": 150},
@@ -67,9 +96,16 @@ COLUMNS = [
      "width": 300},
     {"fieldname": "atelier", "label": "Atelier", "fieldtype": "Link",
      "options": "Cost Center", "width": 170},
-    {"fieldname": "intervenant", "label": "Intervenant", "fieldtype": "Link",
-     "options": "Personnel", "width": 130},
+    # Data, pas Link : l'intervenant est un salarié (Personnel) OU un
+    # prestataire (Supplier) — un seul Link ne peut pas pointer vers les deux.
+    {"fieldname": "intervenant", "label": "Intervenant", "fieldtype": "Data",
+     "width": 170},
+    {"fieldname": "pieces", "label": "Pièces (DT)", "fieldtype": "Currency",
+     "width": 110},
+    {"fieldname": "main_oeuvre", "label": "M.O. (DT)", "fieldtype": "Currency",
+     "width": 110},
     {"fieldname": "cout", "label": "Coût", "fieldtype": "Currency", "width": 120},
+    {"fieldname": "heures", "label": "Heures", "fieldtype": "Float", "width": 90},
     # Critère 2 — « il totalise : nombre d'interventions, nombre d'équipements ».
     # Ces deux compteurs vivaient dans le LIBELLÉ du TOTAL : lisibles à l'écran,
     # mais ni triables ni exploitables à l'export, donc le critère n'était rempli
@@ -97,52 +133,123 @@ def execute(filters=None):
         period_bounds,
     )
     debut, fin = period_bounds(periode, date)
+    horizon = _horizon_jours()
 
     today_dt = getdate(today())
     if debut > today_dt:
         # Aucune intervention réalisée ni rapprochement possible sur une période
-        # à venir — mais le préventif, lui, est « à ce jour » : le masquer
-        # cacherait les retards au moment précis où l'on prépare un planning.
-        return COLUMNS, ([_row("INFO", libelle="Pas encore d'intervention sur "
-                                               "cette période.")]
-                         + _preventif(equipement, atelier))
+        # à venir — mais le parc et le préventif, eux, sont « à ce jour » : les
+        # masquer cacherait les retards au moment précis où l'on prépare un
+        # planning.
+        return COLUMNS, (_parc(debut, fin, horizon, equipement, atelier)
+                         + [_row(SECTION_INFO, libelle="Pas encore d'intervention "
+                                                       "sur cette période.")]
+                         + _preventif(horizon, equipement, atelier))
     # On ne compte que les jours réellement écoulés (mois en cours).
     fin_periode = fin
     fin = min(fin, today_dt)
 
     lignes = interventions_realisees(debut, fin, equipement, atelier)
 
-    data = []
+    data = _parc(debut, fin, horizon, equipement, atelier)
     # Mois en cours : la liste s'arrête à aujourd'hui. Le taire donnait un
     # TOTAL qu'on prenait pour celui du mois entier — et un rapprochement au
     # 615 mécaniquement plus bas que la facture du mois. On le DIT, comme le
     # bloc préventif annonce déjà qu'il n'est pas borné par la période.
     if fin_periode > fin:
-        data.append(_row("INFO", libelle=(
+        data.append(_row(SECTION_INFO, libelle=(
             f"Période en cours : chiffres arrêtés au {fin.strftime('%d/%m/%Y')} "
             f"(fin de période le {fin_periode.strftime('%d/%m/%Y')}) — "
             f"les totaux ne couvrent pas encore le mois entier.")))
     data.extend(_realisees(lignes))
-    data.extend(_preventif(equipement, atelier))
+    data.extend(_preventif(horizon, equipement, atelier))
     data.extend(_rapprochement(debut, fin, lignes, equipement, atelier))
     return COLUMNS, data
 
 
+def _horizon_jours():
+    return cint(get_config("maintenance_horizon_jours",
+                           default=HORIZON_PREVENTIF_DEFAUT))
+
+
 def _row(section, date=None, equipement=None, designation=None, type_=None,
-         libelle=None, atelier=None, intervenant=None, cout=None,
-         nb_interventions=None, nb_equipements=None, indicator=""):
+         libelle=None, atelier=None, intervenant=None, pieces=None,
+         main_oeuvre=None, cout=None, heures=None, nb_interventions=None,
+         nb_equipements=None, indicator=""):
     return {"section": section, "date": date, "equipement": equipement,
             "designation": designation, "type": type_, "libelle": libelle,
-            "atelier": atelier, "intervenant": intervenant, "cout": cout,
+            "atelier": atelier, "intervenant": intervenant, "pieces": pieces,
+            "main_oeuvre": main_oeuvre, "cout": cout, "heures": heures,
             "nb_interventions": nb_interventions,
             "nb_equipements": nb_equipements,
             "indicator": indicator}
 
 
+def _montant_ou_rien(valeur):
+    """A zero amount is displayed as a dash: « non imputé = un tiret, jamais un 0 »."""
+    return flt(valeur) or None
+
+
+# ─── (0) Parc — état du matériel ─────────────────────────────────────────────
+
+def _parc(debut, fin, horizon, equipement=None, atelier=None):
+    """État du parc « à ce jour » (comme le préventif) ; seules les heures
+    d'utilisation sont bornées par la période affichée."""
+    parc = etat_parc(debut, fin, horizon, equipement, atelier)
+    if not parc:
+        return [_row(SECTION_PARC, libelle="Aucun équipement au parc "
+                                           "(hors animaux, hors cessions).")]
+    rows = [_synthese_parc(parc)]
+    for eq in parc:
+        prochaine = eq["prochaine"]
+        rows.append(_row(
+            SECTION_PARC,
+            date=prochaine["date"] if prochaine else None,
+            equipement=eq["asset"],
+            designation=eq["designation"],
+            type_=LIBELLES_ETAT_PARC[eq["etat"]],
+            libelle=_libelle_parc(eq),
+            atelier=eq["atelier"],
+            heures=_montant_ou_rien(eq["heures"]),
+            indicator=INDICATEURS_ETAT_PARC[eq["etat"]],
+        ))
+    return rows
+
+
+def _synthese_parc(parc):
+    etats = [eq["etat"] for eq in parc]
+    en_panne = etats.count(PARC_EN_PANNE)
+    en_attente = etats.count(PARC_EN_ATTENTE)
+    en_retard = sum(1 for eq in parc if eq["prochaine"] and eq["prochaine"]["en_retard"])
+    libelle = (f"{len(parc)} équipement(s) · {etats.count(PARC_PRET)} prêt(s) · "
+               f"{en_attente} en attente · {en_panne} en panne · "
+               f"{en_retard} échéance(s) dépassée(s)")
+    if en_panne:
+        indicator = "Red"
+    elif en_attente or en_retard:
+        indicator = "Orange"
+    else:
+        indicator = "Green"
+    return _row(SECTION_PARC, libelle=libelle, nb_equipements=len(parc),
+                indicator=indicator)
+
+
+def _libelle_parc(eq):
+    derniere, prochaine = eq["derniere"], eq["prochaine"]
+    texte = (f"Dernière : {getdate(derniere['date']).strftime('%d/%m/%Y')} — "
+             f"{derniere['description']}"
+             if derniere else "Aucune intervention terminée")
+    if prochaine:
+        texte += f" · Prochaine : {prochaine['libelle']}"
+        if prochaine["en_retard"]:
+            texte += f" — {TYPE_ECHEANCE_RETARD}"
+    return texte
+
+
 # ─── (i) Interventions réalisées ─────────────────────────────────────────────
 
 def _realisees(lignes):
-    s = "Réalisées"
+    s = SECTION_REALISEES
     if not lignes:
         # Critère 5 — « un mois sans intervention affiche zéro, pas une erreur ».
         # La phrase seule ne remplissait le critère qu'à moitié : elle explique
@@ -174,15 +281,32 @@ def _realisees(lignes):
             type_=ligne.type_intervention,
             libelle=libelle,
             atelier=ligne.atelier,
-            intervenant=ligne.personnel,
+            intervenant=_libelle_intervenant(ligne),
+            pieces=_montant_ou_rien(ligne.cout_pieces),
+            main_oeuvre=_montant_ou_rien(ligne.cout_main_oeuvre),
             cout=flt(ligne.cout),
         ))
     nb_equip = _nb_equipements(lignes)
     rows.append(_row(s, libelle=f"TOTAL — {len(lignes)} intervention(s), "
                                 f"{nb_equip} équipement(s)",
-                     cout=round(sum(flt(l.cout) for l in lignes), 2),
+                     pieces=_montant_ou_rien(_somme(lignes, "cout_pieces")),
+                     main_oeuvre=_montant_ou_rien(_somme(lignes, "cout_main_oeuvre")),
+                     cout=_somme(lignes, "cout"),
                      nb_interventions=len(lignes), nb_equipements=nb_equip))
     return rows
+
+
+def _libelle_intervenant(ligne):
+    """Prestataire → raison sociale ; salarié → « Interne — nom » ; sinon « Interne »."""
+    if ligne.prestataire:
+        return ligne.prestataire_nom or ligne.prestataire
+    if ligne.personnel:
+        return f"{INTERVENANT_INTERNE} — {ligne.personnel_nom or ligne.personnel}"
+    return INTERVENANT_INTERNE
+
+
+def _somme(lignes, champ):
+    return round(sum(flt(ligne.get(champ)) for ligne in lignes), 2)
 
 
 def _nb_equipements(lignes):
@@ -191,8 +315,9 @@ def _nb_equipements(lignes):
 
 # ─── (ii) Préventif dû ou en retard ──────────────────────────────────────────
 
-def _preventif(equipement=None, atelier=None):
-    """Tâches de maintenance préventive dues sous N jours ou déjà en retard.
+def _preventif(jours, equipement=None, atelier=None):
+    """Échéances dues sous N jours ou déjà en retard : tâches préventives
+    ERPNext (PLANIFIÉE) et fiches « À venir » (À VENIR).
 
     Volontairement NON filtré par la PÉRIODE du rapport : une échéance est un
     fait à venir, la borner au mois affiché reviendrait à cacher les retards
@@ -202,8 +327,6 @@ def _preventif(equipement=None, atelier=None):
     listerait tout le parc sous un filtre équipement ferait lire au gérant des
     retards qui ne concernent pas la machine qu'il regarde.
     """
-    jours = cint(get_config("maintenance_horizon_jours",
-                            default=HORIZON_PREVENTIF_DEFAUT))
     s = f"Préventif (à ce jour, {jours} j)"
     taches = interventions_planifiees(jours, equipement, atelier)
     if not taches:
@@ -212,19 +335,30 @@ def _preventif(equipement=None, atelier=None):
     aujourdhui = getdate(today())
     rows = []
     for tache in taches:
-        en_retard = tache.due_date and getdate(tache.due_date) < aujourdhui
+        en_retard = getdate(tache.due_date) < aujourdhui
         rows.append(_row(
             s,
             date=tache.due_date,
-            # Piège ERPNext : dans « Asset Maintenance Log », `asset_name` est
-            # un Link vers Asset, pas un libellé. Il va donc dans la colonne
-            # Équipement (Link), jamais dans Désignation.
             equipement=tache.asset_name,
-            type_="EN RETARD" if en_retard else "PLANIFIÉE",
+            designation=tache.designation,
+            type_=_type_echeance(tache, en_retard),
             libelle=tache.task_name,
-            indicator="Red" if en_retard else "",
+            atelier=tache.atelier,
+            indicator=_indicateur_echeance(tache, en_retard),
         ))
     return rows
+
+
+def _type_echeance(tache, en_retard):
+    if en_retard:
+        return TYPE_ECHEANCE_RETARD
+    return TYPE_ECHEANCE_FICHE if tache.source == ECHEANCE_FICHE else TYPE_ECHEANCE_LOG
+
+
+def _indicateur_echeance(tache, en_retard):
+    if en_retard:
+        return "Red"
+    return "Blue" if tache.source == ECHEANCE_FICHE else ""
 
 
 # ─── (iii) Rapprochement Grand Livre ↔ interventions ─────────────────────────
@@ -235,7 +369,7 @@ def _rapprochement(debut, fin, lignes, equipement, atelier):
     Voir l'encadré en tête de module : l'écart est normal, et c'est lui
     l'information.
     """
-    s = "Rapprochement"
+    s = SECTION_RAPPROCHEMENT
     # `cout_maintenance` ne sait pas filtrer par équipement ni par atelier :
     # confronter un Grand Livre entier à une liste filtrée produirait un écart
     # faux. On annonce le refus plutôt que d'afficher un chiffre trompeur.
@@ -246,7 +380,7 @@ def _rapprochement(debut, fin, lignes, equipement, atelier):
 
     maint = cout_maintenance(debut, fin)
     gl = flt(maint["cout"])
-    saisi = round(sum(flt(ligne.cout) for ligne in lignes), 2)
+    saisi = _somme(lignes, "cout")
     ecart = round(gl - saisi, 2)
 
     return [

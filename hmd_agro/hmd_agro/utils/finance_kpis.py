@@ -94,11 +94,19 @@ POSTES_CHARGES = (
 # lait. Le vrai « non imputé », c'est une écriture SANS cost center du tout.
 ATELIER_FRAIS_GENERAUX = "Frais Généraux"
 
+# L'atelier dont on calcule le coût du litre (nom court du Cost Center).
+ATELIER_LAIT = "Lait"
+
 # Périmètre du coût complet au litre. Décidé en revue reporting : atelier Lait
-# + quote-part des charges générales. Reste configurable parce que la CLÉ de
-# répartition n'a pas été tranchée et que le périmètre est une décision métier,
-# pas une constante technique (convention maison : jamais de seuil en dur).
+# + quote-part des charges générales. La quote-part est la SOMME des
+# répartitions saisies charge par charge (décision 26/08/2026, plus de clé
+# calculée) ; le périmètre reste configurable parce que c'est une décision
+# métier, pas une constante technique (convention maison : jamais de seuil en
+# dur).
 PERIMETRES_COUT_LITRE = ("LAIT_QUOTE_PART", "LAIT_SEUL", "TOUTES_CHARGES")
+
+# Parents porteurs de la table enfant `Repartition Atelier Charge` (SCRUM-10).
+PARENTS_REPARTITION = ("Purchase Invoice", "Journal Entry")
 
 
 def _poste_de(num):
@@ -169,21 +177,166 @@ def gl_sums_par_atelier(date_debut, date_fin):
     }
 
 
-def charges_lait(date_debut, date_fin, perimetre=None):
+def repartitions_frais_generaux(date_debut, date_fin, ventilation=None):
+    """SCRUM-10 — les charges Frais Généraux de la période et leur répartition
+    analytique par atelier, telle que saisie sur chaque charge.
+
+    Lit les lignes de Purchase Invoice (soumises, hors avoirs) et de Journal
+    Entry (soumises, lignes de charge au débit) imputées à Frais Généraux,
+    jointes à leurs parts `Repartition Atelier Charge` (`parent`, `ligne` =
+    idx). Une charge sans part est listée avec une répartition vide : c'est
+    elle qui fait la différence entre le total FG du Grand Livre et le total
+    réparti, et le rapport doit pouvoir la nommer.
+
+    `ventilation` : résultat de `gl_sums_par_atelier` déjà en main chez
+    l'appelant (évite de relire le Grand Livre) ; lu sinon.
+
+    Retourne {
+        "charges": [{voucher_type, voucher, ligne, libelle, compte, poste,
+                     montant, repartition: [{atelier, pct, montant}]}],
+        "par_atelier": {atelier: montant},
+        "par_atelier_postes": {atelier: {poste: montant}},
+        "total_reparti": x, "total_fg": y (Grand Livre),
+        "total_liste": l (Σ des charges PI/JE listées),
+        "autres": y − l (pièces imputées à FG non listables : stock, avoirs…),
+        "non_reparti": l − x (signé, jamais masqué)
+    }
+    """
+    charges = _charges_frais_generaux(date_debut, date_fin)
+    _joindre_repartitions(charges)
+
+    par_atelier, par_atelier_postes = {}, {}
+    for charge in charges:
+        for part in charge["repartition"]:
+            atelier, poste, montant = part["atelier"], charge["poste"], part["montant"]
+            par_atelier[atelier] = par_atelier.get(atelier, 0.0) + montant
+            postes_atelier = par_atelier_postes.setdefault(atelier, {})
+            postes_atelier[poste] = postes_atelier.get(poste, 0.0) + montant
+
+    if ventilation is None:
+        ventilation = gl_sums_par_atelier(date_debut, date_fin)
+    total_fg = ventilation["ateliers"].get(
+        ATELIER_FRAIS_GENERAUX, {"total": 0.0})["total"]
+    total_reparti = sum(par_atelier.values())
+    total_liste = sum(c["montant"] for c in charges)
+    return {
+        "charges": charges,
+        "par_atelier": {a: round(m, 2) for a, m in par_atelier.items()},
+        "par_atelier_postes": {
+            a: {p: round(m, 2) for p, m in postes.items()}
+            for a, postes in par_atelier_postes.items()},
+        "total_reparti": round(total_reparti, 2),
+        "total_fg": round(total_fg, 2),
+        "total_liste": round(total_liste, 2),
+        "autres": round(total_fg - total_liste, 2),
+        "non_reparti": round(total_liste - total_reparti, 2),
+    }
+
+
+def _centres_frais_generaux():
+    """Noms complets (avec suffixe société) des centres de coût Frais Généraux."""
+    centres = frappe.get_all("Cost Center",
+                             filters={"company": COMPANY, "is_group": 0},
+                             pluck="name")
+    return [cc for cc in centres if _nom_court(cc) == ATELIER_FRAIS_GENERAUX]
+
+
+def _charges_frais_generaux(date_debut, date_fin):
+    """Lignes de charge imputées à Frais Généraux sur la période, factures
+    d'achat puis écritures, dans l'ordre chronologique. Le libellé suit la
+    même règle que `repartition_charges.lignes_charges` : nom de l'article
+    (facture) ou du compte (écriture)."""
+    centres = _centres_frais_generaux()
+    if not centres:
+        return []
+    params = {"company": COMPANY, "debut": date_debut, "fin": date_fin,
+              "centres": centres}
+    factures = frappe.db.sql("""
+        SELECT 'Purchase Invoice' AS voucher_type, pi.name AS voucher,
+               pi.posting_date, pii.idx AS ligne,
+               COALESCE(pii.item_name, pii.item_code) AS libelle,
+               acc.account_number AS compte, pii.base_net_amount AS montant
+        FROM `tabPurchase Invoice Item` pii
+        JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
+        JOIN `tabAccount` acc ON acc.name = pii.expense_account
+        WHERE pi.docstatus = 1
+          AND pi.company = %(company)s
+          AND pi.is_return = 0
+          AND pi.posting_date BETWEEN %(debut)s AND %(fin)s
+          AND pii.cost_center IN %(centres)s
+          AND acc.root_type = 'Expense'
+    """, params, as_dict=True)
+    ecritures = frappe.db.sql("""
+        SELECT 'Journal Entry' AS voucher_type, je.name AS voucher,
+               je.posting_date, jea.idx AS ligne,
+               acc.account_name AS libelle, acc.account_number AS compte,
+               (jea.debit - jea.credit) AS montant
+        FROM `tabJournal Entry Account` jea
+        JOIN `tabJournal Entry` je ON je.name = jea.parent
+        JOIN `tabAccount` acc ON acc.name = jea.account
+        WHERE je.docstatus = 1
+          AND je.company = %(company)s
+          AND je.posting_date BETWEEN %(debut)s AND %(fin)s
+          AND jea.cost_center IN %(centres)s
+          AND acc.root_type = 'Expense'
+          AND jea.debit - jea.credit > 0
+    """, params, as_dict=True)
+
+    charges = []
+    for r in sorted(factures + ecritures,
+                    key=lambda r: (r.posting_date, r.voucher, r.ligne)):
+        charges.append({
+            "voucher_type": r.voucher_type, "voucher": r.voucher,
+            "ligne": int(r.ligne), "libelle": r.libelle,
+            "compte": r.compte or "", "poste": _poste_de(r.compte or ""),
+            "montant": float(r.montant or 0), "repartition": [],
+        })
+    return charges
+
+
+def _joindre_repartitions(charges):
+    """Attache à chaque charge ses parts saisies (nom court d'atelier, pct,
+    montant recalculé depuis la ligne — la ligne de charge est la seule
+    source du montant)."""
+    if not charges or not frappe.db.table_exists("Repartition Atelier Charge"):
+        return
+    parts = frappe.get_all(
+        "Repartition Atelier Charge",
+        filters={"parenttype": ["in", list(PARENTS_REPARTITION)],
+                 "parent": ["in", sorted({c["voucher"] for c in charges})]},
+        fields=["parenttype", "parent", "ligne", "atelier", "pourcentage"],
+        order_by="parent asc, ligne asc, idx asc")
+    par_ligne = {}
+    for part in parts:
+        par_ligne.setdefault((part.parenttype, part.parent, int(part.ligne)),
+                             []).append(part)
+    for charge in charges:
+        cle = (charge["voucher_type"], charge["voucher"], charge["ligne"])
+        for part in par_ligne.get(cle, []):
+            pct = float(part.pourcentage or 0)
+            charge["repartition"].append({
+                "atelier": _nom_court(part.atelier), "pct": pct,
+                "montant": round(charge["montant"] * pct / 100, 2)})
+
+
+def charges_lait(date_debut, date_fin, perimetre=None, repartitions=None):
     """Les charges retenues pour le COÛT DU LITRE, poste par poste.
 
     Périmètre décidé en revue reporting : **atelier Lait + quote-part des
-    charges générales**. La CLÉ de cette quote-part n'ayant pas été tranchée,
-    on prend la seule défendable avec les données disponibles — la part du
-    Lait dans les charges DIRECTES des ateliers (frais généraux et non imputé
-    exclus du dénominateur, sans quoi la clé se répartirait elle-même).
+    charges générales**. La quote-part est la **somme des répartitions
+    saisies** sur chaque charge Frais Généraux (décision 26/08/2026 : le
+    comptable répartit à la saisie, plus de clé calculée). Une charge FG non
+    répartie reste à Frais Généraux, hors coût du litre — et le rapport le dit.
 
     Le « non imputé » n'entre JAMAIS dans le coût du litre : lui attribuer une
     quote-part reviendrait à imputer au lait une charge dont on ignore la
     destination. Il reste affiché à part, c'est le critère d'acceptation n°5.
 
-    Retourne {postes: {cle: montant}, direct, quote_part, cle_pct, total,
-              perimetre, non_impute}
+    `repartitions` : résultat de `repartitions_frais_generaux` déjà en main
+    chez l'appelant ; lu sinon.
+
+    Retourne {postes: {cle: montant}, direct, quote_part, total, perimetre,
+              non_impute, fg_total, fg_reparti, fg_non_reparti}
     """
     if perimetre is None:
         perimetre = get_config("cout_litre_perimetre", default="LAIT_QUOTE_PART")
@@ -193,11 +346,14 @@ def charges_lait(date_debut, date_fin, perimetre=None):
                      f"{', '.join(PERIMETRES_COUT_LITRE)}.")
 
     ventilation = gl_sums_par_atelier(date_debut, date_fin)
+    if repartitions is None:
+        repartitions = repartitions_frais_generaux(date_debut, date_fin,
+                                                   ventilation=ventilation)
+    frais_generaux = {"fg_total": repartitions["total_fg"],
+                      "fg_reparti": repartitions["total_reparti"],
+                      "fg_non_reparti": repartitions["non_reparti"]}
     ateliers = ventilation["ateliers"]
-    lait = ateliers.get("Lait", {"total": 0.0, "postes": {}})
-    frais_generaux = ateliers.get(ATELIER_FRAIS_GENERAUX,
-                                  {"total": 0.0, "postes": {}})
-    non_impute = ventilation["non_impute"]["total"]
+    non_impute = round(ventilation["non_impute"]["total"], 2)
 
     if perimetre == "TOUTES_CHARGES":
         # Comportement historique, conservé pour comparer avant/après : il
@@ -205,30 +361,24 @@ def charges_lait(date_debut, date_fin, perimetre=None):
         return {"postes": _postes_cumules(ateliers.values(),
                                           [ventilation["non_impute"]]),
                 "direct": ventilation["total"], "quote_part": 0.0,
-                "cle_pct": 100.0, "total": ventilation["total"],
-                "perimetre": perimetre, "non_impute": non_impute}
+                "total": ventilation["total"], "perimetre": perimetre,
+                "non_impute": non_impute, **frais_generaux}
 
+    lait = ateliers.get(ATELIER_LAIT, {"total": 0.0, "postes": {}})
     direct = round(lait["total"], 2)
     postes = dict(lait["postes"])
     quote_part = 0.0
-    cle_pct = 0.0
 
-    if perimetre == "LAIT_QUOTE_PART" and frais_generaux["total"]:
-        directes_hors_fg = sum(
-            a["total"] for nom, a in ateliers.items()
-            if nom != ATELIER_FRAIS_GENERAUX)
-        # Sans aucune charge directe ailleurs, la clé n'a pas de sens : on ne
-        # répartit rien plutôt que d'affecter 100 % au lait par défaut.
-        if directes_hors_fg:
-            cle_pct = round(lait["total"] / directes_hors_fg * 100, 2)
-            quote_part = round(frais_generaux["total"] * cle_pct / 100, 2)
-            for cle, montant in frais_generaux["postes"].items():
-                postes[cle] = postes.get(cle, 0.0) + montant * cle_pct / 100
+    if perimetre == "LAIT_QUOTE_PART":
+        quote_part = repartitions["par_atelier"].get(ATELIER_LAIT, 0.0)
+        for cle, montant in repartitions["par_atelier_postes"].get(
+                ATELIER_LAIT, {}).items():
+            postes[cle] = postes.get(cle, 0.0) + montant
 
     return {"postes": {c: round(v, 2) for c, v in postes.items()},
-            "direct": direct, "quote_part": quote_part, "cle_pct": cle_pct,
+            "direct": direct, "quote_part": round(quote_part, 2),
             "total": round(direct + quote_part, 2), "perimetre": perimetre,
-            "non_impute": round(non_impute, 2)}
+            "non_impute": non_impute, **frais_generaux}
 
 
 def _postes_cumules(*groupes):

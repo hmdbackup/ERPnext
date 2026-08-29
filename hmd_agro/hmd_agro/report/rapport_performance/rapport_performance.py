@@ -1,11 +1,19 @@
 """
-Rapport Performance (Phase 4) — synthèse hebdomadaire / mensuelle consolidée.
+Rapport Performance (Phase 4) — synthèse jour / semaine / quinzaine / mois /
+année consolidée, avec colonnes comparatives.
 
-One flat table (section / indicateur / valeur / unite) covering the whole
-farm for the selected period: mouvements cheptel, production laitière,
-alimentation, charges comptables et coûts unitaires. `valeur` stays a typed
-Float so the native CSV/Excel export feeds the Excel template cleanly
+One flat table (section / indicateur / valeur / précédent / écart % / unite)
+covering the whole farm for the selected period: mouvements cheptel,
+production laitière, alimentation, charges comptables, charges par atelier,
+frais généraux répartis et coûts unitaires. `valeur` and `precedent` stay
+typed Floats so the native CSV/Excel export feeds the Excel template cleanly
 (réunion 05/08/2026 : export vers template Excel plutôt que PDF).
+
+Comparatif (maquettes validées 24/08 et 26/08/2026) : chaque ligne porte la
+valeur de la période précédente de même granularité (Veille / S-1 / Q-1 /
+M-1 / A-1 même période) et l'écart en %. Les lignes se construisent une fois
+par période (`_construire_lignes`) puis se fusionnent par (section,
+indicateur) dans l'ordre de la période courante.
 
 Sources — always the canonical primitives, never re-derived:
     live_state count_* / effectif_on_date     — herd events, reconstructed
@@ -14,6 +22,7 @@ Sources — always the canonical primitives, never re-derived:
                                                 import, dashboard_kpis precedent)
     rapport_periodique.couverture_lait        — garde-fou « période incomplète »
     finance_kpis.gl_sums                      — GL sums per SCE family
+    finance_kpis.repartitions_frais_generaux  — répartition saisie des FG
     maintenance_utils.cout_maintenance        — équipement interventions
     maintenance_utils.cout_utilisation        — heures machine valorisées
                                                 (vue ANALYTIQUE, cf. _charges)
@@ -21,12 +30,13 @@ Sources — always the canonical primitives, never re-derived:
 A period with no postings honestly returns 0 — same stance as gl_sums.
 """
 import frappe
-from frappe.utils import add_days, getdate, today
+from frappe.utils import add_days, add_years, getdate, today
 from calendar import monthrange
 
 from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.utils.finance_kpis import (
-    ATELIER_FRAIS_GENERAUX, charges_lait, gl_sums, gl_sums_par_atelier,
+    ATELIER_FRAIS_GENERAUX, ATELIER_LAIT, charges_lait, gl_sums,
+    gl_sums_par_atelier, repartitions_frais_generaux,
 )
 from hmd_agro.hmd_agro.utils.live_state import (
     effectif_on_date, count_velages, count_naissances,
@@ -35,14 +45,38 @@ from hmd_agro.hmd_agro.utils.live_state import (
 from hmd_agro.hmd_agro.utils.maintenance_utils import (
     cout_maintenance, cout_utilisation,
 )
+from hmd_agro.hmd_agro.utils.repartition_charges import est_mode_strict
 
 
-COLUMNS = [
-    {"fieldname": "section", "label": "Section", "fieldtype": "Data", "width": 160},
-    {"fieldname": "indicateur", "label": "Indicateur", "fieldtype": "Data", "width": 340},
-    {"fieldname": "valeur", "label": "Valeur", "fieldtype": "Float", "precision": 2, "width": 130},
-    {"fieldname": "unite", "label": "Unité", "fieldtype": "Data", "width": 120},
-]
+PERIODE_ANNEE = "Année"
+
+# Libellé de la colonne « précédent » selon la granularité (maquette 24/08).
+LABELS_PRECEDENT = {
+    "Jour": "Veille",
+    "Semaine": "S-1",
+    "Quinzaine": "Q-1",
+    "Mois": "M-1",
+    PERIODE_ANNEE: "A-1 (même période)",
+}
+
+# Écart de rapprochement toléré entre le total FG du Grand Livre et la somme
+# des répartitions : un arrondi au centime, pas un seuil métier.
+ECART_ARRONDI_DT = 0.01
+
+SECTION_FRAIS_GENERAUX = "Frais Généraux — répartition par atelier"
+
+
+def _colonnes(periode):
+    return [
+        {"fieldname": "section", "label": "Section", "fieldtype": "Data", "width": 160},
+        {"fieldname": "indicateur", "label": "Indicateur", "fieldtype": "Data", "width": 340},
+        {"fieldname": "valeur", "label": "Valeur", "fieldtype": "Float", "precision": 2, "width": 130},
+        {"fieldname": "precedent", "label": LABELS_PRECEDENT.get(periode, "Précédent"),
+         "fieldtype": "Float", "precision": 2, "width": 130},
+        {"fieldname": "ecart_pct", "label": "Écart %", "fieldtype": "Percent", "precision": 1,
+         "width": 100},
+        {"fieldname": "unite", "label": "Unité", "fieldtype": "Data", "width": 120},
+    ]
 
 
 def execute(filters=None):
@@ -50,19 +84,44 @@ def execute(filters=None):
     periode = filters.get("periode") or "Mois"
     date = getdate(filters.get("date") or today())
     debut, fin = period_bounds(periode, date)
+    colonnes = _colonnes(periode)
 
     today_dt = getdate(today())
     if debut > today_dt:
-        return COLUMNS, [_row("INFO", "Pas encore de données pour cette période.",
-                              None, "")]
-    # Only count days that actually happened (open week/month in progress).
+        return colonnes, [_row("INFO", "Pas encore de données pour cette période.",
+                               None, "")]
+    # Only count days that actually happened (open week/month/year in progress).
     fin = min(fin, today_dt)
 
+    lignes, couverture = _construire_lignes(debut, fin)
+    debut_prec, fin_prec = previous_period_bounds(periode, debut, fin)
+    lignes_prec, couverture_prec = _construire_lignes(debut_prec, fin_prec)
+    data = _fusionner_comparatif(lignes, lignes_prec)
+
+    # Trou de saisie avéré sur l'une ou l'autre période : un Δ % calculé sur un
+    # chiffre tronqué ne compare rien — on l'éteint pour les ratios lait.
+    if not couverture_prec["complete"]:
+        _neutraliser_comparatif_lait(data)
+    if not couverture["complete"]:
+        # On annonce la couleur en tête de tableau et on éteint la coloration
+        # des ratios faussés — sans masquer une seule valeur.
+        from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
+            neutraliser_indicateurs_lait,
+        )
+        neutraliser_indicateurs_lait(data)
+        _neutraliser_comparatif_lait(data)
+        data.insert(0, _row("Avertissement", couverture["message"], None, ""))
+    return colonnes, data
+
+
+def _construire_lignes(debut, fin):
+    """All the report rows for one period, plus the milk coverage of that
+    period. Called once for the current period and once for the previous."""
     # Garde-fou « période incomplète » (FIN-S95) — le rapport périodique possède
     # la lecture canonique de la couverture de saisie du lait (lazy import,
     # précédent dashboard_kpis).
     from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
-        couverture_lait, neutraliser_indicateurs_lait,
+        couverture_lait,
     )
     couverture = couverture_lait(debut, fin)
     # Coût mécanique de la période — vue ANALYTIQUE, cf. _charges / maintenance_utils.
@@ -79,17 +138,60 @@ def execute(filters=None):
     # SCRUM-10 — l'axe atelier, jusqu'ici absent de toute lecture du Grand Livre.
     ventilation = gl_sums_par_atelier(debut, fin)
     data.extend(_charges_par_atelier(ventilation, gl))
-    lait = charges_lait(debut, fin)
+    repartitions = repartitions_frais_generaux(debut, fin, ventilation=ventilation)
+    data.extend(_frais_generaux_repartition(repartitions))
+    lait = charges_lait(debut, fin, repartitions=repartitions)
     data.extend(_cout_lait_detail(ventilation, lait))
     data.extend(_couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx, meca, lait))
+    return data, couverture
 
-    # Trou de saisie avéré : on annonce la couleur en tête de tableau et on
-    # éteint la coloration des ratios faussés — sans masquer une seule valeur.
-    if not couverture["complete"]:
-        neutraliser_indicateurs_lait(data)
-        data.insert(0, _row("Avertissement", couverture["message"], None, ""))
-    return COLUMNS, data
 
+# ─── Comparatif ──────────────────────────────────────────────────────────────
+
+def _fusionner_comparatif(lignes, lignes_precedentes):
+    """Adds `precedent` / `ecart_pct` to each current row from the previous
+    period's row of the same (section, indicateur). Each previous row is
+    consumed once, so two identical labels (two charges with the same name)
+    pair up in order instead of both reading the first one."""
+    precedents = {}
+    for ligne in lignes_precedentes:
+        precedents.setdefault(_cle_ligne(ligne), []).append(ligne["valeur"])
+    for ligne in lignes:
+        if ligne.get("sans_comparatif"):
+            continue
+        candidats = precedents.get(_cle_ligne(ligne))
+        ligne["precedent"] = candidats.pop(0) if candidats else None
+        ligne["ecart_pct"] = _ecart_pct(ligne["valeur"], ligne["precedent"])
+    return lignes
+
+
+def _cle_ligne(ligne):
+    return (ligne["section"], ligne["indicateur"])
+
+
+def _ecart_pct(valeur, precedent):
+    """(valeur − précédent) / |précédent| × 100 — None when there is nothing
+    to compare against (previous absent or nul)."""
+    if valeur is None or not precedent:
+        return None
+    return round((valeur - precedent) / abs(precedent) * 100, 1)
+
+
+def _neutraliser_comparatif_lait(lignes):
+    """Blanks `precedent` / `ecart_pct` on the milk-sensitive rows — the
+    counterpart of `neutraliser_indicateurs_lait` for the comparison columns
+    (a Δ % against a truncated period is noise, not information)."""
+    from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
+        INDICATEURS_SENSIBLES_LAIT,
+    )
+    for ligne in lignes:
+        if (ligne.get("indicateur") or "").startswith(INDICATEURS_SENSIBLES_LAIT):
+            ligne["precedent"] = None
+            ligne["ecart_pct"] = None
+    return lignes
+
+
+# ─── Périodes ────────────────────────────────────────────────────────────────
 
 def _fr(valeur):
     """Nombre en écriture française (virgule décimale) pour les libellés."""
@@ -98,9 +200,10 @@ def _fr(valeur):
 
 def period_bounds(periode, date):
     """(debut, fin) of the period containing `date` — a single day, a full ISO
-    week (Mon-Sun), a calendar fortnight (1-15 / 16-fin) or a full month.
-    Les quatre granularités demandées en réunion (« journalier, hebdomadaire,
-    par quinzaine… il faut que ce soit flexible »)."""
+    week (Mon-Sun), a calendar fortnight (1-15 / 16-fin), a full month, or the
+    year to date (1er janvier → `date`, réunion 26/08/2026 : « l'année 2026,
+    Year to Date »). Les granularités demandées en réunion (« journalier,
+    hebdomadaire, par quinzaine… il faut que ce soit flexible »)."""
     if periode == "Jour":
         return date, date
     if periode == "Semaine":
@@ -110,6 +213,8 @@ def period_bounds(periode, date):
             _iso_week_bounds,
         )
         return _iso_week_bounds(date)
+    if periode == PERIODE_ANNEE:
+        return getdate(f"{date.year}-01-01"), date
     nb_jours = monthrange(date.year, date.month)[1]
     if periode == "Quinzaine":
         if date.day <= 15:
@@ -122,9 +227,25 @@ def period_bounds(periode, date):
     return debut, fin
 
 
-def _row(section, indicateur, valeur, unite, indicator=""):
-    return {"section": section, "indicateur": indicateur,
-            "valeur": valeur, "unite": unite, "indicator": indicator}
+def previous_period_bounds(periode, debut, fin):
+    """(debut, fin) of the comparison period for [debut, fin] : the previous
+    period of the same granularity (Jour → veille, Semaine / Quinzaine / Mois
+    → la précédente, entière), and for Année the same interval one year
+    earlier — a year-to-date only compares with the same year-to-date."""
+    if periode == PERIODE_ANNEE:
+        return add_years(debut, -1), add_years(fin, -1)
+    return period_bounds(periode, add_days(debut, -1))
+
+
+def _row(section, indicateur, valeur, unite, indicator="", sans_comparatif=False):
+    row = {"section": section, "indicateur": indicateur,
+           "valeur": valeur, "precedent": None, "ecart_pct": None,
+           "unite": unite, "indicator": indicator}
+    if sans_comparatif:
+        # Unit rows (one charge and its « └ » split) never pair with the
+        # previous period — see `_fusionner_comparatif`.
+        row["sans_comparatif"] = True
+    return row
 
 
 # ─── (i) Mouvements cheptel ──────────────────────────────────────────────────
@@ -305,7 +426,63 @@ def _charges_par_atelier(ventilation, gl):
     return rows
 
 
-# ─── (iv ter) Coût du lait, ligne par ligne — SCRUM-10 ───────────────────────
+# ─── (iv ter) Frais généraux — répartition par atelier — SCRUM-10 ────────────
+
+def _frais_generaux_repartition(repartitions):
+    """Les charges Frais Généraux une par une, avec la répartition que le
+    comptable a saisie dessus (décision 26/08/2026 : plus de clé calculée).
+
+    Une charge par ligne (libellé — compte, montant) suivie de sa ventilation
+    « └ Lait 45 % · Cultures 35 % … » — valeur vide, donc tiret : une part n'est
+    pas un montant de plus. Une charge sans répartition est nommée, en orange :
+    elle reste à Frais Généraux et sort du coût du litre.
+
+    Le contrôle final rejoue la somme contre le Grand Livre : rouge si le mode
+    strict est activé (une charge nue est alors une anomalie), orange sinon.
+    """
+    s = SECTION_FRAIS_GENERAUX
+    rows = []
+    for charge in repartitions["charges"]:
+        rows.append(_row(s, f"{charge['libelle']} — {charge['compte']}",
+                         round(charge["montant"], 2), "DT", sans_comparatif=True))
+        rows.append(_row(s, _libelle_parts(charge["repartition"]), None, "",
+                         indicator="" if charge["repartition"] else "Orange",
+                         sans_comparatif=True))
+
+    total_fg = round(repartitions["total_fg"], 2)
+    total_liste = round(repartitions.get("total_liste", total_fg), 2)
+    reparti = round(repartitions["total_reparti"], 2)
+    autres = round(repartitions.get("autres", 0.0), 2)
+    rows.append(_row(s, "Total Frais Généraux (Grand Livre)", total_fg, "DT"))
+    rows.append(_row(s, "Contrôle — somme des répartitions = charges listées", reparti,
+                     "DT", indicator=_indicateur_controle_fg(total_liste - reparti)))
+    rows.append(_row(s, f"dont part atelier {ATELIER_LAIT} — somme des répartitions",
+                     repartitions["par_atelier"].get(ATELIER_LAIT, 0.0), "DT"))
+    non_reparti = round(repartitions["non_reparti"], 2)
+    if abs(non_reparti) > ECART_ARRONDI_DT:
+        rows.append(_row(s, "Frais généraux non répartis — hors coût du litre",
+                         non_reparti, "DT", indicator="Orange"))
+    if abs(autres) > ECART_ARRONDI_DT:
+        rows.append(_row(s, "Autres pièces imputées à Frais Généraux (stock, "
+                         "avoirs…) — non répartissables ici",
+                         autres, "DT", indicator="Orange"))
+    return rows
+
+
+def _libelle_parts(parts):
+    if not parts:
+        return f"└ non répartie — reste à {ATELIER_FRAIS_GENERAUX}, hors coût du litre"
+    return "└ " + " · ".join(f"{p['atelier']} {_fr(round(p['pct'], 2))} %"
+                             for p in parts)
+
+
+def _indicateur_controle_fg(ecart):
+    if abs(ecart) <= ECART_ARRONDI_DT:
+        return ""
+    return "Red" if est_mode_strict() else "Orange"
+
+
+# ─── (iv quater) Coût du lait, ligne par ligne — SCRUM-10 ────────────────────
 
 def _cout_lait_detail(ventilation, lait):
     """Le coût du lait poste par poste, pour rapprochement comptable.
@@ -323,13 +500,11 @@ def _cout_lait_detail(ventilation, lait):
     for cle, libelle in ventilation["postes"]:
         rows.append(_row(s, libelle, round(lait["postes"].get(cle, 0.0), 2), "DT"))
 
-    rows.append(_row(s, "Sous-total — charges directes atelier Lait",
+    rows.append(_row(s, f"Sous-total — charges directes atelier {ATELIER_LAIT}",
                      lait["direct"], "DT"))
     if lait["perimetre"] == "LAIT_QUOTE_PART":
         rows.append(_row(
-            s,
-            f"Quote-part des charges générales ({ATELIER_FRAIS_GENERAUX}) — "
-            f"clé {_fr(lait['cle_pct'])} % des charges directes",
+            s, f"Quote-part {ATELIER_FRAIS_GENERAUX} — somme des répartitions saisies",
             lait["quote_part"], "DT"))
     rows.append(_row(s, "TOTAL — charges retenues pour le coût du litre",
                      lait["total"], "DT"))

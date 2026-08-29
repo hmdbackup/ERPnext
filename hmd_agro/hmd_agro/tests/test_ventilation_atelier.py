@@ -17,8 +17,10 @@ revue reporting :
   4. Une écriture ANNULÉE n'est pas une charge
   5. Une charge sans centre de coût apparaît en « Non imputé » VISIBLE,
      jamais fondue dans un atelier
-  6. Coût du litre = atelier Lait + quote-part des charges générales, clé
-     calculée sur les charges directes — et le non imputé en reste dehors
+  6. Coût du litre = atelier Lait + quote-part des charges générales, la
+     quote-part étant la SOMME des répartitions saisies sur chaque charge
+     (décision 26/08/2026) : sans répartition → quote-part 0 et FG non réparti
+     visible ; avec répartition → quote-part exacte. Le non imputé reste dehors
   7. Le coût mécanique n'entre toujours pas dans le coût complet (FIN-S96)
   8. Un périmètre inconnu lève ERR-FIN-10 plutôt que de calculer n'importe quoi
 
@@ -27,7 +29,8 @@ au hasard : l'exercice 2025 est ACTIF (sans quoi le submit lève FiscalYearError
 et ne porte AUCUNE écriture réelle, ce qui rend les totaux absolus — on teste
 des égalités, pas des « au moins ».
 
-Pré-requis site : socle comptable (Cost Centers ateliers).
+Pré-requis site : socle comptable (Cost Centers ateliers), DocType
+Repartition Atelier Charge + Custom Fields SCRUM-10 migrés (cas 6b).
 
 Run: bench --site hmd.agro execute \
         hmd_agro.hmd_agro.tests.test_ventilation_atelier.run
@@ -37,10 +40,10 @@ import traceback
 import frappe
 
 from hmd_agro.hmd_agro.report.rapport_performance.rapport_performance import (
-    execute as executer_rapport,
+    SECTION_FRAIS_GENERAUX, execute as executer_rapport,
 )
 from hmd_agro.hmd_agro.utils.finance_kpis import (
-    charges_lait, gl_sums, gl_sums_par_atelier,
+    ATELIER_FRAIS_GENERAUX, charges_lait, gl_sums, gl_sums_par_atelier,
 )
 
 COMPANY = "hmd-agro"
@@ -49,19 +52,23 @@ PREFIXE = "ZZTEST_VENT"
 DEBUT = "2025-04-01"
 FIN = "2025-04-30"
 DATE_ECRITURE = "2025-04-10"
+DATE_RAPPORT = "2025-04-15"
 MOIS_VIERGE_DEBUT = "2025-09-01"      # jamais alimenté, même exercice actif
 MOIS_VIERGE_FIN = "2025-09-30"
+DATE_RAPPORT_VIERGE = "2025-09-15"
 
-# Scénario : 1 000 au Lait, 500 aux Génisses, 300 aux Frais Généraux.
-# Charges directes hors frais généraux = 1 500, dont 1 000 pour le Lait
-# → clé = 66,67 %, quote-part = 200,01, coût du lait = 1 200,01.
+# Scénario : 1 000 au Lait, 500 aux Génisses, 300 aux Frais Généraux SANS
+# répartition (elle reste hors coût du litre), puis 200 aux Frais Généraux
+# répartis 50 % Lait / 50 % Génisses → quote-part = 100, coût du lait = 1 100.
 MONTANT_LAIT = 1000
 MONTANT_GENISSES = 500
 MONTANT_FRAIS_GENERAUX = 300
+MONTANT_FG_REPARTI = 200
+PART_LAIT_PCT = 50
 MONTANT_NON_IMPUTE = 200
-CLE_ATTENDUE = 66.67
-QUOTE_PART_ATTENDUE = 200.01
-COUT_LAIT_ATTENDU = 1200.01
+QUOTE_PART_ATTENDUE = 100.0
+COUT_LAIT_ATTENDU = 1100.0
+FG_NON_REPARTI_ATTENDU = 300.0
 
 
 def _check(cond, msg, results):
@@ -92,12 +99,14 @@ def _cleanup():
                              pluck="name"):
         frappe.db.sql("DELETE FROM `tabGL Entry` WHERE voucher_no=%s", je)
         frappe.db.sql("DELETE FROM `tabJournal Entry Account` WHERE parent=%s", je)
+        frappe.db.sql("DELETE FROM `tabRepartition Atelier Charge` WHERE parent=%s", je)
         frappe.db.sql("DELETE FROM `tabJournal Entry` WHERE name=%s", je)
     frappe.db.commit()
 
 
-def _charge(compte, montant, atelier, suffixe, date=DATE_ECRITURE):
-    """Une charge passée au compte `compte`, imputée à `atelier`."""
+def _charge(compte, montant, atelier, suffixe, date=DATE_ECRITURE, repartition=()):
+    """Une charge passée au compte `compte`, imputée à `atelier`, avec sa
+    répartition éventuelle ((atelier, %), …) sur la ligne 1."""
     cc = _cc(atelier)
     je = frappe.get_doc({
         "doctype": "Journal Entry", "company": COMPANY,
@@ -108,6 +117,10 @@ def _charge(compte, montant, atelier, suffixe, date=DATE_ECRITURE):
              "cost_center": cc},
             {"account": _acc("54"), "credit_in_account_currency": montant,
              "cost_center": cc},
+        ],
+        "repartition_atelier": [
+            {"ligne": 1, "atelier": _cc(nom), "pourcentage": pct}
+            for nom, pct in repartition
         ],
     })
     je.insert(ignore_permissions=True)
@@ -129,6 +142,11 @@ def _vider_cost_center(voucher):
     frappe.db.commit()
 
 
+def _ligne(rows, section, prefixe):
+    return next((r for r in rows if r["section"] == section
+                 and r["indicateur"].startswith(prefixe)), None)
+
+
 # ─── Tests ───
 
 def _test_mois_vierge(results):
@@ -147,7 +165,7 @@ def _test_ventilation_et_postes(results):
     v = gl_sums_par_atelier(DEBUT, FIN)
     lait = v["ateliers"].get("Lait", {})
     genisses = v["ateliers"].get("Élevage - Génisses", {})
-    fg = v["ateliers"].get("Frais Généraux", {})
+    fg = v["ateliers"].get(ATELIER_FRAIS_GENERAUX, {})
     _check(round(lait.get("total", 0)) == MONTANT_LAIT,
            f"atelier Lait = {MONTANT_LAIT} (got {lait.get('total')})", results)
     _check(round(lait.get("postes", {}).get("ration", 0)) == MONTANT_LAIT,
@@ -196,16 +214,15 @@ def _test_non_impute_visible(results):
            "l'atelier Lait n'a PAS absorbé la charge orpheline", results)
     # Et la ligne existe à l'écran même quand elle vaut zéro : une ligne absente
     # se lit « rien à signaler », une ligne à 0 se lit « vérifié ».
-    rows = executer_rapport({"periode": "Mois", "date": "2025-09-15"})[1]
-    ligne = next((r for r in rows if r["section"] == "Charges par Atelier"
-                  and r["indicateur"].startswith("Non imputé")), None)
+    rows = executer_rapport({"periode": "Mois", "date": DATE_RAPPORT_VIERGE})[1]
+    ligne = _ligne(rows, "Charges par Atelier", "Non imputé")
     _check(ligne is not None and ligne["valeur"] == 0,
            "sur un mois vierge, la ligne « Non imputé » s'affiche quand même à 0",
            results)
 
 
-def _test_perimetre_cout_litre(results):
-    print("\n[6] Coût du litre = atelier Lait + quote-part des charges générales")
+def _test_fg_sans_repartition(results):
+    print("\n[6a] Frais généraux SANS répartition → quote-part 0, non réparti visible")
     lait = charges_lait(DEBUT, FIN)
     _check(lait["perimetre"] == "LAIT_QUOTE_PART",
            "périmètre par défaut = LAIT_QUOTE_PART (décision revue reporting)",
@@ -213,14 +230,33 @@ def _test_perimetre_cout_litre(results):
     _check(lait["direct"] == MONTANT_LAIT,
            f"charges directes du Lait = {MONTANT_LAIT} (got {lait['direct']})",
            results)
-    _check(lait["cle_pct"] == CLE_ATTENDUE,
-           f"clé = {CLE_ATTENDUE} % des charges directes hors frais généraux "
-           f"(got {lait['cle_pct']})", results)
+    _check(lait["quote_part"] == 0 and lait["total"] == MONTANT_LAIT,
+           "sans répartition saisie, rien ne revient au lait "
+           f"(quote-part {lait['quote_part']}, total {lait['total']})", results)
+    _check(lait["fg_total"] == MONTANT_FRAIS_GENERAUX
+           and lait["fg_non_reparti"] == MONTANT_FRAIS_GENERAUX,
+           f"les {MONTANT_FRAIS_GENERAUX} de frais généraux sont signalés non "
+           f"répartis (got {lait['fg_non_reparti']})", results)
+    rows = executer_rapport({"periode": "Mois", "date": DATE_RAPPORT})[1]
+    ligne = _ligne(rows, SECTION_FRAIS_GENERAUX, "Frais généraux non répartis")
+    _check(ligne is not None and ligne["valeur"] == MONTANT_FRAIS_GENERAUX
+           and ligne["indicator"] == "Orange",
+           "le rapport nomme le non réparti, en orange", results)
+
+
+def _test_fg_avec_repartition(results):
+    print("\n[6b] Frais généraux répartis → quote-part = somme des parts Lait")
+    lait = charges_lait(DEBUT, FIN)
     _check(lait["quote_part"] == QUOTE_PART_ATTENDUE,
-           f"quote-part = {QUOTE_PART_ATTENDUE} (got {lait['quote_part']})",
-           results)
+           f"quote-part = {QUOTE_PART_ATTENDUE} ({PART_LAIT_PCT} % de "
+           f"{MONTANT_FG_REPARTI}) (got {lait['quote_part']})", results)
     _check(lait["total"] == COUT_LAIT_ATTENDU,
            f"total retenu = {COUT_LAIT_ATTENDU} (got {lait['total']})", results)
+    _check(lait["fg_reparti"] == MONTANT_FG_REPARTI
+           and lait["fg_non_reparti"] == FG_NON_REPARTI_ATTENDU,
+           f"réparti {MONTANT_FG_REPARTI}, non réparti {FG_NON_REPARTI_ATTENDU} "
+           f"(got {lait['fg_reparti']} / {lait['fg_non_reparti']})", results)
+    _check("cle_pct" not in lait, "plus aucune clé calculée (cle_pct)", results)
     # Le point qui justifie toute la story : l'ancien calcul retenait TOUT.
     toutes = charges_lait(DEBUT, FIN, perimetre="TOUTES_CHARGES")
     _check(toutes["total"] > lait["total"],
@@ -253,7 +289,7 @@ def _test_perimetre_invalide(results):
 
 def _test_rapport_sections(results):
     print("\n[9] Le rapport expose la ventilation et le détail du coût du lait")
-    rows = executer_rapport({"periode": "Mois", "date": "2025-04-15"})[1]
+    rows = executer_rapport({"periode": "Mois", "date": DATE_RAPPORT})[1]
     sections = {r["section"] for r in rows}
     _check("Charges par Atelier" in sections,
            "section « Charges par Atelier » présente", results)
@@ -272,22 +308,19 @@ def _test_rapport_sections(results):
     _check(abs(round(sum(postes), 2) - COUT_LAIT_ATTENDU) < 0.02,
            f"la somme des postes refait le total ({round(sum(postes), 2)})",
            results)
-    controle = next((r for r in rows if r["section"] == "Charges par Atelier"
-                     and r["indicateur"].startswith("Total ventilé")), None)
+    controle = _ligne(rows, "Charges par Atelier", "Total ventilé")
     _check(controle is not None and "doit égaler" in controle["indicateur"],
            "la ligne de contrôle ne signale aucun écart", results)
 
 
 def _test_meca_hors_cout_complet(results):
     print("\n[10] Le coût mécanique n'entre toujours pas dans le coût complet")
-    rows = executer_rapport({"periode": "Mois", "date": "2025-04-15"})[1]
-    complet = next((r for r in rows if r["section"] == "Coûts Unitaires"
-                    and r["indicateur"].startswith("Coût Complet / L")), None)
+    rows = executer_rapport({"periode": "Mois", "date": DATE_RAPPORT})[1]
+    complet = _ligne(rows, "Coûts Unitaires", "Coût Complet / L")
     _check(complet is not None
            and "quote-part" in complet["indicateur"],
            "le libellé nomme le périmètre retenu", results)
-    meca = next((r for r in rows if r["section"] == "Coûts Unitaires"
-                 and r["indicateur"].startswith("Coût Mécanique / L")), None)
+    meca = _ligne(rows, "Coûts Unitaires", "Coût Mécanique / L")
     _check(meca is not None and "non additionnable" in meca["indicateur"],
            "le coût mécanique reste annoncé non additionnable", results)
     # Avril 2025 n'a aucun lait produit : le coût au litre vaut 0, et c'est la
@@ -318,13 +351,20 @@ def _run_inner():
 
     _charge("601", MONTANT_LAIT, "Lait", "RATION")
     _charge("640", MONTANT_GENISSES, "Élevage - Génisses", "MO")
-    _charge("606", MONTANT_FRAIS_GENERAUX, "Frais Généraux", "FG")
+    _charge("606", MONTANT_FRAIS_GENERAUX, ATELIER_FRAIS_GENERAUX, "FG")
     frappe.db.commit()
 
     _test_ventilation_et_postes(results)
     _test_somme_egale_total(results)
     _test_ecriture_annulee(results)
-    _test_perimetre_cout_litre(results)
+    _test_fg_sans_repartition(results)
+
+    _charge("606", MONTANT_FG_REPARTI, ATELIER_FRAIS_GENERAUX, "FG_REPARTI",
+            repartition=(("Lait", PART_LAIT_PCT),
+                         ("Élevage - Génisses", 100 - PART_LAIT_PCT)))
+    frappe.db.commit()
+
+    _test_fg_avec_repartition(results)
     _test_non_impute_visible(results)
     _test_non_impute_hors_cout_litre(results)
     _test_perimetre_invalide(results)

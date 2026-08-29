@@ -1,8 +1,13 @@
-// Rapport Performance (Phase 4) — synthèse hebdo / mensuelle consolidée.
+// Rapport Performance (Phase 4) — synthèse jour / semaine / quinzaine / mois /
+// année consolidée, avec colonnes comparatives (maquettes 24/08 et 26/08/2026).
 // La coloration de la colonne `valeur` reprend le formatter des Indicateurs
 // du Rapport Periodique (indicator Green/Orange/Red calculé côté Python contre
-// les seuils PFE de HMD Configuration) ; `valeur` reste un Float natif pour
-// que l'export CSV/Excel alimente le template Excel sans nettoyage.
+// les seuils PFE de HMD Configuration) ; `valeur` et `precedent` restent des
+// Float natifs pour que l'export CSV/Excel alimente le template Excel sans
+// nettoyage. Une case sans valeur s'affiche « – », jamais 0 (réunion 26/08).
+
+const HMD_PERF_TIRET = "–";
+const HMD_PERF_COLONNES_VALEUR = ["valeur", "precedent"];
 
 frappe.query_reports["Rapport Performance"] = {
     filters: [
@@ -10,7 +15,7 @@ frappe.query_reports["Rapport Performance"] = {
             fieldname: "periode",
             label: __("Période"),
             fieldtype: "Select",
-            options: "Jour\nSemaine\nQuinzaine\nMois",
+            options: "Jour\nSemaine\nQuinzaine\nMois\nAnnée",
             default: "Mois",
             reqd: 1
         },
@@ -24,7 +29,14 @@ frappe.query_reports["Rapport Performance"] = {
     ],
 
     formatter(value, row, column, data, default_formatter) {
-        if (value == null || value === "") {
+        const vide = value == null || value === "";
+        if (HMD_PERF_COLONNES_VALEUR.includes(column.fieldname) && vide) {
+            return HMD_PERF_TIRET;
+        }
+        if (column.fieldname === "ecart_pct") {
+            return vide ? HMD_PERF_TIRET : hmd_perf_ecart_signe(value);
+        }
+        if (vide) {
             return default_formatter(value, row, column, data);
         }
         let html = default_formatter(value, row, column, data);
@@ -43,3 +55,10 @@ frappe.query_reports["Rapport Performance"] = {
         return html;
     }
 };
+
+// « +12,5 % » : l'écart est toujours signé, le lecteur ne doit pas deviner le sens.
+function hmd_perf_ecart_signe(value) {
+    const signe = value > 0 ? "+" : "";
+    const nombre = frappe.format(value, {fieldtype: "Float", precision: 1});
+    return `<span class="text-right">${signe}${nombre} %</span>`;
+}

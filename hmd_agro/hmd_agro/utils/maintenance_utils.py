@@ -23,8 +23,22 @@ Ce module relie les deux :
     heures saisies dans « Utilisation Equipement » valorisées au coût horaire
     forfaitaire de chaque équipement.
 
+  • SCRUM-11 — la fiche d'intervention saisie À L'ÉCRAN (Asset Repair) :
+    hooks `completer_couts_fiche` / `valider_fiche_intervention` /
+    `verifier_fiche_avant_validation` (ERR-MNT-09 → 13), état dérivé
+    `etat_fiche`, `planifier_intervention` (la fiche « À venir ») et
+    `etat_parc` (Prêt / En attente de maintenance / En panne par équipement).
+
 Idempotence (pattern maison) : passer `reference` ; une intervention portant
 déjà cette référence est retournée telle quelle, sans doublon.
+
+━━ SCRUM-11 — POURQUOI UN STATUT « Planned » (et pas Pending + date future) ━━
+ERPNext `asset_repair.update_status` passe l'équipement « Out of Order » pour
+TOUTE fiche `Pending`, quelle que soit sa date. Une intervention planifiée
+n'est pas une panne : elle porte donc son propre statut (Property Setter sur
+`repair_status`), que le rapport lit comme « À venir » et que `before_submit`
+refuse de valider tant qu'elle n'est pas passée à Terminée.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ━━ FIN-S96 — POURQUOI LE COÛT HORAIRE NE POSTE RIEN (le piège) ━━━━━━━━━━━━━━
 Le coût horaire forfaitaire d'un équipement = amortissement + maintenance +
@@ -48,7 +62,7 @@ Run:
                    'cout': 320, 'type_intervention': 'PREVENTIVE'}"
 """
 import frappe
-from frappe.utils import flt, get_datetime, getdate, today
+from frappe.utils import add_days, cint, flt, get_datetime, getdate, today
 
 from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.utils.stock_utils import DEFAULT_COMPANY as COMPANY
@@ -63,6 +77,41 @@ FOURNISSEUR_DEFAUT = "Fournisseur Divers"
 ATELIER_DEFAUT = "Frais Généraux"
 STATUTS_ASSET_BLOQUANTS = ("Sold", "Scrapped")
 
+# Heures conventionnelles d'une intervention datée au jour (ERPNext exige des
+# Datetime) : début de matinée pour la panne, midi pour la fin des travaux.
+HEURE_DEBUT_INTERVENTION = "08:00:00"
+HEURE_FIN_INTERVENTION = "12:00:00"
+
+# ── SCRUM-11 — statuts ERPNext de la fiche et états dérivés ──────────────────
+FICHE_INTERVENTION = "Asset Repair"
+STATUT_PLANIFIEE = "Planned"       # ajouté par Property Setter (voir en-tête)
+STATUT_EN_ATTENTE = "Pending"      # panne déclarée : ERPNext passe l'équipement Out of Order
+STATUT_TERMINEE = "Completed"
+STATUT_ANNULEE = "Cancelled"
+
+ETAT_A_VENIR = "A_VENIR"
+ETAT_EN_ATTENTE = "EN_ATTENTE"
+ETAT_TERMINEE = "TERMINEE"
+ETAT_ANNULEE = "ANNULEE"
+ETATS_PAR_STATUT = {
+    STATUT_PLANIFIEE: ETAT_A_VENIR,
+    STATUT_EN_ATTENTE: ETAT_EN_ATTENTE,
+    STATUT_TERMINEE: ETAT_TERMINEE,
+    STATUT_ANNULEE: ETAT_ANNULEE,
+}
+
+# États du parc, par équipement (`etat_parc`).
+PARC_PRET = "PRET"
+PARC_EN_ATTENTE = "EN_ATTENTE_MAINTENANCE"
+PARC_EN_PANNE = "EN_PANNE"
+
+# Provenance d'une échéance (`interventions_planifiees`).
+ECHEANCE_LOG = "Asset Maintenance Log"
+ECHEANCE_FICHE = FICHE_INTERVENTION
+
+TYPE_PLANIFIEE_DEFAUT = "PREVENTIVE"
+CHAMPS_COUT_FICHE = ("cout_pieces", "cout_main_oeuvre", "repair_cost")
+
 
 def _acc(number):
     return frappe.db.get_value("Account", {"company": COMPANY, "account_number": number})
@@ -70,6 +119,27 @@ def _acc(number):
 
 def _marker(repair):
     return f"MAINT_{repair}"
+
+
+def _horodatage(date, heure):
+    """Datetime of `date` at the conventional hour `heure` (HH:MM:SS)."""
+    return get_datetime(f"{getdate(date)} {heure}")
+
+
+def _jjmmaaaa(date):
+    return getdate(date).strftime("%d/%m/%Y") if date else "—"
+
+
+def _filtres_sql(filtres):
+    """SQL fragment + params for the `(condition, valeur)` pairs whose value is set.
+
+    `condition` carries column and operator (`"rep.asset ="`, `"log.due_date <="`);
+    the placeholder is appended. Empty values are skipped, so callers pass
+    every optional filter unconditionally.
+    """
+    actifs = [(condition, valeur) for condition, valeur in filtres if valeur]
+    return ("".join(f" AND {condition} %s" for condition, _ in actifs),
+            [valeur for _, valeur in actifs])
 
 
 def _cost_center(atelier=None, asset=None):
@@ -140,8 +210,8 @@ def enregistrer_intervention(asset, description, cout=0, date=None, atelier=None
         "doctype": "Asset Repair",
         "company": COMPANY,
         "asset": asset,
-        "failure_date": get_datetime(f"{date} 08:00:00"),
-        "completion_date": get_datetime(f"{date} 12:00:00"),
+        "failure_date": _horodatage(date, HEURE_DEBUT_INTERVENTION),
+        "completion_date": _horodatage(date, HEURE_FIN_INTERVENTION),
         "repair_status": "Completed",
         "description": description,
         "actions_performed": actions or description,
@@ -222,6 +292,8 @@ def _poster_charge(repair, cout, date, cost_center, mode_reglement,
         ],
         "user_remark": f"{_marker(repair)} — {description[:120]}",
     })
+    # Automatic entry: exempt from strict FG split mode (ERR-FIN-17).
+    je.flags.ignore_repartition_fg = True
     je.insert(ignore_permissions=True)
     if submit:
         je.submit()
@@ -241,6 +313,151 @@ def annuler_intervention(repair):
         doc.flags.ignore_permissions = True
         doc.cancel()
     return je
+
+
+# ─── SCRUM-11 : la fiche d'intervention saisie à l'écran ─────────────────────
+# Hooks déclarés dans hooks.py (`doc_events["Asset Repair"]`). Ordre Frappe :
+# before_validate (ici) → validate ERPNext (update_status, total_repair_cost)
+# → validate (ici) → before_submit ERPNext (refuse Pending) → before_submit (ici).
+
+def completer_couts_fiche(doc, method=None):
+    """before_validate — `repair_cost` = pièces + main-d'œuvre when no invoice drives it.
+
+    ERPNext fills `repair_cost` from `purchase_invoice` (client side) and then
+    derives `total_repair_cost` from it in its own `validate`, which runs after
+    this hook: setting `repair_cost` here is enough for the total to follow.
+    A sheet without parts nor labour keeps whatever `repair_cost` it carries
+    (`enregistrer_intervention` writes it directly).
+    """
+    if doc.purchase_invoice:
+        return
+    pieces, main_oeuvre = doc.get("cout_pieces"), doc.get("cout_main_oeuvre")
+    # Also when one of them just went back to 0 — otherwise the old cost stays.
+    if not (pieces or main_oeuvre or _couts_modifies(doc)):
+        return
+    doc.repair_cost = flt(pieces) + flt(main_oeuvre)
+
+
+def _couts_modifies(doc):
+    """True when `cout_pieces` / `cout_main_oeuvre` differ numerically from the
+    saved sheet (None and 0 are the same amount — `has_value_changed` would
+    see a change on every submit of a sheet posted without parts / labour)."""
+    avant = doc.get_doc_before_save() if not doc.is_new() else None
+    if not avant:
+        return False
+    return any(flt(doc.get(champ)) != flt(avant.get(champ))
+               for champ in ("cout_pieces", "cout_main_oeuvre"))
+
+
+def valider_fiche_intervention(doc, method=None):
+    """validate — ERR-MNT-09 → 12, on every save of a sheet."""
+    _verifier_intervenant_unique(doc)
+    _verifier_couts_positifs(doc)
+    if doc.repair_status == STATUT_PLANIFIEE:
+        # A sheet already Planned in the past may still be re-saved (e.g. to
+        # move it to Completed the day it is done): the date check only fires
+        # when the sheet is new, its date changes or it becomes Planned.
+        if (doc.is_new() or doc.has_value_changed("failure_date")
+                or doc.has_value_changed("repair_status")):
+            _verifier_date_planifiee(doc.failure_date, strict=False)
+        _verifier_fiche_planifiee_vierge(doc)
+
+
+def verifier_fiche_avant_validation(doc, method=None):
+    """before_submit — ERR-MNT-13. ERPNext only refuses `Pending` here."""
+    if doc.repair_status == STATUT_PLANIFIEE:
+        frappe.throw(
+            "ERR-MNT-13 : une fiche « À venir » ne se valide pas — passer d'abord "
+            "son statut à Terminée (Completed), une fois l'intervention faite."
+        )
+
+
+def _verifier_intervenant_unique(doc):
+    personnel, prestataire = doc.get("personnel"), doc.get("prestataire")
+    if personnel and prestataire:
+        frappe.throw(
+            "ERR-MNT-09 : une intervention a UN intervenant — salarié "
+            f"({personnel}) OU prestataire ({prestataire}), pas les deux."
+        )
+
+
+def _verifier_couts_positifs(doc):
+    for champ in CHAMPS_COUT_FICHE:
+        if flt(doc.get(champ)) < 0:
+            libelle = frappe.get_meta(FICHE_INTERVENTION).get_label(champ)
+            frappe.throw(
+                f"ERR-MNT-10 : « {libelle} » ne peut pas être négatif "
+                f"(saisi : {doc.get(champ)})."
+            )
+
+
+def _verifier_date_planifiee(date_prevue, strict=True):
+    """A planned intervention lies in the future (ERR-MNT-11) — strictly
+    after today when `strict` (`planifier_intervention`), today accepted
+    otherwise (a sheet saved the day of the intervention)."""
+    aujourdhui = getdate(today())
+    depassee = (getdate(date_prevue) <= aujourdhui if strict
+                else getdate(date_prevue) < aujourdhui) if date_prevue else True
+    if depassee:
+        frappe.throw(
+            "ERR-MNT-11 : une intervention planifiée se situe dans le futur — "
+            f"date prévue {_jjmmaaaa(date_prevue)}, aujourd'hui "
+            f"{_jjmmaaaa(aujourdhui)}. Reporter la date, ou passer le statut à "
+            "En attente / Terminée si l'intervention a lieu."
+        )
+
+
+def _verifier_fiche_planifiee_vierge(doc):
+    """A planned sheet carries neither completion date nor any cost (ERR-MNT-12)."""
+    renseigne = doc.completion_date or doc.purchase_invoice or any(
+        flt(doc.get(champ)) for champ in CHAMPS_COUT_FICHE)
+    if renseigne:
+        frappe.throw(
+            "ERR-MNT-12 : une fiche « À venir » ne porte ni date de fin, ni coût, "
+            "ni facture — ils se saisissent une fois l'intervention faite "
+            "(statut En attente ou Terminée)."
+        )
+
+
+def etat_fiche(repair):
+    """Derived state of a sheet (doc or dict): A_VENIR / EN_ATTENTE / TERMINEE / ANNULEE.
+
+    A cancelled document (docstatus 2) is ANNULEE whatever its status; an
+    unknown status reads as EN_ATTENTE, ERPNext's own default (`Pending`).
+    """
+    if cint(repair.get("docstatus")) == 2:
+        return ETAT_ANNULEE
+    return ETATS_PAR_STATUT.get(repair.get("repair_status"), ETAT_EN_ATTENTE)
+
+
+@frappe.whitelist()
+def planifier_intervention(source, date_prevue, description=None):
+    """Create the next sheet — a draft `Planned` — from a completed one.
+
+    Copies equipment, type (PREVENTIVE if the source has none), cost center and
+    intervener; completion date and costs stay empty (ERR-MNT-12) until the
+    intervention is done. `date_prevue` must be after today (ERR-MNT-11).
+    Returns the new sheet's name. Duplicate / delete are native Frappe actions.
+    """
+    frappe.has_permission(FICHE_INTERVENTION, "create", throw=True)
+    origine = frappe.get_doc(FICHE_INTERVENTION, source)
+    _verifier_date_planifiee(date_prevue)
+
+    fiche = frappe.get_doc({
+        "doctype": FICHE_INTERVENTION,
+        "company": origine.company,
+        "asset": origine.asset,
+        "failure_date": _horodatage(date_prevue, HEURE_DEBUT_INTERVENTION),
+        "repair_status": STATUT_PLANIFIEE,
+        "type_intervention": origine.type_intervention or TYPE_PLANIFIEE_DEFAUT,
+        "cost_center": origine.cost_center,
+        "personnel": origine.personnel,
+        "prestataire": origine.prestataire,
+        "description": description
+        or f"Prochaine : {origine.description or origine.asset_name}",
+    })
+    fiche.insert()
+    return fiche.name
 
 
 # ─── Préventif : le plan de maintenance ──────────────────────────────────────
@@ -449,63 +666,214 @@ def interventions_realisees(date_debut, date_fin, equipement=None, atelier=None)
         equipement: restreint à un Asset (optionnel)
         atelier:    restreint à un Cost Center (optionnel)
 
+    Chaque ligne porte aussi le détail SCRUM-11 : `cout_pieces`,
+    `cout_main_oeuvre`, l'intervenant salarié (`personnel`, `personnel_nom`)
+    ou le prestataire (`prestataire`, `prestataire_nom` = raison sociale).
+
     Retourne une liste de dicts, les plus récentes d'abord, à coût décroissant
     à date égale. Une période sans intervention retourne [] — même posture
     honnête que `cout_maintenance` / `cout_utilisation`.
     """
-    conditions = ""
-    params = [COMPANY, getdate(date_debut), getdate(date_fin)]
-    if equipement:
-        conditions += " AND rep.asset = %s"
-        params.append(equipement)
-    if atelier:
-        conditions += " AND rep.cost_center = %s"
-        params.append(atelier)
-
+    conditions, filtres = _filtres_sql([
+        ("rep.asset =", equipement), ("rep.cost_center =", atelier),
+    ])
     return frappe.db.sql(f"""
         SELECT rep.name, rep.asset, ast.asset_name,
                DATE(COALESCE(rep.completion_date, rep.failure_date)) AS date,
                rep.description, rep.type_intervention, rep.cost_center AS atelier,
                COALESCE(rep.total_repair_cost, 0) AS cout,
-               rep.personnel, rep.downtime AS arret
+               COALESCE(rep.cout_pieces, 0) AS cout_pieces,
+               COALESCE(rep.cout_main_oeuvre, 0) AS cout_main_oeuvre,
+               rep.personnel, pers.nom_complet AS personnel_nom,
+               rep.prestataire, four.supplier_name AS prestataire_nom,
+               rep.downtime AS arret
         FROM `tabAsset Repair` rep
         LEFT JOIN `tabAsset` ast ON ast.name = rep.asset
+        LEFT JOIN `tabPersonnel` pers ON pers.name = rep.personnel
+        LEFT JOIN `tabSupplier` four ON four.name = rep.prestataire
         WHERE rep.docstatus = 1 AND rep.company = %s
           AND DATE(COALESCE(rep.completion_date, rep.failure_date))
               BETWEEN %s AND %s
           {conditions}
         ORDER BY date DESC, cout DESC
-    """, params, as_dict=True)
+    """, [COMPANY, getdate(date_debut), getdate(date_fin), *filtres], as_dict=True)
 
 
 def interventions_planifiees(jours=30, equipement=None, atelier=None):
-    """Tâches de maintenance préventive dues dans les `jours` à venir (ou déjà
-    en retard). Alimente le contrôle de cohérence et le pilotage.
+    """Échéances dues dans les `jours` à venir (ou déjà en retard) : les tâches
+    de maintenance préventive ERPNext ET, depuis SCRUM-11, les fiches
+    « À venir » (Asset Repair `Planned`). Alimente le contrôle de cohérence et
+    le pilotage — un retard sur une fiche planifiée est un retard.
 
     `equipement` / `atelier` restreignent le périmètre, pour qu'un rapport
     filtré ne puisse pas afficher un bloc préventif qui contredit son propre
-    filtre. Piège ERPNext : dans « Asset Maintenance Log », `asset_name` est un
-    Link vers Asset (pas un libellé) ; l'atelier, lui, n'existe que sur l'Asset,
-    d'où la jointure.
+    filtre. Les deux sources partagent une même forme de ligne, décrite dans
+    `_echeances_ouvertes`.
     """
-    from frappe.utils import add_days
+    return _echeances_ouvertes(equipement, atelier,
+                               limite=add_days(today(), cint(jours)))
 
-    conditions = ""
-    params = [add_days(today(), int(jours))]
-    if equipement:
-        conditions += " AND log.asset_name = %s"
-        params.append(equipement)
-    if atelier:
-        conditions += " AND ast.cost_center = %s"
-        params.append(atelier)
 
+def _echeances_ouvertes(equipement=None, atelier=None, limite=None):
+    """Every open deadline, soonest first; `limite` (date) caps `due_date`.
+
+    Uniform row shape whatever the source:
+        name, source (ECHEANCE_LOG | ECHEANCE_FICHE), asset_name (Link Asset —
+        ERPNext trap: in Asset Maintenance Log it is a Link, not a label),
+        designation, atelier (both read on the Asset), task_name, due_date,
+        maintenance_status, type_intervention (sheets only).
+    """
+    lignes = (_echeances_logs(equipement, atelier, limite)
+              + _echeances_fiches(equipement, atelier, limite))
+    return sorted(lignes, key=lambda ligne: getdate(ligne.due_date))
+
+
+def _echeances_logs(equipement, atelier, limite):
+    conditions, filtres = _filtres_sql([
+        ("log.due_date <=", limite), ("log.asset_name =", equipement),
+        ("ast.cost_center =", atelier),
+    ])
     return frappe.db.sql(f"""
-        SELECT log.name, log.asset_name, log.task_name, log.due_date,
-               log.maintenance_status
+        SELECT log.name, %s AS source, log.asset_name,
+               ast.asset_name AS designation, ast.cost_center AS atelier,
+               log.task_name, log.due_date, log.maintenance_status,
+               NULL AS type_intervention
         FROM `tabAsset Maintenance Log` log
         LEFT JOIN `tabAsset` ast ON ast.name = log.asset_name
         WHERE log.maintenance_status IN ('Planned', 'Overdue')
-          AND log.due_date <= %s
+          AND log.due_date IS NOT NULL
           {conditions}
         ORDER BY log.due_date ASC
-    """, params, as_dict=True)
+    """, [ECHEANCE_LOG, *filtres], as_dict=True)
+
+
+def _echeances_fiches(equipement, atelier, limite):
+    conditions, filtres = _filtres_sql([
+        ("DATE(rep.failure_date) <=", limite), ("rep.asset =", equipement),
+        ("ast.cost_center =", atelier),
+    ])
+    return frappe.db.sql(f"""
+        SELECT rep.name, %s AS source, rep.asset AS asset_name,
+               ast.asset_name AS designation, ast.cost_center AS atelier,
+               rep.description AS task_name, DATE(rep.failure_date) AS due_date,
+               rep.repair_status AS maintenance_status, rep.type_intervention
+        FROM `tabAsset Repair` rep
+        LEFT JOIN `tabAsset` ast ON ast.name = rep.asset
+        WHERE rep.docstatus = 0 AND rep.repair_status = %s AND rep.company = %s
+          {conditions}
+        ORDER BY rep.failure_date ASC
+    """, [ECHEANCE_FICHE, STATUT_PLANIFIEE, COMPANY, *filtres], as_dict=True)
+
+
+# ─── SCRUM-11 : état du parc ─────────────────────────────────────────────────
+
+def etat_parc(date_debut, date_fin, horizon_jours, equipement=None, atelier=None):
+    """Fleet status as of today, one entry per equipment (« Parc — état du matériel »).
+
+    Args:
+        date_debut, date_fin: period over which usage hours are summed
+                              (`cout_utilisation`) — the state itself is « today »
+        horizon_jours:        a deadline within this many days puts the equipment
+                              EN_ATTENTE_MAINTENANCE (same horizon as the
+                              preventive block of the report)
+        equipement / atelier: optional restriction (Asset / Cost Center)
+
+    Returns, sorted by designation:
+        [{"asset", "designation", "atelier", "etat", "derniere", "prochaine", "heures"}]
+        etat:      PARC_PRET | PARC_EN_ATTENTE | PARC_EN_PANNE
+        derniere:  {"date", "description"} — last completed, submitted sheet — or None
+        prochaine: {"date", "libelle", "source", "en_retard"} — nearest open
+                   deadline (planned sheet or preventive log) — or None
+    EN_PANNE is decided by an open `Pending` sheet: the sheet is the source of
+    truth, not a button. Animals immobilised as assets (`id_animal`) and
+    disposed assets (Sold / Scrapped) are not part of the fleet.
+    """
+    equipements = _equipements_parc(equipement, atelier)
+    if not equipements:
+        return []
+    en_panne = _equipements_en_panne()
+    dernieres = _dernieres_interventions()
+    prochaines = _prochaines_echeances(equipement, atelier)
+    heures = cout_utilisation(date_debut, date_fin)["par_equipement"]
+    limite = getdate(add_days(today(), cint(horizon_jours)))
+    return [
+        _entree_parc(eq, eq.name in en_panne, dernieres.get(eq.name),
+                     prochaines.get(eq.name),
+                     heures.get(eq.name, {}).get("heures", 0.0), limite)
+        for eq in equipements
+    ]
+
+
+def _equipements_parc(equipement, atelier):
+    """Submitted, non-animal, non-disposed assets — the machines of the fleet."""
+    conditions, filtres = _filtres_sql([
+        ("ast.name =", equipement), ("ast.cost_center =", atelier),
+    ])
+    return frappe.db.sql(f"""
+        SELECT ast.name, ast.asset_name AS designation, ast.cost_center AS atelier
+        FROM `tabAsset` ast
+        WHERE ast.docstatus = 1 AND ast.company = %s
+          AND COALESCE(ast.id_animal, '') = ''
+          AND ast.status NOT IN %s
+          {conditions}
+        ORDER BY ast.asset_name, ast.name
+    """, [COMPANY, STATUTS_ASSET_BLOQUANTS, *filtres], as_dict=True)
+
+
+def _equipements_en_panne():
+    """Assets carrying an open (draft) `Pending` sheet."""
+    return set(frappe.get_all(
+        FICHE_INTERVENTION,
+        filters={"docstatus": 0, "repair_status": STATUT_EN_ATTENTE, "company": COMPANY},
+        pluck="asset",
+    ))
+
+
+def _dernieres_interventions():
+    """{asset: {date, description}} of the most recent completed, submitted sheet."""
+    lignes = frappe.db.sql("""
+        SELECT rep.asset,
+               DATE(COALESCE(rep.completion_date, rep.failure_date)) AS date,
+               rep.description
+        FROM `tabAsset Repair` rep
+        WHERE rep.docstatus = 1 AND rep.repair_status = %s AND rep.company = %s
+        ORDER BY COALESCE(rep.completion_date, rep.failure_date) DESC
+    """, (STATUT_TERMINEE, COMPANY), as_dict=True)
+    dernieres = {}
+    for ligne in lignes:
+        dernieres.setdefault(ligne.asset, ligne)
+    return dernieres
+
+
+def _prochaines_echeances(equipement, atelier):
+    """{asset: échéance} — the soonest open deadline of each equipment."""
+    prochaines = {}
+    for echeance in _echeances_ouvertes(equipement, atelier):
+        prochaines.setdefault(echeance.asset_name, echeance)
+    return prochaines
+
+
+def _entree_parc(equipement, en_panne, derniere, prochaine, heures, limite):
+    aujourdhui = getdate(today())
+    return {
+        "asset": equipement.name,
+        "designation": equipement.designation,
+        "atelier": equipement.atelier,
+        "etat": _etat_equipement(en_panne, prochaine, limite),
+        "derniere": ({"date": derniere.date, "description": derniere.description}
+                     if derniere else None),
+        "prochaine": ({"date": getdate(prochaine.due_date),
+                       "libelle": prochaine.task_name,
+                       "source": prochaine.source,
+                       "en_retard": getdate(prochaine.due_date) < aujourdhui}
+                      if prochaine else None),
+        "heures": flt(heures),
+    }
+
+
+def _etat_equipement(en_panne, prochaine, limite):
+    if en_panne:
+        return PARC_EN_PANNE
+    if prochaine and getdate(prochaine.due_date) <= limite:
+        return PARC_EN_ATTENTE
+    return PARC_PRET

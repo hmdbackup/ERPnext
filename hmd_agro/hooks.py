@@ -41,11 +41,36 @@ CORE_CUSTOM_FIELDS = [
 	"Asset Repair-type_intervention",
 	"Asset Repair-personnel",
 	"Asset Repair-reference_hmd",
+	# SCRUM-10 — répartition analytique des frais généraux par ligne de charge
+	"Purchase Invoice-section_repartition_atelier",
+	"Purchase Invoice-repartition_atelier",
+	"Journal Entry-section_repartition_atelier",
+	"Journal Entry-repartition_atelier",
+	# SCRUM-11 — fiche d'intervention : pièces / main-d'œuvre / prestataire
+	"Asset Repair-cout_pieces",
+	"Asset Repair-cout_main_oeuvre",
+	"Asset Repair-prestataire",
+]
+
+# Property Setters posés sur des DocTypes ERPNext (même logique que
+# CORE_CUSTOM_FIELDS : nommés explicitement pour être exportés/importés).
+CORE_PROPERTY_SETTERS = [
+	# SCRUM-11 — statut « Planned » : intervention planifiée, à venir. ERPNext
+	# passe l'équipement « Out of Order » pour TOUTE fiche « Pending », d'où un
+	# statut distinct pour ce qui n'est pas une panne.
+	"Asset Repair-repair_status-options",
+	# Statut visible dès la création : une fiche dupliquée revient à « Pending »
+	# (no_copy) et, le champ masqué sur un document nouveau, l'équipement
+	# passait « Out of Order » au premier enregistrement.
+	"Asset Repair-repair_status-depends_on",
 ]
 
 fixtures = [
 	{"dt": "Workspace", "filters": [["module", "=", "HMD AGRO"]]},
-	{"dt": "Property Setter", "filters": [["doc_type", "in", HMD_DOCTYPES]]},
+	{"dt": "Property Setter", "or_filters": [
+		["doc_type", "in", HMD_DOCTYPES],
+		["name", "in", CORE_PROPERTY_SETTERS],
+	]},
 	# UNE seule entrée « Custom Field » : `export_fixtures` réécrit
 	# fixtures/custom_field.json à chaque entrée du hook portant ce DocType,
 	# donc plusieurs entrées s'écrasent les unes les autres et seule la
@@ -103,7 +128,14 @@ boot_session = "hmd_agro.boot.boot_session"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+	# SCRUM-10 — bloc « Répartition par atelier » visible dès qu'une ligne est
+	# imputée à Frais Généraux, total réparti affiché sous la table.
+	"Purchase Invoice": "public/js/purchase_invoice.js",
+	"Journal Entry": "public/js/journal_entry.js",
+	# SCRUM-11 — état de la fiche, bouton « Planifier la prochaine ».
+	"Asset Repair": "public/js/asset_repair.js",
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -197,6 +229,21 @@ boot_session = "hmd_agro.boot.boot_session"
 # ---------------
 # Hook on document methods and events
 
+doc_events = {
+	# SCRUM-10 — validation de la répartition des frais généraux (ERR-FIN-11..17)
+	"Purchase Invoice": {
+		"validate": "hmd_agro.hmd_agro.utils.repartition_charges.valider_repartition",
+	},
+	"Journal Entry": {
+		"validate": "hmd_agro.hmd_agro.utils.repartition_charges.valider_repartition",
+	},
+	# SCRUM-11 — fiche d'intervention (ERR-MNT-09..13)
+	"Asset Repair": {
+		"before_validate": "hmd_agro.hmd_agro.utils.maintenance_utils.completer_couts_fiche",
+		"validate": "hmd_agro.hmd_agro.utils.maintenance_utils.valider_fiche_intervention",
+		"before_submit": "hmd_agro.hmd_agro.utils.maintenance_utils.verifier_fiche_avant_validation",
+	},
+}
 # doc_events = {
 # 	"*": {
 # 		"on_update": "method",
