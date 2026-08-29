@@ -121,6 +121,12 @@ def _run_inner():
         f"Receipt SLE: svd={rcv_sle.stock_value_difference if rcv_sle else None} "
         f"(expected 1000.00)", results)
 
+    # Base de comparaison : sur un site vivant, la ration du jour est déjà
+    # distribuée quand ce test tourne. On mesure donc la CONTRIBUTION de notre
+    # sortie, pas l'agrégat global — même posture que test_finance_kpis, qui
+    # soustrait sa propre base à gl_sums.
+    base = _consumption_from_sle(today(), today())
+
     # ── Phase 2: Issue 30 kg via the production marker pattern
     # `_consumption_from_sle` filters on remarks LIKE 'RATION_DIST_%' AND a
     # non-null id_lot, so we mirror the SCRUM-123 generator's posting shape.
@@ -156,15 +162,18 @@ def _run_inner():
 
     # ── Phase 3: _consumption_from_sle aggregates the cost
     d = _consumption_from_sle(today(), today())
-    _check(abs(d["cumulative_aliment_cost"] - 300.0) < 0.01,
-        f"cumulative_aliment_cost = {d['cumulative_aliment_cost']:.2f} "
-        f"(expected 300.00 — our single test issue)", results)
-    _check(abs(d["cumulative_concentre_cost"] - 300.0) < 0.01,
-        f"cumulative_concentre_cost = {d['cumulative_concentre_cost']:.2f} "
-        f"(expected 300.00 — Aliment is CONCENTRE)", results)
-    _check(d["cumulative_fourrage_cost"] == 0,
-        f"cumulative_fourrage_cost = {d['cumulative_fourrage_cost']:.2f} "
-        f"(expected 0 — Aliment is not FOURRAGE)", results)
+    delta_aliment = d["cumulative_aliment_cost"] - base["cumulative_aliment_cost"]
+    delta_concentre = d["cumulative_concentre_cost"] - base["cumulative_concentre_cost"]
+    delta_fourrage = d["cumulative_fourrage_cost"] - base["cumulative_fourrage_cost"]
+    _check(abs(delta_aliment - 300.0) < 0.01,
+        f"cumulative_aliment_cost +{delta_aliment:.2f} "
+        f"(expected +300.00 — our single test issue)", results)
+    _check(abs(delta_concentre - 300.0) < 0.01,
+        f"cumulative_concentre_cost +{delta_concentre:.2f} "
+        f"(expected +300.00 — Aliment is CONCENTRE)", results)
+    _check(abs(delta_fourrage) < 0.01,
+        f"cumulative_fourrage_cost +{delta_fourrage:.2f} "
+        f"(expected +0 — Aliment is not FOURRAGE)", results)
 
     # ── Phase 4: cumulative_cost_per_aliment maps Aliment master → cost
     _check(abs(d["cumulative_cost_per_aliment"].get(ali_name, 0) - 300.0) < 0.01,

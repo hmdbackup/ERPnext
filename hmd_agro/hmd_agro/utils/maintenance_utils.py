@@ -65,6 +65,7 @@ import frappe
 from frappe.utils import add_days, cint, flt, get_datetime, getdate, today
 
 from hmd_agro.hmd_agro.utils.config import get_config
+from hmd_agro.hmd_agro.utils.format_fr import fr_date
 from hmd_agro.hmd_agro.utils.stock_utils import DEFAULT_COMPANY as COMPANY
 
 COMPTE_ENTRETIEN = "615"
@@ -124,10 +125,6 @@ def _marker(repair):
 def _horodatage(date, heure):
     """Datetime of `date` at the conventional hour `heure` (HH:MM:SS)."""
     return get_datetime(f"{getdate(date)} {heure}")
-
-
-def _jjmmaaaa(date):
-    return getdate(date).strftime("%d/%m/%Y") if date else "—"
 
 
 def _filtres_sql(filtres):
@@ -315,10 +312,10 @@ def annuler_intervention(repair):
     return je
 
 
-# ─── SCRUM-11 : la fiche d'intervention saisie à l'écran ─────────────────────
-# Hooks déclarés dans hooks.py (`doc_events["Asset Repair"]`). Ordre Frappe :
-# before_validate (ici) → validate ERPNext (update_status, total_repair_cost)
-# → validate (ici) → before_submit ERPNext (refuse Pending) → before_submit (ici).
+# ─── SCRUM-11 : the intervention sheet typed on screen ───────────────────────
+# Hooks declared in hooks.py (`doc_events["Asset Repair"]`). Frappe order:
+# before_validate (here) → ERPNext validate (update_status, total_repair_cost)
+# → validate (here) → ERPNext before_submit (refuses Pending) → before_submit (here).
 
 def completer_couts_fiche(doc, method=None):
     """before_validate — `repair_cost` = pièces + main-d'œuvre when no invoice drives it.
@@ -401,8 +398,8 @@ def _verifier_date_planifiee(date_prevue, strict=True):
     if depassee:
         frappe.throw(
             "ERR-MNT-11 : une intervention planifiée se situe dans le futur — "
-            f"date prévue {_jjmmaaaa(date_prevue)}, aujourd'hui "
-            f"{_jjmmaaaa(aujourdhui)}. Reporter la date, ou passer le statut à "
+            f"date prévue {fr_date(date_prevue)}, aujourd'hui "
+            f"{fr_date(aujourdhui)}. Reporter la date, ou passer le statut à "
             "En attente / Terminée si l'intervention a lieu."
         )
 
@@ -651,28 +648,27 @@ def cout_maintenance(date_debut, date_fin):
 
 
 def interventions_realisees(date_debut, date_fin, equipement=None, atelier=None):
-    """Détail ligne à ligne des interventions de la période.
+    """Line-by-line detail of the interventions of the period.
 
-    `cout_maintenance` ci-dessus AGRÈGE (un montant, des compteurs) ; celle-ci
-    DÉTAILLE. Les deux vivent ici pour la même raison : les rapports consomment
-    ce module et n'ont pas à connaître `Asset Repair` — même posture que
-    `cout_utilisation` vis-à-vis de « Utilisation Equipement ».
+    `cout_maintenance` above AGGREGATES (one amount, counters); this one
+    DETAILS. Both live here for the same reason: the reports consume this
+    module and do not need to know `Asset Repair` — same stance as
+    `cout_utilisation` towards « Utilisation Equipement ».
 
-    Le montant lu est `total_repair_cost` (coût de réparation + pièces
-    consommées), celui-là même que `cout_maintenance` totalise : les deux
-    lectures ne peuvent donc pas diverger l'une de l'autre.
+    The amount read is `total_repair_cost` (repair cost + consumed parts), the
+    very one `cout_maintenance` totals: the two readings cannot diverge.
 
     Args:
-        equipement: restreint à un Asset (optionnel)
-        atelier:    restreint à un Cost Center (optionnel)
+        equipement: restricts to one Asset (optional)
+        atelier:    restricts to one Cost Center (optional)
 
-    Chaque ligne porte aussi le détail SCRUM-11 : `cout_pieces`,
-    `cout_main_oeuvre`, l'intervenant salarié (`personnel`, `personnel_nom`)
-    ou le prestataire (`prestataire`, `prestataire_nom` = raison sociale).
+    Each row also carries the SCRUM-11 detail: `cout_pieces`,
+    `cout_main_oeuvre`, the employee (`personnel`, `personnel_nom`) or the
+    contractor (`prestataire`, `prestataire_nom` = company name).
 
-    Retourne une liste de dicts, les plus récentes d'abord, à coût décroissant
-    à date égale. Une période sans intervention retourne [] — même posture
-    honnête que `cout_maintenance` / `cout_utilisation`.
+    Returns a list of dicts, most recent first, decreasing cost on the same
+    date. A period without intervention returns [] — same honest stance as
+    `cout_maintenance` / `cout_utilisation`.
     """
     conditions, filtres = _filtres_sql([
         ("rep.asset =", equipement), ("rep.cost_center =", atelier),
@@ -700,15 +696,14 @@ def interventions_realisees(date_debut, date_fin, equipement=None, atelier=None)
 
 
 def interventions_planifiees(jours=30, equipement=None, atelier=None):
-    """Échéances dues dans les `jours` à venir (ou déjà en retard) : les tâches
-    de maintenance préventive ERPNext ET, depuis SCRUM-11, les fiches
-    « À venir » (Asset Repair `Planned`). Alimente le contrôle de cohérence et
-    le pilotage — un retard sur une fiche planifiée est un retard.
+    """Deadlines due within the next `jours` days (or already overdue): the
+    ERPNext preventive maintenance tasks AND, since SCRUM-11, the « À venir »
+    sheets (Asset Repair `Planned`). Feeds the consistency check and the
+    steering — an overdue planned sheet is an overdue deadline.
 
-    `equipement` / `atelier` restreignent le périmètre, pour qu'un rapport
-    filtré ne puisse pas afficher un bloc préventif qui contredit son propre
-    filtre. Les deux sources partagent une même forme de ligne, décrite dans
-    `_echeances_ouvertes`.
+    `equipement` / `atelier` narrow the scope, so that a filtered report can
+    never show a preventive block contradicting its own filter. Both sources
+    share one row shape, described in `_echeances_ouvertes`.
     """
     return _echeances_ouvertes(equipement, atelier,
                                limite=add_days(today(), cint(jours)))

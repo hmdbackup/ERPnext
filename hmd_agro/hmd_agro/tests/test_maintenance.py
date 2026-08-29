@@ -87,6 +87,9 @@ def _cleanup():
         frappe.db.sql("DELETE FROM `tabAsset Maintenance` WHERE name=%s", asset)
         frappe.db.sql("DELETE FROM `tabAsset Activity` WHERE asset=%s", asset)
         frappe.db.sql("DELETE FROM `tabAsset` WHERE name=%s", asset)
+    # The test Item, once no Asset references it any more.
+    if frappe.db.exists("Item", ITEM_TEST):
+        frappe.delete_doc("Item", ITEM_TEST, force=1, ignore_permissions=True)
     for pers in frappe.get_all(
             "Personnel", filters={"nom_complet": ["like", f"{PREFIXE_PERSONNEL}%"]},
             pluck="name"):
@@ -407,6 +410,7 @@ def _test_fiche_intervention(asset, source, results):
     origine = frappe.get_doc("Asset Repair", source)
 
     # ── Planifier la prochaine : un brouillon « À venir » qui copie la fiche
+    statut_avant = frappe.db.get_value("Asset", asset, "status")
     date_prevue = add_days(today(), 15)
     nom = maintenance_utils.planifier_intervention(source, date_prevue)
     fiche = frappe.get_doc("Asset Repair", nom)
@@ -423,8 +427,10 @@ def _test_fiche_intervention(asset, source, results):
     _check(maintenance_utils.etat_fiche(fiche) == ETAT_A_VENIR
            and maintenance_utils.etat_fiche(origine) == ETAT_TERMINEE,
            "etat_fiche : Planned → A_VENIR, Completed → TERMINEE", results)
-    _check(frappe.db.get_value("Asset", asset, "status") != "Out of Order",
-           "Une fiche Planned ne passe PAS l'équipement « Out of Order »", results)
+    statut_apres = frappe.db.get_value("Asset", asset, "status")
+    _check(statut_avant != "Out of Order" and statut_apres == statut_avant,
+           f"Une fiche Planned ne passe PAS l'équipement « Out of Order » "
+           f"(statut {statut_avant} → {statut_apres})", results)
     _throws(lambda: fiche.submit(),
             "ERR-MNT-13", "Valider une fiche Planned refusé", results)
     _throws(lambda: maintenance_utils.planifier_intervention(source, today()),
@@ -469,3 +475,11 @@ def _test_fiche_intervention(asset, source, results):
            "Pièces seules → repair_cost = 120", results)
     _check(abs(frappe.get_doc("Asset Repair", source).repair_cost - 450) < 0.001,
            "Sans ventilation, le coût saisi en bloc (450) reste tel quel", results)
+
+    # ── Miroir : une fiche Pending (panne déclarée), elle, met l'équipement
+    # « Out of Order » — c'est ce qui rend le contrôle Planned discriminant.
+    panne = _fiche(asset, "ZZTEST panne déclarée", statut="Pending")
+    _check(frappe.db.get_value("Asset", asset, "status") == "Out of Order",
+           "Une fiche Pending ouverte passe l'équipement « Out of Order »", results)
+    frappe.delete_doc("Asset Repair", panne.name, force=1, ignore_permissions=True)
+    frappe.db.set_value("Asset", asset, "status", statut_avant, update_modified=False)

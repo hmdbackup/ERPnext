@@ -34,6 +34,7 @@ from frappe.utils import add_days, add_years, getdate, today
 from calendar import monthrange
 
 from hmd_agro.hmd_agro.utils.config import get_config
+from hmd_agro.hmd_agro.utils.format_fr import fr_nombre
 from hmd_agro.hmd_agro.utils.finance_kpis import (
     ATELIER_FRAIS_GENERAUX, ATELIER_LAIT, charges_lait, gl_sums,
     gl_sums_par_atelier, repartitions_frais_generaux,
@@ -50,7 +51,7 @@ from hmd_agro.hmd_agro.utils.repartition_charges import est_mode_strict
 
 PERIODE_ANNEE = "Année"
 
-# Libellé de la colonne « précédent » selon la granularité (maquette 24/08).
+# Label of the « previous » column by granularity (mock-up 24/08).
 LABELS_PRECEDENT = {
     "Jour": "Veille",
     "Semaine": "S-1",
@@ -58,20 +59,27 @@ LABELS_PRECEDENT = {
     "Mois": "M-1",
     PERIODE_ANNEE: "A-1 (même période)",
 }
+# Suffix of that label when the current period is still running: the
+# comparison then covers the same number of elapsed days, not the whole
+# previous period (see `previous_period_bounds`).
+SUFFIXE_JOURS_EGAUX = " (même nombre de jours)"
 
-# Écart de rapprochement toléré entre le total FG du Grand Livre et la somme
-# des répartitions : un arrondi au centime, pas un seuil métier.
+# Tolerated gap between the GL total of Frais Généraux and the sum of the
+# splits: a rounding to the cent, not a business threshold.
 ECART_ARRONDI_DT = 0.01
 
 SECTION_FRAIS_GENERAUX = "Frais Généraux — répartition par atelier"
 
 
-def _colonnes(periode):
+def _colonnes(periode, tronquee=False):
+    label_precedent = LABELS_PRECEDENT.get(periode, "Précédent")
+    if tronquee and periode != PERIODE_ANNEE:
+        label_precedent += SUFFIXE_JOURS_EGAUX
     return [
         {"fieldname": "section", "label": "Section", "fieldtype": "Data", "width": 160},
         {"fieldname": "indicateur", "label": "Indicateur", "fieldtype": "Data", "width": 340},
         {"fieldname": "valeur", "label": "Valeur", "fieldtype": "Float", "precision": 2, "width": 130},
-        {"fieldname": "precedent", "label": LABELS_PRECEDENT.get(periode, "Précédent"),
+        {"fieldname": "precedent", "label": label_precedent,
          "fieldtype": "Float", "precision": 2, "width": 130},
         {"fieldname": "ecart_pct", "label": "Écart %", "fieldtype": "Percent", "precision": 1,
          "width": 100},
@@ -84,27 +92,27 @@ def execute(filters=None):
     periode = filters.get("periode") or "Mois"
     date = getdate(filters.get("date") or today())
     debut, fin = period_bounds(periode, date)
-    colonnes = _colonnes(periode)
 
     today_dt = getdate(today())
     if debut > today_dt:
-        return colonnes, [_row("INFO", "Pas encore de données pour cette période.",
-                               None, "")]
+        return _colonnes(periode), [
+            _row("INFO", "Pas encore de données pour cette période.", None, "")]
     # Only count days that actually happened (open week/month/year in progress).
     fin = min(fin, today_dt)
+    colonnes = _colonnes(periode, tronquee=est_periode_tronquee(periode, debut, fin))
 
     lignes, couverture = _construire_lignes(debut, fin)
     debut_prec, fin_prec = previous_period_bounds(periode, debut, fin)
     lignes_prec, couverture_prec = _construire_lignes(debut_prec, fin_prec)
     data = _fusionner_comparatif(lignes, lignes_prec)
 
-    # Trou de saisie avéré sur l'une ou l'autre période : un Δ % calculé sur un
-    # chiffre tronqué ne compare rien — on l'éteint pour les ratios lait.
+    # A proven gap in milk entries on either period: a Δ % computed on a
+    # truncated figure compares nothing — switched off for the milk ratios.
     if not couverture_prec["complete"]:
         _neutraliser_comparatif_lait(data)
     if not couverture["complete"]:
-        # On annonce la couleur en tête de tableau et on éteint la coloration
-        # des ratios faussés — sans masquer une seule valeur.
+        # Say so at the top of the table and switch off the colouring of the
+        # distorted ratios — without hiding a single value.
         from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
             neutraliser_indicateurs_lait,
         )
@@ -117,14 +125,14 @@ def execute(filters=None):
 def _construire_lignes(debut, fin):
     """All the report rows for one period, plus the milk coverage of that
     period. Called once for the current period and once for the previous."""
-    # Garde-fou « période incomplète » (FIN-S95) — le rapport périodique possède
-    # la lecture canonique de la couverture de saisie du lait (lazy import,
-    # précédent dashboard_kpis).
+    # « Incomplete period » guard (FIN-S95) — the periodic report owns the
+    # canonical reading of milk entry coverage (lazy import, dashboard_kpis
+    # precedent).
     from hmd_agro.hmd_agro.report.rapport_periodique.rapport_periodique import (
         couverture_lait,
     )
     couverture = couverture_lait(debut, fin)
-    # Coût mécanique de la période — vue ANALYTIQUE, cf. _charges / maintenance_utils.
+    # Machine cost of the period — ANALYTICAL view, see _charges / maintenance_utils.
     meca = cout_utilisation(debut, fin)
 
     data = []
@@ -135,7 +143,7 @@ def _construire_lignes(debut, fin):
     data.extend(alim_rows)
     gl = gl_sums(debut, fin)
     data.extend(_charges(debut, fin, gl, meca))
-    # SCRUM-10 — l'axe atelier, jusqu'ici absent de toute lecture du Grand Livre.
+    # SCRUM-10 — the atelier axis, so far absent from every GL reading.
     ventilation = gl_sums_par_atelier(debut, fin)
     data.extend(_charges_par_atelier(ventilation, gl))
     repartitions = repartitions_frais_generaux(debut, fin, ventilation=ventilation)
@@ -193,16 +201,11 @@ def _neutraliser_comparatif_lait(lignes):
 
 # ─── Périodes ────────────────────────────────────────────────────────────────
 
-def _fr(valeur):
-    """Nombre en écriture française (virgule décimale) pour les libellés."""
-    return f"{valeur:g}".replace(".", ",")
-
-
 def period_bounds(periode, date):
     """(debut, fin) of the period containing `date` — a single day, a full ISO
     week (Mon-Sun), a calendar fortnight (1-15 / 16-fin), a full month, or the
-    year to date (1er janvier → `date`, réunion 26/08/2026 : « l'année 2026,
-    Year to Date »). Les granularités demandées en réunion (« journalier,
+    year to date (1 January → `date`, meeting 26/08/2026: « l'année 2026,
+    Year to Date »). The granularities asked for in the meeting (« journalier,
     hebdomadaire, par quinzaine… il faut que ce soit flexible »)."""
     if periode == "Jour":
         return date, date
@@ -227,14 +230,31 @@ def period_bounds(periode, date):
     return debut, fin
 
 
+def est_periode_tronquee(periode, debut, fin):
+    """True when [debut, fin] stops before the natural end of its period — the
+    week / fortnight / month in progress, cut at today by `execute`. Année is
+    year-to-date by construction and never counts as truncated here."""
+    if periode == PERIODE_ANNEE:
+        return False
+    return fin < period_bounds(periode, debut)[1]
+
+
 def previous_period_bounds(periode, debut, fin):
     """(debut, fin) of the comparison period for [debut, fin] : the previous
-    period of the same granularity (Jour → veille, Semaine / Quinzaine / Mois
-    → la précédente, entière), and for Année the same interval one year
-    earlier — a year-to-date only compares with the same year-to-date."""
+    period of the same granularity (Jour → the day before, Semaine /
+    Quinzaine / Mois → the previous one, whole), and for Année the same
+    interval one year earlier — a year-to-date only compares with the same
+    year-to-date.
+
+    When [debut, fin] is a period in progress (cut at today), the previous
+    period is cut too, to the same number of elapsed days: 10 days of March
+    against 10 days of February, not against the whole of February."""
     if periode == PERIODE_ANNEE:
         return add_years(debut, -1), add_years(fin, -1)
-    return period_bounds(periode, add_days(debut, -1))
+    debut_prec, fin_prec = period_bounds(periode, add_days(debut, -1))
+    if est_periode_tronquee(periode, debut, fin):
+        fin_prec = min(fin_prec, add_days(debut_prec, (fin - debut).days))
+    return debut_prec, fin_prec
 
 
 def _row(section, indicateur, valeur, unite, indicator="", sans_comparatif=False):
@@ -351,7 +371,7 @@ def _alimentation(debut, fin, prod):
         _row(s, "Coût Concentré", round(frais_conc, 2), "DT"),
         _row(s, "Coût Fourrage", round(frais_four, 2), "DT"),
         _row(s, "Coût Alimentaire Total", round(frais_total, 2), "DT"),
-        _row(s, f"L/C — Lait / Concentré (cible {_fr(cfg_lc_cible)})", lc, "L/kg",
+        _row(s, f"L/C — Lait / Concentré (cible {fr_nombre(cfg_lc_cible)})", lc, "L/kg",
              indicator=lc_ind),
     ]
     return rows, {"frais_alim_total": frais_total}
@@ -392,18 +412,18 @@ def _charges(debut, fin, gl, meca):
 # ─── (iv bis) Charges par atelier — SCRUM-10 ─────────────────────────────────
 
 def _charges_par_atelier(ventilation, gl):
-    """Critères 1 et 5 — les charges ventilées par atelier, « non imputé » visible.
+    """Criteria 1 and 5 — charges broken down by atelier, « non imputé » visible.
 
-    Jusqu'ici la lecture du Grand Livre ignorait le centre de coût : les cinq
-    ateliers existaient, les écritures les portaient, et personne ne s'en
-    servait. Le coût complet au litre en payait le prix (cf. `_couts_unitaires`).
+    Until now the GL reading ignored the cost center: the five ateliers
+    existed, the entries carried them, and nobody used them. The full cost
+    per litre paid the price (see `_couts_unitaires`).
 
-    Le poste « Non imputé » est affiché MÊME À ZÉRO. Une ligne absente se lit
-    « rien à signaler » ; une ligne à 0 se lit « vérifié, il n'y en a pas ».
-    Sur un rapport qui sert au rapprochement comptable, la nuance compte.
+    The « Non imputé » line is shown EVEN AT ZERO. A missing line reads
+    « nothing to report »; a line at 0 reads « checked, there is none ». On a
+    report used for accounting reconciliation the nuance matters.
 
-    La ligne de contrôle finale rejoue la somme : si la ventilation et le total
-    du Grand Livre divergent, c'est visible à l'écran, pas seulement en test.
+    The final control line replays the sum: if the breakdown and the GL total
+    diverge, it shows on screen, not only in a test.
     """
     s = "Charges par Atelier"
     rows = []
@@ -429,16 +449,16 @@ def _charges_par_atelier(ventilation, gl):
 # ─── (iv ter) Frais généraux — répartition par atelier — SCRUM-10 ────────────
 
 def _frais_generaux_repartition(repartitions):
-    """Les charges Frais Généraux une par une, avec la répartition que le
-    comptable a saisie dessus (décision 26/08/2026 : plus de clé calculée).
+    """The Frais Généraux charges one by one, with the split the accountant
+    typed on each (decision 26/08/2026: no more computed key).
 
-    Une charge par ligne (libellé — compte, montant) suivie de sa ventilation
-    « └ Lait 45 % · Cultures 35 % … » — valeur vide, donc tiret : une part n'est
-    pas un montant de plus. Une charge sans répartition est nommée, en orange :
-    elle reste à Frais Généraux et sort du coût du litre.
+    One charge per row (label — account, amount) followed by its split
+    « └ Lait 45 % · Cultures 35 % … » — empty value, hence a dash: a part is
+    not one more amount. A charge without a split is named, in orange: it
+    stays on Frais Généraux and leaves the cost per litre.
 
-    Le contrôle final rejoue la somme contre le Grand Livre : rouge si le mode
-    strict est activé (une charge nue est alors une anomalie), orange sinon.
+    The final control replays the sum against the GL: red when strict mode is
+    on (a bare charge is then an anomaly), orange otherwise.
     """
     s = SECTION_FRAIS_GENERAUX
     rows = []
@@ -472,7 +492,7 @@ def _frais_generaux_repartition(repartitions):
 def _libelle_parts(parts):
     if not parts:
         return f"└ non répartie — reste à {ATELIER_FRAIS_GENERAUX}, hors coût du litre"
-    return "└ " + " · ".join(f"{p['atelier']} {_fr(round(p['pct'], 2))} %"
+    return "└ " + " · ".join(f"{p['atelier']} {fr_nombre(round(p['pct'], 2))} %"
                              for p in parts)
 
 
@@ -485,15 +505,15 @@ def _indicateur_controle_fg(ecart):
 # ─── (iv quater) Coût du lait, ligne par ligne — SCRUM-10 ────────────────────
 
 def _cout_lait_detail(ventilation, lait):
-    """Le coût du lait poste par poste, pour rapprochement comptable.
+    """The milk cost item by item, for accounting reconciliation.
 
-    Demande explicite de la revue reporting : « le rapport doit détailler le
-    coût du lait ligne par ligne pour rapprochement comptable ». Un total seul
-    ne se rapproche de rien — le comptable a besoin de retrouver ses comptes.
+    Explicit request of the reporting review: « le rapport doit détailler le
+    coût du lait ligne par ligne pour rapprochement comptable ». A lone total
+    reconciles with nothing — the accountant needs to find their accounts.
 
-    Tous les postes sont affichés, y compris à zéro : la forme du tableau
-    reste stable d'un mois à l'autre, sans quoi comparer deux mois oblige à
-    réaligner les lignes à la main.
+    Every item is shown, including at zero: the table keeps the same shape
+    from one month to the next, otherwise comparing two months means
+    realigning the rows by hand.
     """
     s = "Coût du Lait (détail)"
     rows = []
@@ -509,8 +529,8 @@ def _cout_lait_detail(ventilation, lait):
     rows.append(_row(s, "TOTAL — charges retenues pour le coût du litre",
                      lait["total"], "DT"))
     if lait["non_impute"]:
-        # Jamais réparti : imputer au lait une charge dont on ignore la
-        # destination fabriquerait un coût de revient faux et invérifiable.
+        # Never split: charging the milk with a cost of unknown destination
+        # would manufacture a false, unverifiable cost price.
         rows.append(_row(
             s, "Rappel — charges non imputées, exclues du coût du litre",
             lait["non_impute"], "DT", indicator="Orange"))
@@ -542,10 +562,10 @@ def _couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx, meca, lait):
     # n'entre PAS dans `cout_complet_l` (amortissement et entretien y sont déjà
     # via les charges du Grand Livre). Cf. `_charges` et maintenance_utils.
     cout_meca_l = round(meca["total"] / prod, 3) if prod else 0
-    # SCRUM-10 — le coût complet ne divise plus TOUTES les charges de la ferme
-    # (génisses, cultures, traction, frais généraux compris) par les seuls
-    # litres de lait : il retient le périmètre décidé en revue reporting.
-    # L'ancien calcul restait consultable via le périmètre TOUTES_CHARGES.
+    # SCRUM-10 — the full cost no longer divides ALL the farm's charges
+    # (heifers, crops, traction, overheads included) by the milk litres alone:
+    # it keeps the scope decided in the reporting review. The former figure
+    # stays available through the TOUTES_CHARGES scope.
     charges_retenues = lait["total"]
     amort_lait = lait["postes"].get("amortissements", 0.0)
     cout_complet_l = round(charges_retenues / prod, 3) if prod else 0

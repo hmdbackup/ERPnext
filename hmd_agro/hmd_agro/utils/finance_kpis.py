@@ -178,28 +178,29 @@ def gl_sums_par_atelier(date_debut, date_fin):
 
 
 def repartitions_frais_generaux(date_debut, date_fin, ventilation=None):
-    """SCRUM-10 — les charges Frais Généraux de la période et leur répartition
-    analytique par atelier, telle que saisie sur chaque charge.
+    """SCRUM-10 — the Frais Généraux charges of the period and their
+    analytical split by atelier, as typed on each charge.
 
-    Lit les lignes de Purchase Invoice (soumises, hors avoirs) et de Journal
-    Entry (soumises, lignes de charge au débit) imputées à Frais Généraux,
-    jointes à leurs parts `Repartition Atelier Charge` (`parent`, `ligne` =
-    idx). Une charge sans part est listée avec une répartition vide : c'est
-    elle qui fait la différence entre le total FG du Grand Livre et le total
-    réparti, et le rapport doit pouvoir la nommer.
+    Reads the Purchase Invoice lines (submitted, credit notes excluded) and
+    the Journal Entry lines (submitted, debit charge lines) booked on Frais
+    Généraux, joined to their `Repartition Atelier Charge` parts (`parent`,
+    `ligne` = idx). A charge without any part is listed with an empty split:
+    it is what separates the GL total of Frais Généraux from the split total,
+    and the report must be able to name it.
 
-    `ventilation` : résultat de `gl_sums_par_atelier` déjà en main chez
-    l'appelant (évite de relire le Grand Livre) ; lu sinon.
+    `ventilation`: the `gl_sums_par_atelier` result the caller already holds
+    (saves a second GL reading); read otherwise.
 
-    Retourne {
+    Returns {
         "charges": [{voucher_type, voucher, ligne, libelle, compte, poste,
                      montant, repartition: [{atelier, pct, montant}]}],
         "par_atelier": {atelier: montant},
         "par_atelier_postes": {atelier: {poste: montant}},
-        "total_reparti": x, "total_fg": y (Grand Livre),
-        "total_liste": l (Σ des charges PI/JE listées),
-        "autres": y − l (pièces imputées à FG non listables : stock, avoirs…),
-        "non_reparti": l − x (signé, jamais masqué)
+        "total_reparti": x, "total_fg": y (GL),
+        "total_liste": l (Σ of the PI/JE charges listed),
+        "autres": y − l (vouchers booked on FG that cannot be listed: stock,
+                         credit notes…),
+        "non_reparti": l − x (signed, never hidden)
     }
     """
     charges = _charges_frais_generaux(date_debut, date_fin)
@@ -234,7 +235,7 @@ def repartitions_frais_generaux(date_debut, date_fin, ventilation=None):
 
 
 def _centres_frais_generaux():
-    """Noms complets (avec suffixe société) des centres de coût Frais Généraux."""
+    """Full names (company suffix included) of the Frais Généraux cost centers."""
     centres = frappe.get_all("Cost Center",
                              filters={"company": COMPANY, "is_group": 0},
                              pluck="name")
@@ -242,10 +243,11 @@ def _centres_frais_generaux():
 
 
 def _charges_frais_generaux(date_debut, date_fin):
-    """Lignes de charge imputées à Frais Généraux sur la période, factures
-    d'achat puis écritures, dans l'ordre chronologique. Le libellé suit la
-    même règle que `repartition_charges.lignes_charges` : nom de l'article
-    (facture) ou du compte (écriture)."""
+    """Charge lines booked on Frais Généraux over the period — purchase
+    invoices and journal entries merged, sorted by posting date, then voucher,
+    then line number. The label follows the same rule as
+    `repartition_charges.lignes_charges`: item name (invoice) or account name
+    (entry)."""
     centres = _centres_frais_generaux()
     if not centres:
         return []
@@ -295,9 +297,9 @@ def _charges_frais_generaux(date_debut, date_fin):
 
 
 def _joindre_repartitions(charges):
-    """Attache à chaque charge ses parts saisies (nom court d'atelier, pct,
-    montant recalculé depuis la ligne — la ligne de charge est la seule
-    source du montant)."""
+    """Attaches to each charge the parts typed on it (atelier short name, pct,
+    amount recomputed from the line — the charge line is the only source of
+    the amount)."""
     if not charges or not frappe.db.table_exists("Repartition Atelier Charge"):
         return
     parts = frappe.get_all(
@@ -339,7 +341,8 @@ def charges_lait(date_debut, date_fin, perimetre=None, repartitions=None):
               non_impute, fg_total, fg_reparti, fg_non_reparti}
     """
     if perimetre is None:
-        perimetre = get_config("cout_litre_perimetre", default="LAIT_QUOTE_PART")
+        # An empty Select in the Single reads as "" — treat it as "not set".
+        perimetre = get_config("cout_litre_perimetre") or "LAIT_QUOTE_PART"
     if perimetre not in PERIMETRES_COUT_LITRE:
         frappe.throw(f"ERR-FIN-10 : périmètre de coût du litre inconnu "
                      f"« {perimetre} ». Attendu : "

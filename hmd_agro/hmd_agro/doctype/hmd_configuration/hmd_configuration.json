@@ -80,6 +80,9 @@
   "taux_charges_patronales_pct",
   "section_frais_generaux",
   "repartition_fg_obligatoire",
+  "cout_litre_perimetre",
+  "section_maintenance",
+  "maintenance_horizon_jours",
   "section_cheptel",
   "cheptel_intro",
   "cheptel_mode",
@@ -638,7 +641,7 @@
   {
    "fieldname": "section_frais_generaux",
    "fieldtype": "Section Break",
-   "label": "Frais généraux — répartition par charge (SCRUM-10)"
+   "label": "Frais généraux — répartition par charge"
   },
   {
    "fieldname": "repartition_fg_obligatoire",
@@ -646,6 +649,27 @@
    "label": "Répartition obligatoire des charges Frais Généraux",
    "default": "0",
    "description": "Activé : une ligne de facture d'achat ou d'écriture imputée à Frais Généraux ne peut pas être enregistrée sans répartition à 100 % par atelier. Désactivé (défaut) : la répartition est facultative ; une charge non répartie reste à Frais Généraux et sort du coût du litre (réunion 26/08/2026)."
+  },
+  {
+   "fieldname": "cout_litre_perimetre",
+   "fieldtype": "Select",
+   "label": "Périmètre du coût du litre",
+   "options": "LAIT_QUOTE_PART\nLAIT_SEUL\nTOUTES_CHARGES",
+   "default": "LAIT_QUOTE_PART",
+   "description": "LAIT_QUOTE_PART (défaut) = charges directes de l'atelier Lait + somme des répartitions de frais généraux vers Lait. LAIT_SEUL = charges directes seules. TOUTES_CHARGES = toutes les charges de la ferme."
+  },
+  {
+   "fieldname": "section_maintenance",
+   "fieldtype": "Section Break",
+   "label": "Parc et interventions"
+  },
+  {
+   "fieldname": "maintenance_horizon_jours",
+   "fieldtype": "Int",
+   "label": "Horizon du préventif (jours)",
+   "default": "30",
+   "non_negative": 1,
+   "description": "Fenêtre du bloc « Préventif » du Rapport Interventions et de l'état « En attente de maintenance » du parc : échéances (tâches de maintenance et fiches planifiées) à moins de N jours."
   },
   {
    "fieldname": "section_cheptel",

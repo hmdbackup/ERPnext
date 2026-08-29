@@ -12,11 +12,7 @@ from hmd_agro.hmd_agro.utils.import_rapport import read_imported
 from hmd_agro.hmd_agro.utils.lot_utils import lot_sort_key
 from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.utils.report_format import normalize_precision
-
-
-def _fr(valeur):
-    """Nombre en écriture française (virgule décimale) pour les libellés."""
-    return f"{valeur:g}".replace(".", ",")
+from hmd_agro.hmd_agro.utils.format_fr import fr_nombre
 
 
 
@@ -1637,7 +1633,7 @@ def _indicateurs(ctx):
             valeur_m1=m1["conc_per_vp"], direction="down"),
         row("Concentré / Vache Lactante", cur["conc_per_vl"], "kg/tête",
             valeur_m1=m1["conc_per_vl"], direction="down"),
-        row(f"L/C — Lait / Concentré (cible {_fr(cfg_lc_cible)})", cur["lc"], "L/kg",
+        row(f"L/C — Lait / Concentré (cible {fr_nombre(cfg_lc_cible)})", cur["lc"], "L/kg",
             indicator=_kpi_ind_range(cur["lc"], cfg_lc_min, cfg_lc_max,
                                      low_alarm=cfg_lc_alm_lo,
                                      high_alarm=cfg_lc_alm_hi),

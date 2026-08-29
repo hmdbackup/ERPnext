@@ -14,7 +14,8 @@ Covers:
   5. FIN-S96 — imputation du coût mécanique (heures, DT, DT/L) en VUE
      ANALYTIQUE : elle ne doit jamais gonfler le coût complet du litre
   6. Période « Année » = Year to Date (réunion 26/08/2026) et
-     `previous_period_bounds` : veille / S-1 / Q-1 / M-1 / A-1 même période
+     `previous_period_bounds` : veille / S-1 / Q-1 / M-1 / A-1 même période,
+     période en cours comparée à jours écoulés égaux (label « même nombre de jours »)
   7. Colonnes comparatives (maquettes 24/08 + 26/08) : `precedent` libellé
      selon la période, `ecart_pct` signé sur un couple connu, vide sans base
      de comparaison, lignes INFO / Avertissement sans comparatif
@@ -30,7 +31,7 @@ Run: bench --site <site> execute hmd_agro.hmd_agro.tests.test_rapport_performanc
 import traceback
 
 import frappe
-from frappe.utils import getdate
+from frappe.utils import getdate, today
 
 from hmd_agro.hmd_agro.report.rapport_performance.rapport_performance import (
     LABELS_PRECEDENT, SECTION_FRAIS_GENERAUX, execute, period_bounds,
@@ -257,10 +258,28 @@ def test_previous_period_bounds(results):
          "Année → le même Year to Date un an plus tôt"),
         ("Année", "2024-01-01", "2024-02-29", ("2023-01-01", "2023-02-28"),
          "Année bissextile : le 29/02 retombe sur le 28/02"),
+        # Période en cours (tronquée à aujourd'hui) : même nombre de jours écoulés.
+        ("Mois", "2019-03-01", "2019-03-10", ("2019-02-01", "2019-02-10"),
+         "Mois en cours (10 j) → les 10 premiers jours de M-1"),
+        ("Quinzaine", "2019-03-16", "2019-03-20", ("2019-03-01", "2019-03-05"),
+         "Quinzaine en cours (5 j) → les 5 premiers jours de Q-1"),
+        ("Semaine", "2019-03-04", "2019-03-05", ("2019-02-25", "2019-02-26"),
+         "Semaine en cours (2 j) → lundi-mardi de S-1"),
+        ("Mois", "2019-04-01", "2019-04-30", ("2019-03-01", "2019-03-31"),
+         "Mois entier de 30 j → M-1 entier (31 j), pas tronqué"),
     )
     for periode, debut, fin, attendu, msg in cas:
         obtenu = _bornes_prec(periode, debut, fin)
         _check(obtenu == attendu, f"{msg} (got {obtenu})", results)
+
+    # The label follows: a month in progress announces « même nombre de jours ».
+    aujourdhui = getdate(today())
+    cols, _rows = execute({"periode": "Mois", "date": str(aujourdhui)})
+    tronque = aujourdhui < period_bounds("Mois", aujourdhui)[1]
+    attendu = "M-1" + (" (même nombre de jours)" if tronque else "")
+    _check(cols[3]["label"] == attendu,
+           f"Mois en cours : colonne précédent libellée « {attendu} » "
+           f"(got {cols[3]['label']})", results)
 
 
 def test_valeurs_mois(results, base_prod, base_vendu, blj_days):

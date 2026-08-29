@@ -20,6 +20,7 @@ Couvre :
   10. `charges_lait` : quote-part = Σ Lait, plus de `cle_pct`, fg_* exposés
   11. Le rapport expose la section « Frais Généraux — répartition par atelier »
   12. Mode strict : ON bloque une ligne FG nue (ERR-FIN-17), OFF la laisse passer
+  13. Ligne supprimée sous une part existante → ERR-FIN-18 ; re-save intact passe
 
 Fixtures isolées sur JUIN 2025, préfixe ZZTEST_RFG. L'exercice 2025 est ACTIF
 (sinon le submit lève FiscalYearError) et ne porte AUCUNE écriture réelle —
@@ -421,6 +422,41 @@ def _test_mode_strict(results):
            "automatiques salaires / interventions)", results)
 
 
+def _test_ligne_retiree(results):
+    print("\n[13] Une ligne supprimée sous une répartition existante → ERR-FIN-18")
+    cc = _cc(ATELIER_FRAIS_GENERAUX)
+    je = frappe.get_doc({
+        "doctype": "Journal Entry", "company": COMPANY,
+        "voucher_type": "Journal Entry", "posting_date": DATE_ECRITURE,
+        "user_remark": f"{PREFIXE}_DEUX_LIGNES",
+        "accounts": [
+            {"account": _acc("615"), "debit_in_account_currency": 100, "cost_center": cc},
+            {"account": _acc("606"), "debit_in_account_currency": 100, "cost_center": cc},
+            {"account": _acc("54"), "credit_in_account_currency": 200, "cost_center": cc},
+        ],
+        "repartition_atelier": _parts((("Lait", 100),), 1) + _parts((("Traction", 100),), 2),
+    })
+    je.insert(ignore_permissions=True)
+    libelles = [p.libelle for p in je.repartition_atelier]
+    _check(libelles == [frappe.db.get_value("Account", _acc(c), "account_name")
+                        for c in ("615", "606")],
+           f"deux lignes FG, deux parts aux libellés dérivés (got {libelles})", results)
+
+    je = frappe.get_doc("Journal Entry", je.name)
+    je.save(ignore_permissions=True)
+    _check(True, "un re-save sans changement passe (libellés identiques)", results)
+
+    # The client deletes the first charge line and renumbers idx : part 1 now
+    # points at the 606 line, part 2 at the credit line.
+    je = frappe.get_doc("Journal Entry", je.name)
+    je.remove(je.accounts[0])
+    for idx, ligne in enumerate(je.accounts, 1):
+        ligne.idx = idx
+    je.accounts[-1].credit_in_account_currency = 100
+    _attendre_erreur("ERR-FIN-18", lambda: je.save(ignore_permissions=True),
+                     "la part de la ligne 1 (615) retombe sur la ligne 606", results)
+
+
 # ─── Runner ───
 
 def run():
@@ -460,6 +496,7 @@ def _run_inner():
     _test_charges_lait(results)
     _test_rapport(results)
     _test_mode_strict(results)
+    _test_ligne_retiree(results)
 
     print("\n" + "-" * 70)
     print(f"  {results['pass']} OK / {results['fail']} FAIL")

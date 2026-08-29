@@ -23,6 +23,8 @@ Rules, one child row = one part of one charge line, grouped by `ligne` :
                 automatic entries (`enregistrer_intervention`, `post_salaires`)
                 book on Frais Généraux without a split, and the report shows
                 such lines as « non réparties ».
+    ERR-FIN-18  an existing part whose target line changed label (line deleted
+                or reordered since the split was typed)
 
 Derived on every validate, never typed in : `libelle` (item name / account
 name of the line) and `montant` (line amount × pourcentage / 100).
@@ -33,6 +35,7 @@ from frappe.utils import cint, flt
 from hmd_agro.hmd_agro.doctype.personnel.personnel import TOLERANCE_PCT
 from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.utils.finance_kpis import ATELIER_FRAIS_GENERAUX, _nom_court
+from hmd_agro.hmd_agro.utils.format_fr import fr_nombre
 
 # Child table fieldname on both parents (Custom Field `repartition_atelier`).
 CHAMP_REPARTITION = "repartition_atelier"
@@ -173,8 +176,8 @@ def _valider_pourcentage(part):
     if not 0 < pct <= PCT_TOTAL:
         frappe.throw(
             f"ERR-FIN-16 : ligne {part.ligne}, atelier « {part.atelier} » — la part "
-            f"doit être comprise entre 0 (exclu) et {_fr(PCT_TOTAL)} % "
-            f"(saisi : {_fr(pct)} %).")
+            f"doit être comprise entre 0 (exclu) et {fr_nombre(PCT_TOTAL)} % "
+            f"(saisi : {fr_nombre(pct)} %).")
 
 
 def _valider_doublons(parts):
@@ -199,8 +202,8 @@ def _valider_totaux(parts):
         if round(abs(total - PCT_TOTAL), 2) > TOLERANCE_PCT:
             frappe.throw(
                 f"ERR-FIN-12 : Répartition incomplète — ligne {ligne} : "
-                f"{_fr(round(total, 2))} % (le total des parts doit faire "
-                f"{_fr(PCT_TOTAL)} %).")
+                f"{fr_nombre(round(total, 2))} % (le total des parts doit faire "
+                f"{fr_nombre(PCT_TOTAL)} %).")
 
 
 def _valider_lignes_nues(lignes, parts):
@@ -217,12 +220,19 @@ def _valider_lignes_nues(lignes, parts):
 # ─── Derived fields ──────────────────────────────────────────────────────────
 
 def _deriver_part(part, ligne):
-    """`libelle` and `montant` are derived from the charge line — never typed."""
+    """`libelle` and `montant` are derived from the charge line — never typed.
+
+    A part targets its line by number (`ligne` = idx): deleting or reordering
+    a line silently re-targets the split. An existing part (its `libelle` is
+    already set) whose line now carries another label is refused (ERR-FIN-18)
+    instead of being re-derived behind the accountant's back. A new part
+    (empty `libelle`) and an unchanged document pass.
+    """
+    if part.libelle and part.libelle != ligne["libelle"]:
+        frappe.throw(
+            f"ERR-FIN-18 : la ligne {part.ligne} n'est plus « {part.libelle} » mais "
+            f"« {ligne['libelle']} » — vérifier la répartition (une ligne a été "
+            f"supprimée ou déplacée).")
     part.libelle = ligne["libelle"]
     part.montant = flt(ligne["montant"] * flt(part.pourcentage) / PCT_TOTAL,
                        part.precision("montant"))
-
-
-def _fr(valeur):
-    """Nombre en écriture française (virgule décimale) pour les messages."""
-    return f"{valeur:g}".replace(".", ",")

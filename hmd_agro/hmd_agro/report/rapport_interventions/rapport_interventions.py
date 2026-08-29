@@ -46,6 +46,7 @@ rapport_interventions.execute --kwargs "{'filters': {'periode': 'Mois'}}"
 from frappe.utils import cint, flt, getdate, today
 
 from hmd_agro.hmd_agro.utils.config import get_config
+from hmd_agro.hmd_agro.utils.format_fr import fr_date
 from hmd_agro.hmd_agro.utils.maintenance_utils import (
     ECHEANCE_FICHE, PARC_EN_ATTENTE, PARC_EN_PANNE, PARC_PRET, cout_maintenance,
     etat_parc, interventions_planifiees, interventions_realisees,
@@ -65,8 +66,8 @@ SECTION_REALISEES = "Réalisées"
 SECTION_RAPPROCHEMENT = "Rapprochement"
 SECTION_INFO = "INFO"
 
-# Ce que le lecteur voit pour chaque état du parc, et la couleur (`indicator`,
-# calculé ici — jamais dans le JS) qui l'accompagne.
+# What the reader sees for each fleet state, and the colour (`indicator`,
+# computed here — never in the JS) that goes with it.
 LIBELLES_ETAT_PARC = {
     PARC_PRET: "PRÊT",
     PARC_EN_ATTENTE: "EN ATTENTE DE MAINTENANCE",
@@ -77,7 +78,7 @@ INDICATEURS_ETAT_PARC = {
     PARC_EN_ATTENTE: "Orange",
     PARC_EN_PANNE: "Red",
 }
-# Une échéance : tâche ERPNext, fiche planifiée, ou l'une des deux dépassée.
+# A deadline: ERPNext task, planned sheet, or either of them overdue.
 TYPE_ECHEANCE_LOG = "PLANIFIÉE"
 TYPE_ECHEANCE_FICHE = "À VENIR"
 TYPE_ECHEANCE_RETARD = "EN RETARD"
@@ -96,8 +97,8 @@ COLUMNS = [
      "width": 300},
     {"fieldname": "atelier", "label": "Atelier", "fieldtype": "Link",
      "options": "Cost Center", "width": 170},
-    # Data, pas Link : l'intervenant est un salarié (Personnel) OU un
-    # prestataire (Supplier) — un seul Link ne peut pas pointer vers les deux.
+    # Data, not Link: the intervener is an employee (Personnel) OR a
+    # contractor (Supplier) — a single Link cannot point to both.
     {"fieldname": "intervenant", "label": "Intervenant", "fieldtype": "Data",
      "width": 170},
     {"fieldname": "pieces", "label": "Pièces (DT)", "fieldtype": "Currency",
@@ -137,10 +138,10 @@ def execute(filters=None):
 
     today_dt = getdate(today())
     if debut > today_dt:
-        # Aucune intervention réalisée ni rapprochement possible sur une période
-        # à venir — mais le parc et le préventif, eux, sont « à ce jour » : les
-        # masquer cacherait les retards au moment précis où l'on prépare un
-        # planning.
+        # No completed intervention nor reconciliation possible on a future
+        # period — but the fleet and the preventive block are « as of today »:
+        # hiding them would hide the delays at the very moment a schedule is
+        # being prepared.
         return COLUMNS, (_parc(debut, fin, horizon, equipement, atelier)
                          + [_row(SECTION_INFO, libelle="Pas encore d'intervention "
                                                        "sur cette période.")]
@@ -158,8 +159,8 @@ def execute(filters=None):
     # bloc préventif annonce déjà qu'il n'est pas borné par la période.
     if fin_periode > fin:
         data.append(_row(SECTION_INFO, libelle=(
-            f"Période en cours : chiffres arrêtés au {fin.strftime('%d/%m/%Y')} "
-            f"(fin de période le {fin_periode.strftime('%d/%m/%Y')}) — "
+            f"Période en cours : chiffres arrêtés au {fr_date(fin)} "
+            f"(fin de période le {fr_date(fin_periode)}) — "
             f"les totaux ne couvrent pas encore le mois entier.")))
     data.extend(_realisees(lignes))
     data.extend(_preventif(horizon, equipement, atelier))
@@ -193,8 +194,8 @@ def _montant_ou_rien(valeur):
 # ─── (0) Parc — état du matériel ─────────────────────────────────────────────
 
 def _parc(debut, fin, horizon, equipement=None, atelier=None):
-    """État du parc « à ce jour » (comme le préventif) ; seules les heures
-    d'utilisation sont bornées par la période affichée."""
+    """Fleet state « as of today » (like the preventive block); only the usage
+    hours are bounded by the displayed period."""
     parc = etat_parc(debut, fin, horizon, equipement, atelier)
     if not parc:
         return [_row(SECTION_PARC, libelle="Aucun équipement au parc "
@@ -236,7 +237,7 @@ def _synthese_parc(parc):
 
 def _libelle_parc(eq):
     derniere, prochaine = eq["derniere"], eq["prochaine"]
-    texte = (f"Dernière : {getdate(derniere['date']).strftime('%d/%m/%Y')} — "
+    texte = (f"Dernière : {fr_date(derniere['date'])} — "
              f"{derniere['description']}"
              if derniere else "Aucune intervention terminée")
     if prochaine:
@@ -297,7 +298,7 @@ def _realisees(lignes):
 
 
 def _libelle_intervenant(ligne):
-    """Prestataire → raison sociale ; salarié → « Interne — nom » ; sinon « Interne »."""
+    """Contractor → company name; employee → « Interne — nom »; else « Interne »."""
     if ligne.prestataire:
         return ligne.prestataire_nom or ligne.prestataire
     if ligne.personnel:
@@ -316,16 +317,16 @@ def _nb_equipements(lignes):
 # ─── (ii) Préventif dû ou en retard ──────────────────────────────────────────
 
 def _preventif(jours, equipement=None, atelier=None):
-    """Échéances dues sous N jours ou déjà en retard : tâches préventives
-    ERPNext (PLANIFIÉE) et fiches « À venir » (À VENIR).
+    """Deadlines due within N days or already overdue: ERPNext preventive
+    tasks (PLANIFIÉE) and « À venir » sheets (À VENIR).
 
-    Volontairement NON filtré par la PÉRIODE du rapport : une échéance est un
-    fait à venir, la borner au mois affiché reviendrait à cacher les retards
-    dès qu'on consulte un mois passé.
+    Deliberately NOT filtered by the report PERIOD: a deadline is a future
+    fact, bounding it to the displayed month would hide the delays as soon as
+    a past month is consulted.
 
-    En revanche il RESPECTE les filtres Équipement et Atelier : un bloc qui
-    listerait tout le parc sous un filtre équipement ferait lire au gérant des
-    retards qui ne concernent pas la machine qu'il regarde.
+    It DOES honour the Équipement and Atelier filters: a block listing the
+    whole fleet under an equipment filter would make the manager read delays
+    unrelated to the machine he is looking at.
     """
     s = f"Préventif (à ce jour, {jours} j)"
     taches = interventions_planifiees(jours, equipement, atelier)

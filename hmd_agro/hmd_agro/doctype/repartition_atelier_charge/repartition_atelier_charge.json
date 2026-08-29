@@ -24,7 +24,7 @@
    "description": "N° de la ligne de charge (colonne « # » des articles / écritures) imputée à Frais Généraux"
   },
   {
-   "columns": 3,
+   "columns": 2,
    "fieldname": "libelle",
    "fieldtype": "Data",
    "in_list_view": 1,

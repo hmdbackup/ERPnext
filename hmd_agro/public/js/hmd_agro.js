@@ -142,7 +142,11 @@ window.hmd_repartition = {
         const lignes = this.lignes_frais_generaux(frm);
         const parts = frm.doc[this.CHAMP_TABLE] || [];
         frm.toggle_display(this.CHAMP_SECTION, lignes.length > 0 || parts.length > 0);
-        frm.set_df_property(this.CHAMP_TABLE, "description", this.description(lignes, parts));
+        const texte = this.description(lignes, parts);
+        frm.set_df_property(this.CHAMP_TABLE, "description", texte);
+        // The grid renders its description once at creation: refresh the DOM too.
+        const grille = frm.fields_dict[this.CHAMP_TABLE].grid;
+        if (grille && grille.wrapper) grille.wrapper.find(".grid-description").html(texte);
     },
 
     /** « Ligne N — total réparti X % — il manque Y % » per Frais Généraux line. */

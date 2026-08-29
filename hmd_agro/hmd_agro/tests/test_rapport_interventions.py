@@ -113,6 +113,9 @@ def _cleanup():
         frappe.db.sql("DELETE FROM `tabAsset Maintenance` WHERE name=%s", asset)
         frappe.db.sql("DELETE FROM `tabAsset Activity` WHERE asset=%s", asset)
         frappe.db.sql("DELETE FROM `tabAsset` WHERE name=%s", asset)
+    # The test Item, once no Asset references it any more.
+    if frappe.db.exists("Item", ITEM_TEST):
+        frappe.delete_doc("Item", ITEM_TEST, force=1, ignore_permissions=True)
     for pers in frappe.get_all(
             "Personnel", filters={"nom_complet": ["like", f"{PREFIXE_PERSONNEL}%"]},
             pluck="name"):
