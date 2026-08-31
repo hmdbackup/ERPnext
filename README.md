@@ -3,7 +3,6 @@
 Custom dairy farm management system for HMD AGRO — animal management, milk production tracking, feeding, reproduction, and health monitoring.
 
 ---
-
 ## Self-Host with Docker
 
 Deploy HMD Agro (ERPNext v15 + custom app) using Docker on any platform.
