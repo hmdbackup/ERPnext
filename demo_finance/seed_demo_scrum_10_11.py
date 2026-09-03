@@ -1,4 +1,9 @@
-"""Demo data for SCRUM-10 (FG split per charge) and SCRUM-11 (parc / interventions).
+"""Demo data for SCRUM-10 (FG split by the key) and SCRUM-11 (parc / interventions).
+
+SCRUM-10 since 03/09/2026: the key is a Cost Center Allocation on Frais
+Généraux (60 % Lait / 25 % Cultures / 15 % Génisses from 01/08/2026 — posted
+with `_skip_from_date_validation`, real August entries already exist on that
+center) ; the demo invoices carry NO split table any more, the ledger does it.
 
 Idempotent: every document carries the DEMO_S1011 marker and is removed by
 `clear()` before `run()` seeds again. August 2026, company hmd-agro.
@@ -42,32 +47,51 @@ def _item(code, name, expense_number):
     return code
 
 
-def _repartition(lignes):
-    """lignes: {ligne_idx: [(cost_center, pct), ...]}"""
-    rows = []
-    for ligne, parts in lignes.items():
-        for cc, pct in parts:
-            rows.append({"ligne": ligne, "atelier": cc, "pourcentage": pct})
-    return rows
+DATE_CLE = "2026-08-01"
+CLE = [(LAIT, 60), (CULTURES, 25), (GENISSES, 15)]
+
+
+def _cle():
+    """The key: one submitted Cost Center Allocation on Frais Généraux."""
+    doc = frappe.get_doc({
+        "doctype": "Cost Center Allocation", "company": COMPANY,
+        "main_cost_center": FG, "valid_from": DATE_CLE,
+        "allocation_percentages": [{"cost_center": cc, "percentage": pct} for cc, pct in CLE],
+    })
+    doc._skip_from_date_validation = True
+    doc.insert(ignore_permissions=True)
+    doc.submit()
+    return doc.name
+
+
+def _supprimer_cles():
+    for name in frappe.get_all("Cost Center Allocation",
+                               filters={"main_cost_center": FG, "valid_from": DATE_CLE}, pluck="name"):
+        doc = frappe.get_doc("Cost Center Allocation", name)
+        if doc.docstatus == 1:
+            doc.cancel()
+        frappe.delete_doc("Cost Center Allocation", name, force=1, ignore_permissions=True)
 
 
 def _facture_energie():
-    """STEG août : 1 200 DT on 606 at FG, split 60 % Lait / 25 % Cultures / 15 % Génisses."""
+    """STEG août : 1 200 DT on 606 at FG — the key sends 720 Lait / 300 Cultures / 180 Génisses."""
     item = _item("DEMO-ENERGIE", "Électricité et eau (STEG / SONEDE)", "606")
     pi = frappe.get_doc({
         "doctype": "Purchase Invoice", "company": COMPANY, "supplier": FOURNISSEUR,
         "posting_date": DATE_FACTURE, "set_posting_time": 1, "due_date": add_days(DATE_FACTURE, 30),
         "bill_no": f"{MARK}-STEG-0826", "remarks": f"{MARK} Facture STEG août 2026",
+        "cost_center": FG,
         "items": [{"item_code": item, "item_name": "Électricité août 2026 — ferme", "qty": 1,
-                   "rate": 1200, "expense_account": _acc("606"), "cost_center": FG}],
-        "repartition_atelier": _repartition({1: [(LAIT, 60), (CULTURES, 25), (GENISSES, 15)]}),
+                   "rate": 1200, "expense_account": _acc("606"), "cost_center": FG},
+                  {"item_code": item, "item_name": "Eau août 2026 — ferme", "qty": 1,
+                   "rate": 300, "expense_account": _acc("606"), "cost_center": FG}],
     })
     pi.insert(ignore_permissions=True)
     pi.submit()
     return pi.name
 
 
-def _ecriture(date, compte, montant, libelle, repartition=None, cost_center=FG):
+def _ecriture(date, compte, montant, libelle, cost_center=FG):
     je = frappe.get_doc({
         "doctype": "Journal Entry", "company": COMPANY, "posting_date": date,
         "voucher_type": "Journal Entry", "user_remark": f"{MARK} {libelle}",
@@ -77,7 +101,6 @@ def _ecriture(date, compte, montant, libelle, repartition=None, cost_center=FG):
             {"account": _acc("401"), "party_type": "Supplier", "party": FOURNISSEUR,
              "credit_in_account_currency": montant},
         ],
-        "repartition_atelier": _repartition(repartition or {}),
     })
     je.insert(ignore_permissions=True)
     je.submit()
@@ -144,6 +167,7 @@ def clear():
             if doc.docstatus == 1:
                 doc.cancel()
             frappe.delete_doc("Journal Entry", name, force=1, ignore_permissions=True)
+    _supprimer_cles()
     for name in frappe.get_all("Utilisation Equipement", filters={"notes": MARK}, pluck="name"):
         frappe.delete_doc("Utilisation Equipement", name, force=1, ignore_permissions=True)
     for nom in ("Pompe à vide — salle de traite", "Presse à balles"):
@@ -158,10 +182,11 @@ def clear():
 
 def run():
     clear()
+    cle = _cle()
     pi = _facture_energie()
-    je_assur = _ecriture(DATE_ASSURANCE, "616", 900, "Assurance multirisque exploitation — août",
-                         {1: [(LAIT, 50), (CULTURES, 30), (TRACTION, 20)]})
-    je_loc = _ecriture(DATE_LOCATION, "613", 300, "Location bureau — août (non répartie)")
+    je_assur = _ecriture(DATE_ASSURANCE, "616", 900, "Assurance multirisque exploitation — août")
+    # Posted before the key: stays on Frais Généraux, the report names it.
+    je_loc = _ecriture("2026-07-28", "613", 300, "Location bureau — juillet (avant la clé)")
     pompe = _equipement("Pompe à vide — salle de traite", 12000, 15)
     presse = _equipement("Presse à balles", 28000, 40)
     fiche_ok = _intervention_terminee()
@@ -173,5 +198,5 @@ def run():
     _heures(presse, "2026-08-07", 8, CULTURES)
     _heures(pompe, "2026-08-20", 4, LAIT)
     frappe.db.commit()
-    print({"facture": pi, "assurance": je_assur, "location": je_loc, "pompe": pompe, "presse": presse,
+    print({"cle": cle, "facture": pi, "assurance": je_assur, "location": je_loc, "pompe": pompe, "presse": presse,
            "intervention_terminee": fiche_ok, "panne": panne.name, "planifiee": planifiee.name})

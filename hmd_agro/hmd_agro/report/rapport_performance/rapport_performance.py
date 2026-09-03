@@ -22,7 +22,8 @@ Sources — always the canonical primitives, never re-derived:
                                                 import, dashboard_kpis precedent)
     rapport_periodique.couverture_lait        — garde-fou « période incomplète »
     finance_kpis.gl_sums                      — GL sums per SCE family
-    finance_kpis.repartitions_frais_generaux  — répartition saisie des FG
+    finance_kpis.repartitions_frais_generaux  — FG répartis par la clé
+                                                (Cost Center Allocation)
     maintenance_utils.cout_maintenance        — équipement interventions
     maintenance_utils.cout_utilisation        — heures machine valorisées
                                                 (vue ANALYTIQUE, cf. _charges)
@@ -37,7 +38,7 @@ from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.utils.format_fr import fr_nombre
 from hmd_agro.hmd_agro.utils.finance_kpis import (
     ATELIER_FRAIS_GENERAUX, ATELIER_LAIT, charges_lait, gl_sums,
-    gl_sums_par_atelier, repartitions_frais_generaux,
+    gl_sums_par_atelier, libelle_cle, repartitions_frais_generaux,
 )
 from hmd_agro.hmd_agro.utils.live_state import (
     effectif_on_date, count_velages, count_naissances,
@@ -64,11 +65,11 @@ LABELS_PRECEDENT = {
 # previous period (see `previous_period_bounds`).
 SUFFIXE_JOURS_EGAUX = " (même nombre de jours)"
 
-# Tolerated gap between the GL total of Frais Généraux and the sum of the
-# splits: a rounding to the cent, not a business threshold.
+# Tolerated gap between the ledger and the key: a rounding to the cent, not a
+# business threshold.
 ECART_ARRONDI_DT = 0.01
 
-SECTION_FRAIS_GENERAUX = "Frais Généraux — répartition par atelier"
+SECTION_FRAIS_GENERAUX = "Frais Généraux — répartition par centre de coûts"
 
 
 def _colonnes(periode, tronquee=False):
@@ -147,7 +148,7 @@ def _construire_lignes(debut, fin):
     ventilation = gl_sums_par_atelier(debut, fin)
     data.extend(_charges_par_atelier(ventilation, gl))
     repartitions = repartitions_frais_generaux(debut, fin, ventilation=ventilation)
-    data.extend(_frais_generaux_repartition(repartitions))
+    data.extend(_frais_generaux_repartition(repartitions, fin))
     lait = charges_lait(debut, fin, repartitions=repartitions)
     data.extend(_cout_lait_detail(ventilation, lait))
     data.extend(_couts_unitaires(debut, fin, gl, alim_ctx, prod_ctx, meca, lait))
@@ -446,60 +447,86 @@ def _charges_par_atelier(ventilation, gl):
     return rows
 
 
-# ─── (iv ter) Frais généraux — répartition par atelier — SCRUM-10 ────────────
+# ─── (iv ter) Frais généraux — répartition par centre de coûts — SCRUM-10 ────
 
-def _frais_generaux_repartition(repartitions):
-    """The Frais Généraux charges one by one, with the split the accountant
-    typed on each (decision 26/08/2026: no more computed key).
+def _frais_generaux_repartition(repartitions, fin):
+    """The Frais Généraux charges one by one, with the KEY the ledger applied
+    to each (03/09/2026: the split is ERPNext's Cost Center Allocation, no
+    longer typed on the charge).
 
-    One charge per row (label — account, amount) followed by its split
-    « └ Lait 45 % · Cultures 35 % … » — empty value, hence a dash: a part is
-    not one more amount. A charge without a split is named, in orange: it
-    stays on Frais Généraux and leaves the cost per litre.
+    First the key in force at the end of the period (or its absence, in
+    orange). Then one charge per row (label — account, amount) followed by
+    its split « └ Lait 60 % · Cultures 25 % … » — empty value, hence a dash:
+    a part is not one more amount. A charge posted before any key is named,
+    in orange: it stayed on Frais Généraux and leaves the cost per litre.
 
-    The final control replays the sum against the GL: red when strict mode is
-    on (a bare charge is then an anomaly), orange otherwise.
+    The closing control replays the key against the General Ledger, voucher
+    by voucher (`finance_kpis._controle_grand_livre`): the question asked on
+    03/09 — « regarde si les montants apparaissent bien répartis » — is
+    answered on the report every time, not once in a test.
     """
     s = SECTION_FRAIS_GENERAUX
     rows = []
+    for cle in repartitions["cles_en_vigueur"]:
+        if cle["name"]:
+            rows.append(_row(
+                s, f"Clé {cle['centre']} en vigueur au {fr_date(fin)} : "
+                   f"{libelle_cle(cle)} ({cle['name']}, depuis le "
+                   f"{fr_date(cle['valid_from'])})", None, "", sans_comparatif=True))
+        else:
+            rows.append(_row(
+                s, f"Aucune clé de répartition en vigueur au {fr_date(fin)} pour "
+                   f"{cle['centre']} — créer une « Cost Center Allocation »",
+                None, "", indicator="Orange", sans_comparatif=True))
+
     for charge in repartitions["charges"]:
         rows.append(_row(s, f"{charge['libelle']} — {charge['compte']}",
                          round(charge["montant"], 2), "DT", sans_comparatif=True))
-        rows.append(_row(s, _libelle_parts(charge["repartition"]), None, "",
-                         indicator="" if charge["repartition"] else "Orange",
+        rows.append(_row(s, _libelle_parts(charge), None, "",
+                         indicator="" if charge["cle"] else "Orange",
                          sans_comparatif=True))
 
-    total_fg = round(repartitions["total_fg"], 2)
-    total_liste = round(repartitions.get("total_liste", total_fg), 2)
+    total_liste = round(repartitions["total_liste"], 2)
     reparti = round(repartitions["total_reparti"], 2)
-    autres = round(repartitions.get("autres", 0.0), 2)
-    rows.append(_row(s, "Total Frais Généraux (Grand Livre)", total_fg, "DT"))
-    rows.append(_row(s, "Contrôle — somme des répartitions = charges listées", reparti,
-                     "DT", indicator=_indicateur_controle_fg(total_liste - reparti)))
-    rows.append(_row(s, f"dont part atelier {ATELIER_LAIT} — somme des répartitions",
-                     repartitions["par_atelier"].get(ATELIER_LAIT, 0.0), "DT"))
     non_reparti = round(repartitions["non_reparti"], 2)
+    total_fg = round(repartitions["total_fg"], 2)
+    autres = round(repartitions.get("autres", 0.0), 2)
+    rows.append(_row(s, "Total imputé à Frais Généraux — pièces listées",
+                     total_liste, "DT"))
+    rows.append(_row(s, "Réparti par la clé vers les centres de coûts "
+                        "(écritures comptables)", reparti, "DT"))
+    rows.append(_row(s, f"dont part {ATELIER_LAIT} — envoyée par la clé",
+                     repartitions["par_atelier"].get(ATELIER_LAIT, 0.0), "DT"))
     if abs(non_reparti) > ECART_ARRONDI_DT:
-        rows.append(_row(s, "Frais généraux non répartis — hors coût du litre",
-                         non_reparti, "DT", indicator="Orange"))
+        rows.append(_row(s, "Frais généraux non répartis — pièces sans clé à leur "
+                            "date, hors coût du litre",
+                         non_reparti, "DT",
+                         indicator="Red" if est_mode_strict() else "Orange"))
+    rows.append(_row(s, "Total resté à Frais Généraux (Grand Livre)", total_fg, "DT"))
     if abs(autres) > ECART_ARRONDI_DT:
-        rows.append(_row(s, "Autres pièces imputées à Frais Généraux (stock, "
-                         "avoirs…) — non répartissables ici",
+        rows.append(_row(s, "Autres pièces restées à Frais Généraux (stock, "
+                            "avoirs…) — non listées ici",
                          autres, "DT", indicator="Orange"))
+    controle = repartitions["controle_gl"]
+    rows.append(_row(
+        s,
+        "Contrôle — écritures comptables = clé (aucun écart)" if not controle["details"]
+        else "⚠ Contrôle — écritures comptables ≠ clé sur "
+             f"{len(controle['details'])} pièce(s) — écart à investiguer",
+        controle["ecart"], "DT", indicator="" if not controle["details"] else "Red"))
     return rows
 
 
-def _libelle_parts(parts):
-    if not parts:
-        return f"└ non répartie — reste à {ATELIER_FRAIS_GENERAUX}, hors coût du litre"
+def _libelle_parts(charge):
+    if not charge["cle"]:
+        return (f"└ non répartie — aucune clé au {fr_date(charge['posting_date'])}, "
+                f"reste à {ATELIER_FRAIS_GENERAUX}, hors coût du litre")
     return "└ " + " · ".join(f"{p['atelier']} {fr_nombre(round(p['pct'], 2))} %"
-                             for p in parts)
+                             for p in charge["repartition"])
 
 
-def _indicateur_controle_fg(ecart):
-    if abs(ecart) <= ECART_ARRONDI_DT:
-        return ""
-    return "Red" if est_mode_strict() else "Orange"
+def fr_date(date):
+    return getdate(date).strftime("%d/%m/%Y") if date else ""
 
 
 # ─── (iv quater) Coût du lait, ligne par ligne — SCRUM-10 ────────────────────
@@ -520,11 +547,12 @@ def _cout_lait_detail(ventilation, lait):
     for cle, libelle in ventilation["postes"]:
         rows.append(_row(s, libelle, round(lait["postes"].get(cle, 0.0), 2), "DT"))
 
-    rows.append(_row(s, f"Sous-total — charges directes atelier {ATELIER_LAIT}",
-                     lait["direct"], "DT"))
+    rows.append(_row(s, f"Sous-total — charges directes atelier {ATELIER_LAIT} "
+                        f"(hors part de la clé)", lait["direct"], "DT"))
     if lait["perimetre"] == "LAIT_QUOTE_PART":
         rows.append(_row(
-            s, f"Quote-part {ATELIER_FRAIS_GENERAUX} — somme des répartitions saisies",
+            s, f"Quote-part {ATELIER_FRAIS_GENERAUX} — envoyée à {ATELIER_LAIT} par "
+               f"la clé de répartition (déjà au Grand Livre)",
             lait["quote_part"], "DT"))
     rows.append(_row(s, "TOTAL — charges retenues pour le coût du litre",
                      lait["total"], "DT"))

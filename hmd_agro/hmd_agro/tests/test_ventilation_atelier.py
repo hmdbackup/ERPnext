@@ -29,8 +29,9 @@ au hasard : l'exercice 2025 est ACTIF (sans quoi le submit lève FiscalYearError
 et ne porte AUCUNE écriture réelle, ce qui rend les totaux absolus — on teste
 des égalités, pas des « au moins ».
 
-Pré-requis site : socle comptable (Cost Centers ateliers), DocType
-Repartition Atelier Charge + Custom Fields SCRUM-10 migrés (cas 6b).
+Pré-requis site : socle comptable (Cost Centers ateliers). Le cas 6b pose une
+clé de répartition (Cost Center Allocation ERPNext, décision 03/09/2026) sur
+Frais Généraux à partir du 15/04/2025 et la SUPPRIME en fin de test.
 
 Run: bench --site hmd.agro execute \
         hmd_agro.hmd_agro.tests.test_ventilation_atelier.run
@@ -53,13 +54,16 @@ DEBUT = "2025-04-01"
 FIN = "2025-04-30"
 DATE_ECRITURE = "2025-04-10"
 DATE_RAPPORT = "2025-04-15"
+DATE_CLE = "2025-04-15"               # la clé s'applique aux pièces à partir d'ici
+DATE_APRES_CLE = "2025-04-20"
 MOIS_VIERGE_DEBUT = "2025-09-01"      # jamais alimenté, même exercice actif
 MOIS_VIERGE_FIN = "2025-09-30"
 DATE_RAPPORT_VIERGE = "2025-09-15"
 
-# Scénario : 1 000 au Lait, 500 aux Génisses, 300 aux Frais Généraux SANS
-# répartition (elle reste hors coût du litre), puis 200 aux Frais Généraux
-# répartis 50 % Lait / 50 % Génisses → quote-part = 100, coût du lait = 1 100.
+# Scénario : 1 000 au Lait, 500 aux Génisses, 300 aux Frais Généraux AVANT
+# toute clé (ils restent hors coût du litre), puis une clé 50 % Lait / 50 %
+# Génisses et 200 aux Frais Généraux après la clé → le Grand Livre porte 100
+# au Lait : quote-part = 100, coût du lait = 1 100.
 MONTANT_LAIT = 1000
 MONTANT_GENISSES = 500
 MONTANT_FRAIS_GENERAUX = 300
@@ -99,14 +103,43 @@ def _cleanup():
                              pluck="name"):
         frappe.db.sql("DELETE FROM `tabGL Entry` WHERE voucher_no=%s", je)
         frappe.db.sql("DELETE FROM `tabJournal Entry Account` WHERE parent=%s", je)
-        frappe.db.sql("DELETE FROM `tabRepartition Atelier Charge` WHERE parent=%s", je)
         frappe.db.sql("DELETE FROM `tabJournal Entry` WHERE name=%s", je)
+    _supprimer_cles()
     frappe.db.commit()
 
 
-def _charge(compte, montant, atelier, suffixe, date=DATE_ECRITURE, repartition=()):
-    """Une charge passée au compte `compte`, imputée à `atelier`, avec sa
-    répartition éventuelle ((atelier, %), …) sur la ligne 1."""
+def _cle(valid_from, parts):
+    """La clé : une Cost Center Allocation soumise sur Frais Généraux.
+    `_skip_from_date_validation` : ERPNext exige sinon une date de début
+    postérieure à la dernière écriture réelle du centre."""
+    doc = frappe.get_doc({
+        "doctype": "Cost Center Allocation", "company": COMPANY,
+        "main_cost_center": _cc(ATELIER_FRAIS_GENERAUX), "valid_from": valid_from,
+        "allocation_percentages": [
+            {"cost_center": _cc(nom), "percentage": pct} for nom, pct in parts],
+    })
+    doc._skip_from_date_validation = True
+    doc.insert(ignore_permissions=True)
+    doc.submit()
+    return doc.name
+
+
+def _supprimer_cles():
+    """Une clé de test oubliée répartirait les vraies écritures : annulée et
+    supprimée quoi qu'il arrive."""
+    for nom in frappe.get_all("Cost Center Allocation",
+                              filters={"main_cost_center": _cc(ATELIER_FRAIS_GENERAUX),
+                                       "valid_from": ["between", [DEBUT, FIN]]},
+                              pluck="name"):
+        doc = frappe.get_doc("Cost Center Allocation", nom)
+        if doc.docstatus == 1:
+            doc.cancel()
+        frappe.delete_doc("Cost Center Allocation", nom, force=1,
+                          ignore_permissions=True)
+
+
+def _charge(compte, montant, atelier, suffixe, date=DATE_ECRITURE):
+    """Une charge passée au compte `compte`, imputée à `atelier`."""
     cc = _cc(atelier)
     je = frappe.get_doc({
         "doctype": "Journal Entry", "company": COMPANY,
@@ -117,10 +150,6 @@ def _charge(compte, montant, atelier, suffixe, date=DATE_ECRITURE, repartition=(
              "cost_center": cc},
             {"account": _acc("54"), "credit_in_account_currency": montant,
              "cost_center": cc},
-        ],
-        "repartition_atelier": [
-            {"ligne": 1, "atelier": _cc(nom), "pourcentage": pct}
-            for nom, pct in repartition
         ],
     })
     je.insert(ignore_permissions=True)
@@ -210,7 +239,9 @@ def _test_non_impute_visible(results):
     _check(round(v["non_impute"]["total"]) == MONTANT_NON_IMPUTE,
            f"non imputé = {MONTANT_NON_IMPUTE} "
            f"(got {v['non_impute']['total']})", results)
-    _check(round(v["ateliers"]["Lait"]["total"]) == MONTANT_LAIT,
+    # Le Lait porte ses 1 000 directs + les 100 envoyés par la clé (cas 6b),
+    # et rien de la charge orpheline.
+    _check(round(v["ateliers"]["Lait"]["total"]) == MONTANT_LAIT + QUOTE_PART_ATTENDUE,
            "l'atelier Lait n'a PAS absorbé la charge orpheline", results)
     # Et la ligne existe à l'écran même quand elle vaut zéro : une ligne absente
     # se lit « rien à signaler », une ligne à 0 se lit « vérifié ».
@@ -222,7 +253,7 @@ def _test_non_impute_visible(results):
 
 
 def _test_fg_sans_repartition(results):
-    print("\n[6a] Frais généraux SANS répartition → quote-part 0, non réparti visible")
+    print("\n[6a] Frais généraux AVANT toute clé → quote-part 0, non réparti visible")
     lait = charges_lait(DEBUT, FIN)
     _check(lait["perimetre"] == "LAIT_QUOTE_PART",
            "périmètre par défaut = LAIT_QUOTE_PART (décision revue reporting)",
@@ -231,7 +262,7 @@ def _test_fg_sans_repartition(results):
            f"charges directes du Lait = {MONTANT_LAIT} (got {lait['direct']})",
            results)
     _check(lait["quote_part"] == 0 and lait["total"] == MONTANT_LAIT,
-           "sans répartition saisie, rien ne revient au lait "
+           "sans clé en vigueur, rien ne revient au lait "
            f"(quote-part {lait['quote_part']}, total {lait['total']})", results)
     _check(lait["fg_total"] == MONTANT_FRAIS_GENERAUX
            and lait["fg_non_reparti"] == MONTANT_FRAIS_GENERAUX,
@@ -245,11 +276,15 @@ def _test_fg_sans_repartition(results):
 
 
 def _test_fg_avec_repartition(results):
-    print("\n[6b] Frais généraux répartis → quote-part = somme des parts Lait")
+    print("\n[6b] Frais généraux après la clé → quote-part = ce que la clé a envoyé au Lait")
     lait = charges_lait(DEBUT, FIN)
     _check(lait["quote_part"] == QUOTE_PART_ATTENDUE,
            f"quote-part = {QUOTE_PART_ATTENDUE} ({PART_LAIT_PCT} % de "
            f"{MONTANT_FG_REPARTI}) (got {lait['quote_part']})", results)
+    gl_lait = gl_sums_par_atelier(DEBUT, FIN)["ateliers"]["Lait"]["total"]
+    _check(round(gl_lait, 2) == COUT_LAIT_ATTENDU,
+           f"le Grand Livre du Lait porte déjà la part de la clé ({gl_lait})",
+           results)
     _check(lait["total"] == COUT_LAIT_ATTENDU,
            f"total retenu = {COUT_LAIT_ATTENDU} (got {lait['total']})", results)
     _check(lait["fg_reparti"] == MONTANT_FG_REPARTI
@@ -359,9 +394,10 @@ def _run_inner():
     _test_ecriture_annulee(results)
     _test_fg_sans_repartition(results)
 
+    _cle(DATE_CLE, (("Lait", PART_LAIT_PCT),
+                    ("Élevage - Génisses", 100 - PART_LAIT_PCT)))
     _charge("606", MONTANT_FG_REPARTI, ATELIER_FRAIS_GENERAUX, "FG_REPARTI",
-            repartition=(("Lait", PART_LAIT_PCT),
-                         ("Élevage - Génisses", 100 - PART_LAIT_PCT)))
+            date=DATE_APRES_CLE)
     frappe.db.commit()
 
     _test_fg_avec_repartition(results)

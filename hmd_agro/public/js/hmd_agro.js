@@ -71,25 +71,20 @@ window.hmd_fit_table_to_content = function (datatable) {
 };
 
 
-// ─── SCRUM-10 — répartition des frais généraux par ligne de charge ───────────
+// ─── SCRUM-10 — frais généraux répartis par la clé (Cost Center Allocation) ──
 //
 // Client side of utils/repartition_charges.py for Purchase Invoice and
 // Journal Entry (see purchase_invoice.js / journal_entry.js, which only
-// `brancher` this object): show the « Répartition par atelier » section as
-// soon as a charge line is booked on Frais Généraux, tell the accountant how
-// much of each line is split so far, restrict the atelier picker, pre-fill
-// `ligne`. Display only — the server hook remains the single authority
-// (ERR-FIN-11..17).
-window.hmd_repartition = {
+// `brancher` this object). Nothing is typed here any more (03/09/2026): the
+// accountant books the charge on Frais Généraux and ERPNext's Cost Center
+// Allocation splits the GL entries at submit time. The form only SHOWS the
+// key in force on the posting date — where the charge will land — and gives
+// a button to open the key. The server hook stays the single authority.
+window.hmd_cle_repartition = {
     // Mirror of finance_kpis.ATELIER_FRAIS_GENERAUX (a cost center is
     // « Frais Généraux » by its short name, company suffix stripped).
     ATELIER_FRAIS_GENERAUX: "Frais Généraux",
-    // Mirror of personnel.TOLERANCE_PCT — display tolerance on the 100 % check.
-    TOLERANCE_PCT: 0.01,
-    PCT_TOTAL: 100,
-    CHAMP_SECTION: "section_repartition_atelier",
-    CHAMP_TABLE: "repartition_atelier",
-    DOCTYPE_ENFANT: "Repartition Atelier Charge",
+    METHODE: "hmd_agro.hmd_agro.utils.repartition_charges.cle_en_vigueur",
 
     /**
      * Wire the form events of one parent doctype.
@@ -100,18 +95,12 @@ window.hmd_repartition = {
     brancher(doctype, params) {
         const R = this;
         frappe.ui.form.on(doctype, {
-            setup(frm) {
-                frm.hmd_repartition = params;
-                R.filtrer_ateliers(frm);
-            },
+            setup(frm) { frm.hmd_cle_repartition = params; },
             refresh(frm) { R.rafraichir(frm); },
+            posting_date(frm) { R.rafraichir(frm); },
+            cost_center(frm) { R.rafraichir(frm); },
             [`${params.table}_add`](frm) { R.rafraichir(frm); },
             [`${params.table}_remove`](frm) { R.rafraichir(frm); },
-            [`${R.CHAMP_TABLE}_add`](frm, cdt, cdn) {
-                R.preremplir_ligne(frm, cdt, cdn);
-                R.rafraichir(frm);
-            },
-            [`${R.CHAMP_TABLE}_remove`](frm) { R.rafraichir(frm); },
         });
         frappe.ui.form.on(params.child_doctype, {
             cost_center(frm) { R.rafraichir(frm); },
@@ -128,72 +117,60 @@ window.hmd_repartition = {
         return this.nom_court(cost_center) === this.ATELIER_FRAIS_GENERAUX;
     },
 
-    /** idx of the parent's charge lines booked on Frais Généraux. */
-    lignes_frais_generaux(frm) {
-        const params = frm.hmd_repartition;
-        return (frm.doc[params.table] || [])
+    /** Frais Généraux cost centers used by the charge lines (or the header). */
+    centres_frais_generaux(frm) {
+        const params = frm.hmd_cle_repartition;
+        const centres = (frm.doc[params.table] || [])
             .filter((l) => params.est_charge(l) && this.est_frais_generaux(l.cost_center))
-            .map((l) => l.idx);
+            .map((l) => l.cost_center);
+        if (!centres.length && this.est_frais_generaux(frm.doc.cost_center)) {
+            centres.push(frm.doc.cost_center);
+        }
+        return [...new Set(centres)];
     },
 
-    /** Section shown only when something is to split (or already split). */
+    /** Headline « Clé Frais Généraux en vigueur au … : Lait 60 % · … ». */
     rafraichir(frm) {
-        if (!frm.hmd_repartition || !frm.fields_dict[this.CHAMP_TABLE]) return;
-        const lignes = this.lignes_frais_generaux(frm);
-        const parts = frm.doc[this.CHAMP_TABLE] || [];
-        frm.toggle_display(this.CHAMP_SECTION, lignes.length > 0 || parts.length > 0);
-        const texte = this.description(lignes, parts);
-        frm.set_df_property(this.CHAMP_TABLE, "description", texte);
-        // The grid renders its description once at creation: refresh the DOM too.
-        const grille = frm.fields_dict[this.CHAMP_TABLE].grid;
-        if (grille && grille.wrapper) grille.wrapper.find(".grid-description").html(texte);
-    },
-
-    /** « Ligne N — total réparti X % — il manque Y % » per Frais Généraux line. */
-    description(lignes, parts) {
-        if (!lignes.length) {
-            return __("Aucune ligne de charge imputée à {0}.", [this.ATELIER_FRAIS_GENERAUX]);
+        if (!frm.hmd_cle_repartition || !frm.doc.company) return;
+        const centres = this.centres_frais_generaux(frm);
+        if (!centres.length) {
+            frm.dashboard.clear_headline();
+            return;
         }
-        const totaux = {};
-        parts.forEach((p) => { totaux[p.ligne] = (totaux[p.ligne] || 0) + flt(p.pourcentage); });
-        return lignes.map((idx) => this.etat_ligne(idx, flt(totaux[idx] || 0))).join("<br>");
+        const cc = centres[0];
+        frappe.call({
+            method: this.METHODE,
+            args: {company: frm.doc.company, posting_date: frm.doc.posting_date, cost_center: cc},
+            callback: (r) => {
+                if (!r.message) return;
+                frm.dashboard.set_headline_alert(
+                    this.texte(r.message, frm.doc.posting_date),
+                    r.message.cle ? "blue" : (r.message.strict ? "red" : "orange"));
+                this.bouton_cle(frm, cc);
+            },
+        });
     },
 
-    etat_ligne(idx, total) {
-        const manque = this.PCT_TOTAL - total;
-        const pct = (v) => frappe.format(v, {fieldtype: "Float", precision: 2});
-        if (Math.abs(manque) <= this.TOLERANCE_PCT) {
-            return `<span style="color:green;font-weight:600">`
-                + __("Ligne {0} — total réparti {1} % ✓", [idx, pct(total)]) + "</span>";
+    texte(reponse, posting_date) {
+        const date = frappe.datetime.str_to_user(posting_date);
+        if (reponse.cle) {
+            return __("Clé de répartition {0} en vigueur au {1} : <b>{2}</b> — les écritures "
+                + "comptables seront réparties ainsi à la validation ({3}, depuis le {4}).",
+                [reponse.centre, date, reponse.cle.libelle, reponse.cle.name,
+                 reponse.cle.valid_from]);
         }
-        const reste = manque > 0
-            ? __("il manque {0} %", [pct(manque)])
-            : __("{0} % de trop", [pct(-manque)]);
-        return `<span style="color:orange;font-weight:600">`
-            + __("Ligne {0} — total réparti {1} % — {2}", [idx, pct(total), reste]) + "</span>";
+        return __("Aucune clé de répartition en vigueur au {0} pour {1} : la charge "
+            + "restera à {1}, hors coût du litre.{2}",
+            [date, reponse.centre,
+             reponse.strict ? " " + __("La sauvegarde sera refusée (mode strict).") : ""]);
     },
 
-    /** Leaf cost centers of the company, Frais Généraux excluded. */
-    filtrer_ateliers(frm) {
-        frm.set_query("atelier", this.CHAMP_TABLE, () => ({
-            filters: [
-                ["Cost Center", "company", "=", frm.doc.company],
-                ["Cost Center", "is_group", "=", 0],
-                ["Cost Center", "name", "not like", `${this.ATELIER_FRAIS_GENERAUX} - %`],
-            ],
-        }));
-    },
-
-    /** New split row → `ligne` = first Frais Généraux line, if not set. */
-    preremplir_ligne(frm, cdt, cdn) {
-        const lignes = this.lignes_frais_generaux(frm);
-        const row = locals[cdt] && locals[cdt][cdn];
-        if (!row || row.ligne || !lignes.length) return;
-        frappe.model.set_value(cdt, cdn, "ligne", lignes[0]);
+    bouton_cle(frm, cost_center) {
+        const libelle = __("Clé de répartition");
+        if (frm.custom_buttons && frm.custom_buttons[libelle]) return;
+        frm.add_custom_button(libelle, () => {
+            frappe.set_route("List", "Cost Center Allocation",
+                {main_cost_center: cost_center, docstatus: 1});
+        });
     },
 };
-
-frappe.ui.form.on(window.hmd_repartition.DOCTYPE_ENFANT, {
-    ligne(frm) { window.hmd_repartition.rafraichir(frm); },
-    pourcentage(frm) { window.hmd_repartition.rafraichir(frm); },
-});

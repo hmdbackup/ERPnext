@@ -98,15 +98,14 @@ ATELIER_FRAIS_GENERAUX = "Frais Généraux"
 ATELIER_LAIT = "Lait"
 
 # Périmètre du coût complet au litre. Décidé en revue reporting : atelier Lait
-# + quote-part des charges générales. La quote-part est la SOMME des
-# répartitions saisies charge par charge (décision 26/08/2026, plus de clé
-# calculée) ; le périmètre reste configurable parce que c'est une décision
-# métier, pas une constante technique (convention maison : jamais de seuil en
-# dur).
+# + quote-part des charges générales. La quote-part est ce que la CLÉ DE
+# RÉPARTITION (Cost Center Allocation ERPNext) a envoyé de Frais Généraux vers
+# Lait, pièce par pièce (réunions 26/08 et 03/09/2026 : la clé se fixe une
+# fois, puis s'applique à chaque saisie — plus de clé calculée, plus de saisie
+# ligne par ligne) ; le périmètre reste configurable parce que c'est une
+# décision métier, pas une constante technique (convention maison : jamais de
+# seuil en dur).
 PERIMETRES_COUT_LITRE = ("LAIT_QUOTE_PART", "LAIT_SEUL", "TOUTES_CHARGES")
-
-# Parents porteurs de la table enfant `Repartition Atelier Charge` (SCRUM-10).
-PARENTS_REPARTITION = ("Purchase Invoice", "Journal Entry")
 
 
 def _poste_de(num):
@@ -177,34 +176,78 @@ def gl_sums_par_atelier(date_debut, date_fin):
     }
 
 
-def repartitions_frais_generaux(date_debut, date_fin, ventilation=None):
-    """SCRUM-10 — the Frais Généraux charges of the period and their
-    analytical split by atelier, as typed on each charge.
+def cle_repartition(cost_center, date, company=COMPANY):
+    """The ERPNext « Cost Center Allocation » in force on `date` for
+    `cost_center` — the same lookup the General Ledger applies at posting time
+    (`erpnext.accounts.general_ledger.get_cost_center_allocation_data`: the
+    latest submitted allocation whose `valid_from` ≤ posting date).
 
-    Reads the Purchase Invoice lines (submitted, credit notes excluded) and
-    the Journal Entry lines (submitted, debit charge lines) booked on Frais
-    Généraux, joined to their `Repartition Atelier Charge` parts (`parent`,
-    `ligne` = idx). A charge without any part is listed with an empty split:
-    it is what separates the GL total of Frais Généraux from the split total,
-    and the report must be able to name it.
+    Returns {name, valid_from, parts: [{cost_center, atelier (short name),
+    pct}]} or None when no key applies on that date (the charge then stays on
+    the cost center it was booked on)."""
+    if not cost_center:
+        return None
+    cle = frappe.db.get_value(
+        "Cost Center Allocation",
+        {"docstatus": 1, "company": company, "main_cost_center": cost_center,
+         "valid_from": ("<=", date)},
+        ["name", "valid_from"], order_by="valid_from desc", as_dict=True)
+    if not cle:
+        return None
+    parts = frappe.get_all("Cost Center Allocation Percentage",
+                           filters={"parent": cle.name},
+                           fields=["cost_center", "percentage"],
+                           order_by="idx asc")
+    return {
+        "name": cle.name, "valid_from": cle.valid_from,
+        "parts": [{"cost_center": p.cost_center, "atelier": _nom_court(p.cost_center),
+                   "pct": float(p.percentage or 0)} for p in parts],
+    }
+
+
+def libelle_cle(cle):
+    """« Lait 60 % · Cultures - Fourrage 25 % · Élevage - Génisses 15 % »."""
+    from hmd_agro.hmd_agro.utils.format_fr import fr_nombre
+
+    return " · ".join(f"{p['atelier']} {fr_nombre(round(p['pct'], 2))} %"
+                      for p in cle["parts"])
+
+
+def repartitions_frais_generaux(date_debut, date_fin, ventilation=None):
+    """The Frais Généraux charges of the period and how the KEY split them.
+
+    Since 03/09/2026 the split is no longer typed on each charge: the
+    accountant books the charge on Frais Généraux, and ERPNext's « Cost
+    Center Allocation » (the key, fixed once by the administrator) splits the
+    GL entries at submit time. This reader lists the Purchase Invoice lines
+    (submitted, credit notes excluded) and the Journal Entry lines
+    (submitted, debit charge lines) booked on a Frais Généraux cost center,
+    and attaches to each the key in force on its posting date — exactly the
+    key the ledger applied. A charge posted before any key is listed with an
+    empty split: it stayed on Frais Généraux, and the report must name it.
 
     `ventilation`: the `gl_sums_par_atelier` result the caller already holds
     (saves a second GL reading); read otherwise.
 
     Returns {
         "charges": [{voucher_type, voucher, ligne, libelle, compte, poste,
-                     montant, repartition: [{atelier, pct, montant}]}],
+                     montant, cost_center, posting_date, cle (name or None),
+                     repartition: [{atelier, pct, montant}]}],
         "par_atelier": {atelier: montant},
         "par_atelier_postes": {atelier: {poste: montant}},
-        "total_reparti": x, "total_fg": y (GL),
-        "total_liste": l (Σ of the PI/JE charges listed),
-        "autres": y − l (vouchers booked on FG that cannot be listed: stock,
-                         credit notes…),
-        "non_reparti": l − x (signed, never hidden)
+        "total_liste": Σ of the listed charges,
+        "total_reparti": Σ of the charges split by a key,
+        "non_reparti": Σ of the charges posted without a key (stayed on FG),
+        "total_fg": GL balance left on Frais Généraux over the period,
+        "autres": total_fg − non_reparti (vouchers left on FG that cannot be
+                  listed here: stock movements, credit notes…),
+        "controle_gl": {"ecart": Σ |GL − key| over the split charges,
+                        "details": [...]} — the ledger really carries the split,
+        "cles_en_vigueur": [{centre, name, valid_from, parts}] at date_fin,
     }
     """
     charges = _charges_frais_generaux(date_debut, date_fin)
-    _joindre_repartitions(charges)
+    _joindre_cles(charges)
 
     par_atelier, par_atelier_postes = {}, {}
     for charge in charges:
@@ -216,30 +259,53 @@ def repartitions_frais_generaux(date_debut, date_fin, ventilation=None):
 
     if ventilation is None:
         ventilation = gl_sums_par_atelier(date_debut, date_fin)
-    total_fg = ventilation["ateliers"].get(
-        ATELIER_FRAIS_GENERAUX, {"total": 0.0})["total"]
-    total_reparti = sum(par_atelier.values())
+    total_fg = sum(
+        atelier["total"] for nom, atelier in ventilation["ateliers"].items()
+        if nom in {_nom_court(cc) for cc in _centres_frais_generaux()})
     total_liste = sum(c["montant"] for c in charges)
+    total_reparti = sum(c["montant"] for c in charges if c["cle"])
+    non_reparti = total_liste - total_reparti
     return {
         "charges": charges,
         "par_atelier": {a: round(m, 2) for a, m in par_atelier.items()},
         "par_atelier_postes": {
             a: {p: round(m, 2) for p, m in postes.items()}
             for a, postes in par_atelier_postes.items()},
-        "total_reparti": round(total_reparti, 2),
-        "total_fg": round(total_fg, 2),
         "total_liste": round(total_liste, 2),
-        "autres": round(total_fg - total_liste, 2),
-        "non_reparti": round(total_liste - total_reparti, 2),
+        "total_reparti": round(total_reparti, 2),
+        "non_reparti": round(non_reparti, 2),
+        "total_fg": round(total_fg, 2),
+        "autres": round(total_fg - non_reparti, 2),
+        "controle_gl": _controle_grand_livre(charges),
+        "cles_en_vigueur": cles_en_vigueur(date_fin),
     }
 
 
+def cles_en_vigueur(date):
+    """The key in force on `date` for each Frais Généraux cost center —
+    [{centre (short name), cost_center, name, valid_from, parts}], the centers
+    without a key listed with `name` None so the report can say so."""
+    cles = []
+    for cc in _centres_frais_generaux():
+        cle = cle_repartition(cc, date) or {"name": None, "valid_from": None,
+                                             "parts": []}
+        cles.append({"centre": _nom_court(cc), "cost_center": cc, **cle})
+    return cles
+
+
 def _centres_frais_generaux():
-    """Full names (company suffix included) of the Frais Généraux cost centers."""
+    """Full names (company suffix included) of the Frais Généraux cost
+    centers: the ones named so, plus any cost center that carries a submitted
+    key (a second « Frais Généraux Parc » key needs configuration, not
+    code)."""
     centres = frappe.get_all("Cost Center",
                              filters={"company": COMPANY, "is_group": 0},
                              pluck="name")
-    return [cc for cc in centres if _nom_court(cc) == ATELIER_FRAIS_GENERAUX]
+    par_nom = {cc for cc in centres if _nom_court(cc) == ATELIER_FRAIS_GENERAUX}
+    par_cle = set(frappe.get_all("Cost Center Allocation",
+                                 filters={"docstatus": 1, "company": COMPANY},
+                                 pluck="main_cost_center", distinct=True))
+    return sorted(par_nom | (par_cle & set(centres)))
 
 
 def _charges_frais_generaux(date_debut, date_fin):
@@ -257,7 +323,8 @@ def _charges_frais_generaux(date_debut, date_fin):
         SELECT 'Purchase Invoice' AS voucher_type, pi.name AS voucher,
                pi.posting_date, pii.idx AS ligne,
                COALESCE(pii.item_name, pii.item_code) AS libelle,
-               acc.account_number AS compte, pii.base_net_amount AS montant
+               acc.account_number AS compte, acc.name AS compte_nom,
+               pii.cost_center, pii.base_net_amount AS montant
         FROM `tabPurchase Invoice Item` pii
         JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
         JOIN `tabAccount` acc ON acc.name = pii.expense_account
@@ -272,6 +339,7 @@ def _charges_frais_generaux(date_debut, date_fin):
         SELECT 'Journal Entry' AS voucher_type, je.name AS voucher,
                je.posting_date, jea.idx AS ligne,
                acc.account_name AS libelle, acc.account_number AS compte,
+               acc.name AS compte_nom, jea.cost_center,
                (jea.debit - jea.credit) AS montant
         FROM `tabJournal Entry Account` jea
         JOIN `tabJournal Entry` je ON je.name = jea.parent
@@ -290,45 +358,92 @@ def _charges_frais_generaux(date_debut, date_fin):
         charges.append({
             "voucher_type": r.voucher_type, "voucher": r.voucher,
             "ligne": int(r.ligne), "libelle": r.libelle,
-            "compte": r.compte or "", "poste": _poste_de(r.compte or ""),
-            "montant": float(r.montant or 0), "repartition": [],
+            "compte": r.compte or "", "compte_nom": r.compte_nom,
+            "poste": _poste_de(r.compte or ""),
+            "montant": float(r.montant or 0), "cost_center": r.cost_center,
+            "posting_date": r.posting_date, "cle": None, "repartition": [],
         })
     return charges
 
 
-def _joindre_repartitions(charges):
-    """Attaches to each charge the parts typed on it (atelier short name, pct,
-    amount recomputed from the line — the charge line is the only source of
-    the amount)."""
-    if not charges or not frappe.db.table_exists("Repartition Atelier Charge"):
-        return
-    parts = frappe.get_all(
-        "Repartition Atelier Charge",
-        filters={"parenttype": ["in", list(PARENTS_REPARTITION)],
-                 "parent": ["in", sorted({c["voucher"] for c in charges})]},
-        fields=["parenttype", "parent", "ligne", "atelier", "pourcentage"],
-        order_by="parent asc, ligne asc, idx asc")
-    par_ligne = {}
-    for part in parts:
-        par_ligne.setdefault((part.parenttype, part.parent, int(part.ligne)),
-                             []).append(part)
+def _joindre_cles(charges):
+    """Attaches to each charge the key in force on its posting date — the
+    split the ledger applied — as [{atelier, pct, montant}]. One lookup per
+    (cost center, date)."""
+    cache = {}
     for charge in charges:
-        cle = (charge["voucher_type"], charge["voucher"], charge["ligne"])
-        for part in par_ligne.get(cle, []):
-            pct = float(part.pourcentage or 0)
-            charge["repartition"].append({
-                "atelier": _nom_court(part.atelier), "pct": pct,
-                "montant": round(charge["montant"] * pct / 100, 2)})
+        cle_cache = (charge["cost_center"], str(charge["posting_date"]))
+        if cle_cache not in cache:
+            cache[cle_cache] = cle_repartition(*cle_cache)
+        cle = cache[cle_cache]
+        if not cle:
+            continue
+        charge["cle"] = cle["name"]
+        charge["repartition"] = [
+            {"atelier": p["atelier"], "pct": p["pct"],
+             "montant": round(charge["montant"] * p["pct"] / 100, 2)}
+            for p in cle["parts"]]
+
+
+def _controle_grand_livre(charges):
+    """Replays the key against the ledger: for every (voucher, account) split
+    by a key, the GL debit per target cost center must equal Σ line × pct.
+    This is the check asked on 03/09/2026 — « valide la facture et regarde si
+    les montants apparaissent bien répartis » — kept on the report, not only
+    in a test. Returns {"ecart": Σ |gap|, "details": [{voucher, compte,
+    cost_center, attendu, grand_livre}] for the gaps beyond the cent}."""
+    attendus = {}
+    for charge in charges:
+        if not charge["cle"]:
+            continue
+        for part in charge["repartition"]:
+            cle = (charge["voucher"], charge["compte_nom"])
+            par_cc = attendus.setdefault(cle, {})
+            par_cc[part["atelier"]] = par_cc.get(part["atelier"], 0.0) + part["montant"]
+    if not attendus:
+        return {"ecart": 0.0, "details": []}
+
+    rows = frappe.db.sql("""
+        SELECT voucher_no, account, cost_center,
+               SUM(debit - credit) AS solde
+        FROM `tabGL Entry`
+        WHERE is_cancelled = 0
+          AND voucher_no IN %(vouchers)s
+        GROUP BY voucher_no, account, cost_center
+    """, {"vouchers": sorted({v for v, _ in attendus})}, as_dict=True)
+    reels = {}
+    for r in rows:
+        reels.setdefault((r.voucher_no, r.account), {})[_nom_court(r.cost_center)] = \
+            float(r.solde or 0)
+
+    ecart, details = 0.0, []
+    for (voucher, compte), par_cc in attendus.items():
+        for atelier, attendu in par_cc.items():
+            reel = reels.get((voucher, compte), {}).get(atelier, 0.0)
+            # Each GL row is rounded to the cent by ERPNext: one cent per part
+            # is a rounding, anything beyond is a key the ledger did not apply.
+            gap = round(abs(reel - attendu), 2)
+            if gap > 0.01 * max(len(par_cc), 1):
+                ecart += gap
+                details.append({"voucher": voucher, "compte": compte,
+                                "cost_center": atelier,
+                                "attendu": round(attendu, 2),
+                                "grand_livre": round(reel, 2)})
+    return {"ecart": round(ecart, 2), "details": details}
 
 
 def charges_lait(date_debut, date_fin, perimetre=None, repartitions=None):
     """Les charges retenues pour le COÛT DU LITRE, poste par poste.
 
     Périmètre décidé en revue reporting : **atelier Lait + quote-part des
-    charges générales**. La quote-part est la **somme des répartitions
-    saisies** sur chaque charge Frais Généraux (décision 26/08/2026 : le
-    comptable répartit à la saisie, plus de clé calculée). Une charge FG non
-    répartie reste à Frais Généraux, hors coût du litre — et le rapport le dit.
+    charges générales**. Depuis le 03/09/2026 la quote-part n'est plus
+    ajoutée par le rapport : la **clé de répartition** (Cost Center
+    Allocation ERPNext) a déjà envoyé, dans le Grand Livre, la part de chaque
+    charge Frais Généraux vers Lait. Le total du Lait est donc lu tel quel au
+    Grand Livre ; la quote-part est isolée pour information (somme des parts
+    Lait des pièces listées par `repartitions_frais_generaux`) et le direct en
+    est la différence. Une charge FG postée sans clé reste à Frais Généraux,
+    hors coût du litre — et le rapport le dit.
 
     Le « non imputé » n'entre JAMAIS dans le coût du litre : lui attribuer une
     quote-part reviendrait à imputer au lait une charge dont on ignore la
@@ -368,19 +483,23 @@ def charges_lait(date_debut, date_fin, perimetre=None, repartitions=None):
                 "non_impute": non_impute, **frais_generaux}
 
     lait = ateliers.get(ATELIER_LAIT, {"total": 0.0, "postes": {}})
-    direct = round(lait["total"], 2)
+    total_gl = round(lait["total"], 2)
     postes = dict(lait["postes"])
-    quote_part = 0.0
+    # What the key sent to Lait — already inside the GL figures above.
+    quote_part = round(repartitions["par_atelier"].get(ATELIER_LAIT, 0.0), 2)
+    postes_quote_part = repartitions["par_atelier_postes"].get(ATELIER_LAIT, {})
 
     if perimetre == "LAIT_QUOTE_PART":
-        quote_part = repartitions["par_atelier"].get(ATELIER_LAIT, 0.0)
-        for cle, montant in repartitions["par_atelier_postes"].get(
-                ATELIER_LAIT, {}).items():
-            postes[cle] = postes.get(cle, 0.0) + montant
+        direct, total = round(total_gl - quote_part, 2), total_gl
+    else:  # LAIT_SEUL — the key's share taken back out, poste by poste
+        for cle, montant in postes_quote_part.items():
+            postes[cle] = postes.get(cle, 0.0) - montant
+        direct = total = round(total_gl - quote_part, 2)
+        quote_part = 0.0
 
     return {"postes": {c: round(v, 2) for c, v in postes.items()},
-            "direct": direct, "quote_part": round(quote_part, 2),
-            "total": round(direct + quote_part, 2), "perimetre": perimetre,
+            "direct": direct, "quote_part": quote_part,
+            "total": total, "perimetre": perimetre,
             "non_impute": non_impute, **frais_generaux}
 
 

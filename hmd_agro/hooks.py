@@ -41,11 +41,9 @@ CORE_CUSTOM_FIELDS = [
 	"Asset Repair-type_intervention",
 	"Asset Repair-personnel",
 	"Asset Repair-reference_hmd",
-	# SCRUM-10 — répartition analytique des frais généraux par ligne de charge
-	"Purchase Invoice-section_repartition_atelier",
-	"Purchase Invoice-repartition_atelier",
-	"Journal Entry-section_repartition_atelier",
-	"Journal Entry-repartition_atelier",
+	# SCRUM-10 — la table « Répartition par atelier » (PI / JE) est retirée
+	# depuis le 03/09/2026 : la clé de répartition est une Cost Center
+	# Allocation ERPNext (patch v1_10.retirer_repartition_par_ligne).
 	# SCRUM-11 — fiche d'intervention : pièces / main-d'œuvre / prestataire
 	"Asset Repair-cout_pieces",
 	"Asset Repair-cout_main_oeuvre",
@@ -129,8 +127,8 @@ boot_session = "hmd_agro.boot.boot_session"
 
 # include js in doctype views
 doctype_js = {
-	# SCRUM-10 — bloc « Répartition par atelier » visible dès qu'une ligne est
-	# imputée à Frais Généraux, total réparti affiché sous la table.
+	# SCRUM-10 — clé de répartition (Cost Center Allocation) en vigueur affichée
+	# en en-tête dès qu'une ligne est imputée à Frais Généraux.
 	"Purchase Invoice": "public/js/purchase_invoice.js",
 	"Journal Entry": "public/js/journal_entry.js",
 	# SCRUM-11 — état de la fiche, bouton « Planifier la prochaine ».
@@ -230,12 +228,13 @@ doctype_js = {
 # Hook on document methods and events
 
 doc_events = {
-	# SCRUM-10 — validation de la répartition des frais généraux (ERR-FIN-11..17)
+	# SCRUM-10 — une charge Frais Généraux sans clé de répartition en vigueur à
+	# sa date : avertissement, ou ERR-FIN-11 en mode strict.
 	"Purchase Invoice": {
-		"validate": "hmd_agro.hmd_agro.utils.repartition_charges.valider_repartition",
+		"validate": "hmd_agro.hmd_agro.utils.repartition_charges.verifier_cle_frais_generaux",
 	},
 	"Journal Entry": {
-		"validate": "hmd_agro.hmd_agro.utils.repartition_charges.valider_repartition",
+		"validate": "hmd_agro.hmd_agro.utils.repartition_charges.verifier_cle_frais_generaux",
 	},
 	# SCRUM-11 — fiche d'intervention (ERR-MNT-09..13)
 	"Asset Repair": {

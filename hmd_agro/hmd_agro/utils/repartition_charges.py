@@ -1,63 +1,62 @@
 """
-SCRUM-10 — répartition analytique des frais généraux par ligne de charge.
+SCRUM-10 — frais généraux répartis par la clé du plan analytique.
 
 `validate` hook of Purchase Invoice and Journal Entry (wired in hooks.py
-`doc_events`). A charge line booked on the « Frais Généraux » cost center may
-carry, in the child table `repartition_atelier` (Repartition Atelier Charge),
-a free split « atelier + pourcentage » whose parts must add up to 100 %.
+`doc_events`). Since 03/09/2026 the accountant types NOTHING to split a
+charge: the charge is booked on the « Frais Généraux » cost center, and the
+« Cost Center Allocation » of ERPNext (the key — main cost center, valid-from
+date, percentages per cost center totalling 100 %) splits the GL entries at
+submit time, proportionally, on every line of the voucher. The key is fixed
+once by the administrator (M. Samir, 26/08 : « on le fera une seule fois »)
+and applies to every entry from its valid-from date.
 
-The split is ANALYTICAL only: no extra GL posting, the ledger stays on Frais
-Généraux (decision 26/08/2026 — 5 to 10 invoices a month, the accountant
-decides at entry time). Readers live in
-`finance_kpis.repartitions_frais_generaux`.
+What is left to this app :
+    - `cle_en_vigueur` (whitelisted) — the key the form shows before saving,
+      so the accountant sees where the charge will land ;
+    - this hook — a charge line on Frais Généraux posted on a date with NO
+      key in force stays on Frais Généraux and leaves the cost per litre.
+      Default : an orange warning. Strict mode (`repartition_fg_obligatoire`,
+      HMD Configuration) : ERR-FIN-11 blocks the save. Automatic entries
+      (`enregistrer_intervention`, `post_salaires`) carry
+      `flags.ignore_repartition_fg` ; ERPNext's own vouchers (depreciation,
+      exchange) are exempt too.
 
-Rules, one child row = one part of one charge line, grouped by `ligne` :
-    ERR-FIN-11  `ligne` unknown, or not a charge booked on Frais Généraux
-    ERR-FIN-12  parts of a line do not total 100 % (tolerance TOLERANCE_PCT)
-    ERR-FIN-13  atelier = Frais Généraux (a charge cannot be split onto itself)
-    ERR-FIN-14  same atelier twice on the same line
-    ERR-FIN-15  atelier missing, group (non-leaf) or of another company
-    ERR-FIN-16  pourcentage outside ]0 ; 100]
-    ERR-FIN-17  strict mode (`repartition_fg_obligatoire`) : a Frais Généraux
-                line without any part blocks the save. Default OFF — the
-                automatic entries (`enregistrer_intervention`, `post_salaires`)
-                book on Frais Généraux without a split, and the report shows
-                such lines as « non réparties ».
-    ERR-FIN-18  an existing part whose target line changed label (line deleted
-                or reordered since the split was typed)
-
-Derived on every validate, never typed in : `libelle` (item name / account
-name of the line) and `montant` (line amount × pourcentage / 100).
+Readers live in `finance_kpis` (`cle_repartition`, `repartitions_frais_generaux`).
+Retired with the per-line table : ERR-FIN-12 … ERR-FIN-18.
 """
 import frappe
-from frappe.utils import cint, flt
+from frappe.utils import cint, flt, formatdate
 
-from hmd_agro.hmd_agro.doctype.personnel.personnel import TOLERANCE_PCT
 from hmd_agro.hmd_agro.utils.config import get_config
-from hmd_agro.hmd_agro.utils.finance_kpis import ATELIER_FRAIS_GENERAUX, _nom_court
-from hmd_agro.hmd_agro.utils.format_fr import fr_nombre
-
-# Child table fieldname on both parents (Custom Field `repartition_atelier`).
-CHAMP_REPARTITION = "repartition_atelier"
-
-PCT_TOTAL = 100.0
+from hmd_agro.hmd_agro.utils.finance_kpis import (
+    ATELIER_FRAIS_GENERAUX, _nom_court, cle_repartition, libelle_cle,
+)
 
 
 # ─── Hook ────────────────────────────────────────────────────────────────────
 
-def valider_repartition(doc, method=None):
-    """`validate` hook — checks the split and derives the child amounts."""
-    lignes = {ligne["ligne"]: ligne for ligne in lignes_charges(doc)}
-    parts = doc.get(CHAMP_REPARTITION) or []
-    for part in parts:
-        ligne = _ligne_frais_generaux(lignes, part)
-        _valider_atelier(part, doc.company)
-        _valider_pourcentage(part)
-        _deriver_part(part, ligne)
-    _valider_doublons(parts)
-    _valider_totaux(parts)
-    if est_mode_strict() and not _est_piece_systeme(doc):
-        _valider_lignes_nues(lignes, parts)
+def verifier_cle_frais_generaux(doc, method=None):
+    """`validate` hook — every charge line booked on Frais Généraux must find
+    a key in force on the posting date (warning, or ERR-FIN-11 in strict
+    mode)."""
+    if _est_piece_systeme(doc):
+        return
+    date = doc.get("posting_date")
+    sans_cle = [ligne for ligne in lignes_charges(doc)
+                if est_frais_generaux(ligne["cost_center"])
+                and not cle_repartition(ligne["cost_center"], date, doc.company)]
+    if not sans_cle:
+        return
+    numeros = ", ".join(str(ligne["ligne"]) for ligne in sans_cle)
+    message = (
+        f"Ligne(s) {numeros} imputée(s) à « {ATELIER_FRAIS_GENERAUX} » sans clé "
+        f"de répartition en vigueur au {formatdate(date)} : la charge restera à "
+        f"{ATELIER_FRAIS_GENERAUX}, hors coût du litre. Créer une « Cost Center "
+        f"Allocation » (clé) sur ce centre de coûts, ou choisir directement le "
+        f"centre de coûts de l'atelier concerné.")
+    if est_mode_strict():
+        frappe.throw(f"ERR-FIN-11 : {message}")
+    frappe.msgprint(message, indicator="orange", alert=True)
 
 
 # Journal Entry voucher types generated by ERPNext itself — never typed in.
@@ -66,10 +65,9 @@ VOUCHERS_SYSTEME = ("Depreciation Entry", "Exchange Gain Or Loss",
 
 
 def _est_piece_systeme(doc):
-    """Strict mode (ERR-FIN-17) only concerns entries typed in by the
-    accountant: automatic entries carry `flags.ignore_repartition_fg`
-    (`maintenance_utils._poster_charge`, `charges_utils.post_salaires`) and
-    ERPNext's own vouchers (depreciation, exchange) are exempt."""
+    """Only entries typed in by the accountant are checked: automatic entries
+    carry `flags.ignore_repartition_fg` (`maintenance_utils._poster_charge`,
+    `charges_utils.post_salaires`) and ERPNext's own vouchers are exempt."""
     if doc.flags.get("ignore_repartition_fg"):
         return True
     return (doc.doctype == "Journal Entry"
@@ -77,7 +75,7 @@ def _est_piece_systeme(doc):
 
 
 def est_mode_strict():
-    """True when every Frais Généraux line must carry a 100 % split."""
+    """True when a Frais Généraux line without a key in force blocks the save."""
     return bool(cint(get_config("repartition_fg_obligatoire", default=0)))
 
 
@@ -142,97 +140,16 @@ def _est_compte_de_charge(compte):
     return bool(compte) and compte.root_type == "Expense"
 
 
-# ─── Rules ───────────────────────────────────────────────────────────────────
+# ─── Form helper ─────────────────────────────────────────────────────────────
 
-def _ligne_frais_generaux(lignes, part):
-    """The charge line targeted by a part — must exist and be on Frais
-    Généraux (ERR-FIN-11)."""
-    ligne = lignes.get(cint(part.ligne))
-    if ligne is None or not est_frais_generaux(ligne["cost_center"]):
-        frappe.throw(
-            f"ERR-FIN-11 : ligne {part.ligne} — seule une ligne de charge imputée "
-            f"à « {ATELIER_FRAIS_GENERAUX} » peut être répartie (ligne inexistante "
-            f"ou imputée à un autre atelier).")
-    return ligne
-
-
-def _valider_atelier(part, company):
-    infos = (frappe.db.get_value("Cost Center", part.atelier,
-                                 ["is_group", "company"], as_dict=True)
-             if part.atelier else None)
-    if not infos or infos.is_group or infos.company != company:
-        frappe.throw(
-            f"ERR-FIN-15 : ligne {part.ligne} — l'atelier « {part.atelier} » est "
-            f"introuvable, est un groupe ou appartient à une autre société : "
-            f"choisir un centre de coût terminal de {company}.")
-    if est_frais_generaux(part.atelier):
-        frappe.throw(
-            f"ERR-FIN-13 : ligne {part.ligne} — une charge de "
-            f"« {ATELIER_FRAIS_GENERAUX} » ne se répartit pas sur elle-même.")
-
-
-def _valider_pourcentage(part):
-    pct = flt(part.pourcentage)
-    if not 0 < pct <= PCT_TOTAL:
-        frappe.throw(
-            f"ERR-FIN-16 : ligne {part.ligne}, atelier « {part.atelier} » — la part "
-            f"doit être comprise entre 0 (exclu) et {fr_nombre(PCT_TOTAL)} % "
-            f"(saisi : {fr_nombre(pct)} %).")
-
-
-def _valider_doublons(parts):
-    vus = set()
-    for part in parts:
-        cle = (cint(part.ligne), part.atelier)
-        if cle in vus:
-            frappe.throw(
-                f"ERR-FIN-14 : ligne {part.ligne} — l'atelier « {part.atelier} » "
-                f"apparaît deux fois dans la répartition.")
-        vus.add(cle)
-
-
-def _valider_totaux(parts):
-    totaux = {}
-    for part in parts:
-        ligne = cint(part.ligne)
-        totaux[ligne] = totaux.get(ligne, 0.0) + flt(part.pourcentage)
-    for ligne, total in sorted(totaux.items()):
-        # 33,33 + 33,33 + 33,33 = 99,99 → compared at 2 decimals, within tolerance
-        total = round(total, 2)
-        if round(abs(total - PCT_TOTAL), 2) > TOLERANCE_PCT:
-            frappe.throw(
-                f"ERR-FIN-12 : Répartition incomplète — ligne {ligne} : "
-                f"{fr_nombre(round(total, 2))} % (le total des parts doit faire "
-                f"{fr_nombre(PCT_TOTAL)} %).")
-
-
-def _valider_lignes_nues(lignes, parts):
-    """Strict mode — every Frais Généraux line must carry a split (ERR-FIN-17)."""
-    reparties = {cint(part.ligne) for part in parts}
-    for numero, ligne in sorted(lignes.items()):
-        if est_frais_generaux(ligne["cost_center"]) and numero not in reparties:
-            frappe.throw(
-                f"ERR-FIN-17 : ligne {numero} « {ligne['libelle']} » imputée à "
-                f"« {ATELIER_FRAIS_GENERAUX} » sans répartition par atelier — la "
-                f"répartition est obligatoire (HMD Configuration).")
-
-
-# ─── Derived fields ──────────────────────────────────────────────────────────
-
-def _deriver_part(part, ligne):
-    """`libelle` and `montant` are derived from the charge line — never typed.
-
-    A part targets its line by number (`ligne` = idx): deleting or reordering
-    a line silently re-targets the split. An existing part (its `libelle` is
-    already set) whose line now carries another label is refused (ERR-FIN-18)
-    instead of being re-derived behind the accountant's back. A new part
-    (empty `libelle`) and an unchanged document pass.
-    """
-    if part.libelle and part.libelle != ligne["libelle"]:
-        frappe.throw(
-            f"ERR-FIN-18 : la ligne {part.ligne} n'est plus « {part.libelle} » mais "
-            f"« {ligne['libelle']} » — vérifier la répartition (une ligne a été "
-            f"supprimée ou déplacée).")
-    part.libelle = ligne["libelle"]
-    part.montant = flt(ligne["montant"] * flt(part.pourcentage) / PCT_TOTAL,
-                       part.precision("montant"))
+@frappe.whitelist()
+def cle_en_vigueur(company, posting_date, cost_center):
+    """What the form shows under the header: the key that will split the
+    charges booked on `cost_center` at `posting_date`. Returns {cle: {name,
+    valid_from, parts, libelle} | None, centre (short name)}."""
+    cle = cle_repartition(cost_center, posting_date, company)
+    if cle:
+        cle["libelle"] = libelle_cle(cle)
+        cle["valid_from"] = formatdate(cle["valid_from"])
+    return {"cle": cle, "centre": _nom_court(cost_center),
+            "strict": est_mode_strict()}

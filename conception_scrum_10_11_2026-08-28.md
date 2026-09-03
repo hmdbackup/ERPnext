@@ -1,5 +1,13 @@
 # Conception technique — SCRUM-10 & SCRUM-11 (dev du 28/08/2026)
 
+> **Révisé le 03/09/2026** — la section 1.1 (table « Répartition par atelier »
+> sur PI / JE, ERR-FIN-11..18, répartition analytique) est **remplacée** : la
+> clé est une **Cost Center Allocation** ERPNext qui répartit le Grand Livre à
+> la validation ; la table, le DocType enfant et les règles 12..18 sont retirés
+> (patch `v1_10.retirer_repartition_par_ligne`). Voir
+> `reunion_2026-09-03/compte_rendu.md`. Le reste du document (1.2 à 2.3) reste
+> valable, avec `charges_lait` lisant désormais le Lait tel quel au Grand Livre.
+
 Source fonctionnelle : `reunion_2026-08-26/compte_rendu.md` + `plan_maquettes_2026-08-26.md`
 (maquettes reprises, en attente de validation par M. Samir). Ce document fixe
 **comment** on code ce qui a été décidé le 26/08, ni plus ni moins.

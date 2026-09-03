@@ -641,14 +641,14 @@
   {
    "fieldname": "section_frais_generaux",
    "fieldtype": "Section Break",
-   "label": "Frais généraux — répartition par charge"
+   "label": "Frais généraux — clé de répartition"
   },
   {
    "fieldname": "repartition_fg_obligatoire",
    "fieldtype": "Check",
-   "label": "Répartition obligatoire des charges Frais Généraux",
+   "label": "Clé de répartition obligatoire pour les charges Frais Généraux",
    "default": "0",
-   "description": "Activé : une ligne de facture d'achat ou d'écriture imputée à Frais Généraux ne peut pas être enregistrée sans répartition à 100 % par atelier. Désactivé (défaut) : la répartition est facultative ; une charge non répartie reste à Frais Généraux et sort du coût du litre (réunion 26/08/2026)."
+   "description": "La clé de répartition des frais généraux est une « Cost Center Allocation » ERPNext (centre principal Frais Généraux, date de début, pourcentages par centre de coûts = 100 %) : à la validation, chaque écriture imputée à Frais Généraux est ventilée automatiquement. Activé : une ligne de facture d'achat ou d'écriture imputée à Frais Généraux est refusée si aucune clé n'est en vigueur à sa date (ERR-FIN-11). Désactivé (défaut) : simple avertissement ; la charge reste à Frais Généraux et sort du coût du litre (réunions 26/08 et 03/09/2026)."
   },
   {
    "fieldname": "cout_litre_perimetre",
@@ -656,7 +656,7 @@
    "label": "Périmètre du coût du litre",
    "options": "LAIT_QUOTE_PART\nLAIT_SEUL\nTOUTES_CHARGES",
    "default": "LAIT_QUOTE_PART",
-   "description": "LAIT_QUOTE_PART (défaut) = charges directes de l'atelier Lait + somme des répartitions de frais généraux vers Lait. LAIT_SEUL = charges directes seules. TOUTES_CHARGES = toutes les charges de la ferme."
+   "description": "LAIT_QUOTE_PART (défaut) = atelier Lait au Grand Livre, part des frais généraux envoyée par la clé de répartition comprise. LAIT_SEUL = charges directes seules. TOUTES_CHARGES = toutes les charges de la ferme."
   },
   {
    "fieldname": "section_maintenance",
