@@ -85,7 +85,12 @@ class Traitement(Document):
         fires preventively at reorder_level."""
         if self.type_traitement != "TRAITEMENT_MEDICAL" or not self.medicaments:
             return
-        from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
+        from hmd_agro.hmd_agro.utils.stock_utils import (
+            cost_center_animal, create_stock_movement,
+        )
+        # RG-FIN-40 : le médicament est une charge de l'atelier de l'animal
+        # (vache → Lait, jeune → Élevage - Génisses), pas des Frais Généraux.
+        cost_center = cost_center_animal(self.animal, self.date_traitement)
         for row in self.medicaments:
             if not row.medicament:
                 continue
@@ -114,7 +119,8 @@ class Traitement(Document):
                 )
             create_stock_movement(item, qty, "Material Issue",
                 WAREHOUSE,
-                f"Traitement {self.name}", self.date_traitement)
+                f"Traitement {self.name}", self.date_traitement,
+                cost_center=cost_center)
 
     def restore_medicament_stock(self):
         """Compensating Material Receipt per medicament row on Traitement
@@ -122,7 +128,12 @@ class Traitement(Document):
         original decrement exactly."""
         if self.type_traitement != "TRAITEMENT_MEDICAL" or not self.medicaments:
             return
-        from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
+        from hmd_agro.hmd_agro.utils.stock_utils import (
+            cost_center_animal, cost_center_mouvement, create_stock_movement,
+        )
+        # Même centre de coûts que la sortie compensée : annulation symétrique.
+        cost_center = (cost_center_mouvement(f"Traitement {self.name}")
+                       or cost_center_animal(self.animal, self.date_traitement))
         for row in self.medicaments:
             if not row.medicament:
                 continue
@@ -134,7 +145,8 @@ class Traitement(Document):
                 continue
             create_stock_movement(item, qty, "Material Receipt",
                 WAREHOUSE,
-                f"Restore Traitement {self.name} delete", self.date_traitement)
+                f"Restore Traitement {self.name} delete", self.date_traitement,
+                cost_center=cost_center)
 
     def update_animal_attente_lait(self, clear=False):
         """Update Animal milk withdrawal flag based on all treatments"""

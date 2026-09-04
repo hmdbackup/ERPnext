@@ -131,6 +131,8 @@ doctype_js = {
 	# en en-tête dès qu'une ligne est imputée à Frais Généraux.
 	"Purchase Invoice": "public/js/purchase_invoice.js",
 	"Journal Entry": "public/js/journal_entry.js",
+	# SCRUM-10 — une nouvelle clé arrive pré-remplie (centre, date, ateliers).
+	"Cost Center Allocation": "public/js/cost_center_allocation.js",
 	# SCRUM-11 — état de la fiche, bouton « Planifier la prochaine ».
 	"Asset Repair": "public/js/asset_repair.js",
 }

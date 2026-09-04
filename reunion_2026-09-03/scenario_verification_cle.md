@@ -14,19 +14,21 @@ déjà chargé — ou à rejouer à la main comme ci-dessous.
 | **Cost Center Allocation** | la **clé de répartition** : centre principal + date de début + % par centre (= 100 %) |
 | **Vue Grand Livre** (Accounting Ledger) | les écritures comptables d'une pièce validée |
 
-## 1. Poser la clé (une fois) — 2 min
+## 1. Poser la clé (une fois) — 1 min
 
-Espace **HMD AGRO › Clé de répartition FG** (ou Comptabilité › Cost Center
-Allocation) › Nouveau :
+Espace **HMD AGRO › Clé de répartition FG** › Nouveau (ou, depuis une facture
+sans clé, le bouton **Clé de répartition**). Le formulaire arrive **pré-rempli** :
 
 - Centre de coûts principal : **Frais Généraux - HMD**
-- Valide à partir du : une date **postérieure à la dernière écriture** du
-  centre (ERPNext le vérifie et refuse sinon). Sur la copie locale : ≥ 22/08/2026.
-- Pourcentages : Lait 60 · Cultures - Fourrage 25 · Élevage - Génisses 15
-  (total 100, sinon refus).
+- Valide à partir du : le 1er du mois qui suit la dernière écriture du centre
+  (ERPNext refuse une date antérieure — le bandeau bleu le dit). Sur la copie
+  locale : 01/09/2026.
+- Une ligne par atelier déjà utilisé : Lait, Cultures - Fourrage, Élevage -
+  Génisses, Traction — **il ne reste que les pourcentages à taper** :
+  Lait 60 · Cultures - Fourrage 25 · Élevage - Génisses 15 (total 100).
 - Enregistrer, **Valider**.
 
-À montrer : une clé avec 90 % est refusée ; le centre principal ne peut pas
+À montrer : une clé à 90 % est refusée ; le centre principal ne peut pas
 figurer dans la table ; deux clés à des dates différentes coexistent
 (historique).
 
@@ -64,6 +66,12 @@ Aucune ligne sur Frais Généraux. Le fournisseur (401) n'est pas réparti.
 C'est la réponse à la remarque 4 d'Aymen : la répartition est **dans le Grand
 Livre**, proportionnelle, sur chaque ligne, sans saisie.
 
+Contre-exemple utile : Santé › **Traitement** sur une vache, avec un médicament
+› sa sortie de stock (Stock › Mouvement de stock, remarque « Traitement TRT-… »)
+est sur **Lait - HMD**, pas sur Frais Généraux — l'app pose le centre de coûts
+de l'atelier de l'animal, la clé ne la touche pas. Même chose pour une
+génisse (→ Élevage - Génisses) et pour les rations des lots.
+
 ## 4. Le rapport — 3 min
 
 HMD AGRO › **Rapport Performance**, Période = Mois, Date = 29/08/2026 :
@@ -77,8 +85,9 @@ HMD AGRO › **Rapport Performance**, Période = Mois, Date = 29/08/2026 :
   - dont part Lait — envoyée par la clé : **1 440**
   - Total resté à Frais Généraux (Grand Livre) : −1 201 → « Autres pièces
     restées à Frais Généraux (stock, avoirs…) » en orange : ce sont les
-    mouvements de stock imputés au centre par défaut, **avant** la clé —
-    paramétrage à corriger, pas du code.
+    mouvements de stock d'août, postés **avant** la correction du 04/09
+    (l'app pose désormais le centre de coûts de l'atelier). Ils ne sont pas
+    repris ; les mouvements à venir vont dans leur atelier.
   - **Contrôle — écritures comptables = clé (aucun écart) : 0**
 - Section **Coût du Lait (détail)** : « Quote-part Frais Généraux — envoyée à
   Lait par la clé de répartition (déjà au Grand Livre) » = 1 440 ; le TOTAL

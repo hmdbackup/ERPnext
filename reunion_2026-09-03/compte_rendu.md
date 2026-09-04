@@ -106,27 +106,62 @@ Grand Livre réparti 855 / 665 / 380 et 45 / 35 / 20) ; `test_ventilation_atelie
 67/67 ; `test_personnel` 54/54 ; `test_immobilisations` 13/13 ;
 `test_controle_coherence` 15/15 ; `test_tableau_amortissement` 19/19.
 
-## 4. Ce qu'il faut savoir avant de poser la clé sur le vrai site
+## 4. Les trois décisions — tranchées le 04/09 « au plus simple pour l'utilisateur »
 
-- **La date de début doit être postérieure à la dernière écriture du centre.**
-  ERPNext refuse une allocation dont `valid_from` ≤ dernière écriture sur
-  Frais Généraux (sur la copie locale : 21/08/2026). La clé n'est **pas
-  rétroactive** : les frais généraux déjà comptabilisés restent à Frais
-  Généraux, le rapport les nomme « non répartis — pièces sans clé à leur
-  date ». Pour l'exercice en cours, c'est M. Samir qui dit s'il veut une
-  reprise manuelle (écriture de journal) ou un départ à la date de la clé.
-- **Le centre de coûts par défaut de la société est Frais Généraux.** Toute
-  ligne saisie sans centre de coûts y tombe — donc est répartie par la clé.
-  C'est cohérent avec « Frais Généraux = fourre-tout », mais à dire au
-  comptable. Les **mouvements de stock** imputés à ce centre par défaut (déjà
-  signalés le 29/08 : −1 201 DT sur août) seront eux aussi répartis par la clé
-  à partir de sa date : le paramétrage des entrepôts / articles reste à
-  corriger, ce n'est pas du code.
-- **Changer la clé** = créer une nouvelle allocation avec une nouvelle date ;
-  l'ancienne continue de s'appliquer aux pièces antérieures (cas 4 du test).
-  C'est exactement le « au 31 décembre, à la clôture » de M. Samir.
-- **Les arrondis** : ERPNext arrondit chaque part au millime ; le contrôle du
-  rapport tolère un millime par part, pas davantage.
+Trois questions restaient ouvertes le 03/09. Elles ont été tranchées le 04/09
+avec une seule règle : **le comptable et le gérant ne doivent rien avoir à
+paramétrer**. M. Samir garde la main sur les pourcentages ; tout le reste est
+porté par l'app.
+
+**1. La date et les pourcentages de la clé → une clé pré-remplie.**
+ERPNext refuse une allocation dont `valid_from` est antérieur ou égal à la
+dernière écriture du centre (copie locale : 21/08/2026). Plutôt que d'expliquer
+la règle, l'app la porte : le bouton « Clé de répartition » d'une facture sans
+clé — et le raccourci « Clé de répartition FG » › Nouveau — ouvrent une Cost
+Center Allocation **déjà remplie** (`proposer_cle`) : centre Frais Généraux,
+date = le 1er du mois qui suit la dernière écriture (et la dernière clé posée),
+une ligne par centre de coûts d'atelier déjà utilisé au Grand Livre. Il ne
+reste que les pourcentages à taper, total 100. Un bandeau bleu explique la
+date. La clé n'est pas rétroactive ; les pourcentages restent la décision de
+M. Samir (proposition de départ : 60 Lait · 25 Cultures - Fourrage ·
+15 Élevage - Génisses, ceux de la démo).
+
+**2. Les frais généraux déjà comptabilisés → pas de reprise.** La clé
+s'applique à partir de sa date ; ce qui est avant reste à Frais Généraux et le
+rapport le nomme « non répartis — pièces sans clé à leur date », en orange.
+Aucune écriture manuelle à passer, aucun risque sur l'historique. Si M. Samir
+veut malgré tout une reprise, c'est une écriture de journal qu'il décide,
+l'app n'a rien à faire.
+
+**3. Les mouvements de stock → l'app pose le centre de coûts elle-même.**
+C'était le vrai problème : les **273 sorties de stock** de la copie locale
+(rations, médicaments, paillettes) et les 166 réceptions tombaient toutes sur
+Frais Généraux, parce que l'app ne posait aucun centre de coûts et qu'ERPNext
+prend alors le défaut de la société. En août, il ne restait sur Frais Généraux
+**que** ces mouvements (−1 201 DT) — et la clé les aurait éclatés 60 / 25 / 15
+alors qu'une ration de vaches est 100 % Lait. Corriger « le paramétrage » aurait
+demandé un centre de coûts par article ou par entrepôt, à maintenir à chaque
+nouvel aliment. Décision : la règle RG-FIN-40 déjà utilisée pour la vente d'un
+animal (vaches → Lait ; velles, veaux, génisses, taurillons → Élevage -
+Génisses) s'applique à tous les mouvements :
+- Traitement : le médicament va à l'atelier de l'animal soigné ;
+- Insémination : la paillette va à l'atelier de l'animal inséminé ;
+- Ration : la distribution d'un lot va à l'atelier de ses animaux ce jour-là
+  (catégorie reconstruite à la date, jamais lue sur la fiche) ;
+- Corrections de ration et réceptions de compensation (suppression d'un
+  traitement, d'une IA) : le même centre que le mouvement compensé, pour que
+  l'annulation soit symétrique au Grand Livre.
+Conséquence visible : le poste « Ration & Aliments (601) » — le premier de la
+lecture du coût de revient — arrive enfin dans l'atelier Lait au lieu de
+Frais Généraux. Pas de reprise de l'historique (même décision que le point 2).
+Un mouvement de stock saisi **à la main** dans ERPNext sans centre de coûts
+tombe toujours sur Frais Généraux et sera réparti par la clé : à dire au
+comptable, et c'est cohérent avec « Frais Généraux = fourre-tout ».
+
+**Ce qui reste à savoir** : changer la clé = créer une nouvelle allocation à
+une nouvelle date, l'ancienne continuant de s'appliquer aux pièces antérieures
+(le « au 31 décembre, à la clôture » de M. Samir) ; ERPNext arrondit chaque
+part au millime, le contrôle du rapport tolère un millime par part.
 
 ## 5. Points secondaires vus pendant la démo
 
@@ -144,10 +179,8 @@ Grand Livre réparti 855 / 665 / 380 et 45 / 35 / 20) ; `test_ventilation_atelie
 
 - [ ] Reprendre la démo avec Aymen selon `scenario_verification_cle.md` (ce
       dossier) — 10 minutes, sur le site local, données réelles.
-- [ ] Faire valider par M. Samir les pourcentages de la clé et sa date de
-      début (proposition : le 1er du mois suivant la dernière écriture).
-- [ ] Décider avec lui du sort des frais généraux déjà comptabilisés avant la
-      clé (reprise ou non).
-- [ ] Corriger le paramétrage stock (centre de coûts par défaut) — hors code.
+- [ ] Faire valider par M. Samir les **pourcentages** de la clé (la date et
+      les lignes sont proposées par l'app).
 - [ ] Jira : SCRUM-10 — commentaire « répartition portée par Cost Center
-      Allocation depuis le 03/09 ; table par ligne retirée ».
+      Allocation depuis le 03/09 ; table par ligne retirée ; centre de coûts
+      des mouvements de stock posé par l'app (RG-FIN-40) depuis le 04/09 ».

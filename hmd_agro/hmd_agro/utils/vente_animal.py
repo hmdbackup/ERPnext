@@ -18,7 +18,9 @@ document actif (docstatus < 2) par animal.
 import frappe
 from frappe.utils import getdate, today
 
-from hmd_agro.hmd_agro.utils.stock_utils import DEFAULT_COMPANY as COMPANY
+from hmd_agro.hmd_agro.utils.stock_utils import (
+    DEFAULT_COMPANY as COMPANY, cost_center_categorie,
+)
 
 ITEM_ANIMAL = "ANIMAL-VENTE"
 CUSTOMER_DEFAULT = "Client Divers"
@@ -38,11 +40,9 @@ def existing_invoice(animal):
 
 
 def _cost_center(categorie):
-    """Atelier: vaches → Lait ; jeunes/génisses → Élevage (RG-FIN-40)."""
-    abbr = frappe.db.get_value("Company", COMPANY, "abbr")
-    atelier = "Lait" if categorie == "VACHE" else "Élevage - Génisses"
-    name = f"{atelier} - {abbr}"
-    return name if frappe.db.exists("Cost Center", name) else None
+    """Atelier: vaches → Lait ; jeunes/génisses → Élevage (RG-FIN-40) — la
+    règle est partagée avec les mouvements de stock (`stock_utils`)."""
+    return cost_center_categorie(categorie)
 
 
 def sync_sale_invoice(animal_doc):

@@ -13,6 +13,9 @@ and applies to every entry from its valid-from date.
 What is left to this app :
     - `cle_en_vigueur` (whitelisted) — the key the form shows before saving,
       so the accountant sees where the charge will land ;
+    - `proposer_cle` (whitelisted) — a new key arrives pre-filled (Frais
+      Généraux, first date ERPNext accepts, one row per atelier) : the
+      administrator only types the percentages ;
     - this hook — a charge line on Frais Généraux posted on a date with NO
       key in force stays on Frais Généraux and leaves the cost per litre.
       Default : an orange warning. Strict mode (`repartition_fg_obligatoire`,
@@ -25,11 +28,11 @@ Readers live in `finance_kpis` (`cle_repartition`, `repartitions_frais_generaux`
 Retired with the per-line table : ERR-FIN-12 … ERR-FIN-18.
 """
 import frappe
-from frappe.utils import cint, flt, formatdate
+from frappe.utils import add_months, cint, flt, formatdate, get_first_day, today
 
 from hmd_agro.hmd_agro.utils.config import get_config
 from hmd_agro.hmd_agro.utils.finance_kpis import (
-    ATELIER_FRAIS_GENERAUX, _nom_court, cle_repartition, libelle_cle,
+    ATELIER_FRAIS_GENERAUX, COMPANY, _nom_court, cle_repartition, libelle_cle,
 )
 
 
@@ -153,3 +156,48 @@ def cle_en_vigueur(company, posting_date, cost_center):
         cle["valid_from"] = formatdate(cle["valid_from"])
     return {"cle": cle, "centre": _nom_court(cost_center),
             "strict": est_mode_strict()}
+
+
+@frappe.whitelist()
+def proposer_cle(company=None):
+    """Pré-remplissage d'une NOUVELLE clé (décision 04/09/2026 : le plus
+    simple pour l'utilisateur). Retourne le centre Frais Généraux, la première
+    date qu'ERPNext acceptera — le 1er du mois qui suit la dernière écriture
+    du centre et la dernière clé déjà posée — et une ligne par centre de coûts
+    d'atelier déjà utilisé au Grand Livre, pourcentage à saisir. L'administrateur
+    ne tape que les pourcentages. Retourne {} si le socle comptable n'est pas
+    posé (pas de centre Frais Généraux)."""
+    company = company or COMPANY
+    centre = centre_frais_generaux(company)
+    if not centre:
+        return {}
+    derniere_ecriture = frappe.db.get_value(
+        "GL Entry", {"cost_center": centre, "is_cancelled": 0}, "max(posting_date)")
+    derniere_cle = frappe.db.get_value(
+        "Cost Center Allocation", {"main_cost_center": centre, "docstatus": 1},
+        "max(valid_from)")
+    reperes = [d for d in (derniere_ecriture, derniere_cle) if d]
+    valid_from = get_first_day(add_months(max(reperes), 1)) if reperes else today()
+    ateliers = frappe.db.sql("""
+        SELECT cc.name FROM `tabCost Center` cc
+        WHERE cc.company = %s AND cc.is_group = 0 AND cc.name != %s
+          AND EXISTS (SELECT 1 FROM `tabGL Entry` gle
+                      WHERE gle.cost_center = cc.name AND gle.is_cancelled = 0)
+        ORDER BY cc.name
+    """, (company, centre))
+    return {
+        "company": company,
+        "main_cost_center": centre,
+        "centre": _nom_court(centre),
+        "valid_from": valid_from,
+        "derniere_ecriture": formatdate(derniere_ecriture) if derniere_ecriture else None,
+        "ateliers": [a[0] for a in ateliers],
+    }
+
+
+def centre_frais_generaux(company=COMPANY):
+    """The « Frais Généraux » leaf cost center of the company, or None."""
+    return frappe.db.get_value(
+        "Cost Center",
+        {"company": company, "is_group": 0, "cost_center_name": ATELIER_FRAIS_GENERAUX},
+        "name")

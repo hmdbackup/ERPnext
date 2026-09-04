@@ -284,6 +284,12 @@ def _post_lot_item_correction(date, lot, item_code, stock_uom, qty_delta, theo_s
         line["basic_rate"] = rate
         if rate == 0:
             line["allow_zero_valuation_rate"] = 1
+    # Même centre de coûts (atelier du lot) que la distribution théorique
+    # corrigée : la correction reste dans l'atelier, pas aux Frais Généraux.
+    cost_center = theo_se and frappe.db.get_value(
+        "Stock Entry Detail", {"parent": theo_se, "item_code": item_code}, "cost_center")
+    if cost_center:
+        line["cost_center"] = cost_center
 
     marker = f"{CORR_MARKER_PREFIX}{lot}_{getdate(date)}_{item_code}"
     se = frappe.get_doc({

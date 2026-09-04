@@ -146,6 +146,7 @@ window.hmd_cle_repartition = {
                 frm.dashboard.set_headline_alert(
                     this.texte(r.message, frm.doc.posting_date),
                     r.message.cle ? "blue" : (r.message.strict ? "red" : "orange"));
+                frm.hmd_cle_actuelle = r.message.cle;
                 this.bouton_cle(frm, cc);
             },
         });
@@ -165,12 +166,19 @@ window.hmd_cle_repartition = {
              reponse.strict ? " " + __("La sauvegarde sera refusée (mode strict).") : ""]);
     },
 
+    /** Key in force → open it. No key → a NEW one, pre-filled by
+     *  cost_center_allocation.js (the administrator only types the %). */
     bouton_cle(frm, cost_center) {
         const libelle = __("Clé de répartition");
         if (frm.custom_buttons && frm.custom_buttons[libelle]) return;
         frm.add_custom_button(libelle, () => {
-            frappe.set_route("List", "Cost Center Allocation",
-                {main_cost_center: cost_center, docstatus: 1});
+            const cle = frm.hmd_cle_actuelle;
+            if (cle) {
+                frappe.set_route("Form", "Cost Center Allocation", cle.name);
+            } else {
+                frappe.new_doc("Cost Center Allocation",
+                    {company: frm.doc.company, main_cost_center: cost_center});
+            }
         });
     },
 };

@@ -243,7 +243,9 @@ class Insemination(Document):
             return  # historical bulk import: do not write to the stock ledger
         if not self.taureau:
             return
-        from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
+        from hmd_agro.hmd_agro.utils.stock_utils import (
+            cost_center_animal, create_stock_movement,
+        )
         # Check whether ANY batch exists for (taureau, type) — if not, the
         # Semence master is missing and the operator needs to add receptions
         # first. Separate from "all batches depleted" so the message is precise.
@@ -277,10 +279,13 @@ class Insemination(Document):
                 indicator="orange", alert=True,
             )
             return
+        # RG-FIN-40 : la paillette est une charge de l'atelier de l'animal
+        # (vache → Lait, génisse → Élevage - Génisses), pas des Frais Généraux.
         create_stock_movement(s.item, 1, "Material Issue",
             WAREHOUSE,
             f"Insemination {self.name} (batch {s.name})",
-            self.date_ia, uom="Paillette", batch_no=s.name)
+            self.date_ia, uom="Paillette", batch_no=s.name,
+            cost_center=cost_center_animal(self.animal, self.date_ia))
 
     def _pick_semence_batch(self, prefer_with_stock):
         """Resolve which Semence record (= Batch) to charge. Returns a dict
@@ -411,11 +416,16 @@ class Insemination(Document):
         (no quantite_recue ceiling) — the receipt just adds to the batch."""
         if not self.taureau:
             return
-        from hmd_agro.hmd_agro.utils.stock_utils import create_stock_movement
+        from hmd_agro.hmd_agro.utils.stock_utils import (
+            cost_center_animal, cost_center_mouvement, create_stock_movement,
+        )
         s = self._pick_semence_batch(prefer_with_stock=False)
         if not s or not s.item:
             return
+        # Même centre de coûts que la sortie compensée : annulation symétrique.
+        cost_center = (cost_center_mouvement(f"Insemination {self.name} (batch {s.name})")
+                       or cost_center_animal(self.animal, self.date_ia))
         create_stock_movement(s.item, 1, "Material Receipt",
             WAREHOUSE,
             f"Restore Insemination {self.name} delete (batch {s.name})",
-            None, uom="Paillette", batch_no=s.name)
+            None, uom="Paillette", batch_no=s.name, cost_center=cost_center)

@@ -3,11 +3,97 @@ ERPNext Stock module helpers — used by Traitement (Médicament), Insémination
 (Semence), and future Aliment integrations.
 """
 import frappe
-from frappe.utils import today
+from frappe.utils import getdate, today
 
 DEFAULT_COMPANY = "hmd-agro"
 DEFAULT_WAREHOUSE = "Magasin Principal - HMD"
 DEFAULT_UOM = "Unit"
+
+
+# ─── Atelier d'un animal (RG-FIN-40) ─────────────────────────────────────────
+#
+# Un mouvement de stock déclenché par un animal — médicament d'un Traitement,
+# paillette d'une Insémination, ration d'un lot — porte le centre de coûts de
+# SON atelier : vaches → Lait ; velles, veaux, génisses, taurillons →
+# Élevage - Génisses. Sans cela ERPNext impute la ligne au centre de coûts par
+# défaut de la société, Frais Généraux, et depuis la clé de répartition (Cost
+# Center Allocation, décision du 03/09/2026) une ration de vaches serait
+# éclatée par la clé au lieu d'aller à 100 % au Lait. Rien à paramétrer :
+# l'app pose le centre elle-même, comme elle le fait déjà pour la vente d'un
+# animal (`vente_animal`).
+ATELIER_VACHES = "Lait"
+ATELIER_JEUNES = "Élevage - Génisses"
+
+
+def atelier_categorie(categorie):
+    """Nom court de l'atelier d'une catégorie d'animal (RG-FIN-40)."""
+    return ATELIER_VACHES if categorie == "VACHE" else ATELIER_JEUNES
+
+
+def cost_center_atelier(nom_court, company=DEFAULT_COMPANY):
+    """« Lait » → « Lait - HMD », ou None si le socle comptable (Cost
+    Centers ateliers) n'est pas posé — ERPNext retombe alors sur le centre
+    par défaut de la société."""
+    abbr = frappe.db.get_value("Company", company, "abbr")
+    nom = f"{nom_court} - {abbr}"
+    return nom if frappe.db.exists("Cost Center", nom) else None
+
+
+def cost_center_categorie(categorie, company=DEFAULT_COMPANY):
+    """Centre de coûts de l'atelier d'une catégorie d'animal."""
+    return cost_center_atelier(atelier_categorie(categorie), company)
+
+
+def categories_a_la_date(animaux, date=None):
+    """{animal: catégorie} à `date`. Aujourd'hui (ou sans date) : la fiche.
+    À une date passée : reconstruite depuis les événements (`live_state`),
+    jamais lue sur la fiche — une génisse vêlée depuis est une vache
+    aujourd'hui, pas à la date du soin. Une nuance : `live_state` rétrograde
+    en génisse toute vache SANS vêlage enregistré ; or les vaches importées
+    n'ont pas d'historique de vêlage. Une vache dont aucun vêlage n'est connu
+    reste donc une vache à toute date ; seule un premier vêlage postérieur à
+    la date la rend génisse ce jour-là."""
+    animaux = [a for a in animaux if a]
+    if not animaux:
+        return {}
+    fiche = {r.name: r.categorie for r in frappe.get_all(
+        "Animal", filters={"name": ["in", animaux]}, fields=["name", "categorie"])}
+    if not date or getdate(date) >= getdate(today()):
+        return fiche
+    from hmd_agro.hmd_agro.utils.live_state import states_on_date
+    etats = states_on_date(animaux, date)
+    vaches_sans_velage = {
+        nom for nom, cat in fiche.items() if cat == "VACHE"
+    } - {r[0] for r in frappe.db.sql(
+        "SELECT DISTINCT animal FROM `tabVelage` WHERE animal IN %s", (animaux,))}
+    categories = {}
+    for nom in animaux:
+        categorie = etats.get(nom, (None,))[0] or fiche.get(nom)
+        if categorie == "GENISSE" and nom in vaches_sans_velage:
+            categorie = "VACHE"
+        if categorie:
+            categories[nom] = categorie
+    return categories
+
+
+def cost_center_animal(animal, date=None, company=DEFAULT_COMPANY):
+    """Centre de coûts de l'atelier d'un animal à `date` (voir
+    `categories_a_la_date`)."""
+    categorie = categories_a_la_date([animal], date).get(animal)
+    return cost_center_categorie(categorie, company) if categorie else None
+
+
+def cost_center_mouvement(remark):
+    """Centre de coûts porté par un mouvement déjà validé, repéré par sa
+    remarque. Le mouvement de compensation d'une suppression reprend le même,
+    pour que l'annulation soit symétrique au Grand Livre."""
+    ligne = frappe.db.sql("""
+        SELECT sed.cost_center FROM `tabStock Entry Detail` sed
+        JOIN `tabStock Entry` se ON se.name = sed.parent
+        WHERE se.remarks = %s AND se.docstatus = 1
+        ORDER BY se.creation DESC LIMIT 1
+    """, (remark,))
+    return ligne[0][0] if ligne else None
 
 
 def ensure_item_default(item_code, company=DEFAULT_COMPANY, warehouse=DEFAULT_WAREHOUSE):
@@ -82,7 +168,7 @@ def get_valuation_rate(item_code, warehouse):
 
 def create_stock_movement(item_code, qty, purpose, warehouse, remark,
                           posting_date=None, company=None, uom=None, batch_no=None,
-                          basic_rate=None):
+                          basic_rate=None, cost_center=None):
     """
     Submit a single-line Stock Entry.
 
@@ -100,6 +186,10 @@ def create_stock_movement(item_code, qty, purpose, warehouse, remark,
                       purchase). Default: current CMP so restoration receipts
                       (on_trash mirrors) stay value-symmetric with the issue
                       they compensate instead of diluting the CMP at 0.
+        cost_center:  centre de coûts de l'atelier (`cost_center_animal`).
+                      Sans lui ERPNext prend le centre par défaut de la
+                      société — Frais Généraux, que la clé de répartition
+                      éclate entre les ateliers.
 
     Returns:
         the submitted Stock Entry name (e.g., "MAT-STE-2026-00006")
@@ -125,6 +215,8 @@ def create_stock_movement(item_code, qty, purpose, warehouse, remark,
     cmp_rate = get_valuation_rate(item_code, warehouse)
     if batch_no:
         item_line["batch_no"] = batch_no
+    if cost_center:
+        item_line["cost_center"] = cost_center
     if purpose == "Material Issue":
         item_line["s_warehouse"] = warehouse
         if not cmp_rate:

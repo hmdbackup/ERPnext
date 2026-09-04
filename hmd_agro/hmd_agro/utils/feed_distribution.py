@@ -21,6 +21,8 @@ Self-contained: this module does NOT import from rapport_periodique.py — the
 population logic is replicated here. The Aliment Item link, prix_unitaire,
 warehouse, and migration helpers ARE shared via the existing module layout.
 """
+from collections import Counter
+
 import frappe
 from frappe.utils import getdate, add_days, today
 from hmd_agro.hmd_agro.doctype.lot_ration_history.lot_ration_history import (
@@ -29,6 +31,7 @@ from hmd_agro.hmd_agro.doctype.lot_ration_history.lot_ration_history import (
 from hmd_agro.hmd_agro.utils.stock_utils import (
     DEFAULT_COMPANY as COMPANY,
     DEFAULT_WAREHOUSE as WAREHOUSE,
+    atelier_categorie, categories_a_la_date, cost_center_atelier,
     get_valuation_rate,
 )
 
@@ -65,7 +68,13 @@ def _prefetch_population_data(end_date):
 
 
 def _populations_on_date(day, prefetched):
-    """Return {lot_name: animal_count} for `day`, using pre-fetched data.
+    """Return {lot_name: animal_count} for `day`, using pre-fetched data."""
+    return {lot: len(animaux)
+            for lot, animaux in _animaux_par_lot(day, prefetched).items()}
+
+
+def _animaux_par_lot(day, prefetched):
+    """Return {lot_name: [animal names]} for `day`, using pre-fetched data.
     Mirrors the logic in rapport_periodique.py:680-695 — kept standalone so
     feed_distribution stays decoupled from the report module."""
     day = getdate(day)
@@ -83,8 +92,27 @@ def _populations_on_date(day, prefetched):
                 lot = h_to
                 break
         if lot:
-            per_lot[lot] = per_lot.get(lot, 0) + 1
+            per_lot.setdefault(lot, []).append(a.name)
     return per_lot
+
+
+def _ateliers_on_date(day, prefetched):
+    """Return {lot_name: cost center} for `day` — RG-FIN-40 : la ration d'un
+    lot est une charge de l'atelier de ses animaux (vaches → Lait, jeunes →
+    Élevage - Génisses), pas des Frais Généraux. La catégorie est celle de la
+    date (`stock_utils.categories_a_la_date`). Les lots sont homogènes par
+    construction (allotement par catégorie) ; la majorité ne tranche que les
+    jours de passage d'une génisse vêlée."""
+    par_lot = _animaux_par_lot(day, prefetched)
+    categories = categories_a_la_date(
+        [nom for animaux in par_lot.values() for nom in animaux], day)
+    ateliers = {}
+    for lot, animaux in par_lot.items():
+        compte = Counter(atelier_categorie(categories[nom])
+                         for nom in animaux if nom in categories)
+        if compte:
+            ateliers[lot] = cost_center_atelier(compte.most_common(1)[0][0])
+    return ateliers
 
 
 # Module-level cache so we don't log the same missing-Item warning N times.
@@ -171,9 +199,10 @@ def get_distribution_preview(target_date):
 
 # ───────────────────────── posting ─────────────────────────
 
-def _build_stock_entry(lot, day, lines):
+def _build_stock_entry(lot, day, lines, cost_center=None):
     """Build (insert+submit) one Material Issue Stock Entry for (lot, day)
-    with the given lines. Returns the SE name."""
+    with the given lines, booked on `cost_center` (the lot's atelier — without
+    it ERPNext takes the company default, Frais Généraux). Returns the SE name."""
     marker = f"RATION_DIST_{lot}_{day}"
     items = []
     for L in lines:
@@ -185,6 +214,8 @@ def _build_stock_entry(lot, day, lines):
             "conversion_factor": 1,
             "s_warehouse": WAREHOUSE,
         }
+        if cost_center:
+            line["cost_center"] = cost_center
         # CF-FIN-31 garde-fou: an aliment never purchased (CMP=0) must not
         # block the daily job — fall back to zero-valuation for that line only.
         # Valued items get no flag so ERPNext posts the real CMP cost (FIN-S11).
@@ -288,6 +319,7 @@ def post_distribution_for_date(target_date, dry_run=False, prefetched=None,
     if prefetched is None:
         prefetched = _prefetch_population_data(target_date)
     pop = _populations_on_date(target_date, prefetched)
+    ateliers = _ateliers_on_date(target_date, prefetched)
 
     stats = {"posted": 0, "skipped_already_posted": 0,
              "skipped_no_ration": 0, "skipped_no_population": 0,
@@ -341,7 +373,8 @@ def post_distribution_for_date(target_date, dry_run=False, prefetched=None,
             continue
 
         try:
-            se_name = _build_stock_entry(lot, target_date, lines)
+            se_name = _build_stock_entry(lot, target_date, lines,
+                                         ateliers.get(lot))
             if verbose:
                 line_summary = ", ".join(
                     f"{L['item_code']}×{L['qty']}" for L in lines

@@ -7,6 +7,8 @@
 > (patch `v1_10.retirer_repartition_par_ligne`). Voir
 > `reunion_2026-09-03/compte_rendu.md`. Le reste du document (1.2 à 2.3) reste
 > valable, avec `charges_lait` lisant désormais le Lait tel quel au Grand Livre.
+>
+> Révisé le 04/09/2026 : les mouvements de stock (rations, médicaments, paillettes) portent le centre de coûts de l'atelier de l'animal (RG-FIN-40), posé par l'app ; une nouvelle clé arrive pré-remplie.
 
 Source fonctionnelle : `reunion_2026-08-26/compte_rendu.md` + `plan_maquettes_2026-08-26.md`
 (maquettes reprises, en attente de validation par M. Samir). Ce document fixe
