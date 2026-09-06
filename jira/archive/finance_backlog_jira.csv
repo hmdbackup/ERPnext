@@ -1,0 +1,200 @@
+Issue Type,Summary,Epic Name,Epic Link,Description,Labels
+Epic,EPIC A - Socle comptable,Socle comptable,,"Configurer le socle comptable ERPNext (plan comptable tunisien, exercice, TVA) et l'analytique (cost centers, accounting dimensions).",finance
+Epic,EPIC B - Valorisation des couts,Valorisation des couts,,Brancher de vrais prix sur la mecanique de couts deja cablee -> cout/litre reel. Quick win a plus fort rendement.,finance
+Epic,EPIC C - Recettes,Recettes,,"Enregistrer les recettes (lait, animaux, fumier) via Selling / Sales Invoice.",finance
+Epic,EPIC D - Immobilisations,Immobilisations,,Immobilisations et amortissements via le module Asset d'ERPNext.,finance
+Epic,EPIC E - Charges et main-d'oeuvre,Charges et main-d'oeuvre,,Charges diverses et main-d'oeuvre ventilees par atelier (Cost Center).,finance
+Epic,EPIC F - Pilotage,Pilotage,,"KPI economiques (cout/litre, IOFC, EBE, marge) et coloration par seuils.",finance
+Epic,EPIC G - Bascule,Bascule,,Bascule comptable : a-nouveaux / balances d'ouverture et droits par role.,finance
+Story,FIN-S01 Configurer le referentiel comptable tunisien,,Socle comptable,"En tant que comptable, je veux un plan comptable, un exercice et la TVA configures afin de tenir une comptabilite conforme dans ERPNext.
+
+Criteres d'acceptation:
+- Chart of Accounts tunisien (SCE) charge sur la Company hmd-agro et valide par le comptable.
+- Fiscal Year + devise TND + modeles de TVA (lait / animaux / intrants).
+- Bilan et CPC s'ouvrent sans erreur.
+
+RG: RG-FIN-01",phase-1
+Story,FIN-S02 Creer les centres de couts et dimensions analytiques,,Socle comptable,"En tant que gerant, je veux des ateliers et des axes Lot/Batiment/Atelier afin de ventiler charges et produits par activite.
+
+Criteres d'acceptation:
+- Cost Centers : Lait, Elevage/Genisses, Cultures/Fourrage, Traction, Frais Generaux.
+- Accounting Dimensions Lot, Batiment, Atelier actives sur les ecritures.
+- Une ecriture de test porte bien Cost Center + dimension Lot.
+
+RG: RG-FIN-40",phase-1
+Story,FIN-S10 Saisir les achats d'intrants vers valuation_rate,,Valorisation des couts,"En tant que responsable achats, je veux enregistrer les achats d'aliments/medicaments/semences afin que le CMP de chaque article soit reel.
+
+Criteres d'acceptation:
+- Une Purchase Invoice/Receipt sur un Item met a jour Bin.valuation_rate (different de 0).
+- Le fournisseur et le compte de charge sont correctement imputes.
+
+RG: RG-FIN-30",phase-2
+Story,FIN-S11 Basculer la sortie de stock sur le cout reel,,Valorisation des couts,"En tant que developpeur Finance, je veux que stock_utils valorise les consommations au CMP reel afin que les couts cessent d'etre a zero.
+
+Criteres d'acceptation:
+- basic_rate=0 remplace par la valorisation native (derriere test).
+- stock_value_difference devient non nul sur une Material Issue apres achat.
+- Le refus batch v15 et allow_negative_stock restent intacts ; test vert hors prod.
+
+RG: RG-FIN-30, CF-FIN-31",phase-2
+Story,FIN-S12 Voir le cout/litre reel dans le rapport mensuel,,Valorisation des couts,"En tant que gerant, je veux le cout alimentaire reel par litre et par vache afin de piloter la rentabilite sans calcul manuel.
+
+Criteres d'acceptation:
+- Le bloc Frais et cout affiche DT/L et DT/vache (presente et lactante) a partir du GL stock.
+- Les valeurs concordent avec un calcul manuel de controle sur une journee.
+
+RG: RC-FIN-50",phase-2
+Story,FIN-S20 Definir l'article Lait et le prix-qualite,,Recettes,"En tant que comptable, je veux un article Lait avec un prix indexe TB/TP afin de facturer au juste prix qualite.
+
+Criteres d'acceptation:
+- Item Lait + Item Price ; Pricing Rule appliquant primes/penalites TB/TP.
+- Aucun prix en dur dans le code.
+
+RG: RG-FIN-10, RG-FIN-01",phase-3
+Story,FIN-S21 Facturer ou importer la recette lait de la periode,,Recettes,"En tant que comptable, je veux generer la facture lait de la periode - ou importer le decompte de la centrale - afin d'enregistrer la recette principale.
+
+Criteres d'acceptation:
+- Si la ferme facture : job idempotent (marqueur remarks) agrege lait_vendu -> Sales Invoice ; re-run = no-op.
+- Si auto-facturation : import du decompte (pattern import_rapport.py), aucune facture concurrente.
+- Recette rapprochee du volume saisi.
+
+RG: RG-FIN-10, RG-FIN-11, RG-FIN-12, RG-FIN-04",phase-3
+Story,FIN-S22 Emettre une facture a la vente d'un animal,,Recettes,"En tant que gerant, je veux qu'une vente d'animal genere sa facture afin de comptabiliser la recette automatiquement.
+
+Criteres d'acceptation:
+- Au passage statut -> VENDU/REFORME, Sales Invoice creee depuis prix_vente (poids via Pesee VENTE si prix/kg).
+- count_exits() reste coherent ; suppression = ecriture compensatoire.
+
+RG: RG-FIN-20, CF-FIN-21",phase-3
+Story,FIN-S23 Vendre fumier et produits divers,,Recettes,"En tant que gerant, je veux facturer le fumier (et produits annexes) afin de capturer toutes les recettes.
+
+Criteres d'acceptation:
+- Items dedies ; Sales Invoice ponctuelle imputee au bon atelier.
+
+RG: RG-FIN-10",phase-3
+Story,FIN-S24 Grille de prix qualite de la centrale,,Recettes,"En tant que gerant, je veux que le litre soit paye au bareme reel de la centrale afin que le chiffre d'affaires lait reflete la qualite produite et non un prix plat.
+
+Criteres d'acceptation:
+- DocType Grille Prix Lait : prix de base, periode de validite, paliers par critere (TB, TP, germes, cellules), plancher de prix, plafond de prime.
+- Une seule grille active peut couvrir une date donnee (refus a la saisie).
+- Les paliers priment sur l'indexation lineaire ; un critere sans palier retombe sur la prime par point de la config.
+- compute_milk_rate lit la grille en vigueur A LA DATE FACTUREE ; sans grille, repli prix plat documente.
+- La facture trace dans ses remarques la grille utilisee, le prix de base et chaque prime.
+- Statut PROVISOIRE tant que la centrale n'a pas confirme : signale sur la facture, dans le rapport et dans le controle de coherence.
+
+Statut: moteur livre (test_grille_lait 28/28). Les valeurs des paliers restent a remplacer par la grille contractuelle - DECISION CLIENT.
+
+RG: RG-FIN-10, RG-FIN-13 / RC-FIN-13",phase-3
+Story,FIN-S25 Valoriser l'ecart lait en dinars,,Recettes,"En tant que gerant, je veux savoir ce que coutent les litres qui manquent a l'appel afin d'arbitrer sur les pertes de lait comme je le fais deja sur l'aliment.
+
+Criteres d'acceptation:
+- finance_kpis.ecart_lait retourne litres perdus, valeur en dinars, part de la production, prix du litre applique.
+- Valorisation au prix de la periode - la meme grille que la facture, pas un prix a part.
+- Les ecarts negatifs (sur-affectation : vendu + conso interne + veau > production saisie) sont comptes a part et JAMAIS valorises : c'est une erreur de saisie.
+- Bilan Lait Journalier calcule son ecart quelle que soit la source (avant : uniquement via la page Saisie Traite).
+- Trois lignes au rapport mensuel : ecart en litres, en % de la production (colore), en dinars.
+- Seuils ecart_lait_seuil_perte_pct (orange) et ecart_lait_seuil_alarme_pct (rouge) en configuration.
+
+Statut: livre (couvert par test_grille_lait).
+
+RG: RC-FIN-14",phase-3
+Story,FIN-S30 Enregistrer les equipements en immobilisation,,Immobilisations,"En tant que comptable, je veux les equipements en Asset avec amortissement afin que les dotations impactent le resultat.
+
+Criteres d'acceptation:
+- Asset Categories + durees ; un Asset genere son calendrier et ses Journal Entries de dotation.
+- CF Asset-id_batiment reliant l'actif au DocType Batiment (exporte par nom).
+
+RG: RC-FIN-53",phase-4
+Story,FIN-S31 Decision - valoriser le cheptel comme actif biologique,,Immobilisations,"En tant que comptable, je veux trancher le traitement comptable du cheptel afin de valoriser/amortir correctement le troupeau.
+
+Criteres d'acceptation:
+- Outil livre et pilote par la configuration cheptel_mode : NON_VALORISE (defaut), ACTIF_BIOLOGIQUE, STOCK.
+- En mode ACTIF_BIOLOGIQUE : une immobilisation par vache (categorie Cheptel reproducteur, comptes 225/285), mise en service au PREMIER VELAGE.
+- Valeur d'entree : prix d'achat reel pour un animal achete, forfait cout d'elevage (configurable) pour un animal ne sur la ferme.
+- Reprise de l'existant : amortissement deja couru en ouverture, amortissement du solde sur la duree residuelle. Vache dont la duree est epuisee : hors perimetre, comptee et signalee.
+- Sortie de l'animal (VENDU / MORT / REFORME) : mise au rebut automatique de l'immobilisation, sans jamais bloquer l'enregistrement de la sortie.
+- Custom Field Asset-id_animal : une vache, une immobilisation (cle d'idempotence).
+- Rapport mensuel : effectif immobilise, valeur brute, valeur nette comptable.
+- Job mensuel de synchronisation, sans effet tant que le mode est NON_VALORISE.
+
+Statut: outil livre (test_cheptel 22/22). LA DECISION COMPTABLE RESTE A PRENDRE : bien amortissable ou stock ? Un seul champ bascule.
+
+RG: RG-FIN-32, RG-FIN-33, CF-FIN-33 / RC-FIN-55",phase-4
+Story,FIN-S32 Interventions et maintenance des equipements,,Immobilisations,"En tant que gerant, je veux savoir ce que coute l'entretien de chaque equipement afin de ne plus amortir du materiel sans connaitre son cout de fonctionnement.
+
+Criteres d'acceptation:
+- enregistrer_intervention cree un Asset Repair ERPNext (panne, actions, duree d'arret, pieces) ET poste la charge au compte 615 sur l'atelier de l'equipement.
+- ATTENTION ERPNext v15 : un Asset Repair non capitalise ne produit AUCUNE ecriture comptable - d'ou l'ecriture posee separement.
+- Trois modes de reglement : fournisseur (avec tiers), caisse, banque. Cout nul = suivi sans ecriture (intervention interne).
+- Idempotence par reference ; annulation symetrique (l'ecriture de charge est annulee avec l'intervention).
+- planifier_maintenance cree le plan preventif (Asset Maintenance + taches periodiques) avec des echeances reellement calculees.
+- Custom Fields sur Asset Repair : type d'intervention, intervenant (lien Personnel), reference HMD.
+- Rapport mensuel : frais d'entretien, nombre d'interventions, entretien / produit brut (colore par seuil).
+
+Statut: livre (test_maintenance 26/26).
+
+RG: RG-FIN-30, RG-FIN-31, CF-FIN-31 / RC-FIN-54",phase-4
+Story,FIN-S40 Saisir les charges diverses ventilees,,Charges et main-d'oeuvre,"En tant que comptable, je veux enregistrer energie/eau/loyer/assurances par atelier afin d'obtenir un cout complet.
+
+Criteres d'acceptation:
+- Purchase Invoice / Journal Entry imputees au Cost Center selon la cle validee client.
+
+RG: RG-FIN-40",phase-5
+Story,FIN-S41 Integrer le cout de la main-d'oeuvre,,Charges et main-d'oeuvre,"En tant que gerant, je veux le cout du travail ventile par atelier afin que le cout/litre inclue la MO.
+
+Criteres d'acceptation:
+- Payroll ERPNext OU ecritures de salaire ventilees sur Cost Centers ; la ligne MO apparait dans le cout total.
+
+RG: RG-FIN-40",phase-5
+Story,FIN-S42 Registre du personnel et masse salariale,,Charges et main-d'oeuvre,"En tant que gerant, je veux un registre des salaries (qui, quel role, quel salaire, quel atelier) afin que le cout de main-d'oeuvre du litre soit une donnee et non un montant tape a la main.
+
+Criteres d'acceptation:
+- DocType Personnel : nom, role, type de contrat, dates d'embauche et de sortie, salaire brut, taux d'activite, assujettissement aux charges patronales, atelier principal.
+- Table de repartition multi-ateliers (somme des parts = 100 %), pour un salarie partage entre plusieurs ateliers.
+- Garde-fous ERR-PERS-01 a 07 : salaire negatif, sortie avant embauche, repartition differente de 100 %, atelier inconnu ou groupe, taux d'activite hors bornes, statut SORTI sans date, atelier en double.
+- masse_salariale reconstruit le mois depuis le registre, AU PRORATA des jours pour une entree ou une sortie en cours de mois.
+- post_salaires poste une ecriture equilibree : debit 640 (brut) et 647 (charges patronales) par atelier, credit 421 et 453. Idempotente par marqueur.
+- Le chemin ""montants forces"" reste disponible pour la reprise d'historique.
+- Compte 453 Organismes sociaux ajoute au plan (cree aussi sur les instances deja deployees).
+- Taux de charges patronales en configuration (16,57 % par defaut, CNSS regime agricole ameliore) - A CONFIRMER avec la ferme.
+- Job mensuel : masse salariale du mois ecoule.
+- Rapport mensuel : cout main-d'oeuvre par litre et par vache presente.
+
+Statut: livre (test_personnel 28/28). Salaires reels et taux de charges a confirmer.
+
+RG: RG-FIN-40, RG-FIN-41 / RC-FIN-41, RC-FIN-42",phase-5
+Story,FIN-S50 Tableau de bord economique,,Pilotage,"En tant que gerant, je veux cout/litre, IOFC, EBE, produit brut et marge afin de decider vite.
+
+Criteres d'acceptation:
+- Number Cards / rapport affichant les RC-FIN-50/51/52 (DT/L et DT/vache par poste).
+- Integre au rapport mensuel existant (reutilise dashboard_kpis.py / live_state.py).
+
+RG: RC-FIN-50, RC-FIN-51, RC-FIN-52",phase-6
+Story,FIN-S51 Seuils eco en config et coloration,,Pilotage,"En tant que gerant, je veux colorer les indicateurs selon des seuils parametrables afin de reperer d'un coup d'oeil les alertes.
+
+Criteres d'acceptation:
+- Champs prix_reference_lait, objectif_cout_litre, pfe_iofc_* dans HMD Configuration (seed par patch).
+- Coloration vert/orange/rouge via get_config ; champs JS dans boot.JS_FIELDS.
+
+RG: RG-FIN-60",phase-6
+Story,FIN-S60 A-nouveaux / balances d'ouverture,,Bascule,"En tant que comptable, je veux reprendre les soldes d'ouverture a la date de bascule afin de demarrer sur des comptes justes.
+
+Criteres d'acceptation:
+- Opening Balance saisis ; balance d'ouverture equilibree a la date convenue.",phase-7
+Story,FIN-S61 Droits par role (comptable different de eleveur),,Bascule,"En tant qu'administrateur, je veux separer saisie / validation / consultation afin de respecter la separation des taches.
+
+Criteres d'acceptation:
+- Roles et permissions (Role Permission Manager) ; un eleveur ne peut pas soumettre une ecriture comptable.",phase-7
+Story,FIN-S70 Controle de coherence sur donnees reelles,,Bascule,"En tant que gerant, je veux pouvoir verifier que les chiffres tiennent debout sur une base reelle afin de ne pas decider sur des donnees fausses - tous les chiffres venaient jusqu'ici du jeu de demonstration.
+
+Criteres d'acceptation:
+- Rapport ""Controle Coherence Finance"" (desk + fonction console pour une restauration de production).
+- 26 controles sur 7 domaines : socle comptable, Grand Livre, lait, couts, personnel, immobilisations et maintenance, troupeau.
+- Trois issues par controle : OK / ALERTE (anomalie probable) / ERREUR (le chiffre publie est faux), avec coloration.
+- Controles cles : Grand Livre equilibre, charges sans atelier, lait vendu vs lait facture, bilan lait vs somme des traites, articles en stock sans cout unitaire, registre du personnel vs compte 64x, mois sans ecriture de salaires, immobilisations sans amortissement, maintenance en retard, sorties d'animaux non facturees, immobilisations d'animaux sortis.
+- Lecture seule, rejouable, aucune ecriture.
+- Une section qui echoue n'interrompt pas le rapport (journalisee, signalee en ERREUR).
+
+Statut: livre (test_controle_coherence 15/15, avec injection d'anomalies pour verifier la detection). Reste a l'executer sur une copie de la base de production - EN ATTENTE DU BACKUP.
+
+RG: RG-FIN-70",phase-7

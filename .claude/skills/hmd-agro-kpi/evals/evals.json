@@ -1,0 +1,19 @@
+{
+  "skill_name": "hmd-agro-kpi",
+  "evals": [
+    {
+      "id": 0,
+      "name": "efficacite-alimentaire-colored-kpi",
+      "prompt": "Add an 'efficacité alimentaire' indicator to the hmd_agro dairy reporting, and color it green / orange / red according to the farm's thresholds. Explain the formula and show how the coloring is decided.",
+      "expected_output": "Formula must be efficacité alimentaire = lait produit / MSI, with MSI = matière sèche distribuée − refus (kg lait per kg MS), target/optimal 1.4 (Castellani). Coloring must come from HMD Configuration via get_config: green if >= pfe_efficacite_min (1.4), orange between pfe_efficacite_orange_min (1.0) and 1.4, red below 1.0 — NOT a hardcoded threshold. Should compute over a defined population (présente vs lactante), use live_state for effectif rather than live Animal fields, and live under module 'HMD AGRO'. Should not invent an arbitrary formula or threshold.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "prod-par-vache-lactante-card",
+      "prompt": "Create a number card for the hmd_agro app that shows the average milk production per lactating cow for the herd (yesterday). Show the datasource function and how to register the card.",
+      "expected_output": "Must use the LACTANTE denominator (lactating cows only, not all present cows) — ideally noting the présente-vs-lactante distinction. Should follow the existing pattern: a @frappe.whitelist() datasource (like utils/dashboard_kpis.get_pl_vl) returning {'value':..., 'fieldtype':...}, getting the lactating-cow count from utils/live_state (effectif_on_date) rather than reading Animal.etat_lactation live for a past date, and yesterday's total from Traite. Register a Custom Number Card with module 'HMD AGRO' so the fixtures filter catches it, then bench export-fixtures. Should not just count Animal rows naively without the lactante logic.",
+      "files": []
+    }
+  ]
+}

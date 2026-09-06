@@ -208,18 +208,25 @@ supplémentaire ajoute ~30 génisse-jours de coût au cumul.
 
 ## 6. Découpage en stories JIRA (EPIC I — Atelier Génisses)
 
+> ⚠️ **Renumérotation du 07/08/2026.** Ce découpage utilisait les clés
+> `FIN-S80` à `FIN-S86`, **déjà attribuées et livrées** par le backlog de la
+> réunion du 05/08 (assets cheptel, identification, primes, décompte lait…).
+> Un import Jira aurait écrasé sept stories. Les clés sont désormais
+> `FIN-S110` à `FIN-S116` — voir `jira/backlog_finance.csv`.
+
 | Story | Contenu | Est. |
 |---|---|---|
-| **FIN-S80** | Rattachement analytique des lots : champ `Lot.atelier`, patch de reprise, Cost Center + dimension Lot sur les SE de ration (`feed_distribution`) | 1 j |
-| **FIN-S81** | Facturation interne du lait : comptes cession interne, `post_lait_interne` mensuel idempotent + job, configs prix (`lait_interne_prix_mode/fixe`) | 2 j |
-| **FIN-S82** | Lait bu par génisse : configs courbe d'allaitement, répartition normalisée sur `lait_veau` | 1,5 j |
-| **FIN-S83** | Coût horaire équipement : Custom Field `Asset.cout_horaire` (+ fixture nommée), DocType `Utilisation Equipement`, JE cession interne travaux + symétrie on_trash | 2 j |
-| **FIN-S84** | Rapport « Coût de Revient Génisse » (par animal + cohorte, formule §4, contrôle de cohérence GL) | 3 j |
-| **FIN-S85** | Bloc aide à la décision 3 mois vs 18 mois : configs prix marché + taux de perte, seuils colorés, lecture « coût de remplacement » | 1,5 j |
-| **FIN-S86** | Boucler la valorisation cheptel : option config remplaçant le forfait `cheptel_cout_elevage` (2 500) par `C(a, premier vêlage)` calculé | 1 j |
+| **FIN-S110** | Rattachement analytique des lots : champ `Lot.atelier`, patch de reprise, Cost Center + dimension Lot sur les SE de ration (`feed_distribution`) | 1 j |
+| **FIN-S111** | Facturation interne du lait : comptes cession interne, `post_lait_interne` mensuel idempotent + job, configs prix (`lait_interne_prix_mode/fixe`) | 2 j |
+| **FIN-S112** | Lait bu par génisse : configs courbe d'allaitement, répartition normalisée sur `lait_veau` | 1,5 j |
+| **FIN-S113** | Brancher la quote-part mécanique sur le coût génisse — *réduite* : `Asset.cout_horaire` et le DocType `Utilisation Equipement` sont livrés (FIN-S91, FIN-S96), et la JE de cession interne des travaux est abandonnée (S96 a tranché pour une vue analytique sans écriture GL) | 0,5 j |
+| **FIN-S114** | Rapport « Coût de Revient Génisse » (par animal + cohorte, formule §4, contrôle de cohérence GL) | 3 j |
+| **FIN-S115** | Bloc aide à la décision vente à ~5 jours / 3 mois / 18-22 mois : configs prix marché + taux de perte, seuils colorés, lecture « coût de remplacement » | 1,5 j |
+| **FIN-S116** | Boucler la valorisation cheptel : option config remplaçant le forfait `cheptel_cout_elevage` (2 500) par `C(a, premier vêlage)` calculé | 1 j |
 
-Ordre : S80 → S81/S82/S83 (parallélisables) → S84 → S85 → S86.
-Total ≈ **12 j**. Tests inclus dans chaque story (`tests/test_genisses_*.py`).
+Ordre : S110 → S111/S112/S113 (parallélisables) → S114 → S115 → S116.
+Total ≈ **10,5 j**. Tests inclus dans chaque story (`tests/test_genisses_*.py`).
+Questions de cadrage restantes (§7) regroupées dans la tâche **FIN-D04**.
 
 ---
 

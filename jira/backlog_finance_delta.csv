@@ -1,0 +1,158 @@
+Issue Type,Summary,Epic Name,Epic Link,Status,Resolution,Priority,Original Estimate,Labels,Labels,Labels,Labels,Labels,Description
+Epic,EPIC I - Atelier génisses,Atelier Genisses,,To Do,,Medium,,finance,epic,,,,"Coût de revient d'une génisse de la naissance à 18-22 mois et facturation interne du lait bu, pour arbitrer entre vendre tôt et élever. Spécification : spec_cout_genisse_facturation_interne.md."
+Epic,EPIC J - Exploitation & déploiement,Exploitation,,In Progress,,Medium,,finance,epic,,,,"Déploiement, versions, langue de l'interface, accès aux écrans, jeux de données et simulations de démo."
+Story,FIN-S103 Prorata intra-mois pour la répartition multi-acheteurs,,Recettes,To Do,,Low,1d,finance,groom-2026-08-07,vague-3-consolidation,,,"En tant que gérant, je veux qu'un changement d'acheteur ou de prix en cours de mois soit pris au prorata des jours afin que le décompte reste juste sans attendre le mois suivant.
+
+Contexte: explicitement mis hors périmètre de FIN-S86 et non traité par FIN-S94, qui règle à la moyenne mensuelle par acheteur.
+
+Critères d'acceptation:
+- Un changement de grille ou d'acheteur en cours de mois découpe le décompte en sous-périodes datées.
+- Le prix moyen pondéré de finance_kpis.ecart_lait tient compte du découpage.
+- Un décompte déjà soumis n'est jamais recalculé (FIN-S85).
+
+Créée au grooming du 07/08/2026."
+Story,FIN-S105 Étalement des grosses charges sur plusieurs mois,,Charges et main-d'oeuvre,To Do,,Medium,2d,finance,groom-2026-08-07,vague-3-consolidation,,,"En tant que gérant, je veux que les petites factures soient absorbées immédiatement et que les grosses factures soient étalées sur plusieurs mois, afin qu'une réparation exceptionnelle n'écrase pas le coût du litre du mois où elle est facturée.
+
+Verbatim réunion 05/08/2026 (~62:00) : « un tracteur qui a maintenant, on absorbe le coût maintenant, on n'amortit pas sur une durée [...] qui fasse des facturations qui sont plus conséquentes, on les étale sur plusieurs mois ».
+
+Critères d'acceptation:
+- Seuil d'étalement configurable (montant à partir duquel une charge est proposée à l'étalement) + durée d'étalement par défaut.
+- Sur une Purchase Invoice / une intervention dépassant le seuil : répartition sur N mois (charge constatée d'avance ou écritures mensuelles), imputée au même atelier.
+- Le coût du litre et le rapport de performance consomment la quote-part du mois, pas le montant total.
+- Idempotence et annulation symétrique, comme le reste des écritures posées par l'app.
+- La flexibilité demandée reste entière : on doit pouvoir choisir absorption immédiate OU étalement, facture par facture.
+
+TROU DE BACKLOG : point 13 sur 15 de la liste des changements du compte-rendu du 05/08/2026, jamais transformé en story. La moitié « imputation à l'utilisation » du même point est couverte par FIN-S96 ; l'étalement ne l'est par aucune story.
+Créée au grooming du 07/08/2026.
+RG: RG-FIN-40"
+Story,FIN-S104 Exécuter le contrôle de cohérence sur la base réelle,,Bascule,To Do,,High,4h,finance,groom-2026-08-07,vague-1-fiabilisation,,,"En tant que gérant, je veux que le contrôle de cohérence soit passé sur des données réelles afin de savoir ce qui casse hors du jeu de démonstration.
+
+Contexte: tous les chiffres validés jusqu'ici viennent du seed. L'outil (FIN-S70) n'a jamais tourné sur autre chose.
+
+Critères d'acceptation:
+- Le rapport tourne sur une restauration de la base réelle choisie en FIN-S99.
+- Chaque ERREUR est tracée puis corrigée (ou transformée en story) ; chaque ALERTE est arbitrée et documentée.
+- Compte-rendu d'exécution joint à la story (nombre de contrôles OK / ALERTE / ERREUR).
+
+Dépend de: FIN-S99 (choix et mise à disposition de la source de données réelles).
+Créée au grooming du 07/08/2026 — sépare l'outil (livré) de son exécution (non faite)."
+Story,FIN-S110 Rattachement analytique des lots à un atelier,,Atelier Genisses,To Do,,Medium,1d,finance,groom-2026-08-07,vague-2-genisses,,,"En tant que contrôleur de gestion, je veux que chaque lot porte son atelier afin que les rations distribuées tombent automatiquement sur le bon centre de coût.
+
+Critères d'acceptation:
+- Champ Lot.atelier (Link Cost Center) + patch de reprise idempotent sur les lots existants.
+- Les Stock Entries de ration (feed_distribution) portent le Cost Center de l'atelier ET la dimension Lot.
+- Aucun impact sur les rations déjà postées (reprise documentée).
+
+Colonne vertébrale de l'EPIC I : sans elle, rien n'est ventilable par atelier.
+Spec: §2.1 et §2.3 de spec_cout_genisse_facturation_interne.md"
+Story,FIN-S111 Facturation interne du lait bu vers l'atelier génisses,,Atelier Genisses,To Do,,Medium,2d,finance,groom-2026-08-07,vague-2-genisses,,,"En tant que gérant, je veux que le lait bu par les veaux soit facturé à l'atelier génisses afin que l'atelier lait ne porte plus gratuitement un produit qu'il fournit.
+
+Décision de la réunion 05/08/2026 (TRANCHÉE): valorisation au COÛT DU LITRE (« on estime le coût du litre, donc on multiplie »), coût du litre hors amortissement. Le manque à gagner (prix de la grille) est affiché à titre indicatif.
+Comptes de cession interne 6061 / 7068x : non bloquants, hors états officiels (« la comptabilité officielle reste chez l'expert-comptable »).
+
+Critères d'acceptation:
+- Configs lait_interne_prix_mode (coût du litre / prix fixe) et lait_interne_prix_fixe.
+- post_lait_interne mensuel idempotent + job planifié, écriture équilibrée entre ateliers.
+- Le rapport affiche la cession interne et le manque à gagner indicatif.
+- Annulation symétrique.
+
+Spec: §2.2 · Dépend de: FIN-S110"
+Story,FIN-S112 Répartition du lait bu par génisse,,Atelier Genisses,To Do,,Medium,1d 4h,finance,groom-2026-08-07,vague-2-genisses,,,"En tant que gérant, je veux savoir combien de lait chaque génisse a bu afin d'imputer un coût d'allaitement individuel et non un forfait de troupeau.
+
+Décision réunion: courbe 6-7 L/jour pendant les 3 premiers mois — le défaut 6,5 L/j x 90 j de la spec est validé de fait.
+
+Critères d'acceptation:
+- Configs de courbe d'allaitement (litres/jour, durée) paramétrables.
+- Répartition NORMALISÉE du lait_veau réellement saisi sur les veaux présents (la courbe sert de clé, le réel sert de total).
+- Aucune génisse ne se voit imputer du lait avant sa naissance ou après son sevrage.
+
+Spec: §2.4 · Dépend de: FIN-S110"
+Story,FIN-S113 Brancher la quote-part mécanique sur le coût génisse,,Atelier Genisses,To Do,,Medium,4h,finance,groom-2026-08-07,vague-2-genisses,,,"En tant que gérant, je veux que les heures de tracteur passées sur l'atelier génisses entrent dans le coût de revient d'une génisse.
+
+Critères d'acceptation:
+- cout_utilisation() (FIN-S96) est consommé par le calcul du coût génisse, ventilé par atelier et par période.
+- Aucun double comptage avec les 68x / 615 déjà au Grand Livre (vue analytique, comme FIN-S96).
+
+Story RÉDUITE de 2 j à 4 h au grooming du 07/08/2026 : la spec prévoyait de créer le champ Asset.cout_horaire et le DocType Utilisation Equipement, déjà livrés par FIN-S91 et FIN-S96. Ne reste que le branchement.
+La spec prévoyait aussi une écriture de cession interne pour les travaux : ABANDONNÉ, FIN-S96 a tranché pour une vue analytique sans écriture GL.
+Spec: §2.5 · Dépend de: FIN-S110"
+Story,FIN-S114 Rapport « Coût de Revient Génisse »,,Atelier Genisses,To Do,,Medium,3d,finance,groom-2026-08-07,vague-2-genisses,,,"En tant que gérant, je veux un rapport du coût de revient par génisse et par cohorte afin de suivre en continu ce que coûte l'élevage d'un renouvellement.
+
+Critères d'acceptation:
+- Script Report en français, deux lectures : par animal et par cohorte (année de naissance).
+- Formule du §4 de la spec : lait bu + ration + santé + main-d'œuvre + mécanique + frais généraux éventuels, cumulés en génisse-jours.
+- Rapprochement avec le Grand Livre : la somme des coûts imputés à l'atelier génisses doit se retrouver au GL (contrôle intégré).
+- Calcul en continu, consultable à tout moment (la ferme le faisait 1x/an à la main).
+
+Spec: §4 · Dépend de: FIN-S110, FIN-S111, FIN-S112, FIN-S113"
+Story,"FIN-S115 Aide à la décision : vendre à 5 jours, 3 mois ou élever à 18-22 mois",,Atelier Genisses,To Do,,Medium,1d 4h,finance,groom-2026-08-07,vague-2-genisses,,,"En tant que gérant, je veux comparer le coût cumulé d'une génisse à son prix de marché à trois âges de sortie afin d'arbitrer sur une base chiffrée.
+
+Justification métier (réunion 05/08/2026): l'écart entre les estimations manuelles du gérant, du vétérinaire et de l'ingénieur atteignait ~3000 DT sur le même animal.
+
+Critères d'acceptation:
+- Trois scénarios : vente à ~5 jours, vente à 3 mois, élevage jusqu'à 18-22 mois (l'âge de sortie a atteint 22 mois les mauvaises années).
+- Configs de prix de marché : velle ~5 j ≈ 3000-3200 DT, génisse pleine ~2 ans ≈ 3000-3500 DT (valeurs de départ de la réunion, à tenir à jour).
+- Config de taux de perte (mortalité + infécondité), 8 % par défaut en attendant l'historique réel.
+- Delta de décision affiché et coloré ; lecture « coût de remplacement ».
+
+Spec: §5 · Dépend de: FIN-S114 · Voir aussi: FIN-D04"
+Story,FIN-S116 Remplacer le forfait cheptel par le coût d'élevage calculé,,Atelier Genisses,To Do,,Low,1d,finance,groom-2026-08-07,vague-2-genisses,,,"En tant que comptable, je veux que la valeur d'entrée à l'actif d'une vache née sur la ferme soit son coût d'élevage réellement calculé plutôt qu'un forfait de 2 500 DT.
+
+Critères d'acceptation:
+- Option de configuration : forfait cheptel_cout_elevage (actuel) OU coût calculé C(animal, premier vêlage) issu de FIN-S114.
+- La bascule ne réécrit jamais la valeur des immobilisations déjà mises en service.
+
+Dépend de: FIN-S114, FIN-S31 (le mode cheptel doit être tranché) · Voir aussi: FIN-D04
+Spec: §6, story S86 d'origine."
+Story,FIN-S102 Raccourci « Utilisation Équipement » dans le menu HMD AGRO,,Exploitation,To Do,,High,1h,finance,groom-2026-08-07,vague-1-fiabilisation,,,"En tant qu'utilisateur, je veux saisir les heures d'utilisation d'un équipement depuis le menu HMD AGRO afin de ne pas avoir à connaître l'URL du DocType.
+
+Constat (grooming 07/08/2026): le DocType Utilisation Equipement livré par FIN-S96 n'apparaît NULLE PART dans hmd_agro/fixtures/workspace.json (0 occurrence). C'est exactement le reproche de la réunion traité par FIN-S98 (« Personnels c'est devenu où ? »), reproduit sur un écran de SAISIE QUOTIDIENNE : sans raccourci, personne ne saisira ses heures et toute la chaîne du coût mécanique restera vide.
+
+Critères d'acceptation:
+- Entrée « Utilisation Équipement » dans shortcuts + bloc correspondant dans la section « Finance & Gestion » du content.
+- Fixture exportée, vérifiée après bench migrate sur une instance.
+- Contrôler au passage qu'aucun autre DocType finance récent ne manque au workspace.
+
+Créée au grooming du 07/08/2026."
+Task,FIN-D01 Obtenir la grille tarifaire contractuelle de la centrale,,Recettes,To Do,,High,,finance,groom-2026-08-07,vague-1-fiabilisation,decision-client,,"Obtenir de la centrale le barème contractuel réel du litre afin de sortir du statut PROVISOIRE.
+
+Ce qu'il faut: prix de base, paliers par critère (TB, TP, germes, cellules), plancher de prix, plafond de prime, période de validité, source du document.
+
+Ce que ça débloque: FIN-S24 — le moteur est livré, une grille « Grille Centrale — provisoire » tourne avec des paliers INDICATIFS. Aujourd'hui la facture, le rapport et le contrôle de cohérence signalent tous que le prix est provisoire.
+Comment l'appliquer: corriger les paliers dans l'UI, renseigner « source », passer le statut à VALIDEE. AUCUN CODE À TOUCHER.
+
+Créée au grooming du 07/08/2026."
+Task,FIN-D02 Obtenir les salaires réels et compléter le registre Personnel,,Charges et main-d'oeuvre,To Do,,High,,finance,groom-2026-08-07,vague-1-fiabilisation,decision-client,,"Obtenir de la ferme la liste réelle des salariés et leurs rémunérations afin de poster une vraie paie.
+
+Ce qu'il faut: par salarié — rôle, type de contrat, date d'embauche, salaire brut, taux d'activité, assujettissement CNSS, atelier principal (ou répartition multi-ateliers).
+
+Ce que ça débloque: FIN-S42 — le registre et l'écriture 640/647 par atelier sont livrés, mais le coût MO du litre reste bâti sur des montants de démonstration. Le taux de charges patronales est tranché (30 %, FIN-S82) ; les salaires ne le sont pas.
+
+Créée au grooming du 07/08/2026."
+Task,FIN-D03 Trancher le mode de facturation du lait (la ferme facture ou import du décompte),,Recettes,To Do,,Medium,,finance,groom-2026-08-07,vague-3-consolidation,decision-client,,"Décider si la ferme émet la facture lait ou si elle importe le décompte de la centrale (auto-facturation).
+
+RG-FIN-12: ne JAMAIS activer les deux, sous peine de recettes comptées deux fois.
+
+Ce que ça détermine: activation du job mensuel de facturation lait vs mise en place de l'import du décompte (pattern import_rapport.py). Les deux chemins sont livrés (FIN-S21).
+
+Créée au grooming du 07/08/2026."
+Task,FIN-D04 Cadrer le périmètre et les paramètres de l'atelier génisses,,Atelier Genisses,To Do,,Medium,,finance,groom-2026-08-07,vague-2-genisses,decision-client,,"Quatre questions ouvertes de la spec coût génisse, non bloquantes pour démarrer l'EPIC I mais nécessaires avant FIN-S114 / FIN-S115.
+
+1. Périmètre: les mâles (veaux / taurillons engraissés) sont dans les mêmes lots — les isoler du coût génisse ou assumer un coût moyen « jeune bovin » ?
+2. Frais généraux (gardien, administratif): inclure une quote-part dans le coût génisse, ou s'arrêter aux coûts directs de l'atelier ?
+3. Taux de perte (mortalité + infécondité): 8 % par défaut proposé en attendant l'historique — confirmer ou corriger.
+4. Forfait 2 500 DT: le remplacer à terme par le coût calculé (FIN-S116), ou le garder comme valeur comptable et n'utiliser le calculé qu'en pilotage ?
+
+Les autres questions de la spec ont été tranchées par la transcription du 05/08 (prix du lait interne, comptes de cession, courbe d'allaitement, prix de marché, mécanique).
+Créée au grooming du 07/08/2026."
+Task,FIN-D05 Vérifier le préfixe 99999 auprès de l'autorité d'identification,,Immobilisations,To Do,,Low,,finance,groom-2026-08-07,vague-3-consolidation,,,"Confirmer qu'aucune boucle officielle tunisienne réelle ne peut commencer par 99999, la bande réservée aux identifications provisoires (FIN-S81).
+
+NON BLOQUANT (questions_samir.md v3): les boucles réelles commencent par 999 0…, la série n'atteindrait 99999… qu'après environ 10 millions de boucles. C'est une vérification technique, pas une décision client.
+
+Créée au grooming du 07/08/2026."
+Task,FIN-D06 Confirmer d'éventuelles exonérations de charges sur les primes,,Charges et main-d'oeuvre,To Do,,Low,,finance,groom-2026-08-07,vague-3-consolidation,,,"Signaler si certaines primes doivent être exonérées de charges patronales.
+
+Comportement actuel (FIN-S84): les primes sont traitées comme le salaire — soumises aux charges patronales pour les salariés CNSS. Une prime ajoutée sur un mois déjà posté au Grand Livre est refusée (ERR-PRIME-04) : il faut régulariser l'écriture d'abord.
+
+POINT DE VIGILANCE, pas une question bloquante (questions_samir.md v3).
+Créée au grooming du 07/08/2026."

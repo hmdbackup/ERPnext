@@ -1,0 +1,19 @@
+{
+  "skill_name": "hmd-agro-domain",
+  "evals": [
+    {
+      "id": 0,
+      "name": "rg14-semence-zero-stock",
+      "prompt": "In the hmd_agro dairy app, implement the rule that when a bull's semence (semen) stock reaches zero, it can no longer be used for an insemination (this is spec rule RG14). Where does this logic belong and how should it behave? Show the approach.",
+      "expected_output": "Should locate this in the Insemination flow (semence stock decrement on after_insert) — NOT a naive custom 'disponible' boolean as the spec literally implies. The accurate, code-anchored behavior: stock is tracked via ERPNext Batch, and ERPNext v15 BLOCKS batch-level negative stock independently of Item.allow_negative_stock, so a depleted batch is refused — the IA still saves but the stock write is skipped with a red alert telling the user to post a Purchase Receipt first. Should cite RG14 and flag the spec-vs-code delta. Should NOT hardcode or re-architect stock outside ERPNext.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "insemination-gestante-guard-calving-date",
+      "prompt": "In hmd_agro, make two changes to Insemination: (1) a cow that is already pregnant must not be able to be inseminated, and (2) when an insemination's result is set to successful, automatically compute and store the cow's expected calving date and her dry-off (tarissement) date. Show the controller code.",
+      "expected_output": "Validation must block when the animal's etat_gestation == 'GESTANTE' (and only VACHE/GENISSE eligible) — referencing CF-IA. On result REUSSIE: set Animal.id_ia_fecondante, date_velage_prevue = add_days(date_ia, get_config('periode_velage_jours', 280)), date_tarissement = add_days(date_velage_prevue, -get_config('tarissement_window_jours', 60)), etat_gestation='GESTANTE', saved with flags.ignore_validate=True (because those fields are protected). Must use get_config (NOT a hardcoded 280/9-months/60), and write the protected reproduction fields only via the ignore_validate bypass. Bonus: mention the symmetric reset on ECHOUEE and closing chaleur/verification alerts.",
+      "files": []
+    }
+  ]
+}

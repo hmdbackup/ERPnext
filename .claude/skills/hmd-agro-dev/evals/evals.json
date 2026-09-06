@@ -1,0 +1,19 @@
+{
+  "skill_name": "hmd-agro-dev",
+  "evals": [
+    {
+      "id": 0,
+      "name": "equipment-asset-not-doctype",
+      "prompt": "I'm working in the hmd_agro Frappe app (a dairy-farm management app). I want to start tracking the farm's equipment — the two tractors, the milking machine, the milk tank — and the maintenance interventions done on them. The spec has an EQUIPMENT entity and an INTERVENTION entity. Create the DocType(s) so we can record equipment and their maintenance. Propose the files (no need to run bench).",
+      "expected_output": "Should recognize (via the spec→implementation map) that EQUIPMENT/INTERVENTION are NOT custom DocTypes in this app — they map to ERPNext core Asset / Asset Maintenance, which is unbuilt-by-design (EPIC 7). The right answer recommends configuring ERPNext Asset + Asset Category (+ Custom Fields if needed), NOT hand-rolling a custom 'Equipment'/'Intervention' DocType that would duplicate ERPNext. If it does scaffold anything, it should use Custom Fields on Asset, module 'HMD AGRO', and house conventions.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "vaccination-recording-conventions",
+      "prompt": "In the hmd_agro app I need to record vaccinations: which animal, which vaccine product, the date given, and the next-due date. Add what's needed and show me the file(s). No need to run bench.",
+      "expected_output": "Should first consider that vaccination is medical care: Traitement already exists (type TRAITEMENT_MEDICAL) and Medicament has a VACCIN type — so the idiomatic answer extends/uses Traitement + Medicament rather than inventing an unrelated doctype. If it does create a new DocType, it must follow house conventions: module 'HMD AGRO' (no trailing space), French snake_case fields (e.g. date_vaccination), a format: autoname, a Link to Animal, 4-space Python indent, register the doctype name in HMD_DOCTYPES in hooks.py for fixtures, controller validate() pattern with get_config for any threshold, frappe.throw with ERR- codes. Must NOT hardcode thresholds or use tabs.",
+      "files": []
+    }
+  ]
+}

@@ -3,8 +3,9 @@
 Branche : `finance/socle-comptable` (basée sur `origin/main`).
 Suite de tests : **521/521 verts** (19 modules — 449 tests finance + 72 tests
 du flux E2E `test_full_flow`), exécutés sur bench le 06/08/2026. Chaque commit
-référence ses stories Jira `FIN-S*` (backlogs `finance_backlog_jira.csv` et
-`finance_backlog_jira_reunion_2026-08-05.csv`).
+référence ses stories Jira `FIN-S*` — backlog unique depuis le grooming du
+07/08/2026 : **`jira/backlog_finance.csv`** (voir `jira/README.md` ; les trois
+anciens CSV sont dans `jira/archive/`).
 
 ## Commits ↔ stories
 
@@ -15,14 +16,14 @@ référence ses stories Jira `FIN-S*` (backlogs `finance_backlog_jira.csv` et
 | `587d60b` | C — Recettes | S20–S23 | Items LAIT-CRU/FUMIER/ANIMAL-VENTE (701/708/702), facture lait de période idempotente, facture auto à la vente d'animal avec annulation compensatoire |
 | `6949776` | D+E — Immo & charges | S30, S40, S41 | 5 Asset Categories sur 22x/28x/681, CF `Asset-id_batiment`, amortissement linéaire auto, salaires ventilés par atelier (`post_salaires`), modes de paiement 54/532 |
 | `81da51e` | F — Pilotage | S50, S51 | `finance_kpis.gl_sums` : CA lait, produit brut, charges, MO, EBE, résultat, coût complet/L, IOFC (+/VL/j) au rapport périodique ; seuils `HMD Configuration` (patch `v1_6`) + coloration vert/orange/rouge |
-| `5d0e03b` | G — Bascule & droits | S60, S61 | Rôle « Éleveur HMD » (zéro accès comptable — test 8/8), procédure a-nouveaux (`BASCULE.md`), seed démo E2E |
+| `5d0e03b` | G — Bascule & droits | S61 (+ S60 *procédure seule*) | Rôle « Éleveur HMD » (zéro accès comptable — test 8/8), procédure a-nouveaux (`BASCULE.md`), seed démo E2E. ⚠️ S60 n'est **pas** livrée : la procédure existe, les balances d'ouverture réelles n'ont pas été saisies |
 | `4403f05` | H — Données manquantes | S24, S25, S31, S32, S42, S70 | Les six trous restants : registre Personnel, interventions équipements, écart lait valorisé, grille prix qualité, cheptel à l'actif, contrôle de cohérence (détail ci-dessous) |
 
 ## Réunion 05/08/2026 — corrections M. Samir (stories S80–S93)
 
-Backlog dédié : `finance_backlog_jira_reunion_2026-08-05.csv` ; compte-rendu :
-`reunion_2026-08-05/compte_rendu.md`. Patches `v1_8` appliqués par
-`bench migrate`.
+Compte-rendu : `reunion_2026-08-05/compte_rendu.md`. Patches `v1_8` appliqués
+par `bench migrate`. Stories fusionnées dans `jira/backlog_finance.csv` au
+grooming du 07/08/2026.
 
 | Commit | Stories | Contenu |
 |---|---|---|
@@ -138,12 +139,16 @@ fichiers produits à la main :
 | `presentation_finance.html` | Deck client, 15 slides, captures réelles du site. `N` = notes du présentateur, `?s=N` ouvre une slide directement. |
 | `~/Downloads/demo_finance_hmd.mp4` | Vidéo narrée 1920×1080, ~10 min — une séquence par slide. |
 | `~/Downloads/demo_finance_hmd_muette.mp4` | Mêmes slides sans voix (8 s chacune), pour commenter en direct. |
-| `finance_backlog_jira.csv` | Backlog complet : 7 epics, 22 stories. |
-| `finance_backlog_jira_nouvelles_stories.csv` | Les 5 stories de l'epic H seules — import Jira sans doublon. |
+| `jira/backlog_finance.csv` | Backlog complet : 9 epics, 61 issues (40 livrées, 1 en cours, 20 à faire). |
+| `jira/backlog_finance_delta.csv` | Uniquement les 17 issues nées du grooming — import Jira sans doublon. |
 
 ## Décisions client en attente (et ce qui les débloque)
 
-1. **Grille qualité de la centrale** — le moteur est en place, une grille
+> Suivi dans Jira depuis le 07/08/2026 : tâches **FIN-D01 → FIN-D06**, plus les
+> stories **FIN-S31** (mode cheptel), **FIN-S60** (bascule) et **FIN-S99**
+> (données réelles). Ce paragraphe en est le commentaire, pas la source.
+
+1. **Grille qualité de la centrale** *(FIN-D01, débloque FIN-S24)* — le moteur est en place, une grille
    « Grille Centrale — provisoire » est active avec des paliers TB/TP
    **indicatifs**. Statut = `PROVISOIRE` : la facture, le rapport et le
    contrôle de cohérence le signalent. Dès réception de la grille
@@ -155,10 +160,10 @@ fichiers produits à la main :
    *Personnel & Cheptel*, vérifier `cheptel_cout_elevage` et
    `cheptel_duree_amortissement_ans`, puis lancer `synchroniser_cheptel`.
    Le site de démo est déjà en `ACTIF_BIOLOGIQUE`.
-3. **Facturation lait** : la ferme facture (job mensuel actif) OU import du
+3. **Facturation lait** *(FIN-D03)* : la ferme facture (job mensuel actif) OU import du
    décompte centrale — ne jamais activer les deux (RG-FIN-12).
-4. **Date de bascule + balances réelles** pour dérouler `BASCULE.md`.
-5. **Données réelles** — ⚠️ ce n'est PAS une attente externe. En réunion du
+4. **Date de bascule + balances réelles** *(FIN-S60)* pour dérouler `BASCULE.md`.
+5. **Données réelles** *(FIN-S99, débloque FIN-S104)* — ⚠️ ce n'est PAS une attente externe. En réunion du
    05/08/2026, l'engagement a été pris **côté développement** : « *ma3neha
    mouch sa3ib, n7otoulkom les données réelles li ntab3ouhom* » (« ce n'est
    pas difficile, on vous met les données réelles que vous suivez »). Aucune
@@ -172,12 +177,27 @@ fichiers produits à la main :
 6. **Taux de charges patronales** — tranché en réunion 05/08/2026 : 30 %
    par défaut (`taux_charges_patronales_pct`, patch v1_8), surchargeable par
    salarié sur la fiche Personnel. Les **salaires réels** restent à confirmer
-   avec la ferme avant de poster une vraie paie.
+   avec la ferme avant de poster une vraie paie *(FIN-D02)*.
+
+### Trou de backlog trouvé au grooming du 07/08/2026
+
+Le **point 13 sur 15** de la liste des changements du compte-rendu du 05/08
+(« petites factures absorbées immédiatement, **grosses factures étalées sur
+plusieurs mois** ») n'avait jamais été transformé en story. La moitié
+« imputation à l'utilisation » du même point est couverte par FIN-S96 ;
+l'étalement ne l'était par rien. → **FIN-S105**, epic E, 2 j.
+
+Également ouvert : le DocType `Utilisation Equipement` livré par FIN-S96
+n'est accessible depuis aucun menu (0 occurrence dans `fixtures/workspace.json`)
+→ **FIN-S102**, 1 h.
 
 ## Tests
 
 ```bash
-# 18 modules — 408 tests, tous verts au 06/08/2026
+# ⚠️ Compteurs ci-dessous périmés (état « 18 modules / 408 tests »), alors que
+# l'en-tête de ce document annonce 19 modules / 521 tests. À remettre à jour par une
+# exécution complète de la suite avant la prochaine livraison — ne pas recopier
+# ces chiffres à la main (c'est ce qui les a fait diverger).
 bench --site <site> execute hmd_agro.hmd_agro.tests.test_valorisation_cmp.run       #  7/7
 bench --site <site> execute hmd_agro.hmd_agro.tests.test_cost_flow.run              #  9/9
 bench --site <site> execute hmd_agro.hmd_agro.tests.test_semence_dual_write.run     # 13/13

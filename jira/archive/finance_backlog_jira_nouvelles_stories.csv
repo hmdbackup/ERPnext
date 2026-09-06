@@ -1,0 +1,71 @@
+Issue Type,Summary,Epic Name,Epic Link,Description,Labels
+Story,FIN-S24 Grille de prix qualite de la centrale,,Recettes,"En tant que gerant, je veux que le litre soit paye au bareme reel de la centrale afin que le chiffre d'affaires lait reflete la qualite produite et non un prix plat.
+
+Criteres d'acceptation:
+- DocType Grille Prix Lait : prix de base, periode de validite, paliers par critere (TB, TP, germes, cellules), plancher de prix, plafond de prime.
+- Une seule grille active peut couvrir une date donnee (refus a la saisie).
+- Les paliers priment sur l'indexation lineaire ; un critere sans palier retombe sur la prime par point de la config.
+- compute_milk_rate lit la grille en vigueur A LA DATE FACTUREE ; sans grille, repli prix plat documente.
+- La facture trace dans ses remarques la grille utilisee, le prix de base et chaque prime.
+- Statut PROVISOIRE tant que la centrale n'a pas confirme : signale sur la facture, dans le rapport et dans le controle de coherence.
+
+Statut: moteur livre (test_grille_lait 28/28). Les valeurs des paliers restent a remplacer par la grille contractuelle - DECISION CLIENT.
+
+RG: RG-FIN-10, RG-FIN-13 / RC-FIN-13",phase-3
+Story,FIN-S25 Valoriser l'ecart lait en dinars,,Recettes,"En tant que gerant, je veux savoir ce que coutent les litres qui manquent a l'appel afin d'arbitrer sur les pertes de lait comme je le fais deja sur l'aliment.
+
+Criteres d'acceptation:
+- finance_kpis.ecart_lait retourne litres perdus, valeur en dinars, part de la production, prix du litre applique.
+- Valorisation au prix de la periode - la meme grille que la facture, pas un prix a part.
+- Les ecarts negatifs (sur-affectation : vendu + conso interne + veau > production saisie) sont comptes a part et JAMAIS valorises : c'est une erreur de saisie.
+- Bilan Lait Journalier calcule son ecart quelle que soit la source (avant : uniquement via la page Saisie Traite).
+- Trois lignes au rapport mensuel : ecart en litres, en % de la production (colore), en dinars.
+- Seuils ecart_lait_seuil_perte_pct (orange) et ecart_lait_seuil_alarme_pct (rouge) en configuration.
+
+Statut: livre (couvert par test_grille_lait).
+
+RG: RC-FIN-14",phase-3
+Story,FIN-S32 Interventions et maintenance des equipements,,Immobilisations,"En tant que gerant, je veux savoir ce que coute l'entretien de chaque equipement afin de ne plus amortir du materiel sans connaitre son cout de fonctionnement.
+
+Criteres d'acceptation:
+- enregistrer_intervention cree un Asset Repair ERPNext (panne, actions, duree d'arret, pieces) ET poste la charge au compte 615 sur l'atelier de l'equipement.
+- ATTENTION ERPNext v15 : un Asset Repair non capitalise ne produit AUCUNE ecriture comptable - d'ou l'ecriture posee separement.
+- Trois modes de reglement : fournisseur (avec tiers), caisse, banque. Cout nul = suivi sans ecriture (intervention interne).
+- Idempotence par reference ; annulation symetrique (l'ecriture de charge est annulee avec l'intervention).
+- planifier_maintenance cree le plan preventif (Asset Maintenance + taches periodiques) avec des echeances reellement calculees.
+- Custom Fields sur Asset Repair : type d'intervention, intervenant (lien Personnel), reference HMD.
+- Rapport mensuel : frais d'entretien, nombre d'interventions, entretien / produit brut (colore par seuil).
+
+Statut: livre (test_maintenance 26/26).
+
+RG: RG-FIN-30, RG-FIN-31, CF-FIN-31 / RC-FIN-54",phase-4
+Story,FIN-S42 Registre du personnel et masse salariale,,Charges et main-d'oeuvre,"En tant que gerant, je veux un registre des salaries (qui, quel role, quel salaire, quel atelier) afin que le cout de main-d'oeuvre du litre soit une donnee et non un montant tape a la main.
+
+Criteres d'acceptation:
+- DocType Personnel : nom, role, type de contrat, dates d'embauche et de sortie, salaire brut, taux d'activite, assujettissement aux charges patronales, atelier principal.
+- Table de repartition multi-ateliers (somme des parts = 100 %), pour un salarie partage entre plusieurs ateliers.
+- Garde-fous ERR-PERS-01 a 07 : salaire negatif, sortie avant embauche, repartition differente de 100 %, atelier inconnu ou groupe, taux d'activite hors bornes, statut SORTI sans date, atelier en double.
+- masse_salariale reconstruit le mois depuis le registre, AU PRORATA des jours pour une entree ou une sortie en cours de mois.
+- post_salaires poste une ecriture equilibree : debit 640 (brut) et 647 (charges patronales) par atelier, credit 421 et 453. Idempotente par marqueur.
+- Le chemin ""montants forces"" reste disponible pour la reprise d'historique.
+- Compte 453 Organismes sociaux ajoute au plan (cree aussi sur les instances deja deployees).
+- Taux de charges patronales en configuration (16,57 % par defaut, CNSS regime agricole ameliore) - A CONFIRMER avec la ferme.
+- Job mensuel : masse salariale du mois ecoule.
+- Rapport mensuel : cout main-d'oeuvre par litre et par vache presente.
+
+Statut: livre (test_personnel 28/28). Salaires reels et taux de charges a confirmer.
+
+RG: RG-FIN-40, RG-FIN-41 / RC-FIN-41, RC-FIN-42",phase-5
+Story,FIN-S70 Controle de coherence sur donnees reelles,,Bascule,"En tant que gerant, je veux pouvoir verifier que les chiffres tiennent debout sur une base reelle afin de ne pas decider sur des donnees fausses - tous les chiffres venaient jusqu'ici du jeu de demonstration.
+
+Criteres d'acceptation:
+- Rapport ""Controle Coherence Finance"" (desk + fonction console pour une restauration de production).
+- 26 controles sur 7 domaines : socle comptable, Grand Livre, lait, couts, personnel, immobilisations et maintenance, troupeau.
+- Trois issues par controle : OK / ALERTE (anomalie probable) / ERREUR (le chiffre publie est faux), avec coloration.
+- Controles cles : Grand Livre equilibre, charges sans atelier, lait vendu vs lait facture, bilan lait vs somme des traites, articles en stock sans cout unitaire, registre du personnel vs compte 64x, mois sans ecriture de salaires, immobilisations sans amortissement, maintenance en retard, sorties d'animaux non facturees, immobilisations d'animaux sortis.
+- Lecture seule, rejouable, aucune ecriture.
+- Une section qui echoue n'interrompt pas le rapport (journalisee, signalee en ERREUR).
+
+Statut: livre (test_controle_coherence 15/15, avec injection d'anomalies pour verifier la detection). Reste a l'executer sur une copie de la base de production - EN ATTENTE DU BACKUP.
+
+RG: RG-FIN-70",phase-7
