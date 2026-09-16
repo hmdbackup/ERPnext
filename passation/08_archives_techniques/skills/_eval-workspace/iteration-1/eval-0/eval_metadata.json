@@ -1,0 +1,19 @@
+{
+  "eval_id": 0,
+  "eval_name": "dev-equipment-asset-not-doctype",
+  "skill": "hmd-agro-dev",
+  "skill_path": "/Users/momoslim/Downloads/hmd_agro-main/.claude/skills/hmd-agro-dev",
+  "prompt": "I'm working in the hmd_agro Frappe app (a dairy-farm management app). I want to start tracking the farm's equipment — the two tractors, the milking machine, the milk tank — and the maintenance interventions done on them. The spec has an EQUIPMENT entity and an INTERVENTION entity. Create the DocType(s) so we can record equipment and their maintenance. Propose the files (no need to run bench).",
+  "assertions": [
+    "Recommends ERPNext Asset (and Asset Maintenance) as the primary approach for Equipment/Intervention, rather than building them as new custom dairy DocTypes.",
+    "Explicitly cites that the spec's EQUIPMENT/INTERVENTION are ERPNext-core or not-built-by-design (the spec to implementation map / golden rule).",
+    "Does NOT present a from-scratch custom 'Equipement'/'Equipment' DocType as the recommended solution.",
+    "Any proposed extension uses Custom Fields + module 'HMD AGRO' conventions (and notes the by-name fixture pattern for CFs on core doctypes)."
+  ],
+  "expectations": [
+    "Recommends ERPNext Asset (and Asset Maintenance) as the primary approach for Equipment/Intervention, rather than building them as new custom dairy DocTypes.",
+    "Explicitly cites that the spec's EQUIPMENT/INTERVENTION are ERPNext-core or not-built-by-design (the spec to implementation map / golden rule).",
+    "Does NOT present a from-scratch custom 'Equipement'/'Equipment' DocType as the recommended solution.",
+    "Any proposed extension uses Custom Fields + module 'HMD AGRO' conventions (and notes the by-name fixture pattern for CFs on core doctypes)."
+  ]
+}

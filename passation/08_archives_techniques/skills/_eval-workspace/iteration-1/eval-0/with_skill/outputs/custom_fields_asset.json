@@ -1,0 +1,25 @@
+[
+ {
+  "doctype": "Custom Field",
+  "name": "Asset-batiment",
+  "dt": "Asset",
+  "fieldname": "batiment",
+  "label": "Bâtiment / Localisation",
+  "fieldtype": "Link",
+  "options": "Batiment",
+  "insert_after": "location",
+  "module": "HMD AGRO",
+  "__comment": "HMD-specific field on the ERPNext core 'Asset' DocType: links a machine to its housing/building via the existing HMD 'Batiment' master. French snake_case fieldname per references/conventions.md §2. Because 'Asset' is not in HMD_DOCTYPES, this CF must be exported BY NAME (see hooks_fixtures_snippet.py) or it is wiped on bench migrate — same gotcha as Stock Entry-id_lot (SCRUM-123)."
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Asset Maintenance Log-remarque_intervention",
+  "dt": "Asset Maintenance Log",
+  "fieldname": "remarque_intervention",
+  "label": "Remarque Intervention",
+  "fieldtype": "Small Text",
+  "insert_after": "description",
+  "module": "HMD AGRO",
+  "__comment": "Free-text operator note on a performed maintenance intervention, on the ERPNext core 'Asset Maintenance Log' DocType (the record of an intervention actually done). Also not in HMD_DOCTYPES, so exported by name."
+ }
+]

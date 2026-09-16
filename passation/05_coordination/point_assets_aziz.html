@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Point Assets — fait / reste à faire — HMD AGRO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  @page{ size:A4; margin:14mm 13mm 15mm 13mm; }
+  :root{
+    --ink:#1c1714; --ink2:#3d3531; --muted:#7d716a; --line:#e3dbd1; --paper:#fffdf9; --card:#faf6f0;
+    --gold:#b9853f; --gold-soft:#f3e7d3; --espresso:#6b4e33;
+    --ok:#3f8a4f; --ok-bg:#e6f2e7; --part:#b7860b; --part-bg:#fbf1d6; --gap:#c2563a; --gap-bg:#fae5df; --na:#8a8a8a; --na-bg:#eeeeee;
+    --blue:#3e6f9e; --blue-bg:#e5eef7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:#fff}
+  body{color:var(--ink2);font-family:"Newsreader",Georgia,"Times New Roman",serif;font-size:10.3pt;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  b,strong{color:var(--ink);font-weight:600}
+  code{font-family:"JetBrains Mono",Menlo,Consolas,monospace;font-size:.84em;background:var(--gold-soft);color:var(--espresso);padding:1px 5px;border-radius:4px;white-space:nowrap}
+  .mono{font-family:"JetBrains Mono",Menlo,Consolas,monospace}
+
+  /* ---- cover block ---- */
+  header{border-bottom:2px solid var(--gold);padding-bottom:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:8.5pt;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+  h1{font-family:"Fraunces",Georgia,serif;font-weight:800;font-size:27pt;line-height:1.05;color:var(--ink);letter-spacing:-.01em}
+  h1 small{display:block;font-weight:500;font-size:14pt;color:var(--espresso);margin-top:6px;font-style:italic}
+  .meta{font-family:"JetBrains Mono",monospace;font-size:8pt;color:var(--muted);line-height:1.7;text-align:right;white-space:nowrap}
+  .meta b{color:var(--espresso);font-weight:600}
+
+  .top{background:var(--card);border:1px solid var(--gold);border-left:5px solid var(--gold);border-radius:8px;padding:12px 16px;margin-bottom:14px}
+  .top h2{font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:13.5pt;color:var(--espresso);margin-bottom:8px}
+  .top p{margin-bottom:8px}
+  .top p:last-child{margin-bottom:0}
+  .rule{background:#fff;border:1px dashed var(--gap);border-radius:6px;padding:8px 12px;margin-top:10px;font-size:10pt}
+  .rule b{color:var(--gap)}
+
+  section{margin-bottom:14px}
+  .shead{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:10px}
+  .num{font-family:"JetBrains Mono",monospace;font-size:8.5pt;font-weight:600;background:var(--gold);color:#fff;padding:2px 7px;border-radius:4px}
+  .shead h2{font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:15pt;color:var(--ink)}
+  .intro{font-style:italic;color:var(--muted);margin-bottom:10px;font-size:10pt}
+
+  /* ---- tables ---- */
+  table{border-collapse:collapse;width:100%;font-size:9.1pt}
+  th{font-family:"JetBrains Mono",monospace;font-size:7.6pt;letter-spacing:.1em;text-transform:uppercase;color:var(--espresso);background:var(--gold-soft);text-align:left;padding:6px 9px;border-bottom:1px solid var(--line)}
+  td{padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr{break-inside:avoid}
+  td code{white-space:normal}
+  td.fn{font-family:"JetBrains Mono",monospace;font-size:8.2pt;color:var(--blue);white-space:nowrap}
+  td.story{font-family:"JetBrains Mono",monospace;font-size:8.2pt;color:var(--muted);white-space:nowrap}
+
+  /* ---- legend / pills ---- */
+  .pill{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:7.6pt;font-weight:600;padding:1px 7px;border-radius:10px;white-space:nowrap;vertical-align:middle}
+  .p-ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok)}
+  .p-part{background:var(--part-bg);color:var(--part);border:1px solid var(--part)}
+  .p-gap{background:var(--gap-bg);color:var(--gap);border:1px solid var(--gap)}
+  .p-na{background:var(--na-bg);color:var(--na);border:1px solid var(--na)}
+  .p-aziz{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:9pt;color:var(--muted);margin-bottom:10px;align-items:center}
+
+  /* ---- story cards ---- */
+  .card{border:1px solid var(--line);border-radius:7px;margin-bottom:6px;break-inside:avoid;background:#fff;overflow:hidden}
+  .card.aziz{border-color:var(--blue);box-shadow:inset 4px 0 0 var(--blue)}
+  .card .hd{display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--card);border-bottom:1px solid var(--line)}
+  .card.aziz .hd{background:var(--blue-bg)}
+  .card .hd .key{font-family:"JetBrains Mono",monospace;font-size:8pt;color:var(--muted)}
+  .card .hd h3{font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:11.5pt;color:var(--ink);flex:1}
+  .card .hd .who{font-size:9pt;color:var(--muted);font-style:italic}
+  .card .bd{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .card .bd > div{padding:6px 11px;font-size:9.1pt}
+  .card .bd > div:first-child{border-right:1px dashed var(--line)}
+  .card .lbl{font-family:"JetBrains Mono",monospace;font-size:7.4pt;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px}
+  .lbl.ok{color:var(--ok)} .lbl.gap{color:var(--gap)}
+  .card ul{list-style:none}
+  .card li{position:relative;padding-left:11px;margin-bottom:2px}
+  .card li::before{content:"";position:absolute;left:0;top:.58em;width:5px;height:5px;transform:rotate(45deg);background:var(--gold)}
+  .card .bd.ok li::before{background:var(--ok)}
+  .warn{background:var(--part-bg);border-left:3px solid var(--part);padding:4px 8px;margin-top:5px;font-size:9pt;border-radius:3px}
+
+  /* ---- decisions ---- */
+  ol.q{list-style:none;counter-reset:q}
+  ol.q li{counter-increment:q;position:relative;padding:8px 0 8px 38px;border-bottom:1px dashed var(--line);break-inside:avoid}
+  ol.q li:last-child{border-bottom:none}
+  ol.q li::before{content:counter(q);position:absolute;left:0;top:8px;width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-family:"JetBrains Mono",monospace;font-weight:600;font-size:10pt;display:flex;align-items:center;justify-content:center}
+  ol.q li .t{font-family:"Fraunces",Georgia,serif;font-weight:700;color:var(--ink);font-size:11pt}
+
+  ul.plain{list-style:none}
+  ul.plain li{position:relative;padding-left:14px;margin-bottom:5px}
+  ul.plain li::before{content:"";position:absolute;left:0;top:.55em;width:6px;height:6px;transform:rotate(45deg);background:var(--gold)}
+
+  footer{margin-top:22px;padding-top:8px;border-top:1px solid var(--line);font-size:8.5pt;color:var(--muted);font-style:italic;display:flex;justify-content:space-between}
+  .pb{break-before:page}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="kicker">HMD AGRO · Point d'équipe · Asset Management</div>
+    <h1>Assets : ce qui est fait,<br>ce qui reste à faire<small>Support de discussion avec Aziz — <span style="white-space:nowrap">US-AM-3 · US-AM-6 · US-AM-7</span></small></h1>
+  </div>
+  <div class="meta">
+    <b>20 août 2026</b><br>
+    app <b>hmd_agro</b> · Frappe/ERPNext v15<br>
+    branche <b>finance/socle-comptable</b><br>
+    Jira <b>SCRUM-64 → SCRUM-76</b>
+  </div>
+</header>
+
+<div class="top">
+  <h2>Le message en 30 secondes</h2>
+  <p>Le volet Assets a été construit <b>depuis la finance, pas depuis le poste « chef de parc »</b> : les équipements sont des <code>Asset</code> ERPNext natifs (aucun DocType « Équipement » maison, uniquement des Custom Fields), chaque intervention est un <code>Asset Repair</code> <b>plus</b> son écriture au compte 615, les heures d'utilisation valorisent le coût mécanique par atelier, et trois rapports lisent l'ensemble.</p>
+  <p>Résultat : <b>la couche données et la couche comptable existent</b>. Ce qui manque pour les US-AM, c'est la couche « exploitation » — fiche actif enrichie, statut / condition, affectation, alertes poussées, tableau de bord flotte.</p>
+  <div class="rule"><b>Règle à faire respecter par tout le monde :</b> une intervention passe par <code>enregistrer_intervention()</code>, jamais un <code>Asset Repair</code> créé à la main dans le Desk. Sinon pas d'écriture comptable (piège v15 : un repair non capitalisé ne génère rien), le 615 et le coût du litre divergent, et le bloc « Rapprochement » du Rapport Interventions signale l'écart.</div>
+</div>
+
+<section>
+  <div class="shead"><span class="num">01</span><h2>Ce qui est livré</h2></div>
+  <p class="intro">Sur <code>finance/socle-comptable</code> — pas encore fusionné sur <code>main</code>. Aucun commit Assets depuis le 14/08 ; le détail technique complet est dans <code>recap_assets_maintenance.md</code>.</p>
+  <table>
+    <thead><tr><th style="width:60%">Brique</th><th style="width:11%">Story</th><th>Où dans le code</th></tr></thead>
+    <tbody>
+      <tr><td>5 <b>Asset Categories</b> (durées + comptes 22x / 28x / 681), amortissement linéaire automatique, Location « Ferme HMD »</td><td class="story">FIN-S30</td><td class="fn">setup/finance/immobilisations.py</td></tr>
+      <tr><td>Custom Fields <code>Asset</code> : <code>id_batiment</code>, <code>id_animal</code>, <code>cout_horaire</code> (exportés par nom dans <code>hooks.py</code>)</td><td class="story">FIN-S30 / S91</td><td class="fn">idem</td></tr>
+      <tr><td>Équipe « Maintenance HMD » peuplée depuis le registre <code>Personnel</code> · Custom Fields <code>Asset Repair</code> : <code>type_intervention</code>, <code>personnel</code>, <code>reference_hmd</code></td><td class="story">FIN-S32</td><td class="fn">setup/finance/maintenance.py</td></tr>
+      <tr><td><b>Moteur interventions</b> : <code>enregistrer_intervention</code> (repair + écriture 615 / 401-54-532, idempotent), <code>annuler_intervention</code>, <code>planifier_maintenance</code> (préventif calendaire → <code>Asset Maintenance Log</code>) · erreurs <code>ERR-MNT-01→08</code></td><td class="story">FIN-S32</td><td class="fn">utils/maintenance_utils.py</td></tr>
+      <tr><td><b>Lectures</b> : <code>interventions_planifiees</code>, <code>interventions_realisees</code>, <code>cout_maintenance</code> (GL 615 + somme des repairs), <code>cout_horaire</code>, <code>cout_utilisation</code></td><td class="story">FIN-S32 / S96</td><td class="fn">idem (511 lignes au total)</td></tr>
+      <tr><td>DocType <b><code>Utilisation Equipement</code></b> (équipement, date, heures, atelier, opérateur) — 25 DT/h par défaut, surchargeable par équipement · <b>aucune écriture GL</b> (clé de répartition analytique) · contrôles <code>ERR-UTIL-01→05</code></td><td class="story">FIN-S96</td><td class="fn">doctype/utilisation_equipement/</td></tr>
+      <tr><td>Cheptel comme actif (1 vache = 1 Asset, mise en service au 1<sup>er</sup> vêlage, rebut à la sortie, N° travail dans le titre) — <code>cheptel_mode = NON_VALORISE</code> par défaut</td><td class="story">FIN-S31 / S80</td><td class="fn">utils/cheptel_valorisation.py</td></tr>
+      <tr><td><b>Rapport Interventions</b> : réalisées · préventif dû / en retard · rapprochement GL 615 ↔ somme des repairs, filtres Équipement / Atelier</td><td class="story">SCRUM-11</td><td class="fn">report/rapport_interventions/</td></tr>
+      <tr><td><b>Tableau Amortissement</b> (cumul, reste à amortir, date de sortie) · ratio « Entretien / Produit brut » coloré dans le Rapport Périodique · contrôle « préventif en retard » dans le Contrôle Cohérence</td><td class="story">FIN-S90 / S91 / S70</td><td class="fn">report/tableau_amortissement/<br>report/controle_coherence_finance/</td></tr>
+      <tr><td>Seuils coût entretien / CA : 3 % vigilance, 6 % alarme</td><td class="story">—</td><td class="fn">HMD Configuration</td></tr>
+      <tr><td>Tests : <code>test_maintenance.py</code> (~42 contrôles), <code>test_immobilisations.py</code>, <code>test_tableau_amortissement.py</code>, <code>test_cheptel.py</code></td><td class="story">—</td><td class="fn">hmd_agro/tests/</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <div class="shead"><span class="num">02</span><h2>Lecture story par story — US-AM-1 → 13</h2></div>
+  <div class="legend">
+    <span class="pill p-ok">COUVERT</span> natif ERPNext ou déjà livré
+    <span class="pill p-part">PARTIEL</span> socle présent, couche métier à ajouter
+    <span class="pill p-gap">À FAIRE</span> rien n'existe
+    <span class="pill p-na">HORS PÉRIMÈTRE</span> description Jira = cheptel
+    <span class="pill p-aziz">AZIZ</span> story portée par Aziz
+  </div>
+
+  <div class="card">
+    <div class="hd"><span class="key">SCRUM-64</span><h3>US-AM-1 · Enregistrer un actif de manière unique</h3><span class="who">non assignée</span><span class="pill p-part">PARTIEL</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul><li><code>Asset</code> natif : nom, catégorie, fournisseur, coût, location, n° de série libre</li></ul></div>
+    <div><div class="lbl gap">Manque</div><ul><li>Contrôle d'unicité n° de série / immatriculation / code interne → Custom Field + <code>validate</code></li></ul></div></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><span class="key">SCRUM-65</span><h3>US-AM-2 · Catégoriser les actifs</h3><span class="who">Soumaya</span><span class="pill p-ok">COUVERT</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul><li>5 Asset Categories livrées avec durées et comptes</li></ul></div>
+    <div><div class="lbl gap">Remarque</div><ul><li>La description Jira décrit la catégorisation du <b>cheptel</b> (velle / génisse / vache), pas du matériel → relabelliser</li></ul></div></div>
+  </div>
+
+  <div class="card aziz">
+    <div class="hd"><span class="key">SCRUM-66</span><h3>US-AM-3 · Fiche actif complète</h3><span class="pill p-aziz">AZIZ</span><span class="pill p-part">PARTIEL</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul>
+      <li>Identification + données financières natives, calendrier d'amortissement v15</li>
+      <li><code>cout_horaire</code>, <code>id_batiment</code> sur la fiche</li>
+      <li>Heures via <code>Utilisation Equipement</code>, coût interventions via <code>cout_maintenance()</code> — <b>la donnée existe, pas l'affichage</b></li></ul></div>
+    <div><div class="lbl gap">Manque</div><ul>
+      <li><b>Agrégats sur la fiche</b> : heures cumulées, coût total interventions, ratio réparation / valeur</li>
+      <li>Condition physique (US-AM-5), hectares et carburant (US-AM-6)</li>
+      <li>Valeur marché et coût de remplacement (US-AM-7)</li>
+      <li>Piste : dashboard de fiche (<code>override_doctype_dashboards</code>) qui <b>calcule</b>, pas des champs stockés à resynchroniser</li></ul></div></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><span class="key">SCRUM-67</span><h3>US-AM-4 · Affecter un actif (employé / parcelle / centre de coût)</h3><span class="who">non assignée</span><span class="pill p-part">PARTIEL</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul><li><code>Asset Movement</code> natif (location, custodian = Employee)</li><li><code>id_batiment</code></li></ul></div>
+    <div><div class="lbl gap">Manque</div><ul><li>Affectation à un Lot / parcelle ou à un atelier (Cost Center)</li><li>« Une seule affectation active », blocage si vendu / rebut, timeline</li></ul></div></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><span class="key">SCRUM-68</span><h3>US-AM-5 · Condition physique</h3><span class="who">non assignée</span><span class="pill p-gap">À FAIRE</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul><li>Rien</li></ul></div>
+    <div><div class="lbl gap">Manque</div><ul><li>Custom Field <code>condition</code> (Excellent → Hors service), note obligatoire si Hors service, bascule auto du statut, journal des changements</li></ul></div></div>
+  </div>
+
+  <div class="card aziz">
+    <div class="hd"><span class="key">SCRUM-69</span><h3>US-AM-6 · Suivre l'usage (heures, ha, carburant)</h3><span class="pill p-aziz">AZIZ</span><span class="pill p-part">PARTIEL</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul>
+      <li><code>Utilisation Equipement</code> = <b>les heures</b>, par atelier et opérateur</li>
+      <li>Contrôles : heures &gt; 0, ≤ 24 h/j, équipement soumis, date non future, atelier non-groupe</li>
+      <li>Agrégation <code>cout_utilisation()</code> par atelier et équipement</li></ul></div>
+    <div><div class="lbl gap">Manque</div><ul>
+      <li><b>Hectares et carburant</b> absents</li>
+      <li>Lien à une tâche agricole / intervention</li>
+      <li>Blocage selon statut (Under Repair, Retiré, Vendu) — dépend d'US-AM-8</li>
+      <li>Totaux cumulés affichés sur la fiche (US-AM-3)</li></ul>
+      <div class="warn">⚠ Garder le principe : <b>aucune écriture GL</b> depuis ce DocType — amortissement (68x) et entretien (615) sont déjà au Grand Livre, sinon double comptage.</div></div></div>
+  </div>
+
+  <div class="card aziz">
+    <div class="hd"><span class="key">SCRUM-70</span><h3>US-AM-7 · Suivre la valeur dans le temps</h3><span class="pill p-aziz">AZIZ</span><span class="pill p-part">PARTIEL</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul>
+      <li>Amortissement linéaire natif v15 (<code>Asset Depreciation Schedule</code>), plancher à zéro natif</li>
+      <li><code>Asset Value Adjustment</code> natif pour toute réévaluation</li>
+      <li>Tableau Amortissement livré (cumul, reste, date de sortie)</li></ul></div>
+    <div><div class="lbl gap">Manque</div><ul>
+      <li>2 Custom Fields : valeur marché actuelle, coût de remplacement estimé</li>
+      <li>Comparaison côte à côte sur la fiche (achat / marché / remplacement)</li>
+      <li>« Asset Value Log » → réutiliser <code>Asset Value Adjustment</code>, pas un log maison</li></ul></div></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><span class="key">SCRUM-71</span><h3>US-AM-8 · Statut opérationnel</h3><span class="who">non assignée</span><span class="pill p-part">PARTIEL</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul><li>Statuts natifs <code>Asset.status</code> : Submitted, In Maintenance, Out of Order, Sold, Scrapped…</li><li><code>ERR-MNT-02</code> bloque toute intervention sur un actif vendu / au rebut</li></ul></div>
+    <div><div class="lbl gap">Manque</div><ul><li>Machine à états métier (Enregistré → Actif → … → Retiré/Vendu) et transitions interdites</li><li>Journal des durées par statut (uptime / downtime)</li><li>Lien automatique statut ↔ intervention en cours</li></ul></div></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><span class="key">SCRUM-72</span><h3>US-AM-9 · Recherche et filtres</h3><span class="who">Soumaya</span><span class="pill p-na">HORS PÉRIMÈTRE</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul><li>ListView Frappe natif ; <code>id_animal</code> déjà en filtre standard</li></ul></div>
+    <div><div class="lbl gap">Remarque</div><ul><li>Description Jira = recherche d'<b>animaux</b> (boucle, lot, DELVO) → à sortir de l'épic Asset Management</li></ul></div></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><span class="key">SCRUM-73</span><h3>US-AM-10 · Tableau de bord flotte</h3><span class="who">non assignée</span><span class="pill p-gap">À FAIRE</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul><li>La donnée : Rapport Interventions, Tableau Amortissement, <code>cout_maintenance</code></li></ul></div>
+    <div><div class="lbl gap">Manque</div><ul><li>Number Cards / Dashboard Charts : actifs par statut et catégorie, coût YTD, taux de disponibilité, liste à réparer / remplacer, lien direct vers la fiche</li></ul></div></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><span class="key">SCRUM-74</span><h3>US-AM-11 · Documents joints</h3><span class="who">Iheb</span><span class="pill p-ok">COUVERT</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul><li>Attachments Frappe natifs sur <code>Asset</code>, datés et historisés</li></ul></div>
+    <div><div class="lbl gap">Option</div><ul><li>Un type de document (facture / carte grise / manuel / photo) si le métier le demande</li></ul></div></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><span class="key">SCRUM-75</span><h3>US-AM-12 · Timeline complète</h3><span class="who">Soumaya</span><span class="pill p-na">HORS PÉRIMÈTRE</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul><li>Description Jira = vie de l'<b>animal</b> (<code>live_state.py</code>, IVV, âge 1<sup>er</sup> vêlage)</li></ul></div>
+    <div><div class="lbl gap">Remarque</div><ul><li>Pour le matériel, la timeline = <code>Asset Movement</code> + <code>Asset Repair</code> + <code>Asset Maintenance Log</code> natifs, à assembler dans US-AM-3</li></ul></div></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><span class="key">SCRUM-76</span><h3>US-AM-13 · Seuils et alertes de maintenance</h3><span class="who">Iheb</span><span class="pill p-part">PARTIEL</span></div>
+    <div class="bd"><div><div class="lbl ok">Existe</div><ul>
+      <li>Préventif <b>calendaire</b> (<code>planifier_maintenance</code> → <code>Asset Maintenance Log</code>)</li>
+      <li>Détection d'échéance dépassée (<code>interventions_planifiees</code>) → Rapport Interventions + Contrôle Cohérence</li>
+      <li>Heures par équipement, seuils coût / CA 3 % – 6 %</li></ul></div>
+    <div><div class="lbl gap">Manque</div><ul>
+      <li><b>Seuil au compteur d'heures</b> (le cœur de la story) — dépend des heures d'US-AM-6</li>
+      <li>Job <code>daily</code> maintenance dans <code>hooks.py</code> et alerte poussée : le DocType <code>Alerte</code> est animal-only (<code>animal</code> obligatoire)</li>
+      <li>Quick win : champ <code>maintenance_horizon_jours</code> absent de <code>HMD Configuration</code> (le rapport le lit déjà, retombe sur 30 j)</li></ul></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="shead"><span class="num">03</span><h2>Points à trancher avec Aziz</h2></div>
+  <ol class="q">
+    <li><span class="t">US-AM-6 — étendre <code>Utilisation Equipement</code>, pas créer un « Asset Usage Log » parallèle.</span><br>
+      Ajouter <code>hectares</code>, <code>carburant_l</code> et un lien tâche / intervention. Un seul DocType = un seul point de saisie pour les tractoristes, et <code>cout_utilisation()</code> continue de marcher. Question ouverte : le carburant est-il <b>informatif</b> ou une <b>consommation de stock</b> (Stock Entry) ? Si stock, il devient une charge → à cadrer avec la finance pour ne pas le compter deux fois dans le coût horaire forfaitaire (qui inclut déjà le mazout).</li>
+    <li><span class="t">US-AM-3 — des agrégats calculés, jamais saisis.</span><br>
+      Dashboard de fiche (<code>asset_dashboard.py</code> via <code>override_doctype_dashboards</code>) qui appelle <code>cout_maintenance</code> / <code>cout_utilisation</code> à l'ouverture. Pas de champs stockés qui se désynchronisent à la première annulation d'intervention.</li>
+    <li><span class="t">US-AM-7 — ne pas réécrire l'amortissement.</span><br>
+      ERPNext v15 le fait déjà (linéaire, plancher 0, calendrier). Le seul vrai ajout : 2 Custom Fields (valeur marché, coût de remplacement) + leur affichage. « Asset Value Log » = <code>Asset Value Adjustment</code> natif.</li>
+    <li><span class="t">Dépendances transverses à groomer ensemble.</span><br>
+      US-AM-5 (condition) et US-AM-8 (statut) conditionnent le « blocage selon statut » d'US-AM-6 ; US-AM-13 (Iheb) dépend du compteur d'heures d'US-AM-6 ; US-AM-3 agrège tout le reste → à livrer en dernier.</li>
+    <li><span class="t">Périmètre de l'épic.</span><br>
+      3 stories sur 13 (AM-2, AM-9, AM-12) ont une description <b>cheptel</b>, pas <b>matériel</b> → à relabelliser ou à sortir de l'épic Asset Management.</li>
+  </ol>
+</section>
+
+<section>
+  <div class="shead"><span class="num">04</span><h2>À faire côté socle, indépendamment des US-AM</h2></div>
+  <ul class="plain">
+    <li><b>Fusion <code>finance/socle-comptable</code> → <code>main</code></b> (avec accord) : tout ce qui précède n'est visible que sur la branche.</li>
+    <li><b>FIN-S102</b> (1 h, priorité haute) : raccourci <code>Utilisation Equipement</code> dans le workspace HMD AGRO — 0 occurrence dans <code>fixtures/workspace.json</code>, « livré mais inatteignable depuis le menu ». À faire avant toute démo.</li>
+    <li><b>FIN-S31</b> : décision client — valoriser ou non le cheptel à l'actif (<code>cheptel_mode</code>).</li>
+    <li><code>livraison_finance.md</code> annonce encore « 26/26 » tests maintenance — périmé, c'est ~42 depuis FIN-S96.</li>
+  </ul>
+</section>
+
+<footer>
+  <span>HMD AGRO · Point Assets · Mohamed Slim · 20/08/2026</span>
+  <span>Détail technique : <code>recap_assets_maintenance.md</code> · Jira : hmdagrobackup.atlassian.net</span>
+</footer>
+
+</body>
+</html>

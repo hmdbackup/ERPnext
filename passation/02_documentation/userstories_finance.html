@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HMD Agro — Les 17 user stories Finance en détail</title>
+<style>
+  :root{
+    --bg:#131110; --card:#1c1915; --line:#2e2921;
+    --gold:#e7b65a; --ink:#efe7d6; --muted:#a99b7e;
+    --green:#7fc97f; --orange:#f0a35e; --red:#e57373;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.65 "Avenir Next","Segoe UI",sans-serif;padding:48px 20px}
+  .wrap{max-width:980px;margin:0 auto}
+  header{text-align:center;margin-bottom:44px}
+  .rule{width:80px;height:4px;background:var(--gold);margin:0 auto 18px}
+  .kicker{color:var(--gold);font-weight:700;letter-spacing:.14em;font-size:13px;text-transform:uppercase}
+  h1{font-size:34px;margin:10px 0 8px}
+  header p{color:var(--muted)}
+  .stats{display:flex;gap:14px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 22px;text-align:center}
+  .stat b{display:block;font-size:24px;color:var(--gold)}
+  .stat span{font-size:12.5px;color:var(--muted)}
+  .epic{margin:38px 0 14px;display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .epic .tag{background:var(--gold);color:#131110;font-weight:800;font-size:13px;padding:2px 10px;border-radius:6px;white-space:nowrap}
+  .epic h2{font-size:21px}
+  .epic .commit{margin-left:auto;color:var(--muted);font-size:13px;font-family:ui-monospace,monospace}
+  .story{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 24px;margin:14px 0}
+  .story .head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .story .id{font-family:ui-monospace,monospace;color:var(--gold);font-weight:700}
+  .story h3{font-size:17px;font-weight:700}
+  .badge{margin-left:auto;font-size:12px;font-weight:700;padding:3px 12px;border-radius:99px}
+  .ok{background:rgba(127,201,127,.12);color:var(--green);border:1px solid rgba(127,201,127,.35)}
+  .wait{background:rgba(240,163,94,.12);color:var(--orange);border:1px solid rgba(240,163,94,.35)}
+  .besoin{color:var(--muted);font-style:italic;margin-bottom:12px;padding-left:14px;border-left:3px solid var(--line)}
+  .bloc{margin-top:10px}
+  .bloc .lab{color:var(--gold);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+  .bloc p, .bloc li{color:var(--ink);font-size:15px}
+  .bloc ul{padding-left:20px;margin-top:4px}
+  code{font-family:ui-monospace,monospace;font-size:13.5px;background:#26221b;padding:1px 7px;border-radius:5px;color:#e8d9b8}
+  .demo{color:var(--muted);font-size:14px;margin-top:10px}
+  .demo b{color:var(--ink)}
+  footer{margin-top:46px;text-align:center;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line);padding-top:22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="rule"></div>
+  <div class="kicker">HMD Agro · Partie Finance</div>
+  <h1>Les 17 user stories, en détail</h1>
+  <p>Backlog <code>finance_backlog_jira.csv</code> · branche <code>finance/socle-comptable</code> · données de démonstration</p>
+  <div class="stats">
+    <div class="stat"><b>16 / 17</b><span>stories réalisées</span></div>
+    <div class="stat"><b>86 / 86</b><span>tests automatisés verts</span></div>
+    <div class="stat"><b>1</b><span>en attente d'une décision client (S31)</span></div>
+  </div>
+</header>
+
+<!-- ══════════════ EPIC A ══════════════ -->
+<div class="epic"><span class="tag">EPIC A</span><h2>Socle comptable</h2><span class="commit">commit 40d8593</span></div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S01</span><h3>Configurer le référentiel comptable tunisien</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que comptable, je veux un plan comptable, un exercice et la TVA configurés afin de tenir une comptabilité conforme dans ERPNext.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>Société <code>hmd-agro</code> configurée en <b>TND</b> / Tunisie, exercice fiscal calé sur l'année civile.</li>
+      <li>Plan comptable <b>SCE tunisien : 76 comptes</b> (classes 1 à 7) installé via le mécanisme officiel d'ERPNext (<code>create_charts</code>) — pas de comptes créés à la main.</li>
+      <li>Modèles de <b>TVA 19 / 13 / 7 / 0 %</b> (lait, animaux, intrants).</li>
+      <li>Bilan et compte de résultat s'ouvrent sans erreur ; script idempotent qui refuse de toucher un livre non vierge (<code>ERR-FIN-01</code>).</li>
+    </ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> vidéo étape 1 (plan comptable en dinars) · <code>setup/finance/socle_comptable.py</code></p>
+</div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S02</span><h3>Centres de coûts et dimensions analytiques</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que gérant, je veux des ateliers et des axes Lot/Bâtiment afin de ventiler charges et produits par activité.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li><b>5 Cost Centers</b> : Lait, Élevage/Génisses, Cultures/Fourrage, Traction, Frais Généraux.</li>
+      <li><b>Accounting Dimensions</b> Lot et Bâtiment actives sur les écritures : chaque dépense peut être rattachée à un lot ou un bâtiment précis.</li>
+    </ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> l'écriture de salaires de la démo est ventilée sur 3 ateliers.</p>
+</div>
+
+<!-- ══════════════ EPIC B ══════════════ -->
+<div class="epic"><span class="tag">EPIC B</span><h2>Valorisation des coûts</h2><span class="commit">commit 2de4c06</span></div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S10</span><h3>Les achats d'intrants donnent un coût réel aux stocks</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que responsable achats, je veux enregistrer les achats d'aliments/médicaments/semences afin que le coût moyen de chaque article soit réel.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>Chaque achat (Purchase Receipt/Invoice) met à jour le <b>coût moyen pondéré (CMP)</b> de l'article — mécanique native ERPNext, vérifiée par test.</li>
+      <li>Démo : concentré acheté à 1,250 DT/kg, foin à 0,450 DT/kg → les stocks ne valent plus zéro.</li>
+    </ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> test <code>test_valorisation_cmp</code> (7/7).</p>
+</div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S11</span><h3>Les sorties de stock sont valorisées au coût réel</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que développeur Finance, je veux que les consommations soient valorisées au CMP réel afin que les coûts cessent d'être à zéro.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>La ration quotidienne distribuée aux lots est maintenant <b>valorisée automatiquement</b> et écrite au Grand Livre (aucune saisie).</li>
+      <li><b>Garde-fou</b> : si un article n'a pas encore de coût (CMP = 0), la sortie passe quand même — la comptabilité ne bloque <b>jamais</b> le travail de terrain.</li>
+      <li>Les protections existantes (refus de stock négatif par lot de semence) restent intactes.</li>
+    </ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> vidéo étape 2 — la ration du jour vaut 456 DT, écrite au Grand Livre · régressions <code>test_cost_flow</code> 9/9, <code>test_semence_dual_write</code> 13/13.</p>
+</div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S12</span><h3>Coût par litre réel dans le rapport mensuel</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que gérant, je veux le coût alimentaire réel par litre et par vache afin de piloter la rentabilité sans calcul manuel.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>Le bloc « Frais &amp; coût » du Rapport Mensuel affiche le <b>coût alimentaire réel en DT/L et DT/vache</b>, calculé depuis le Grand Livre.</li>
+      <li>Conformément à la règle maison, chaque coût par vache existe en <b>deux versions : par vache présente et par vache lactante</b>.</li>
+    </ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> vidéo étape 3 — coût alimentaire 2,9 DT/L en rouge (ration de démo volontairement surdimensionnée).</p>
+</div>
+
+<!-- ══════════════ EPIC C ══════════════ -->
+<div class="epic"><span class="tag">EPIC C</span><h2>Recettes</h2><span class="commit">commit 587d60b</span></div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S20</span><h3>Article Lait et prix indexé sur la qualité</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que comptable, je veux un article Lait avec un prix indexé TB/TP afin de facturer au juste prix qualité.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>Articles <code>LAIT-CRU</code> (compte 701), <code>FUMIER</code> (708), <code>ANIMAL-VENTE</code> (702).</li>
+      <li>Prix du lait = prix de référence <b>+ prime par point de taux butyreux (TB) et protéique (TP)</b> au-dessus des références 3,8 % / 3,2 %.</li>
+      <li><b>Aucun prix en dur dans le code</b> : tout est dans HMD Configuration (primes à 0 aujourd'hui = prix plat, en attendant la grille de la centrale).</li>
+    </ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> test <code>test_recettes</code> (15/15).</p>
+</div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S21</span><h3>Facture lait de la période générée automatiquement</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que comptable, je veux générer la facture lait de la période afin d'enregistrer la recette principale.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>Job mensuel qui agrège le <b>lait vendu des Bilans Lait Journaliers</b> et crée la facture pour la centrale laitière.</li>
+      <li><b>Idempotent</b> (marqueur <code>LAIT_FACT_</code>) : relancer le job ne crée jamais de doublon.</li>
+      <li>L'alternative « import du décompte de la centrale » est prévue — c'est une des décisions à trancher (jamais les deux en même temps, RG-FIN-12).</li>
+    </ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> vidéo étape 4 — facture de 1 031,6 L × 1,60 DT pour la Centrale Laitière.</p>
+</div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S22</span><h3>Facture automatique à la vente d'un animal</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que gérant, je veux qu'une vente d'animal génère sa facture afin de comptabiliser la recette automatiquement.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>Quand un animal passe au statut <b>VENDU</b>, sa facture est créée toute seule depuis le prix de vente saisi sur la fiche.</li>
+      <li>Si la vente est annulée ou l'animal supprimé, la facture est <b>contre-passée automatiquement</b> (cascade symétrique, comme partout dans l'app).</li>
+      <li>La synchro n'interrompt jamais la sortie de l'animal : en cas de souci comptable, alerte rouge mais le terrain continue.</li>
+    </ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> vidéo étape 4 — facture de 2 500 DT générée à la vente.</p>
+</div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S23</span><h3>Vente de fumier et produits divers</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que gérant, je veux facturer le fumier et les produits annexes afin de capturer toutes les recettes.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul><li>Article <code>FUMIER</code> dédié (compte 708) ; facture ponctuelle imputée à l'atelier concerné.</li></ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> couvert par <code>test_recettes</code>.</p>
+</div>
+
+<!-- ══════════════ EPIC D ══════════════ -->
+<div class="epic"><span class="tag">EPIC D</span><h2>Immobilisations</h2><span class="commit">commit 6949776</span></div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S30</span><h3>Équipements en immobilisation avec amortissement</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que comptable, je veux les équipements en actif avec amortissement afin que les dotations impactent le résultat.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li><b>5 catégories d'actifs</b> (matériel de transport, matériel agricole, bâtiments, matériel de traite, cheptel reproducteur) branchées sur les comptes <b>22x / 28x / 681</b> du plan tunisien, avec leurs durées.</li>
+      <li>Un équipement enregistré génère <b>automatiquement son calendrier d'amortissement</b> et ses écritures annuelles (module Asset natif d'ERPNext).</li>
+      <li>Champ personnalisé reliant chaque actif à son <b>Bâtiment</b> (exporté en fixture par nom, pour survivre aux migrations).</li>
+    </ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> vidéo étape 6 — tracteur 45 000 DT amorti sur 5 ans, 5 dotations de 9 000 DT · test <code>test_immobilisations</code> (13/13).</p>
+</div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S31</span><h3>Le cheptel : actif biologique ou stock ?</h3><span class="badge wait">Attente décision</span></div>
+  <p class="besoin">En tant que comptable, je veux trancher le traitement comptable du cheptel afin de valoriser/amortir correctement le troupeau.</p>
+  <div class="bloc"><span class="lab">Où on en est</span>
+    <ul>
+      <li>C'est une <b>décision comptable, pas technique</b> : soit les vaches sont des actifs amortissables, soit du stock.</li>
+      <li>Le terrain est préparé : la catégorie « Cheptel reproducteur » existe déjà si l'option actif est retenue.</li>
+      <li>C'est l'une des questions posées à la fin de la vidéo — <b>la seule story qui attend un retour client</b>.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════ EPIC E ══════════════ -->
+<div class="epic"><span class="tag">EPIC E</span><h2>Charges &amp; main-d'œuvre</h2><span class="commit">commit 6949776</span></div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S40</span><h3>Charges diverses ventilées par atelier</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que comptable, je veux enregistrer énergie/eau/loyer/assurances par atelier afin d'obtenir un coût complet.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>Saisie des charges par facture d'achat ou écriture de journal, <b>imputée au bon Cost Center</b>.</li>
+      <li>Modes de paiement configurés sur les comptes de trésorerie tunisiens (54 caisse / 532 banque).</li>
+      <li>Démo : facture d'électricité de 850 DT imputée à l'atelier Lait.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S41</span><h3>Coût de la main-d'œuvre dans le coût du litre</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que gérant, je veux le coût du travail ventilé par atelier afin que le coût/litre inclue la main-d'œuvre.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>Fonction <code>post_salaires</code> : la masse salariale du mois est passée <b>en une seule écriture, ventilée par atelier</b> (compte 640 par Cost Center, contrepartie 421).</li>
+      <li>Idempotente (marqueur <code>SALAIRES_</code>) : impossible de comptabiliser deux fois le même mois.</li>
+      <li>La ligne main-d'œuvre remonte dans le coût complet du litre (Epic F).</li>
+    </ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> vidéo étape 5 — 5 500 DT répartis Lait / Élevage / Frais généraux.</p>
+</div>
+
+<!-- ══════════════ EPIC F ══════════════ -->
+<div class="epic"><span class="tag">EPIC F</span><h2>Pilotage</h2><span class="commit">commit 81da51e</span></div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S50</span><h3>Tableau de bord économique</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que gérant, je veux coût/litre, IOFC, EBE, produit brut et marge afin de décider vite.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>Nouveau bloc économique dans le <b>Rapport Mensuel</b> existant : CA lait, produit brut, charges, main-d'œuvre, dotations, <b>EBE, résultat, coût complet par litre, IOFC et IOFC par vache/jour</b>.</li>
+      <li>Tout est calculé <b>depuis le Grand Livre</b> (<code>finance_kpis.gl_sums</code>) — pas de saisie parallèle, pas d'Excel.</li>
+      <li>Réutilise l'infrastructure existante du rapport (populations présente/lactante, reconstruction historique).</li>
+    </ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> vidéo étape 3 · test <code>test_finance_kpis</code> (14/14).</p>
+</div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S51</span><h3>Seuils économiques configurables + coloration</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant que gérant, je veux colorer les indicateurs selon des seuils paramétrables afin de repérer d'un coup d'œil les alertes.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>Nouvelle section « <b>Seuils Finance</b> » dans HMD Configuration : prix de référence du lait, références et primes TB/TP, objectif de coût par litre (0,65) et seuil d'alarme (0,85), seuils IOFC.</li>
+      <li>Coloration <b>vert / orange / rouge</b> dans le rapport, comme les indicateurs PFE existants.</li>
+      <li>Valeurs initialisées par patch de migration (<code>v1_6</code>), modifiables à l'écran <b>sans toucher au code</b>.</li>
+    </ul>
+  </div>
+  <p class="demo"><b>Preuve :</b> vidéo étape 7 — l'écran de configuration.</p>
+</div>
+
+<!-- ══════════════ EPIC G ══════════════ -->
+<div class="epic"><span class="tag">EPIC G</span><h2>Bascule &amp; droits</h2><span class="commit">commit 5d0e03b</span></div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S60</span><h3>A-nouveaux / balances d'ouverture</h3><span class="badge ok">Fait (procédure)</span></div>
+  <p class="besoin">En tant que comptable, je veux reprendre les soldes d'ouverture à la date de bascule afin de démarrer sur des comptes justes.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>Procédure de bascule complète documentée pas à pas (<code>BASCULE.md</code>) : ordre des scripts, saisie des balances, contrôles d'équilibre.</li>
+      <li>Les <b>balances réelles</b> et la <b>date de bascule</b> seront saisies après validation — c'est volontairement la dernière étape.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="story">
+  <div class="head"><span class="id">FIN-S61</span><h3>Séparation des droits : comptable ≠ éleveur</h3><span class="badge ok">Fait</span></div>
+  <p class="besoin">En tant qu'administrateur, je veux séparer saisie / validation / consultation afin de respecter la séparation des tâches.</p>
+  <div class="bloc"><span class="lab">Ce qui a été fait</span>
+    <ul>
+      <li>Rôle « <b>Éleveur HMD</b> » : accès complet au métier élevage, <b>zéro accès aux écritures comptables</b> — un éleveur ne peut ni créer ni soumettre une écriture.</li>
+      <li>Vérifié par un test dédié qui tente chaque action interdite : <code>test_roles_finance</code> (8/8).</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  16 stories réalisées + 1 en attente de décision (S31 cheptel) · 86/86 tests verts ·
+  chaque commit référence ses stories <code>FIN-S*</code> · données de démonstration — validation avant tout déploiement
+</footer>
+
+</div>
+</body>
+</html>

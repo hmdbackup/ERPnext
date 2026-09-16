@@ -1,0 +1,19 @@
+{
+  "eval_id": 5,
+  "eval_name": "kpi-prod-par-vache-lactante-card",
+  "skill": "hmd-agro-kpi",
+  "skill_path": "/Users/momoslim/Downloads/hmd_agro-main/.claude/skills/hmd-agro-kpi",
+  "prompt": "Create a number card for the hmd_agro app that shows the average milk production per lactating cow for the herd (yesterday). Show the datasource function and how to register the card.",
+  "assertions": [
+    "Uses the lactating-cow denominator via live_state.effectif_on_date (Vaches - Lact.), not a naive Animal row count.",
+    "Datasource is a @frappe.whitelist() function returning {'value':..., 'fieldtype':...}, consistent with utils/dashboard_kpis (e.g. get_pl_vl).",
+    "Registers a Custom Number Card with module 'HMD AGRO' and mentions bench export-fixtures.",
+    "Computes yesterday's total milk from Traite."
+  ],
+  "expectations": [
+    "Uses the lactating-cow denominator via live_state.effectif_on_date (Vaches - Lact.), not a naive Animal row count.",
+    "Datasource is a @frappe.whitelist() function returning {'value':..., 'fieldtype':...}, consistent with utils/dashboard_kpis (e.g. get_pl_vl).",
+    "Registers a Custom Number Card with module 'HMD AGRO' and mentions bench export-fixtures.",
+    "Computes yesterday's total milk from Traite."
+  ]
+}

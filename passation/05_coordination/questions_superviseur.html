@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Questions pour mon superviseur — HMD AGRO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1a1614; --bg2:#221d1a; --card:#2a2320; --line:#3a322d;
+    --ink:#f0e9e0; --ink2:#c4b8aa; --muted:#8c8076;
+    --gold:#e0a85e; --espresso:#7a5c3e;
+    --c-mcd:#7fa8d0; --c-dom:#8fc28f; --c-arch:#c89bd6; --c-go:#e0a85e; --c-goal:#e6c84f;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:linear-gradient(160deg,#1a1614,#211b18);
+    color:var(--ink); font-family:"Newsreader",Georgia,serif;
+    font-size:18px; line-height:1.6; padding:48px 20px 80px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:820px;margin:0 auto}
+  header{text-align:center;margin-bottom:48px;padding-bottom:32px;border-bottom:1px solid var(--line)}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:18px}
+  h1{font-family:"Fraunces",serif;font-weight:800;font-size:clamp(34px,6vw,54px);line-height:1.04;letter-spacing:-.01em;color:var(--ink)}
+  .sub{color:var(--ink2);font-style:italic;font-size:19px;margin-top:16px;max-width:560px;margin-left:auto;margin-right:auto}
+
+  .top{background:linear-gradient(135deg,#2c2520,#241e1b);border:1px solid var(--gold);
+    border-radius:var(--radius);padding:30px 34px;margin-bottom:48px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  .top h2{font-family:"Fraunces",serif;font-weight:800;font-size:24px;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;gap:10px}
+  .top p.note{color:var(--muted);font-size:15px;font-style:italic;margin-bottom:20px}
+  ol.prio{list-style:none;counter-reset:p}
+  ol.prio li{counter-increment:p;position:relative;padding:14px 0 14px 52px;border-bottom:1px dashed var(--line)}
+  ol.prio li:last-child{border-bottom:none}
+  ol.prio li::before{content:counter(p);position:absolute;left:0;top:12px;
+    width:34px;height:34px;border-radius:50%;background:var(--gold);color:#1a1614;
+    font-family:"JetBrains Mono",monospace;font-weight:600;font-size:15px;
+    display:flex;align-items:center;justify-content:center}
+  ol.prio b{color:var(--ink);font-weight:600}
+  ol.prio .meta{display:block;color:var(--muted);font-size:14px;font-style:italic;margin-top:2px}
+
+  section{margin-bottom:40px}
+  .shead{display:flex;align-items:baseline;gap:14px;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .num{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600;padding:3px 9px;border-radius:7px;color:#1a1614}
+  .shead h2{font-family:"Fraunces",serif;font-weight:600;font-size:26px;color:var(--ink)}
+  .intro{color:var(--ink2);font-style:italic;margin-bottom:16px;font-size:16px}
+  ul.q{list-style:none}
+  ul.q li{position:relative;padding:11px 0 11px 28px;color:var(--ink2);border-bottom:1px solid rgba(58,50,45,.5)}
+  ul.q li:last-child{border-bottom:none}
+  ul.q li::before{content:"";position:absolute;left:4px;top:20px;width:8px;height:8px;border-radius:2px;transform:rotate(45deg)}
+  ul.q b{color:var(--ink);font-weight:600}
+  code{font-family:"JetBrains Mono",monospace;font-size:.82em;background:#16110f;padding:2px 7px;border-radius:5px;color:var(--gold);border:1px solid #34291f}
+
+  .s-mcd .num{background:var(--c-mcd)} .s-mcd ul.q li::before{background:var(--c-mcd)} .s-mcd .shead{border-color:var(--c-mcd)}
+  .s-dom .num{background:var(--c-dom)} .s-dom ul.q li::before{background:var(--c-dom)} .s-dom .shead{border-color:var(--c-dom)}
+  .s-arch .num{background:var(--c-arch)} .s-arch ul.q li::before{background:var(--c-arch)} .s-arch .shead{border-color:var(--c-arch)}
+  .s-go .num{background:var(--c-go)} .s-go ul.q li::before{background:var(--c-go)} .s-go .shead{border-color:var(--c-go)}
+  .s-goal .num{background:var(--c-goal)} .s-goal ul.q li::before{background:var(--c-goal)} .s-goal .shead{border-color:var(--c-goal)}
+
+  footer{text-align:center;color:var(--muted);font-size:14px;font-style:italic;margin-top:56px;padding-top:24px;border-top:1px solid var(--line)}
+
+  @media print{
+    body{background:#fff;color:#1a1614;font-size:12pt;padding:0}
+    .top{box-shadow:none;background:#faf6f0;border-color:#caa};
+    header,.shead{border-color:#ccc}
+    h1,.shead h2,.top h2{color:#1a1614}
+    .sub,.intro,ul.q li{color:#333} code{background:#f0ebe3;color:#7a5c3e;border-color:#ddd}
+    section,li{break-inside:avoid}
+    .kicker{color:#7a5c3e}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Stage / PFE · Projet HMD AGRO</div>
+    <h1>Questions pour<br>mon superviseur</h1>
+    <p class="sub">Préparées après une première exploration du code <code>hmd_agro</code> (Frappe/ERPNext) et du MCD de la ferme laitière.</p>
+  </header>
+
+  <div class="top">
+    <h2>⭐ Les 6 questions prioritaires</h2>
+    <p class="note">Si la réunion est courte, ce sont celles-là à poser en premier.</p>
+    <ol class="prio">
+      <li><b>Le MCD est-il à jour, ou le code a-t-il volontairement divergé ?</b><span class="meta">Plusieurs entités du MCD n'existent pas comme DocType custom — voir §1.</span></li>
+      <li><b>Quelle est ma première tâche / mon objectif concret de stage ?</b></li>
+      <li><b>Comment je monte mon environnement de dev</b> (bench, site local) — y a-t-il un guide ?</li>
+      <li><b>Quel est le workflow Git</b> (branches, pull requests, qui review mon code) ?</li>
+      <li><b>Où dois-je mettre la logique métier</b> — toujours dans la couche <code>utils/</code> ?</li>
+      <li><b>À qui je m'adresse</b> pour les questions techniques vs les questions métier (élevage) ?</li>
+    </ol>
+  </div>
+
+  <section class="s-mcd">
+    <div class="shead"><span class="num">01</span><h2>Écarts entre le MCD et le code</h2></div>
+    <p class="intro">Plusieurs entités du MCD n'existent pas comme DocType custom — elles passent par ERPNext ou ne sont pas encore implémentées.</p>
+    <ul class="q">
+      <li><b>PRODUIT / STOCK / MOUVEMENT_STOCK</b> : passent par ERPNext natif (<code>Item</code>, <code>Bin</code>, <code>Stock Entry</code>) au lieu de DocTypes custom. Choix volontaire ? Si j'ajoute une fonctionnalité de stock, je passe par ERPNext ou je crée du custom ?</li>
+      <li><b>EQUIPEMENT / INTERVENTION</b> (famille rouge) : pas implémentés. Prévus plus tard ? Possible tâche pour moi ?</li>
+      <li><b>COUT / VENTE</b> (famille jaune, finance) : polymorphes dans le MCD (pointent vers plusieurs tables). Comment la finance est-elle gérée aujourd'hui — comptabilité ERPNext, ou pas encore ?</li>
+      <li><b>PARAGE</b> : semble fondu dans <b>Traitement</b> plutôt que séparé. Intentionnel ?</li>
+      <li>De manière générale : <b>le MCD est-il la cible à atteindre, ou une version conceptuelle ancienne</b> dont le code a divergé volontairement ?</li>
+    </ul>
+  </section>
+
+  <section class="s-dom">
+    <div class="shead"><span class="num">02</span><h2>Règles métier (domaine laitier)</h2></div>
+    <ul class="q">
+      <li>Cycle de vie animal (VELLE → GENISSE → VACHE, etc.) : <b>cas particuliers / exceptions</b> à connaître ?</li>
+      <li><b>Délai d'attente lait</b> après traitement : la durée vient d'où (réglementation, vétérinaire, config) ?</li>
+      <li><b>Allotement</b> par jours en lactation : qui décide des seuils ? Fixes ou configurables ?</li>
+      <li>Cascade vêlage (crée veau + ouvre lactation) : des cas où il ne faut <b>PAS</b> la déclencher ?</li>
+    </ul>
+  </section>
+
+  <section class="s-arch">
+    <div class="shead"><span class="num">03</span><h2>Architecture & conventions de dev</h2></div>
+    <ul class="q">
+      <li>Où mettre la logique métier — toujours <code>utils/</code> ?</li>
+      <li>Version exacte d'<b>ERPNext / Frappe</b> ?</li>
+      <li>Workflow <b>fixtures + patches</b> : comment déployez-vous une modif de schéma ?</li>
+      <li><b>Conventions de nommage</b> (français métier, codes RG/CF/ERR) : à respecter strictement ?</li>
+      <li>Niveau d'<b>exigence sur les tests</b> : un test par DocType ?</li>
+    </ul>
+  </section>
+
+  <section class="s-go">
+    <div class="shead"><span class="num">04</span><h2>Mise en route concrète</h2></div>
+    <ul class="q">
+      <li>Montage de l'<b>environnement de dev</b> (bench, site local) — guide existant ?</li>
+      <li><b>Workflow Git</b> : branches, PR, reviewer ?</li>
+      <li>Accès à des <b>données de test / staging</b> ?</li>
+      <li><b>Première tâche</b> / ticket simple pour me roder ?</li>
+      <li>Interlocuteurs <b>technique</b> vs <b>métier</b> ?</li>
+    </ul>
+  </section>
+
+  <section class="s-goal">
+    <div class="shead"><span class="num">05</span><h2>Attentes & objectifs</h2></div>
+    <ul class="q">
+      <li><b>Objectifs concrets</b> du stage / PFE ?</li>
+      <li><b>Livrable</b> attendu à la fin (fonctionnalité, rapport, soutenance) ?</li>
+      <li>Comment mon travail sera-t-il <b>évalué</b> ?</li>
+    </ul>
+  </section>
+
+  <footer>
+    Préparé avec l'aide de Claude Code · à compléter et ajuster selon ta réunion.<br>
+    Astuce : <b>Ctrl/Cmd + P</b> pour imprimer ou exporter en PDF.
+  </footer>
+
+</div>
+</body>
+</html>

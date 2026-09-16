@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "autoname": "format:VAC-{YYYY}-{#####}",
+ "creation": "2026-06-03 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_info",
+  "animal",
+  "vaccin",
+  "column_break_info",
+  "date_vaccination",
+  "date_prochaine",
+  "section_notes",
+  "observations"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_info",
+   "fieldtype": "Section Break",
+   "label": "Information"
+  },
+  {
+   "fieldname": "animal",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Animal",
+   "options": "Animal",
+   "reqd": 1
+  },
+  {
+   "description": "Médicament de type VACCIN (vaccin administré)",
+   "fieldname": "vaccin",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Vaccin",
+   "options": "Medicament",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_info",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date_vaccination",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date de Vaccination",
+   "reqd": 1
+  },
+  {
+   "description": "Date du prochain rappel prévu",
+   "fieldname": "date_prochaine",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Prochaine échéance"
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "observations",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Observations"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-03 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HMD AGRO",
+ "name": "Vaccination",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "animal, vaccin, date_vaccination",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "animal",
+ "track_changes": 1
+}

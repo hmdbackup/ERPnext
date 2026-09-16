@@ -1,0 +1,19 @@
+{
+  "eval_id": 1,
+  "eval_name": "dev-vaccination-conventions",
+  "skill": "hmd-agro-dev",
+  "skill_path": "/Users/momoslim/Downloads/hmd_agro-main/.claude/skills/hmd-agro-dev",
+  "prompt": "In the hmd_agro app I need to record vaccinations: which animal, which vaccine product, the date given, and the next-due date. Add what's needed and show me the file(s). No need to run bench.",
+  "assertions": [
+    "Recognizes vaccination is medical care and considers reusing Traitement (TRAITEMENT_MEDICAL) / Medicament (type VACCIN) rather than an unrelated mechanism.",
+    "If creating a DocType: uses module 'HMD AGRO', French snake_case fields (e.g. date_vaccination / date_rappel), a format: autoname, and a Link to Animal.",
+    "Follows code conventions: 4-space Python indent and frappe.throw with an ERR- code and/or get_config for any threshold (no hardcoded tabs/thresholds).",
+    "Links the vaccine to a Medicament of type VACCIN and handles the next-due (rappel) date."
+  ],
+  "expectations": [
+    "Recognizes vaccination is medical care and considers reusing Traitement (TRAITEMENT_MEDICAL) / Medicament (type VACCIN) rather than an unrelated mechanism.",
+    "If creating a DocType: uses module 'HMD AGRO', French snake_case fields (e.g. date_vaccination / date_rappel), a format: autoname, and a Link to Animal.",
+    "Follows code conventions: 4-space Python indent and frappe.throw with an ERR- code and/or get_config for any threshold (no hardcoded tabs/thresholds).",
+    "Links the vaccine to a Medicament of type VACCIN and handles the next-due (rappel) date."
+  ]
+}

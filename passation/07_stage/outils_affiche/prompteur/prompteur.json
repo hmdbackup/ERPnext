@@ -1,0 +1,122 @@
+[
+ {
+  "partie": "En-tête",
+  "zone": "Bandeau du haut : titre, nom, dates, superviseur",
+  "bloc": "Titre et bandeau",
+  "minutes": 0.5,
+  "debut": 0.0,
+  "dire": "Bonjour à tous. Moi c'est Mohamed Slim, étudiant au bac en informatique à l'Université Laval. Cet été, j'ai fait mon premier stage en informatique, trois mois chez HMD AGRO, une ferme laitière tunisienne, comme développeur ERP, sous la supervision d'Aymen Zarrad. En dix minutes, je vais suivre l'affiche dans l'ordre : le contexte à gauche, le système en images à droite, et ce que j'en retiens à la fin.",
+  "montrer": "Le titre, ton nom, les dates.",
+  "question": "« C'est quoi un ERP ? » — « Un logiciel de gestion intégré : comptabilité, stock, paie, actifs dans une seule base. Ici, adapté à une ferme. »"
+ },
+ {
+  "partie": "1. Introduction",
+  "zone": "Colonne gauche, en haut : Étudiant / Entreprise",
+  "bloc": "Étudiant et entreprise",
+  "minutes": 1.0,
+  "debut": 0.5,
+  "dire": "Ce qui me plaît en informatique, c'est de prendre un vrai métier et de le traduire en modèle de données — et la comptabilité d'un élevage laitier, je n'y connaissais rien en arrivant. HMD AGRO, c'est la ferme Borj Essebai, à Mateur, près de Bizerte, avec un troupeau laitier réparti en cinq ateliers comptables : lait, cultures et fourrage, génisses, traction, frais généraux. Avant mon arrivée, tout se gérait sur Excel, des fichiers qui ne se croisaient jamais — impossible de répondre à « combien coûte un litre de lait ? ». La ferme a donc choisi de passer sur ERPNext, un ERP open source bâti sur Frappe, un framework web en Python.",
+  "montrer": "Compter les cinq ateliers sur les doigts, puis les logos ERPNext / Frappe.",
+  "question": "« Pourquoi ERPNext plutôt qu'un logiciel agricole ? » — « Open source, complet côté comptabilité, extensible en Python. »"
+ },
+ {
+  "partie": "2. Mandats et objectifs",
+  "zone": "Colonne gauche, deuxième cadre",
+  "bloc": "Mandats et objectifs",
+  "minutes": 0.75,
+  "debut": 1.5,
+  "dire": "Mon mandat, c'était tout le volet finance : la comptabilité analytique avec un plan tunisien, chaque écriture rattachée à un atelier, la facturation du lait, la paie, les amortissements, la répartition des frais généraux, et les indicateurs de pilotage pour le gérant. Le fil rouge : tout doit découler des saisies quotidiennes, sans ressaisie. Côté objectifs personnels : maîtriser Frappe et ERPNext, pratiquer le Scrum avec un vrai client, et livrer quelque chose de fiable, testé, utilisé chaque jour par la ferme — pas un prototype qui finit dans un tiroir.",
+  "montrer": "Les bullets « Mandats » puis « Objectifs ».",
+  "question": "« Objectif atteint ? » — « Le module finance est en production à la ferme. »"
+ },
+ {
+  "partie": "3. Travail réalisé",
+  "zone": "Colonne gauche, grand cadre du bas : bullets, plan comptable, cheptel",
+  "bloc": "Les neuf lignes du travail réalisé",
+  "minutes": 0.75,
+  "debut": 2.25,
+  "dire": "Voilà ce que j'ai livré, en résumé. Le socle comptable tunisien : 77 comptes, cinq centres de coûts. Les consommations d'aliments valorisées au coût moyen pondéré. La facturation du lait selon une grille de qualité. Le cheptel et le matériel immobilisés, avec leurs amortissements. La paie ventilée par atelier. Les frais généraux répartis au Grand Livre par une clé. Et les rapports de pilotage : coût du litre, excédent brut, marge sur coût alimentaire. Le tout couvert par 521 tests automatisés, tous verts.",
+  "montrer": "Parcourir les bullets du doigt, s'arrêter sur « 521 tests ».",
+  "question": "« Tout ça en trois mois ? » — « Avec un ERP qui fait déjà beaucoup. Mon travail, c'est le métier de la ferme par-dessus. »"
+ },
+ {
+  "partie": "3. Travail réalisé",
+  "zone": "Colonne gauche, grand cadre du bas : bullets, plan comptable, cheptel",
+  "bloc": "Capture : plan comptable tunisien dans ERPNext",
+  "minutes": 0.75,
+  "debut": 3.0,
+  "dire": "On commence par le socle : le plan comptable tunisien, 77 comptes, les classes 6 et 7 — charges et produits — et cinq centres de coûts, un par atelier. Chaque écriture porte son atelier, ce qui permet un coût par atelier, et donc un coût par litre. Tout est versionné dans le dépôt, en fixtures et migrations : on peut réinstaller le site de zéro et retrouver exactement le même plan, construit avec le comptable de la ferme.",
+  "montrer": "Les classes de comptes dans l'arbre.",
+  "question": "« C'est standard ERPNext ? » — « Le mécanisme oui, le plan tunisien et les centres de coûts, c'est moi. »"
+ },
+ {
+  "partie": "3. Travail réalisé",
+  "zone": "Colonne gauche, grand cadre du bas : bullets, plan comptable, cheptel",
+  "bloc": "Capture : le cheptel immobilisé, vache par vache",
+  "minutes": 0.75,
+  "debut": 3.75,
+  "dire": "Ma capture préférée : chaque vache est une immobilisation à l'actif comptable, individuellement. Une vache vaut plusieurs milliers de dinars, produit pendant quatre ou cinq lactations, puis est réformée — donc elle s'amortit sur sa carrière laitière, et cet amortissement entre dans le coût du litre. Une génisse, elle, capitalise ce qu'elle coûte à élever, et bascule à l'actif comme vache à son premier vêlage. Le vacher saisit un vêlage, le comptable retrouve une immobilisation — automatiquement.",
+  "montrer": "La liste des vaches, le statut d'amortissement.",
+  "question": "« Le vacher sait que ça fait de la comptabilité ? » — « Non, et c'est le but. »"
+ },
+ {
+  "partie": "Le système en images",
+  "zone": "Colonne droite, les quatre rangées de captures",
+  "bloc": "Indicateurs colorés et coût de revient du litre",
+  "minutes": 1.25,
+  "debut": 4.5,
+  "dire": "Là, c'est le rapport que le gérant ouvre chaque mois : chaque indicateur est comparé à un seuil configurable — vert, orange, rouge — et c'est le gérant lui-même qui ajuste ces seuils, sans développeur. À côté, le chiffre central du stage : le coût réel d'un litre de lait. Il se construit par étages — l'aliment au coût moyen pondéré, la paie et les charges patronales, les soins vétérinaires, l'amortissement des vaches et du matériel, une part des frais généraux — le tout divisé par les litres produits. On en tire aussi l'excédent brut d'exploitation et la marge sur coût alimentaire, celle que les éleveurs regardent en premier.",
+  "montrer": "Une valeur rouge puis verte ; puis la ligne du coût complet.",
+  "question": "« Il est fiable ? » — « Recalculé à partir des saisies, chaque règle testée. »"
+ },
+ {
+  "partie": "Le système en images",
+  "zone": "Colonne droite, les quatre rangées de captures",
+  "bloc": "Facturation du lait et amortissement du matériel",
+  "minutes": 0.75,
+  "debut": 5.75,
+  "dire": "Le lait est facturé à la laiterie selon une grille de prix — taux de matière grasse, taux de protéines — directement à partir des livraisons, sans ressaisie. Côté matériel, chaque tracteur est une immobilisation avec son plan d'amortissement, qui alimente automatiquement le coût du litre. Ce module est natif d'ERPNext ; ce que j'ai écrit, c'est le lien avec le parc — interventions, pièces, heures — pour que le coût du matériel soit complet.",
+  "montrer": "La ligne « Lait cru » et le tableau d'amortissement.",
+  "question": "« Pourquoi ne pas tout coder ? » — « Un ERP existe pour ça. Mon travail, c'est de savoir quand configurer et quand développer. »"
+ },
+ {
+  "partie": "Le système en images",
+  "zone": "Colonne droite, les quatre rangées de captures",
+  "bloc": "La clé de répartition 60 / 25 / 15 — livrée le 3 septembre",
+  "minutes": 1.0,
+  "debut": 6.5,
+  "dire": "Ma dernière livraison, cette semaine, et celle dont je suis le plus fier. Les frais généraux — électricité, eau, assurances — n'appartiennent à aucun atelier, mais il faut les répartir, sinon le coût du litre est faux. Après une revue avec mon superviseur, j'ai remplacé ma première version, une table à remplir à la main, par un écran natif d'ERPNext : la Cost Center Allocation. Une clé fixée une fois — 60 % lait, 25 % cultures, 15 % génisses — et l'application éclate elle-même chaque facture dans le Grand Livre, avec un contrôle qui vérifie zéro écart entre les écritures et la clé.",
+  "montrer": "Les pourcentages, puis la ligne « Contrôle » du rapport.",
+  "question": "« Et si la clé change ? » — « Nouvelle clé à une nouvelle date ; l'historique ne bouge pas. »"
+ },
+ {
+  "partie": "4. Développement des compétences",
+  "zone": "Colonne droite, sous les images : Techniques / Scientifiques / Communication",
+  "bloc": "Techniques, domaine et méthode",
+  "minutes": 1.5,
+  "debut": 7.5,
+  "dire": "Côté technique, j'ai approfondi Frappe et ERPNext — DocTypes, hooks, fixtures, migrations —, Python et SQL sur MariaDB, Git et Docker au quotidien, sur une copie des données réelles de la ferme. Et surtout les tests : en comptabilité, un calcul faux, c'est une décision fausse pour le gérant — 521 tests, 19 modules, tous verts. Côté domaine, la vraie difficulté, c'était d'apprendre l'élevage laitier et la comptabilité agricole en confrontant sans cesse mes calculs aux données réelles. Et côté méthode, on a travaillé en Scrum : daily, backlog Jira, maquettes validées avant chaque écran, et des revues régulières avec le client — la revue du 3 septembre, où j'ai reçu quatre remarques le matin et livré un modèle repris le jour même, en est le meilleur exemple.",
+  "montrer": "521 tests verts, puis « revue du 03/09 ».",
+  "question": "« Vous avez fait ça seul ? » — « Le développement, oui. Encadré : chaque livraison passait en revue. »"
+ },
+ {
+  "partie": "5. Conclusion",
+  "zone": "Colonne droite, en bas : Résultat / Points forts / Suggestions / Remerciements",
+  "bloc": "Résultat et conclusion",
+  "minutes": 1.0,
+  "debut": 9.0,
+  "dire": "Aujourd'hui, le module finance tourne à la ferme : comptabilité, coûts, facturation, paie, frais généraux répartis avec zéro écart. Chaque mois, le gérant voit son coût du litre, son excédent brut, sa marge sur coût alimentaire, calculés à partir des saisies quotidiennes. Ce que je retiens : la responsabilité de bout en bout, du besoin jusqu'à la production, avec un vrai client et de vraies données — et savoir reprendre une conception après une revue plutôt que s'y accrocher. Je remercie toute l'équipe de HMD AGRO, en particulier Aymen Zarrad, mon superviseur, et M. Samir, le gérant, pour leur confiance. Merci de votre attention, je suis là pour vos questions.",
+  "montrer": "Les bullets Résultat, puis Remerciements en regardant le jury.",
+  "question": "Silence ? Lance toi-même : « vous voulez voir le détail du coût du litre ? »"
+ },
+ {
+  "partie": "Questions",
+  "zone": "",
+  "bloc": "Réponses en réserve",
+  "minutes": 5.0,
+  "debut": 10.0,
+  "dire": "« C'est quoi ERPNext, concrètement ? »\nUn ERP open source complet, comptabilité, stock, actifs, paie, bâti sur Frappe, un framework web en Python. Je configure et j'étends : DocTypes personnalisés, hooks, rapports, fixtures.\n\n« Pourquoi pas rester sur Excel ? »\nExcel ne croisait rien : impossible de relier le lait produit, l'aliment consommé et la paie pour un coût du litre fiable. L'ERP le fait automatiquement et garde l'historique.\n\n« La clé de répartition, c'est du code à vous ? »\nNon, et c'est le point : la clé est native ERPNext. Ce que j'ai écrit, c'est autour : le bandeau qui prévient le comptable, l'avertissement si une charge n'a aucune clé à sa date, la section du rapport qui rejoue la clé contre le Grand Livre, et le centre de coûts posé automatiquement sur chaque mouvement de stock.\n\n« Vous avez une démo ? »\nOui, sur mon portable : dix minutes sur le site local avec les données réelles. Poser la clé, saisir une facture à deux lignes, valider, ouvrir le Grand Livre, lire le rapport.\n\n« Le plus dur ? »\nLe domaine métier. Et accepter de jeter une conception : la table par ligne m'avait pris deux jours, la clé native m'en a pris un, et elle est meilleure.",
+  "montrer": "",
+  "question": ""
+ }
+]

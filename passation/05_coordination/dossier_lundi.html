@@ -1,0 +1,876 @@
+<title>Le dossier de lundi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,600;1,6..72,400&family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --fond:#fcfcfa;
+  --surface:#f2f5f1;
+  --surface-2:#e8ede7;
+  --encre:#16211c;
+  --gris:#5e6b64;
+  --gris-clair:#8d9891;
+  --vert:#1f7a41;
+  --vert-voile:#e4f0e7;
+  --ocre:#a8621a;
+  --ocre-voile:#f7ecdd;
+  --trait:#d5ddd6;
+  --trait-fort:#b6c2b8;
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --fond:#101512;
+    --surface:#19201b;
+    --surface-2:#212a23;
+    --encre:#e6ece7;
+    --gris:#9aa89f;
+    --gris-clair:#77857c;
+    --vert:#63bd80;
+    --vert-voile:#1a2c20;
+    --ocre:#d99a53;
+    --ocre-voile:#2c2317;
+    --trait:#2c3630;
+    --trait-fort:#415046;
+  }
+}
+:root[data-theme="dark"]{
+  --fond:#101512;
+  --surface:#19201b;
+  --surface-2:#212a23;
+  --encre:#e6ece7;
+  --gris:#9aa89f;
+  --gris-clair:#77857c;
+  --vert:#63bd80;
+  --vert-voile:#1a2c20;
+  --ocre:#d99a53;
+  --ocre-voile:#2c2317;
+  --trait:#2c3630;
+  --trait-fort:#415046;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--fond);
+  color:var(--encre);
+  font-family:var(--serif);
+  font-size:18px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.enveloppe{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:0;
+  max-width:1180px;
+  margin:0 auto;
+  padding:0 22px 120px;
+}
+@media (min-width:1040px){
+  .enveloppe{grid-template-columns:212px minmax(0,1fr);gap:56px;padding-left:34px}
+}
+
+/* ── Rail de navigation ───────────────────────────────────────────── */
+.rail{display:none}
+@media (min-width:1040px){
+  .rail{
+    display:block;position:sticky;top:0;align-self:start;
+    max-height:100vh;overflow-y:auto;padding:44px 0 40px;
+  }
+}
+.rail-titre{
+  font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gris-clair);margin:0 0 14px;
+}
+.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.rail a{
+  display:block;padding:5px 0;font-family:var(--sans);font-size:13.5px;
+  line-height:1.35;color:var(--gris);text-decoration:none;
+  border-left:2px solid transparent;padding-left:11px;transition:color .15s,border-color .15s;
+}
+.rail a:hover,.rail a:focus-visible{color:var(--vert);border-left-color:var(--vert)}
+.rail .sous{padding-left:24px;font-size:12.5px;color:var(--gris-clair)}
+
+/* ── En-tête ──────────────────────────────────────────────────────── */
+header{padding:76px 0 42px;border-bottom:1px solid var(--trait-fort);max-width:70ch}
+.eyebrow{
+  font-family:var(--sans);font-size:11.5px;font-weight:700;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--vert);margin:0 0 18px;
+}
+h1{
+  font-family:var(--serif);font-size:clamp(2.5rem,6vw,4rem);font-weight:600;
+  line-height:1.02;letter-spacing:-.022em;margin:0 0 20px;text-wrap:balance;
+}
+.chapo{font-size:1.2rem;line-height:1.5;color:var(--gris);margin:0}
+.chapo em{color:var(--encre);font-style:italic}
+
+/* ── Sections ─────────────────────────────────────────────────────── */
+main{max-width:72ch}
+section{padding:64px 0 8px;scroll-margin-top:24px}
+section+section{border-top:1px solid var(--trait)}
+.numero{
+  font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.1em;
+  color:var(--gris-clair);display:block;margin-bottom:10px;
+}
+h2{
+  font-family:var(--serif);font-size:clamp(1.85rem,4vw,2.6rem);font-weight:600;
+  line-height:1.1;letter-spacing:-.018em;margin:0 0 12px;text-wrap:balance;
+}
+.sous-chapo{font-size:1.05rem;color:var(--gris);margin:0 0 34px;max-width:60ch}
+h3{
+  font-family:var(--serif);font-size:1.4rem;font-weight:600;line-height:1.25;
+  margin:44px 0 12px;letter-spacing:-.012em;text-wrap:balance;
+}
+h4{
+  font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--gris);margin:34px 0 10px;
+}
+p{margin:0 0 17px}
+strong{font-weight:600}
+a{color:var(--vert)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.94em;font-weight:500}
+code{
+  font-family:var(--mono);font-size:.84em;background:var(--surface);
+  padding:.12em .38em;border-radius:2px;color:var(--encre);
+}
+
+/* ── Encadré générique ────────────────────────────────────────────── */
+.encadre{
+  background:var(--surface);border:1px solid var(--trait);
+  padding:24px 26px;margin:28px 0;
+}
+.encadre>:last-child{margin-bottom:0}
+.encadre.alerte{background:var(--ocre-voile);border-color:var(--ocre)}
+.encadre.cle{background:var(--vert-voile);border-color:var(--vert)}
+.encadre-titre{
+  font-family:var(--sans);font-size:11.5px;font-weight:700;letter-spacing:.13em;
+  text-transform:uppercase;margin:0 0 12px;color:var(--gris);
+}
+.encadre.alerte .encadre-titre{color:var(--ocre)}
+.encadre.cle .encadre-titre{color:var(--vert)}
+
+/* ── Tableaux ─────────────────────────────────────────────────────── */
+.defile{overflow-x:auto;margin:26px 0;border:1px solid var(--trait)}
+table{border-collapse:collapse;width:100%;font-size:15px;background:var(--fond)}
+caption{
+  caption-side:top;text-align:left;font-family:var(--sans);font-size:11.5px;
+  font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--gris);
+  padding:15px 18px 0;background:var(--fond);
+}
+th,td{padding:9px 18px;text-align:left;vertical-align:top;border-bottom:1px solid var(--trait)}
+thead th{
+  font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--gris);border-bottom:1px solid var(--trait-fort);
+  white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:none}
+td.chiffre,th.chiffre{
+  text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;
+  white-space:nowrap;font-size:14px;
+}
+tr.total td{border-top:2px solid var(--trait-fort);font-weight:600}
+tr.total td.chiffre{font-weight:600}
+tr.resultat td{background:var(--vert-voile);font-weight:600}
+tr.resultat td.chiffre{color:var(--vert)}
+td.ref{font-family:var(--mono);font-size:12.5px;color:var(--gris);white-space:nowrap}
+.fleche{color:var(--ocre);font-family:var(--mono)}
+
+/* ── Décisions ────────────────────────────────────────────────────── */
+.decision{border-top:1px solid var(--trait);padding:34px 0 8px}
+.decision:first-of-type{border-top:none}
+.decision-tete{display:flex;align-items:baseline;gap:13px;margin-bottom:6px;flex-wrap:wrap}
+.decision-num{
+  font-family:var(--mono);font-size:1.35rem;font-weight:600;color:var(--vert);
+  line-height:1;
+}
+.decision-tete h3{margin:0;font-size:1.35rem}
+.pastille{
+  display:inline-block;font-family:var(--sans);font-size:10.5px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;
+  border:1px solid var(--vert);color:var(--vert);background:var(--vert-voile);
+  white-space:nowrap;
+}
+.pastille.rien{border-color:var(--ocre);color:var(--ocre);background:var(--ocre-voile)}
+.ab{display:grid;gap:0;margin:18px 0;border:1px solid var(--trait)}
+@media (min-width:640px){.ab{grid-template-columns:1fr 1fr}}
+.ab>div{padding:17px 19px;background:var(--fond)}
+@media (min-width:640px){.ab>div+div{border-left:1px solid var(--trait)}}
+@media (max-width:639px){.ab>div+div{border-top:1px solid var(--trait)}}
+.ab-lettre{
+  font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.12em;
+  color:var(--gris);margin:0 0 5px;
+}
+.ab-titre{font-size:1.02rem;font-weight:600;margin:0 0 9px;line-height:1.3}
+.ab-chiffre{
+  font-family:var(--mono);font-size:1.45rem;font-weight:600;color:var(--vert);
+  margin:0;font-variant-numeric:tabular-nums;line-height:1.2;
+}
+.ab-note{font-size:.9rem;color:var(--gris);margin:8px 0 0;line-height:1.45}
+
+/* ── Le script ────────────────────────────────────────────────────── */
+.arret{
+  display:grid;grid-template-columns:1fr;gap:4px;
+  padding:26px 0;border-top:1px solid var(--trait);
+}
+@media (min-width:700px){.arret{grid-template-columns:82px minmax(0,1fr);gap:26px}}
+.arret:first-of-type{border-top:none}
+.minutage{
+  font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--gris-clair);
+  padding-top:6px;white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+.arret h3{margin:0 0 10px;font-size:1.22rem}
+.replique{
+  border-left:3px solid var(--vert);padding:2px 0 2px 18px;margin:14px 0;
+  font-style:italic;font-size:1.06rem;line-height:1.5;
+}
+.replique p{margin:0 0 9px}
+.replique p:last-child{margin:0}
+.attendu{
+  font-family:var(--sans);font-size:13.5px;color:var(--gris);
+  margin:12px 0 0;line-height:1.5;
+}
+.attendu b{font-family:var(--sans);font-weight:700;color:var(--encre)}
+
+/* ── Listes ───────────────────────────────────────────────────────── */
+ul.puces{list-style:none;margin:18px 0;padding:0}
+ul.puces li{padding-left:22px;position:relative;margin-bottom:11px}
+ul.puces li::before{
+  content:"—";position:absolute;left:0;color:var(--vert);font-family:var(--mono);
+}
+ol.suite{margin:18px 0;padding-left:24px}
+ol.suite li{margin-bottom:11px;padding-left:5px}
+
+footer{
+  margin-top:70px;padding-top:26px;border-top:1px solid var(--trait-fort);
+  font-family:var(--sans);font-size:13px;color:var(--gris-clair);max-width:72ch;
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+:focus-visible{outline:2px solid var(--vert);outline-offset:3px}
+</style>
+
+<div class="enveloppe">
+
+<nav class="rail" aria-label="Sommaire">
+  <p class="rail-titre">Le dossier</p>
+  <ol>
+    <li><a href="#sujet">1 · La ferme en dinars</a></li>
+    <li><a href="#ecrans">2 · Les trois écrans</a></li>
+    <li><a href="#decisions">3 · Les huit décisions</a></li>
+    <li><a href="#lundi">4 · Lundi, minute par minute</a></li>
+    <li><a href="#glossaire" class="sous">Glossaire</a></li>
+    <li><a href="#trous" class="sous">Ce qui manque</a></li>
+  </ol>
+</nav>
+
+<div>
+
+<header>
+  <p class="eyebrow">HMD Agro · préparation du 24 août 2026</p>
+  <h1>Le dossier de lundi</h1>
+  <p class="chapo">Tout ce qu'il faut avoir compris pour tenir la présentation seul :
+  <em>de quoi ça parle</em>, <em>ce que font les trois écrans</em>, <em>d'où sortent les huit
+  décisions</em>, et <em>ce que tu dis, minute par minute</em>.</p>
+</header>
+
+<main>
+
+<!-- ══════════════════════════ 1 ══════════════════════════ -->
+<section id="sujet">
+  <span class="numero">PARTIE 1</span>
+  <h2>La ferme en dinars</h2>
+  <p class="sous-chapo">Le sujet depuis zéro. Aucun mot de jargon n'est utilisé ici sans
+  être traduit juste après.</p>
+
+  <h3>Ce que la ferme fabrique, et la seule question de Samir</h3>
+  <p>Une ferme laitière transforme de l'argent en lait. De l'argent sort — l'aliment des
+  vaches, les salaires, le gasoil, les réparations, l'électricité, l'assurance. Du lait
+  sort aussi. Samir veut savoir une chose, une seule :</p>
+  <div class="encadre cle">
+    <p class="encadre-titre">La question</p>
+    <p style="margin:0;font-size:1.15rem"><strong>Un litre de lait, il me coûte
+    combien ?</strong></p>
+  </div>
+  <p>Tout le reste — les écrans, les colonnes, les huit décisions — n'existe que pour
+  répondre à ça. Et pour y répondre il faut deux nombres : <strong>combien de dinars le
+  lait a coûté</strong>, et <strong>combien de litres ont été produits</strong>. Les deux
+  sont plus durs qu'ils n'en ont l'air. C'est de là que viennent les huit questions.</p>
+
+  <h3>Difficulté n° 1 : toutes les dépenses ne sont pas pour le lait</h3>
+  <p>La ferme ne fait pas que du lait. Elle élève des génisses, elle cultive du fourrage,
+  elle fait rouler des tracteurs. Chacune de ces activités s'appelle un
+  <strong>atelier</strong> — en comptabilité on dit un <em>centre de coût</em>, c'est le
+  même objet. Chaque dépense doit être rattachée à son atelier.</p>
+  <p>Dans le système, les ateliers sont créés une fois pour toutes. Il y en a
+  <strong>cinq</strong>, et ce sont exactement ceux-là :</p>
+
+  <div class="defile">
+  <table>
+    <caption>Les ateliers réels du système</caption>
+    <thead><tr><th>Atelier</th><th>Ce qu'il porte</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Lait</strong></td><td>Le troupeau en production : son aliment, ses soins, la traite.</td></tr>
+      <tr><td><strong>Élevage&nbsp;–&nbsp;Génisses</strong></td><td>Les jeunes femelles qui ne produisent pas encore.</td></tr>
+      <tr><td><strong>Cultures&nbsp;–&nbsp;Fourrage</strong></td><td>Ce qu'on sème et récolte pour nourrir le troupeau.</td></tr>
+      <tr><td><strong>Traction</strong></td><td>Les tracteurs et le matériel qui servent aux champs.</td></tr>
+      <tr><td><strong>Frais&nbsp;Généraux</strong></td><td>Ce qui sert à tout le monde : le gardien, l'électricité, l'assurance, l'administratif.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="encadre alerte">
+    <p class="encadre-titre">À savoir avant lundi</p>
+    <p>Samir a demandé un atelier <strong>« Autre / Divers »</strong> obligatoire, pour
+    accueillir les charges non encore affectées. <strong>Il n'existe pas.</strong> Ce que
+    le système connaît aujourd'hui, c'est <strong>« Non imputé »</strong> — et ce n'est
+    pas la même chose : « Non imputé » n'est pas un atelier, c'est <em>l'absence
+    d'atelier</em> sur une écriture. La différence compte : dans un atelier on peut
+    ranger volontairement une charge en attendant l'arbitrage ; « Non imputé » se remplit
+    tout seul dès que quelqu'un oublie de renseigner le centre de coût.</p>
+    <p style="margin-bottom:0"><span class="num">socle_comptable.py:29‑35</span> — la liste
+    contient cinq entrées, il n'y a pas de « Autre ».</p>
+  </div>
+
+  <h3>Difficulté n° 2 : les frais généraux n'appartiennent à personne</h3>
+  <p>Le gardien surveille toute la ferme. L'électricité alimente tout. Impossible de dire
+  « ces 9 000 dinars sont du lait ». Pourtant il faut bien en mettre une part sur le lait,
+  sinon le coût du litre est faux — il oublierait le gardien.</p>
+  <p>Donc on choisit une <strong>règle de partage</strong>. Cette règle s'appelle une
+  <strong>clé de quote-part</strong>. « Quote-part » veut simplement dire <em>la part qui
+  revient à quelqu'un</em>.</p>
+  <p>La règle appliquée aujourd'hui est : <strong>le lait porte les frais généraux dans la
+  même proportion qu'il porte les dépenses directes.</strong> Voici le calcul exact, tel
+  que le code le fait — apprends-le, c'est le cœur de la journée.</p>
+
+  <div class="defile">
+  <table>
+    <caption>Le calcul de la clé, et ce qui arrive si un autre atelier dérape</caption>
+    <thead>
+      <tr>
+        <th>Charges directes des ateliers</th>
+        <th class="chiffre">Juin</th>
+        <th class="chiffre">Si les génisses coûtaient le double</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Lait</td><td class="chiffre">34 000,00</td><td class="chiffre">34 000,00</td></tr>
+      <tr><td>Élevage – Génisses <span class="fleche">←</span></td><td class="chiffre">6 500,00</td><td class="chiffre">13 000,00</td></tr>
+      <tr><td>Cultures – Fourrage</td><td class="chiffre">8 200,00</td><td class="chiffre">8 200,00</td></tr>
+      <tr><td>Traction</td><td class="chiffre">3 300,00</td><td class="chiffre">3 300,00</td></tr>
+      <tr class="total"><td>Total hors Frais Généraux</td><td class="chiffre">52 000,00</td><td class="chiffre">58 500,00</td></tr>
+      <tr><td><strong>Clé</strong> = Lait ÷ total</td><td class="chiffre">65,38 %</td><td class="chiffre">58,12 %</td></tr>
+      <tr><td>Frais Généraux du mois</td><td class="chiffre">9 000,00</td><td class="chiffre">9 000,00</td></tr>
+      <tr><td>Quote-part du lait = FG × clé</td><td class="chiffre">5 884,60</td><td class="chiffre">5 230,80</td></tr>
+      <tr class="total"><td>Charges du lait</td><td class="chiffre">39 884,60</td><td class="chiffre">39 230,80</td></tr>
+      <tr><td>Litres produits</td><td class="chiffre">45 444</td><td class="chiffre">45 444</td></tr>
+      <tr class="resultat"><td>Coût du litre</td><td class="chiffre">0,878 DT</td><td class="chiffre">0,863 DT</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="encadre cle">
+    <p class="encadre-titre">Ce qu'il faut voir dans ce tableau</p>
+    <p style="margin-bottom:0">Les génisses ont coûté <strong>deux fois plus</strong>, et
+    <strong>rien n'a changé au lait</strong> — mêmes charges directes, mêmes litres. Et
+    pourtant le coût du litre <strong>descend</strong>, de 0,878 à 0,863. Parce que le lait
+    pèse désormais une part plus petite du total, donc il porte moins de frais généraux.
+    Un coût qui baisse quand un autre atelier dérape, c'est un coût sur lequel on ne peut
+    pas piloter. <strong>C'est tout l'enjeu de la décision ④.</strong></p>
+  </div>
+
+  <h3>Difficulté n° 3 : le même lait est compté deux fois</h3>
+  <p>Le lait est enregistré à deux endroits différents, par deux personnes différentes,
+  dans deux formulaires différents :</p>
+  <ul class="puces">
+    <li>La <strong>Traite</strong> — un enregistrement par traite (matin, soir). C'est ce
+    qui sort de la machine. En juin 2026 : <span class="num">45 444 L</span>.</li>
+    <li>Le <strong>Bilan Lait Journalier</strong> — une ligne par jour, remplie à la main,
+    qui dit ce qui a été vendu, auto-consommé, donné aux veaux. En juin :
+    <span class="num">35 485 L</span>.</li>
+  </ul>
+  <p>Écart : <span class="num">9 959 L</span>, soit 28 %. Dont
+  <span class="num">5 814 L</span> sur les 27, 28, 29 et 30 juin — les vaches ont été
+  traites, aucun bilan n'a été rempli. Les <span class="num">4 145 L</span> qui restent
+  sont étalés sur tout le mois, environ <span class="num">160 L</span> par jour, toujours
+  dans le même sens.</p>
+  <p>Ces litres-là sont le <strong>dénominateur de tout</strong> : litres par vache, coût
+  du litre, rendement. Avec 45 444 le litre coûte moins cher qu'avec 35 485. On ne peut
+  pas garder les deux. <strong>C'est la décision ①.</strong></p>
+
+  <h3 id="glossaire">Le vocabulaire, traduit</h3>
+  <div class="defile">
+  <table>
+    <caption>Glossaire</caption>
+    <thead><tr><th>Le mot</th><th>Ce que ça veut dire</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Atelier</strong></td><td>Une activité de la ferme, à laquelle on rattache des dépenses. Synonyme comptable : <em>centre de coût</em>.</td></tr>
+      <tr><td><strong>VL</strong></td><td>Vaches en <strong>lactation</strong> : celles qui donnent du lait aujourd'hui.</td></tr>
+      <tr><td><strong>VP</strong></td><td>Vaches <strong>présentes</strong> : les lactantes <em>plus</em> les taries (au repos avant de vêler).</td></tr>
+      <tr><td><strong>TB / TP</strong></td><td>Taux butyreux (matière grasse) et taux protéique. Ils servent à <strong>payer</strong> le lait : la laiterie paie plus cher un lait plus riche.</td></tr>
+      <tr><td><strong>Clé de quote-part</strong></td><td>La règle qui décide quelle part des frais communs revient à chaque atelier.</td></tr>
+      <tr><td><strong>Non imputé</strong></td><td>Une écriture comptable sur laquelle personne n'a mis d'atelier. Ce n'est pas un atelier : c'est un oubli.</td></tr>
+      <tr><td><strong>Amortissement</strong></td><td>Un tracteur payé 100 000 DT ne coûte pas 100 000 DT le mois de l'achat : on étale sa valeur sur ses années d'usage. Chaque mois en porte une tranche.</td></tr>
+      <tr><td><strong>Préventif / curatif</strong></td><td>Préventif : l'entretien prévu d'avance (vidange tous les 250 h). Curatif : la réparation après la panne.</td></tr>
+      <tr><td><strong>IOFC</strong></td><td><em>Income Over Feed Cost</em> — ce que rapporte le lait moins ce que coûte l'aliment. L'indicateur que regardent les éleveurs avant tous les autres.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 2 ══════════════════════════ -->
+<section id="ecrans">
+  <span class="numero">PARTIE 2</span>
+  <h2>Les trois écrans, colonne par colonne</h2>
+  <p class="sous-chapo">Ce que tu as construit. Pour chaque colonne : ce qu'elle veut dire,
+  et d'où vient son chiffre — pour que tu puisses répondre à « ça sort d'où, ça ? ».</p>
+
+  <h3>Écran 1 — La production laitière, jour par jour</h3>
+  <p><code>Rapports › Rapport Périodique › section Production</code></p>
+  <div class="defile">
+  <table>
+    <thead><tr><th>Colonne</th><th>Ce que c'est</th><th>D'où vient le chiffre</th></tr></thead>
+    <tbody>
+      <tr><td>Jour / Période</td><td>Le jour du mois.</td><td class="ref">—</td></tr>
+      <tr><td>VL</td><td>Vaches en lactation ce jour-là.</td><td class="ref">reconstruit depuis les vêlages, tarissements et sorties</td></tr>
+      <tr><td>VP</td><td>Lactantes + taries.</td><td class="ref">idem</td></tr>
+      <tr><td>Production (L)</td><td>Les litres traits.</td><td class="ref">tabTraite.quantite_litres</td></tr>
+      <tr><td>Moy/VL (L/j)</td><td>Litres par vache lactante et par jour.</td><td class="ref">production ÷ VL</td></tr>
+      <tr><td>Moy/VP (L/j)</td><td>Litres par vache présente et par jour.</td><td class="ref">production ÷ VP</td></tr>
+      <tr><td>TB / TP</td><td>Matière grasse et protéine.</td><td class="ref">tabTraite.taux_tb / taux_tp</td></tr>
+      <tr><td>Commercialisé</td><td>Ce qui est parti à la laiterie.</td><td class="ref">Bilan Lait Journalier.lait_vendu</td></tr>
+      <tr><td>Auto-conso</td><td>Ce qui est resté sur la ferme.</td><td class="ref">…consommation_interne</td></tr>
+      <tr><td>Lait Veau</td><td>Ce qu'ont bu les veaux.</td><td class="ref">…lait_veau</td></tr>
+      <tr><td>Écart (L)</td><td>Ce qui manque à l'appel.</td><td class="ref">…ecart_litres</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Trois règles portées par cet écran, chacune payée par un défaut réel. Elles sont
+  écrites en toutes lettres dans le code — tu peux les défendre :</p>
+  <ol class="suite">
+    <li><strong>Un jour sans bilan laisse les cases vides, jamais à zéro.</strong> Écrire
+    « 0 L commercialisé » là où on ne sait rien est un mensonge silencieux, et il se
+    propagerait au total. Une case vide se lit « pas saisi » ; un zéro se lit « rien
+    produit ».</li>
+    <li><strong>Les jours à venir ne comptent pas dans les dénominateurs.</strong> Sinon
+    le mois en cours compte ses vaches sur 31 jours alors que le lait ne couvre que les
+    jours écoulés — et plus on ouvrait le rapport tôt dans le mois, plus la moyenne
+    paraissait basse.</li>
+    <li><strong>L'effectif de la ligne TOTAL est une moyenne de la période</strong>, pas
+    l'effectif du dernier jour. Sur un troupeau qui vêle et tarit, les deux chiffres
+    diffèrent, et rien ne disait lequel on lisait.</li>
+  </ol>
+
+  <h3>Écran 2 — Les charges par atelier et le coût du litre</h3>
+  <p><code>Rapports › Rapport de Performance</code></p>
+  <p>Trois blocs empilés. Le premier liste les charges du mois <strong>par atelier</strong>,
+  plus la ligne <strong>Non imputé</strong> — affichée même à zéro, et en orange dès
+  qu'elle n'est pas nulle. C'est voulu : une ligne absente se lit « rien à signaler », une
+  ligne à 0 se lit « vérifié ». Ce n'est pas la même chose.</p>
+  <p>Le deuxième bloc détaille le coût du lait : les charges <strong>directes</strong> de
+  l'atelier Lait, puis la <strong>quote-part</strong> des frais généraux, avec la clé
+  écrite en toutes lettres à l'écran (« clé 65,38 % des charges directes »). Personne
+  n'a à deviner comment le nombre a été fabriqué.</p>
+  <p>Le troisième bloc donne les coûts au litre :</p>
+  <div class="defile">
+  <table>
+    <thead><tr><th>Indicateur</th><th>Ce qu'il dit</th></tr></thead>
+    <tbody>
+      <tr><td>Coût Alimentaire / L</td><td>Ce que l'aliment coûte par litre. Objectif vert sous <span class="num">0,65</span> DT, alarme au-dessus de <span class="num">0,85</span>.</td></tr>
+      <tr><td>Coût Mécanique / L</td><td><strong>Vue analytique seulement.</strong> Il ne s'additionne pas au coût complet — l'amortissement et l'entretien y sont déjà par les charges du grand livre. L'ajouter, c'est compter deux fois.</td></tr>
+      <tr><td>Coût Complet / L</td><td>Le chiffre de la journée : charges du lait (directes + quote-part) ÷ litres.</td></tr>
+      <tr><td>Coût du Litre hors Amortissement</td><td>Le même, sans la tranche du matériel. Utile pour comparer d'une année sur l'autre.</td></tr>
+      <tr><td>IOFC</td><td>CA lait − coût alimentaire.</td></tr>
+      <tr><td>IOFC / VL / jour</td><td>Le même, ramené à la vache et au jour. Vert au-dessus de <span class="num">3,0</span> DT.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Écran 3 — Le parc et les interventions</h3>
+  <p><code>Rapports › Rapport des Interventions</code></p>
+  <p>Trois sections dans un seul tableau. <strong>Réalisées</strong> : ce qui a été fait sur
+  le mois. <strong>Préventif</strong> : ce qui arrive dans les 30 prochains jours.
+  <strong>Rapprochement</strong> : la comparaison avec le compte comptable 615, faite par
+  le rapport et non découverte à la clôture.</p>
+  <p>Les colonnes : Section, Date, Équipement, Désignation, Type, Intervention, Atelier,
+  Intervenant, Coût, <strong>Nb Interventions</strong>, <strong>Nb Équipements</strong>.
+  Ces deux derniers sont de vraies colonnes et non une phrase dans le libellé : ce qui
+  s'exporte se compare.</p>
+  <div class="encadre alerte">
+    <p class="encadre-titre">Ne te fais pas piéger</p>
+    <p style="margin-bottom:0">Les colonnes <strong>« État »</strong> et
+    <strong>« Dispo. »</strong> que tu vois sur la maquette <strong>n'existent pas encore
+    dans le rapport</strong>. C'est précisément l'objet de la décision ⑥. Si Samir demande
+    « et je le vois où, qu'il est en panne ? » — la réponse est « nulle part aujourd'hui,
+    c'est ce que je viens te demander ».</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 3 ══════════════════════════ -->
+<section id="decisions">
+  <span class="numero">PARTIE 3</span>
+  <h2>Les huit décisions</h2>
+  <p class="sous-chapo">Aucune n'est inventée. Chacune correspond à un endroit du code où
+  une règle a été choisie faute de réponse, ou n'a pas pu être écrite du tout. La référence
+  est donnée à chaque fois — tu peux l'ouvrir devant lui.</p>
+
+  <div class="decision">
+    <div class="decision-tete">
+      <span class="decision-num">①</span>
+      <h3>Quelle source fait foi pour les litres ?</h3>
+    </div>
+    <div class="ab">
+      <div><p class="ab-lettre">A <span class="pastille">Par défaut</span></p>
+        <p class="ab-titre">La somme des traites</p><p class="ab-chiffre">45 444 L</p>
+        <p class="ab-note">Relevé par vache, matin et soir. 30 jours sur 30.</p></div>
+      <div><p class="ab-lettre">B</p>
+        <p class="ab-titre">Le bilan de la ferme</p><p class="ab-chiffre">35 485 L</p>
+        <p class="ab-note">Un total déclaré par jour. 26 jours sur 30.</p></div>
+    </div>
+    <p><strong>Ce que fait le code :</strong> le rapport lit la table des traites
+    (<code>SELECT SUM(quantite_litres) FROM tabTraite</code>). Le bilan ne sert qu'à
+    ventiler entre vendu, auto-consommé et veau.</p>
+    <p><strong>Ce que tu veux entendre :</strong> lequel fait foi. Et si c'est le bilan,
+    alors il faut qu'il soit rempli tous les jours — dis-le sur le moment.</p>
+  </div>
+
+  <div class="decision">
+    <div class="decision-tete">
+      <span class="decision-num">②</span>
+      <h3>À partir de quel écart on t'appelle ?</h3>
+      <span class="pastille rien">Aucune des deux n'existe</span>
+    </div>
+    <div class="ab">
+      <div><p class="ab-lettre">A</p><p class="ab-titre">Alerte au-dessus de 100 L</p>
+        <p class="ab-chiffre">10 alertes</p><p class="ab-note">Tu es prévenu dix fois. Un jour sur trois.</p></div>
+      <div><p class="ab-lettre">B</p><p class="ab-titre">Alerte au-dessus de 250 L</p>
+        <p class="ab-chiffre">0 alerte</p><p class="ab-note">Silence complet, alors que 2 000 L sont partis quelque part.</p></div>
+    </div>
+    <p><strong>Le fait à poser sur la table :</strong> dix jours du mois affichent
+    <strong>exactement −200 L</strong>. Jamais 190, jamais 215. Toujours −200. Un chiffre
+    aussi rond, dix fois de suite, ne vient pas d'une mesure — il vient d'une habitude de
+    saisie ou d'un forfait que quelqu'un applique.</p>
+    <p><strong>Ce que fait le code :</strong> rien. L'écart est lu, affiché dans la
+    colonne, et n'a jamais déclenché quoi que ce soit.</p>
+    <p><strong>Ce que tu veux entendre :</strong> un seuil — <strong>et surtout d'où
+    viennent ces −200 L</strong>. Cette deuxième réponse vaut plus que la première.</p>
+  </div>
+
+  <div class="decision">
+    <div class="decision-tete">
+      <span class="decision-num">③</span>
+      <h3>TB / TP : afficher les jours mesurés, ou reporter la dernière valeur ?</h3>
+    </div>
+    <div class="ab">
+      <div><p class="ab-lettre">A <span class="pastille">Par défaut</span></p>
+        <p class="ab-titre">Seulement les jours mesurés</p><p class="ab-chiffre">colonne vide</p>
+        <p class="ab-note">Honnête : on ne sait rien, la case reste vide.</p></div>
+      <div><p class="ab-lettre">B</p><p class="ab-titre">Reporter la dernière valeur</p>
+        <p class="ab-chiffre">colonne pleine</p>
+        <p class="ab-note">Confortable à lire, mais impossible de dire ce qui est mesuré et ce qui est recopié.</p></div>
+    </div>
+    <p><strong>L'état des données :</strong> <span class="num">0 jour renseigné sur 30</span>
+    en juin. Le taux sert à <em>payer</em> le lait : c'est un chiffre d'argent, pas de
+    confort.</p>
+    <p><strong>Ce que fait le code :</strong> il fait la moyenne des taux de la journée en
+    ignorant les zéros (<code>AVG(NULLIF(taux_tb,0))</code>) — donc rien à afficher quand
+    rien n'est saisi.</p>
+    <div class="encadre alerte">
+      <p class="encadre-titre">Un piège que tu dois connaître</p>
+      <p style="margin-bottom:0">Le TB existe à <strong>deux endroits</strong> : sur la
+      <strong>Traite</strong> (<code>taux_tb</code>), que lit cet écran, et sur le
+      <strong>Bilan Lait Journalier</strong> (<code>taux_tb_moyen</code>), que lisent la
+      facturation du lait et les KPI financiers. Si tu demandes à la ferme de « remplir le
+      TB » sans préciser où, la moitié des écrans resteront vides. Le bon message :
+      <strong>c'est sur la fiche de traite</strong> pour cet écran-là.</p>
+    </div>
+  </div>
+
+  <div class="decision">
+    <div class="decision-tete">
+      <span class="decision-num">④</span>
+      <h3>Le gardien et l'électricité, le lait en porte combien ?</h3>
+    </div>
+    <div class="ab">
+      <div><p class="ab-lettre">A <span class="pastille">Par défaut</span></p>
+        <p class="ab-titre">Au prorata de ce que <em>dépense</em> chaque atelier</p>
+        <p class="ab-chiffre">0,878 DT/L</p></div>
+      <div><p class="ab-lettre">B</p>
+        <p class="ab-titre">Au prorata de ce que <em>rapporte</em> chaque atelier</p>
+        <p class="ab-chiffre">0,926 DT/L</p></div>
+    </div>
+    <p>48 millimes d'écart par litre, soit <span class="num">2 181 DT</span> sur le mois.
+    Et l'argument décisif est celui du tableau de la partie 1 : avec A, le mois où les
+    génisses coûtent le double, <strong>le coût du lait descend à 0,863</strong> alors que
+    rien n'a changé au lait. Avec B il ne bouge pas.</p>
+    <p><strong>Ce que fait le code :</strong> A. Et le code le dit lui-même — le
+    commentaire de la fonction porte, mot pour mot : <em>« la clé de cette quote-part
+    n'ayant pas été tranchée, on prend la seule défendable avec les données
+    disponibles »</em>. Cette décision est littéralement en attente dans le fichier.</p>
+    <p><span class="num">utils/finance_kpis.py:176‑179</span> pour le commentaire,
+    <span class="num">:223</span> pour le calcul.</p>
+  </div>
+
+  <div class="decision">
+    <div class="decision-tete">
+      <span class="decision-num">⑤</span>
+      <h3>Les charges que personne n'a encore attribuées</h3>
+    </div>
+    <div class="ab">
+      <div><p class="ab-lettre">A <span class="pastille">Par défaut</span></p>
+        <p class="ab-titre">Mises de côté, hors du coût du litre</p>
+        <p class="ab-chiffre">0,878 DT/L</p>
+        <p class="ab-note">Le coût est propre, mais 1 850 DT ne sont nulle part.</p></div>
+      <div><p class="ab-lettre">B</p>
+        <p class="ab-titre">Réparties comme les frais généraux</p>
+        <p class="ab-chiffre">0,904 DT/L</p>
+        <p class="ab-note">Tout est compté, mais on impute au lait des charges dont on ignore l'atelier.</p></div>
+    </div>
+    <p><strong>Ce que fait le code :</strong> A, et pour une raison écrite noir sur blanc —
+    <em>« lui attribuer une quote-part reviendrait à imputer au lait une charge dont on
+    ignore la destination »</em>. La ligne reste affichée à part, en orange.</p>
+    <p><span class="num">utils/finance_kpis.py:181‑183</span>.</p>
+    <p><strong>Ce que tu veux entendre :</strong> la vraie réponse n'est ni A ni B. C'est
+    <strong>« qui classe ces charges, et sous combien de jours »</strong>. Trois d'entre
+    elles attendent depuis douze jours.</p>
+  </div>
+
+  <div class="decision">
+    <div class="decision-tete">
+      <span class="decision-num">⑥</span>
+      <h3>Dans quel état est un équipement ?</h3>
+      <span class="pastille rien">Aucune des deux n'existe</span>
+    </div>
+    <div class="ab">
+      <div><p class="ab-lettre">A</p><p class="ab-titre">Une seule liste</p>
+        <p class="ab-note" style="margin-top:0">Prêt à fonctionner / En panne / En attente de maintenance.
+        Simple. Mais un seul mot doit tout dire : « en attente de maintenance » ne dit pas si la machine roule encore.</p></div>
+      <div><p class="ab-lettre">B</p><p class="ab-titre">Deux questions séparées</p>
+        <p class="ab-note" style="margin-top:0">Disponible oui / non, <em>et</em> État.
+        Deux clics au lieu d'un. En échange, on sait dire « elle marche encore mais il faut la regarder ».</p></div>
+    </div>
+    <p><strong>Le cas à raconter :</strong> « le tracteur Massey tousse au démarrage, mais
+    il roule encore et il part demain. Tu le mets où ? »</p>
+    <p><strong>Ce que fait le code :</strong> ni l'un ni l'autre. Le système ne connaît que
+    le statut <em>comptable</em> d'ERPNext — en service, cédé, mis au rebut. Les seuls
+    champs ajoutés à la fiche équipement sont <code>id_batiment</code>,
+    <code>id_animal</code> et <code>cout_horaire</code>. L'état mécanique n'existe nulle
+    part. <span class="num">hooks.py:38‑40</span>.</p>
+  </div>
+
+  <div class="decision">
+    <div class="decision-tete">
+      <span class="decision-num">⑦</span>
+      <h3>Jusqu'où on regarde devant ?</h3>
+    </div>
+    <div class="ab">
+      <div><p class="ab-lettre">A <span class="pastille">Par défaut</span></p>
+        <p class="ab-titre">Les 30 prochains jours</p><p class="ab-chiffre">3 lignes</p>
+        <p class="ab-note">Court. Ce qui tombe en octobre n'apparaît qu'en septembre — trop tard pour commander une pièce.</p></div>
+      <div><p class="ab-lettre">B</p><p class="ab-titre">Les 60 prochains jours</p>
+        <p class="ab-chiffre">9 lignes</p>
+        <p class="ab-note">On voit venir. Mais l'écran se remplit, et l'urgent se noie dans le lointain.</p></div>
+    </div>
+    <p><strong>Ce que fait le code :</strong> 30 jours. La valeur est prévue configurable
+    (<code>maintenance_horizon_jours</code>), mais <em>le champ n'a pas encore été créé</em>
+    dans la configuration — donc c'est bien le défaut de 30 qui s'applique aujourd'hui.
+    <span class="num">rapport_interventions.py:56</span> et <span class="num">:205</span>.</p>
+    <p>Samir a aussi demandé un deuxième déclencheur : <strong>les heures de marche</strong>
+    (vidange toutes les 250 h). Note-le, il n'est pas encore là.</p>
+  </div>
+
+  <div class="decision">
+    <div class="decision-tete">
+      <span class="decision-num">⑧</span>
+      <h3>Faut-il séparer les pièces de la main-d'œuvre ?</h3>
+    </div>
+    <div class="ab">
+      <div><p class="ab-lettre">A <span class="pastille">Par défaut</span></p>
+        <p class="ab-titre">Un seul montant</p><p class="ab-chiffre">1 champ</p>
+        <p class="ab-note">Rapide à saisir. On sait ce que ça coûte, pas pourquoi.</p></div>
+      <div><p class="ab-lettre">B</p><p class="ab-titre">Pièces et main-d'œuvre</p>
+        <p class="ab-chiffre">3 champs</p>
+        <p class="ab-note">De quoi négocier. Mais trois chiffres au lieu d'un, tous les jours, à celui qui saisit.</p></div>
+    </div>
+    <p><strong>Ce que fait le code :</strong> A. Une intervention est un
+    <em>Asset Repair</em> d'ERPNext, et son coût est un montant unique
+    (<code>total_repair_cost</code>). Passer à B, c'est ajouter des champs et changer la
+    saisie de tout le monde.</p>
+    <p><strong>Ce que tu dis :</strong> c'est un arbitrage entre finesse et charge de
+    saisie, et ce n'est pas à toi de le trancher. Les trois interventions montrées sont
+    réelles : <span class="num">340</span>, <span class="num">185</span> et
+    <span class="num">340 DT</span>.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 4 ══════════════════════════ -->
+<section id="lundi">
+  <span class="numero">PARTIE 4</span>
+  <h2>Lundi, minute par minute</h2>
+  <p class="sous-chapo">Le déroulé complet. Ce qui est en italique se dit à voix haute —
+  tu peux le lire tel quel.</p>
+
+  <div class="arret">
+    <div class="minutage">00:00 · 2 min</div>
+    <div>
+      <h3>La couverture</h3>
+      <p>Tu ouvres le lien Excalidraw. Tu ne bouges pas encore.</p>
+      <div class="replique">
+        <p>« J'ai construit trois écrans. Ils tournent. Sur chacun il reste deux ou trois
+        choix que je ne peux pas faire à ta place — les voilà, en A ou B, avec le chiffre
+        que chacun donne. »</p>
+        <p>« Tu pointes, je note dans le cadre jaune. La planche annotée sera le compte
+        rendu : il n'y a rien à rédiger après. »</p>
+      </div>
+      <p class="attendu"><b>Pourquoi cette dernière phrase :</b> elle désamorce d'avance sa
+      réticence aux longs documents.</p>
+    </div>
+  </div>
+
+  <div class="arret">
+    <div class="minutage">02:00 · 3 min</div>
+    <div>
+      <h3>Écran 1 — La production laitière</h3>
+      <p>Ici tu ne demandes rien. Tu montres.</p>
+      <div class="replique">
+        <p>« Tu m'avais demandé des litres par vache et par jour, avec les deux
+        dénominateurs — vache lactante et vache présente. Les voilà tous les deux, côte à
+        côte. On n'aura pas à choisir. »</p>
+        <p>« Et un jour qui n'a pas été saisi reste vide. Jamais zéro. Une case vide se lit
+        “pas saisi”, un zéro se lit “rien produit”. »</p>
+      </div>
+      <p class="attendu">Tu montres le pense-bête jaune en bas, tu ne l'ouvres pas :
+      <b>« on y revient juste après. »</b></p>
+    </div>
+  </div>
+
+  <div class="arret">
+    <div class="minutage">05:00 · 3 min</div>
+    <div>
+      <h3>Écran 2 — Les charges et le coût du litre</h3>
+      <div class="replique">
+        <p>« Une ligne par atelier. Et “Non imputé” s'affiche même à zéro : une ligne
+        absente se lit “rien à signaler”, une ligne à zéro se lit “vérifié”. »</p>
+        <p>« La structure accepte un atelier de plus sans rien casser — la fromagerie
+        rentrera quand tu voudras. »</p>
+      </div>
+      <p class="attendu"><b>Si l'atelier « Autre » vient sur le tapis :</b> dis la vérité —
+      il n'est pas encore créé, ce qui existe c'est « Non imputé », et ce n'est pas la même
+      chose. C'est court à faire, tu le notes.</p>
+    </div>
+  </div>
+
+  <div class="arret">
+    <div class="minutage">08:00 · 3 min</div>
+    <div>
+      <h3>Écran 3 — Le parc et les interventions</h3>
+      <div class="replique">
+        <p>« Ce qui a été fait sur le mois, ce qui arrive, et le rapprochement avec le
+        compte 615 — fait par le rapport, pas découvert à la clôture. »</p>
+        <p>« Et s'il n'y a eu aucune intervention, l'écran affiche zéro et le dit. Il ne
+        reste pas vide. »</p>
+      </div>
+      <p class="attendu">C'est exactement ce qu'il avait demandé. Dis-le comme une réponse
+      à sa demande, pas comme une trouvaille.</p>
+    </div>
+  </div>
+
+  <div class="arret">
+    <div class="minutage">11:00 · 20 min</div>
+    <div>
+      <h3>Les huit décisions</h3>
+      <p>Même geste à chaque fois : le cadre A à gauche, le cadre B à droite, le chiffre en
+      vert sous chacun.</p>
+      <div class="replique">
+        <p>« Voilà la même chose en deux versions. Celle-là donne ce chiffre, celle-là donne
+        celui-ci. Laquelle tu veux ? »</p>
+      </div>
+      <p class="attendu"><b>Ordre :</b> les trois du lait, puis les deux des charges, puis
+      les trois du parc. Ne saute pas la ④ — c'est la plus lourde, et c'est celle où tu as
+      un argument imparable. <b>Deux minutes chacune, pas plus.</b></p>
+    </div>
+  </div>
+
+  <div class="arret">
+    <div class="minutage">31:00 · 5 min</div>
+    <div>
+      <h3>Ce dont tu as besoin</h3>
+      <p>Ne le présente pas comme une excuse. C'est une demande, et elle est légitime.</p>
+      <div class="replique">
+        <p>« Les écrans sont prêts. Ce sont les données qui manquent — et sans elles ils
+        afficheront des chiffres que je ne veux pas te montrer. »</p>
+      </div>
+      <p class="attendu">Tu déroules les cinq points de la partie <a href="#trous">Ce qui
+      manque</a>. Puis : <b>« dès que ces données sont là, je te fais la démonstration du
+      système en vrai, partie Parc comprise. »</b></p>
+    </div>
+  </div>
+
+  <div class="arret">
+    <div class="minutage">36:00 · 2 min</div>
+    <div>
+      <h3>La sortie</h3>
+      <ol class="suite">
+        <li>Photo ou export de la présentation annotée — c'est le compte rendu.</li>
+        <li>Message au groupe : les huit décisions et leur réponse, une ligne chacune.</li>
+        <li>Ce qui est tranché part en développement. Ce qui est resté ouvert va dans le
+        daily du lendemain, nommé.</li>
+      </ol>
+    </div>
+  </div>
+
+  <h3>Si ça part de travers</h3>
+  <div class="defile">
+  <table>
+    <thead><tr><th>Il fait ça</th><th>Tu fais ça</th></tr></thead>
+    <tbody>
+      <tr><td>Il répond dans le vague : « oui, il faut voir », « comme tu veux ».</td>
+          <td>« Montre-moi lequel des deux. » Et tu poses le doigt sur A. C'est toute la raison d'être des planches : il n'a rien à formuler, juste à désigner.</td></tr>
+      <tr><td>Il demande un chiffre que tu n'as pas.</td>
+          <td>« Je te le sors et je te l'envoie aujourd'hui. » Jamais d'estimation à voix haute : un chiffre faux fait douter de tous les autres, y compris des bons.</td></tr>
+      <tr><td>Il demande à voir le système en vrai.</td>
+          <td>« Il tourne, mais sur des données incomplètes — VL est à zéro parce qu'aucun vêlage n'est importé. Je préfère te le montrer quand il dira vrai. »</td></tr>
+      <tr><td>Il veut ajouter un écran ou une colonne.</td>
+          <td>« Je le note, ça devient une nouvelle story. » On ne l'ajoute pas à celles-ci : ce qui a été estimé et validé reste ce qui est livré.</td></tr>
+      <tr><td>Il ne tranche pas une question.</td>
+          <td>Ce n'est pas un échec. « Alors ça reste sur la version marquée PAR DÉFAUT, et je te la remets sur la table. » Note-le dans le cadre jaune quand même.</td></tr>
+      <tr><td>Il parle d'Asset Management au sens large.</td>
+          <td>« Le parc est là — équipements, interventions, préventif. Le reste du périmètre Asset est à cadrer avec Aymen. » Ne t'engage pas sur une date.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 id="trous">Ce qui manque, et qu'il faut annoncer toi-même</h3>
+  <div class="encadre alerte">
+    <p class="encadre-titre">N'ouvre pas le rapport réel devant lui</p>
+    <p>VL affiche 0, les colonnes TB/TP sont vides, la comptabilité de juin ne contient que
+    340 DT. Ce sont des <strong>trous de données, pas des bugs</strong> — mais découverts en
+    direct, ils décrédibilisent des écrans qui, eux, sont justes. Tu les annonces
+    toi-même, en partie 3, à ton rythme.</p>
+    <ul class="puces" style="margin-bottom:0">
+      <li><strong>Les vêlages ne sont pas dans le système.</strong> Tant qu'ils n'y sont
+      pas, VL = 0 : « litres par vache lactante » ne peut pas s'afficher, et le coût du
+      litre non plus.</li>
+      <li><strong>TB et TP :</strong> 0 jour renseigné sur 30 en juin.</li>
+      <li><strong>Bilan lait des 27 au 30 juin :</strong> les vaches ont été traites, aucun
+      bilan rempli — 5 814 L hors de tout bilan.</li>
+      <li><strong>Comptabilité de juin : 340 DT</strong> enregistrés. Un coût du litre
+      crédible demande la totalité des écritures.</li>
+      <li><strong>Le parc : un seul équipement saisi.</strong> Les six lignes de l'écran 3
+      sont un exemple ; les trois interventions du bas, elles, sont réelles.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>Document de travail interne — il n'est pas destiné à M. Samir. Chaque référence de
+  fichier a été vérifiée dans le dépôt le 22 août 2026. Support de présentation :
+  <code>presentation_samir.excalidraw</code>.</p>
+</footer>
+
+</div>
+</div>

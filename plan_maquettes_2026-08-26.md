@@ -42,7 +42,7 @@ quelles** : ce sont celles que M. Samir a vues, ses annotations s'y rapportent.
 | « On annule cette User Story » — SCRUM-9 | l'écran 3 : ANNULÉE LE 26/08, cadre vert ; en jaune, les deux questions qui lui survivent |
 
 **L'écran d'arbitrage mensuel n'est pas repris** : il a été montré puis écarté.
-`maquette_arbitrage_frais_generaux_2026-08-24.excalidraw` et son générateur ne
+`passation/03_maquettes/maquette_arbitrage_frais_generaux_2026-08-24.excalidraw` et son générateur ne
 servent plus — à supprimer quand on sera sûr de ne plus vouloir les montrer.
 
 ---
@@ -136,6 +136,6 @@ les nomme déjà correctement (`rapport_interventions.py:79-81`), c'était la
 maquette qui abrégeait.
 
 **Ailleurs dans le dépôt**
-- `expliquer_les_us.html` porte encore les chiffres du 24/08 (7 583,89 · 1,562 ·
+- `passation/04_demonstration/expliquer_les_us.html` porte encore les chiffres du 24/08 (7 583,89 · 1,562 ·
   32,7 millimes) et une diapositive « la question du jour » désormais sans objet.
   À reprendre avant de remontrer le support.

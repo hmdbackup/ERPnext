@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Places the rule in the Insemination semence-stock flow, not a naive standalone 'disponible' boolean as the literal spec implies.",
+      "passed": true,
+      "evidence": "with_skill/NOTES.md lines 22-26: 'In Insemination.validate() (a new method validate_semence_disponible), alongside the existing pre-save guards ... in .../insemination/insemination.py'. The guard reuses the existing FIFO picker _pick_semence_batch (NOTES.md lines 50-52; insemination_rg14_guard.py lines 72-83) rather than introducing a disponible boolean. NOTES.md line 75 explicitly avoids a hardcoded threshold ('per-batch quantity comes from Batch.batch_qty via the existing picker'). Rule is squarely in the Insemination semence-stock flow."
+    },
+    {
+      "text": "References the ERPNext v15 batch-level negative-stock behavior (a depleted batch is refused; the IA still saves but the stock write is skipped/blocked).",
+      "passed": false,
+      "evidence": "grep of both with_skill files finds zero occurrences of 'v15', 'negative', 'allow_negative_stock', or 'batch-level'. The v15 batch-level negative-stock mechanism is never referenced. Moreover the proposed design is a hard frappe.throw in validate() that ABORTS the insert (insemination_rg14_guard.py lines 84-90; NOTES.md lines 38-41 'you must frappe.throw before the record is written'), which contradicts the expectation's 'the IA still saves'. NOTES.md lines 35-36 acknowledge the current 'IA still saves / stock write skipped' behavior only to override it. Mechanism not cited and the described behavior is reversed."
+    },
+    {
+      "text": "Cites RG14 and flags the spec-vs-code delta.",
+      "passed": true,
+      "evidence": "with_skill/NOTES.md title and lines 5-7 quote RG14 verbatim; dedicated section 'Explicit judgment call (code-vs-spec delta)' lines 80-94: 'references/business-rules.md flags RG14 as a delta where \"code wins\" ... This proposal overrides that choice'. RG14 is cited and the spec-vs-code delta is explicitly surfaced."
+    },
+    {
+      "text": "Keeps stock in ERPNext (Batch/Bin/Stock Entry), not a re-architected custom stock store.",
+      "passed": true,
+      "evidence": "with_skill/NOTES.md line 76-77: 'Single stock write path preserved — all stock math stays in stock_utils.create_stock_movement; the guard only reads via the picker.' Stock remains in ERPNext Batch.batch_qty via _pick_semence_batch (insemination_rg14_guard.py lines 80-83) and Material Issue Stock Entry (lines 96-98). No custom stock store introduced."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  }
+}

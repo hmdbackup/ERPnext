@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frappe & ERPNext — le manuel pour débutants · HMD AGRO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,400..700&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,400..500&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4ecdc;
+    --paper-2:#efe5d0;
+    --ink:#23301f;
+    --ink-soft:#46553c;
+    --ink-faint:#7c8770;
+    --forest:#2f5d3a;
+    --forest-deep:#1f3f28;
+    --terracotta:#b5532f;
+    --terracotta-soft:#c9744f;
+    --ochre:#c8932b;
+    --line:#d8cbac;
+    --line-soft:#e3d9c1;
+    --code-bg:#212b1c;
+    --code-ink:#e8e3cf;
+    --shadow:rgba(35,48,31,.16);
+    --maxw:1180px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;scroll-padding-top:90px;}
+  body{
+    margin:0;
+    background-color:var(--paper);
+    background-image:
+      radial-gradient(1200px 600px at 12% -8%, rgba(200,147,43,.10), transparent 60%),
+      radial-gradient(1000px 700px at 100% 0%, rgba(47,93,58,.10), transparent 55%),
+      radial-gradient(900px 900px at 80% 120%, rgba(181,83,47,.07), transparent 60%);
+    color:var(--ink);
+    font-family:"Newsreader",Georgia,serif;
+    font-size:19px;
+    line-height:1.68;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  /* grain overlay */
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.4;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+    mix-blend-mode:multiply;
+  }
+
+  /* reading progress */
+  #progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:10000;
+    background:linear-gradient(90deg,var(--forest),var(--ochre),var(--terracotta));}
+
+  a{color:var(--terracotta);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    max-width:var(--maxw);margin:0 auto;padding:84px 32px 40px;position:relative;
+  }
+  .kicker{
+    font-family:"Spline Sans Mono",monospace;font-size:12.5px;letter-spacing:.32em;
+    text-transform:uppercase;color:var(--terracotta);font-weight:600;
+    display:flex;align-items:center;gap:14px;margin-bottom:26px;
+  }
+  .kicker::before,.kicker::after{content:"";height:1px;flex:0 0 38px;background:var(--terracotta);opacity:.5;}
+  .kicker::after{flex:1;}
+  h1.title{
+    font-family:"Fraunces",serif;font-weight:600;font-size:clamp(44px,8vw,104px);
+    line-height:.96;letter-spacing:-.02em;margin:0 0 8px;color:var(--ink);
+  }
+  h1.title em{font-style:italic;color:var(--forest);font-weight:500;}
+  .subtitle{
+    font-family:"Newsreader",serif;font-style:italic;font-size:clamp(20px,2.4vw,27px);
+    color:var(--ink-soft);max-width:none;margin:18px 0 0;font-weight:400;
+    width:min(680px,100%);
+  }
+  .hero-meta{
+    display:flex;flex-wrap:wrap;gap:10px 12px;margin-top:34px;
+  }
+  .chip{
+    font-family:"Spline Sans Mono",monospace;font-size:12px;letter-spacing:.04em;
+    padding:7px 14px;border:1px solid var(--line);border-radius:100px;
+    background:rgba(255,255,255,.35);color:var(--ink-soft);
+  }
+  .chip strong{color:var(--forest);font-weight:600;}
+
+  /* big decorative numeral motif */
+  .hero-mark{
+    position:absolute;right:18px;top:54px;font-family:"Fraunces",serif;
+    font-size:clamp(120px,22vw,300px);line-height:1;font-weight:300;font-style:italic;
+    color:var(--forest);opacity:.07;pointer-events:none;user-select:none;z-index:0;
+  }
+
+  /* ---------- LAYOUT ---------- */
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 32px;}
+  .shell{display:grid;grid-template-columns:230px 1fr;gap:54px;align-items:start;}
+  @media(max-width:920px){.shell{grid-template-columns:1fr;}}
+
+  /* TOC */
+  nav.toc{position:sticky;top:46px;font-family:"Spline Sans Mono",monospace;font-size:12.5px;}
+  @media(max-width:920px){nav.toc{display:none;}}
+  nav.toc .toc-h{letter-spacing:.22em;text-transform:uppercase;color:var(--ink-faint);
+    font-size:11px;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid var(--line);}
+  nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:t;}
+  nav.toc li{counter-increment:t;margin:2px 0;}
+  nav.toc a{display:flex;gap:10px;color:var(--ink-soft);padding:6px 8px;border-radius:7px;
+    line-height:1.35;transition:.18s;border-left:2px solid transparent;}
+  nav.toc a::before{content:counter(t,decimal-leading-zero);color:var(--ink-faint);flex:0 0 auto;}
+  nav.toc a:hover{background:rgba(255,255,255,.5);text-decoration:none;color:var(--ink);}
+  nav.toc a.active{color:var(--forest);background:rgba(47,93,58,.09);border-left-color:var(--forest);font-weight:600;}
+
+  main{min-width:0;max-width:760px;}
+
+  /* ---------- SECTIONS ---------- */
+  section{padding:46px 0 8px;scroll-margin-top:80px;}
+  section + section{border-top:1px solid var(--line-soft);}
+  .sec-num{font-family:"Spline Sans Mono",monospace;font-size:13px;color:var(--terracotta);
+    letter-spacing:.18em;font-weight:600;display:block;margin-bottom:10px;}
+  h2{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(30px,4.4vw,46px);
+    line-height:1.04;letter-spacing:-.015em;margin:0 0 22px;color:var(--ink);}
+  h2 em{font-style:italic;color:var(--forest);font-weight:500;}
+  h3{font-family:"Fraunces",serif;font-weight:600;font-size:24px;margin:38px 0 12px;color:var(--forest-deep);letter-spacing:-.01em;}
+  h4{font-family:"Spline Sans Mono",monospace;font-size:13px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--terracotta);margin:28px 0 10px;font-weight:600;}
+  p{margin:0 0 18px;}
+  .lead{font-size:22px;line-height:1.6;color:var(--ink-soft);font-style:italic;}
+  strong{font-weight:600;color:var(--ink);}
+  ul,ol.body{padding-left:1.25em;margin:0 0 20px;}
+  ul li,ol.body li{margin:9px 0;}
+  ul li::marker{color:var(--terracotta);}
+  code:not(pre code){font-family:"Spline Sans Mono",monospace;font-size:.82em;
+    background:rgba(47,93,58,.10);color:var(--forest-deep);padding:.12em .42em;border-radius:5px;
+    border:1px solid rgba(47,93,58,.14);}
+
+  /* code block */
+  .code{background:var(--code-bg);border-radius:14px;margin:22px 0;overflow:hidden;
+    box-shadow:0 18px 40px -22px var(--shadow);border:1px solid rgba(0,0,0,.25);}
+  .code-top{display:flex;align-items:center;gap:8px;padding:11px 16px;background:rgba(255,255,255,.04);
+    border-bottom:1px solid rgba(255,255,255,.07);}
+  .dot{width:11px;height:11px;border-radius:50%;}
+  .dot.r{background:#d96a4a;}.dot.y{background:#d6a637;}.dot.g{background:#6ba368;}
+  .code-name{margin-left:8px;font-family:"Spline Sans Mono",monospace;font-size:12px;color:#a9b3a0;letter-spacing:.04em;}
+  pre{margin:0;padding:20px 22px;overflow-x:auto;}
+  pre code{font-family:"Spline Sans Mono",monospace;font-size:13.5px;line-height:1.72;color:var(--code-ink);}
+  .c-key{color:#e0a04d;}      /* keyword */
+  .c-fn{color:#8fc7a6;}       /* function */
+  .c-str{color:#d99a78;}      /* string */
+  .c-com{color:#788a72;font-style:italic;} /* comment */
+  .c-cls{color:#e6cf8a;}      /* class/type */
+  .c-mut{color:#9aa890;}      /* dim */
+
+  /* callouts */
+  .note{position:relative;margin:24px 0;padding:20px 22px 20px 56px;border-radius:12px;
+    font-size:17.5px;line-height:1.6;border:1px solid var(--line);background:rgba(255,255,255,.4);}
+  .note .ic{position:absolute;left:18px;top:19px;font-family:"Fraunces",serif;font-style:italic;
+    font-size:22px;line-height:1;width:24px;text-align:center;}
+  .note .lab{font-family:"Spline Sans Mono",monospace;font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;display:block;margin-bottom:6px;font-weight:600;}
+  .note.tip{border-color:rgba(47,93,58,.3);background:rgba(47,93,58,.07);}
+  .note.tip .ic,.note.tip .lab{color:var(--forest);}
+  .note.warn{border-color:rgba(181,83,47,.32);background:rgba(181,83,47,.07);}
+  .note.warn .ic,.note.warn .lab{color:var(--terracotta);}
+  .note.ana{border-color:rgba(200,147,43,.34);background:rgba(200,147,43,.08);}
+  .note.ana .ic,.note.ana .lab{color:#a87a18;}
+
+  /* layers diagram */
+  .layers{margin:30px 0 8px;display:flex;flex-direction:column;gap:10px;}
+  .layer{border-radius:13px;padding:18px 22px;position:relative;overflow:hidden;
+    border:1px solid var(--line);transition:.25s;cursor:default;}
+  .layer:hover{transform:translateX(6px);}
+  .layer .l-tag{font-family:"Spline Sans Mono",monospace;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;opacity:.7;}
+  .layer .l-name{font-family:"Fraunces",serif;font-size:25px;font-weight:600;margin:2px 0 4px;}
+  .layer .l-desc{font-size:16px;line-height:1.5;}
+  .layer.l1{background:linear-gradient(100deg,rgba(33,43,28,.93),rgba(31,63,40,.93));color:#eee5cf;margin-left:0;}
+  .layer.l2{background:rgba(47,93,58,.13);margin-left:26px;}
+  .layer.l3{background:rgba(181,83,47,.12);margin-left:52px;border-color:rgba(181,83,47,.3);}
+  .layer.l1 .l-name{color:#f1e8d2;}
+  .layer.l2 .l-name{color:var(--forest-deep);}
+  .layer.l3 .l-name{color:var(--terracotta);}
+  @media(max-width:560px){.layer.l2{margin-left:12px;}.layer.l3{margin-left:24px;}}
+
+  /* file anatomy grid */
+  .files{display:grid;grid-template-columns:1fr;gap:0;margin:24px 0;border:1px solid var(--line);
+    border-radius:12px;overflow:hidden;background:rgba(255,255,255,.35);}
+  .file-row{display:grid;grid-template-columns:170px 1fr;gap:16px;padding:14px 18px;align-items:baseline;}
+  .file-row + .file-row{border-top:1px solid var(--line-soft);}
+  .file-row .fn{font-family:"Spline Sans Mono",monospace;font-size:13.5px;color:var(--forest-deep);font-weight:500;}
+  .file-row .fd{font-size:16.5px;line-height:1.5;color:var(--ink-soft);}
+  .file-row .fd b{color:var(--ink);}
+  @media(max-width:560px){.file-row{grid-template-columns:1fr;gap:3px;}}
+
+  /* lifecycle steps */
+  .flow{margin:26px 0;counter-reset:f;}
+  .flow .step{display:grid;grid-template-columns:42px 1fr;gap:18px;padding:14px 0;position:relative;}
+  .flow .step:not(:last-child)::before{content:"";position:absolute;left:20px;top:46px;bottom:-14px;
+    width:2px;background:linear-gradient(var(--line),var(--line-soft));}
+  .flow .num{counter-increment:f;width:42px;height:42px;border-radius:50%;border:1.5px solid var(--forest);
+    display:grid;place-items:center;font-family:"Fraunces",serif;font-style:italic;font-size:19px;
+    color:var(--forest);background:var(--paper);z-index:1;}
+  .flow .num::before{content:counter(f);}
+  .flow .st-name{font-family:"Spline Sans Mono",monospace;font-size:14px;color:var(--terracotta);font-weight:600;margin-bottom:3px;}
+  .flow .st-body{font-size:17px;line-height:1.55;color:var(--ink-soft);}
+  .flow .st-body code{font-size:.8em;}
+
+  /* cheat sheet table */
+  .sheet{width:100%;border-collapse:collapse;margin:22px 0;font-size:15.5px;}
+  .sheet th{font-family:"Spline Sans Mono",monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    text-align:left;color:var(--ink-faint);padding:10px 14px;border-bottom:2px solid var(--line);}
+  .sheet td{padding:11px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top;line-height:1.45;}
+  .sheet td:first-child{font-family:"Spline Sans Mono",monospace;font-size:13px;color:var(--forest-deep);white-space:nowrap;}
+  .sheet tr:hover td{background:rgba(255,255,255,.4);}
+
+  /* pull quote */
+  .pull{font-family:"Fraunces",serif;font-style:italic;font-weight:500;font-size:clamp(24px,3.4vw,34px);
+    line-height:1.28;color:var(--forest-deep);margin:36px 0;padding:6px 0 6px 28px;
+    border-left:4px solid var(--ochre);letter-spacing:-.01em;}
+
+  /* footer */
+  footer{max-width:var(--maxw);margin:60px auto 0;padding:40px 32px 70px;border-top:1px solid var(--line);
+    font-family:"Spline Sans Mono",monospace;font-size:12.5px;color:var(--ink-faint);
+    display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;}
+  footer .seal{font-family:"Fraunces",serif;font-style:italic;font-size:18px;color:var(--forest);}
+
+  /* entrance animation */
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  header.hero .reveal{transition-delay:calc(var(--i,0)*90ms);}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none;}}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<header class="hero">
+  <div class="hero-mark">F</div>
+  <div class="kicker reveal" style="--i:0">Manuel d'initiation · HMD&nbsp;AGRO</div>
+  <h1 class="title reveal" style="--i:1">Frappe &amp;<br><em>ERPNext</em>,<br>de zéro.</h1>
+  <p class="subtitle reveal" style="--i:2">Comprendre la techno derrière ton appli laitière&nbsp;— sans jargon, avec tes propres fichiers comme exemples.</p>
+  <div class="hero-meta reveal" style="--i:3">
+    <span class="chip"><strong>Pour</strong>&nbsp; le grand débutant</span>
+    <span class="chip"><strong>Durée</strong>&nbsp; ~25 min de lecture</span>
+    <span class="chip"><strong>App</strong>&nbsp; hmd_agro</span>
+    <span class="chip"><strong>Frappe</strong>&nbsp; v15</span>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="shell">
+
+  <nav class="toc">
+    <div class="toc-h">Sommaire</div>
+    <ol>
+      <li><a href="#c1">Frappe, ERPNext &amp; toi</a></li>
+      <li><a href="#c2">Le DocType, le cœur de tout</a></li>
+      <li><a href="#c3">Anatomie d'un DocType</a></li>
+      <li><a href="#c4">Serveur vs navigateur</a></li>
+      <li><a href="#c5">Le cycle de vie d'un document</a></li>
+      <li><a href="#c6">Les relations (ton MCD)</a></li>
+      <li><a href="#c7">Le câblage : hooks, fixtures, patches</a></li>
+      <li><a href="#c8">bench &amp; la console</a></li>
+      <li><a href="#c9">Le modèle mental</a></li>
+      <li><a href="#c10">Antisèche</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+  <!-- 1 -->
+  <section id="c1" class="reveal">
+    <span class="sec-num">01 — Les fondations</span>
+    <h2>Frappe, ERPNext <em>&amp; toi</em></h2>
+    <p class="lead">La toute première confusion à dissiper : Frappe et ERPNext ne sont pas la même chose. L'un est posé sur l'autre, et ton appli est posée sur les deux.</p>
+
+    <div class="layers">
+      <div class="layer l1">
+        <span class="l-tag">La techno · le framework</span>
+        <div class="l-name">Frappe</div>
+        <div class="l-desc">Le moteur : serveur web, base de données, permissions, API REST, et une interface générée automatiquement. Python côté serveur, JavaScript côté navigateur. <em>C'est le châssis + le moteur de la voiture.</em></div>
+      </div>
+      <div class="layer l2">
+        <span class="l-tag">Une grosse application faite AVEC Frappe</span>
+        <div class="l-name">ERPNext</div>
+        <div class="l-desc">Comptabilité, stock, achats, ventes, RH… Une suite de gestion complète, construite avec Frappe. <em>C'est un modèle de voiture fini.</em></div>
+      </div>
+      <div class="layer l3">
+        <span class="l-tag">TON application métier</span>
+        <div class="l-name">hmd_agro</div>
+        <div class="l-desc">L'appli laitière : animaux, lactations, inséminations, vêlages, traites… Elle réutilise des briques d'ERPNext (le stock, les articles) et toute la puissance de Frappe. <em>C'est ton aménagement sur-mesure.</em></div>
+      </div>
+    </div>
+
+    <div class="note ana">
+      <span class="ic">≈</span>
+      <span class="lab">L'analogie</span>
+      <strong>Frappe</strong> = la techno. <strong>ERPNext</strong> = une appli déjà faite avec cette techno. <strong>hmd_agro</strong> = ton appli métier, qui s'appuie sur les deux. Quand quelqu'un dit « c'est du Frappe », il parle du framework ; quand il dit « on réutilise ERPNext », il parle des fonctions de gestion déjà prêtes.
+    </div>
+
+    <p>L'idée géniale de Frappe tient en une phrase : <strong>tu décris tes données, et il génère le reste.</strong> Tu définis « un Animal a un nom, une catégorie, une date de naissance » et Frappe te fabrique tout seul le formulaire de saisie, la liste filtrable, l'API, la recherche et les permissions. Tu n'écris quasiment pas de « plomberie ».</p>
+
+    <p class="pull">Tu écris la description. Frappe écrit l'application.</p>
+  </section>
+
+  <!-- 2 -->
+  <section id="c2" class="reveal">
+    <span class="sec-num">02 — Le concept central</span>
+    <h2>Le <em>DocType</em>, le cœur de tout</h2>
+    <p>Si tu ne retiens qu'un seul mot, c'est celui-là. <strong>Dans Frappe, tout est un DocType.</strong> Un DocType, c'est trois choses réunies sous un seul nom :</p>
+    <ul>
+      <li>une <strong>table</strong> dans la base de données ;</li>
+      <li>un <strong>formulaire</strong> pour saisir les données ;</li>
+      <li>un jeu de <strong>règles</strong> et de comportements.</li>
+    </ul>
+    <p>Si tu connais Django ou Rails, c'est l'équivalent d'un « modèle » (Model). Sinon : imagine une fiche cartonnée bien rangée, dont Frappe gère automatiquement le classeur, la recherche et les droits d'accès.</p>
+
+    <p>Dans <strong>ton</strong> appli, chacun de ces éléments est un DocType :</p>
+    <div class="code">
+      <div class="code-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-name">hmd_agro/hmd_agro/doctype/</span></div>
+<pre><code><span class="c-com"># Chaque dossier = un DocType = une table + un formulaire</span>
+animal/        lactation/     insemination/    velage/
+traite/        avortement/    lot/             batiment/
+pesee/         semence/       taureau/         alerte/
+medicament/    traitement/    hmd_configuration/   …</code></pre>
+    </div>
+    <p>Un <code>Animal</code>, concrètement, c'est une ligne dans la table <code>tabAnimal</code>. Une <code>Lactation</code> c'est une ligne dans <code>tabLactation</code>. Et Frappe te fournit gratuitement le formulaire pour les créer et les modifier.</p>
+
+    <div class="note tip">
+      <span class="ic">✦</span>
+      <span class="lab">À retenir</span>
+      Quand tu veux ajouter une nouvelle « notion » à l'appli (par ex. « Bâtiment », « Ration »), la question est presque toujours : <strong>« quel DocType je crée, et quels champs il a&nbsp;? »</strong>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section id="c3" class="reveal">
+    <span class="sec-num">03 — Sous le capot</span>
+    <h2>Anatomie d'un <em>DocType</em></h2>
+    <p>Ouvre n'importe quel dossier de DocType : tu retrouves <strong>toujours la même poignée de fichiers</strong>. Voici ceux du dossier <code>animal/</code>, fichier par fichier.</p>
+
+    <div class="files">
+      <div class="file-row"><span class="fn">animal.json</span><span class="fd"><b>La définition.</b> La liste des champs, leurs types, les permissions. Le cœur. C'est ce fichier que Frappe lit pour fabriquer la table et le formulaire.</span></div>
+      <div class="file-row"><span class="fn">animal.py</span><span class="fd"><b>La logique serveur</b> (le « controller »). Une classe Python où tu mets tes validations et tes calculs. Tourne <b>sur le serveur</b>.</span></div>
+      <div class="file-row"><span class="fn">animal.js</span><span class="fd"><b>Le comportement du formulaire</b>, côté navigateur. Recalculs en direct, boutons, champs masqués. Tourne <b>dans le navigateur</b>.</span></div>
+      <div class="file-row"><span class="fn">animal_list.js</span><span class="fd">Personnalise la <b>vue liste</b> (couleurs de statut, colonnes, filtres rapides).</span></div>
+      <div class="file-row"><span class="fn">test_animal.py</span><span class="fd">Les <b>tests automatiques</b> qui vérifient que la logique fait bien ce qu'on attend.</span></div>
+    </div>
+
+    <h3>a) <code>animal.json</code> — la structure</h3>
+    <p>Un fichier JSON qui décrit chaque <strong>champ</strong> (field). Un champ a un nom interne (<code>fieldname</code>), une étiquette affichée (<code>label</code>), et surtout un <strong>type</strong> (<code>fieldtype</code>).</p>
+    <div class="code">
+      <div class="code-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-name">animal.json (extrait simplifié)</span></div>
+<pre><code>{
+  <span class="c-str">"doctype"</span>: <span class="c-str">"DocType"</span>,
+  <span class="c-str">"name"</span>: <span class="c-str">"Animal"</span>,
+  <span class="c-str">"fields"</span>: [
+    { <span class="c-str">"fieldname"</span>:<span class="c-str">"nom"</span>,        <span class="c-str">"fieldtype"</span>:<span class="c-str">"Data"</span>,   <span class="c-str">"label"</span>:<span class="c-str">"Nom"</span> },
+    { <span class="c-str">"fieldname"</span>:<span class="c-str">"categorie"</span>,  <span class="c-str">"fieldtype"</span>:<span class="c-str">"Select"</span>, <span class="c-str">"options"</span>:<span class="c-str">"VELLE\nGENISSE\nVACHE"</span> },
+    { <span class="c-str">"fieldname"</span>:<span class="c-str">"date_naissance"</span>, <span class="c-str">"fieldtype"</span>:<span class="c-str">"Date"</span> },
+    { <span class="c-str">"fieldname"</span>:<span class="c-str">"mere"</span>,       <span class="c-str">"fieldtype"</span>:<span class="c-str">"Link"</span>,   <span class="c-str">"options"</span>:<span class="c-str">"Animal"</span> }
+  ]
+}</code></pre>
+    </div>
+    <p>Les types les plus courants : <code>Data</code> (texte court), <code>Int</code> / <code>Float</code> (nombres), <code>Date</code>, <code>Select</code> (liste de choix), <code>Check</code> (case à cocher), et le plus important pour les relations — <code>Link</code>.</p>
+
+    <div class="note tip">
+      <span class="ic">✦</span>
+      <span class="lab">Le champ Link</span>
+      Un champ <code>Link</code> avec <code>"options": "Animal"</code> dit&nbsp;: « ce champ pointe vers un autre Animal ». C'est exactement une <strong>clé étrangère</strong> — la flèche entre deux tables dans ton MCD. Ici, <code>mere</code> relie un veau à sa mère.
+    </div>
+
+    <h3>b) <code>animal.py</code> — la logique serveur</h3>
+    <p>C'est une classe Python. Le truc magique : <strong>Frappe appelle ses méthodes tout seul</strong>, à des moments précis de la vie d'un document. Tu n'as pas à les déclencher — tu remplis juste les « cases » que Frappe te tend.</p>
+    <div class="code">
+      <div class="code-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-name">animal.py — les « hooks » de cycle de vie</span></div>
+<pre><code><span class="c-key">from</span> frappe.model.document <span class="c-key">import</span> Document
+
+<span class="c-key">class</span> <span class="c-cls">Animal</span>(Document):
+
+    <span class="c-key">def</span> <span class="c-fn">validate</span>(self):        <span class="c-com"># AVANT chaque sauvegarde — tes règles ici</span>
+        <span class="c-key">if</span> self.date_naissance > frappe.utils.today():
+            frappe.throw(<span class="c-str">"La date de naissance ne peut pas être dans le futur"</span>)
+
+    <span class="c-key">def</span> <span class="c-fn">on_update</span>(self):       <span class="c-com"># APRÈS la sauvegarde</span>
+        ...
+
+    <span class="c-key">def</span> <span class="c-fn">on_trash</span>(self):        <span class="c-com"># AVANT la suppression</span>
+        ...</code></pre>
+    </div>
+    <p>C'est précisément ici que vit ta logique métier. Exemple réel chez toi : quand on enregistre un <code>Velage</code> (vêlage), le code crée automatiquement l'<code>Animal</code> du veau, ouvre une <code>Lactation</code> et fait passer la mère de <code>GENISSE</code> à <code>VACHE</code>. Toute cette cascade vit dans ces méthodes.</p>
+
+    <h3>c) <code>animal.js</code> — le formulaire vivant</h3>
+    <p>Du JavaScript qui réagit <strong>dans le navigateur</strong> pendant la saisie : « quand l'utilisateur change ce champ, recalcule celui-là », ajouter un bouton, masquer une section.</p>
+    <div class="code">
+      <div class="code-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-name">animal.js</span></div>
+<pre><code>frappe.ui.form.on(<span class="c-str">"Animal"</span>, {
+    date_naissance(frm) {
+        <span class="c-com">// recalcule l'âge dès que la date change, en direct</span>
+        <span class="c-key">if</span> (frm.doc.date_naissance) {
+            <span class="c-key">const</span> jours = frappe.datetime.get_day_diff(
+                frappe.datetime.now_date(), frm.doc.date_naissance);
+            frm.set_value(<span class="c-str">"age_jours"</span>, jours);
+        }
+    }
+});</code></pre>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section id="c4" class="reveal">
+    <span class="sec-num">04 — La règle d'or</span>
+    <h2>Serveur <em>vs</em> navigateur</h2>
+    <p>C'est le point qui déroute tous les débutants. Le même DocType a du code à deux endroits — <code>.py</code> et <code>.js</code> — et ils ne tournent pas au même endroit ni dans le même but.</p>
+
+    <table class="sheet">
+      <thead><tr><th>Fichier</th><th>Où ça tourne</th><th>À quoi ça sert</th></tr></thead>
+      <tbody>
+        <tr><td>.py</td><td>Sur le serveur</td><td><b>La source de vérité.</b> Les validations sérieuses, celles qui protègent tes données.</td></tr>
+        <tr><td>.js</td><td>Dans le navigateur</td><td><b>Le confort.</b> Aide la saisie, réactivité, ergonomie — mais ne protège rien.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note warn">
+      <span class="ic">!</span>
+      <span class="lab">Attention — la faute classique</span>
+      Une validation mise <strong>uniquement</strong> dans le <code>.js</code> est contournable&nbsp;: quelqu'un peut écrire en base via l'API sans jamais passer par le navigateur. <strong>Si une règle doit toujours être vraie, elle va dans <code>validate()</code> du <code>.py</code>.</strong> Le <code>.js</code>, c'est du bonus.
+    </div>
+    <p>Formule à graver : le <code>.js</code> rend la saisie agréable ; le <code>.py</code> rend les données fiables.</p>
+  </section>
+
+  <!-- 5 -->
+  <section id="c5" class="reveal">
+    <span class="sec-num">05 — Le fil de la vie</span>
+    <h2>Le cycle de vie d'un <em>document</em></h2>
+    <p>Quand un utilisateur clique sur « Enregistrer », il ne se passe pas qu'une écriture en base. Frappe déroule une séquence, et t'invite à intervenir à chaque étape via les méthodes vues plus haut.</p>
+
+    <div class="flow">
+      <div class="step"><div class="num"></div><div><div class="st-name">before_validate</div><div class="st-body">Juste avant les contrôles. On prépare/nettoie des valeurs.</div></div></div>
+      <div class="step"><div class="num"></div><div><div class="st-name">validate</div><div class="st-body">Le grand contrôle. <b>99% de ta logique de règles métier est ici.</b> Si une règle échoue, on appelle <code>frappe.throw(...)</code> et la sauvegarde est annulée.</div></div></div>
+      <div class="step"><div class="num"></div><div><div class="st-name">before_save → écriture en base</div><div class="st-body">Frappe écrit la ligne dans la table.</div></div></div>
+      <div class="step"><div class="num"></div><div><div class="st-name">on_update</div><div class="st-body">Après l'écriture. On déclenche les effets de bord : créer d'autres documents, mettre à jour un lié, envoyer une alerte.</div></div></div>
+      <div class="step"><div class="num"></div><div><div class="st-name">on_trash</div><div class="st-body">À la suppression. On vérifie qu'on a le droit de supprimer, on nettoie les documents liés.</div></div></div>
+    </div>
+
+    <h3>Le cas particulier : la « soumission » (submit)</h3>
+    <p>Certains DocTypes sont <strong>« soumissibles »</strong> (submittable). Ils ont alors trois états, pas deux :</p>
+    <ul>
+      <li><strong>Brouillon (Draft, 0)</strong> — modifiable librement.</li>
+      <li><strong>Soumis (Submitted, 1)</strong> — validé, gelé. On ne peut plus le modifier normalement. C'est l'équivalent d'« officialiser » une pièce comptable ou un mouvement de stock.</li>
+      <li><strong>Annulé (Cancelled, 2)</strong> — on défait un document soumis.</li>
+    </ul>
+    <p>À ces transitions correspondent d'autres hooks : <code>before_submit</code>, <code>on_submit</code>, <code>on_cancel</code>. Dans le monde ERPNext, une écriture de stock ou une facture n'a d'effet réel qu'<strong>une fois soumise</strong>.</p>
+
+    <div class="note ana">
+      <span class="ic">≈</span>
+      <span class="lab">L'analogie</span>
+      Brouillon = un formulaire au crayon, tu gommes autant que tu veux. Soumis = tu signes au stylo&nbsp;; pour corriger, il faut officiellement annuler et refaire. Tout n'est pas soumissible — beaucoup de DocTypes vivent très bien en simple « enregistré ».
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section id="c6" class="reveal">
+    <span class="sec-num">06 — Tout est relié</span>
+    <h2>Les relations <em>(ton MCD)</em></h2>
+    <p>Ton diagramme conceptuel (MCD) n'est rien d'autre que la carte des champs <code>Link</code> entre tes DocTypes. Une flèche du MCD = un champ <code>Link</code> dans un <code>.json</code>.</p>
+    <div class="code">
+      <div class="code-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-name">les liens chez toi</span></div>
+<pre><code>Lactation   ──Link──▶ Animal      <span class="c-com"># une lactation appartient à une vache</span>
+Traite      ──Link──▶ Lactation   <span class="c-com"># une traite appartient à une lactation</span>
+Insemination──Link──▶ Animal      <span class="c-com"># + ──Link──▶ Semence</span>
+Velage      ──Link──▶ Animal      <span class="c-com"># crée de nouveaux Animal (les veaux)</span></code></pre>
+    </div>
+    <p>Il existe aussi les <strong>« child tables »</strong> (tables enfants) : un tableau de lignes <em>à l'intérieur</em> d'un document parent. Chez toi, <code>allotment_session_row</code> est la table enfant de <code>allotment_session</code> — chaque ligne est rangée dans la session parente. Un enfant n'existe jamais seul, toujours porté par son parent.</p>
+
+    <div class="note tip">
+      <span class="ic">✦</span>
+      <span class="lab">Lire une relation</span>
+      Pour savoir « à quoi est relié ce DocType », ouvre son <code>.json</code> et cherche tous les <code>"fieldtype": "Link"</code>. Chaque <code>options</code> te donne la table visée. C'est ta façon la plus fiable de reconstruire le MCD depuis le code.
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section id="c7" class="reveal">
+    <span class="sec-num">07 — Le câblage de l'app</span>
+    <h2>Hooks, fixtures <em>&amp; patches</em></h2>
+    <p>Au-dessus des DocTypes, quelques fichiers orchestrent l'ensemble. Ce sont eux que tu retrouves à la racine de <code>hmd_agro/</code>.</p>
+
+    <h4>hooks.py — le plan de câblage</h4>
+    <p>Le fichier de configuration central. Il dit à Frappe : « pour tel DocType, à tel événement, appelle telle fonction », branche les <strong>tâches planifiées</strong> (scheduler — par ex. « tous les jours, recalcule les alertes »), déclare les fixtures, etc.</p>
+    <div class="code">
+      <div class="code-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-name">hooks.py (extrait)</span></div>
+<pre><code>doc_events = {
+    <span class="c-str">"Velage"</span>: {
+        <span class="c-str">"on_submit"</span>: <span class="c-str">"hmd_agro.api.velage.creer_veaux_et_lactation"</span>,
+    }
+}
+
+scheduler_events = {
+    <span class="c-str">"daily"</span>: [ <span class="c-str">"hmd_agro.api.alertes.recalculer"</span> ]
+}</code></pre>
+    </div>
+
+    <h4>fixtures/ — les données livrées avec le code</h4>
+    <p>Des données qui voyagent <strong>dans git</strong> avec l'appli : champs personnalisés, valeurs de configuration par défaut, rôles… Pour qu'en installant l'appli ailleurs, on retrouve la même base de réglages.</p>
+
+    <h4>patches/ + patches.txt — les migrations</h4>
+    <p>Des scripts qui <strong>modifient une base existante</strong> lors d'une mise à jour : « renommer ce champ », « recalculer cette colonne pour toutes les vieilles lignes ». <code>patches.txt</code> donne l'ordre d'exécution. Ils tournent quand on lance <code>bench migrate</code>.</p>
+
+    <h4>hmd_configuration — les seuils, hors du code</h4>
+    <p>Un DocType à toi qui range les <strong>paramètres métier</strong> (seuils d'alerte, jours de tarissement, bornes vert/orange/rouge des indicateurs) au lieu de les coder en dur. Très bonne pratique : on ajuste un réglage sans toucher au code.</p>
+
+    <div class="note tip">
+      <span class="ic">✦</span>
+      <span class="lab">Le réflexe</span>
+      Un comportement « automatique » qui te surprend (un document créé tout seul, une alerte qui apparaît)&nbsp;? Cherche d'abord dans <code>hooks.py</code> : c'est l'annuaire de tout ce qui se déclenche automatiquement.
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section id="c8" class="reveal">
+    <span class="sec-num">08 — En pratique</span>
+    <h2>bench <em>&amp; la console</em></h2>
+    <p><code>bench</code> est l'outil en ligne de commande de Frappe. Quelques commandes reviennent sans cesse :</p>
+    <div class="code">
+      <div class="code-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-name">terminal — les commandes du quotidien</span></div>
+<pre><code><span class="c-mut">$</span> bench start                       <span class="c-com"># lance le serveur de développement</span>
+<span class="c-mut">$</span> bench --site monsite migrate       <span class="c-com"># applique les patches + maj des DocTypes</span>
+<span class="c-mut">$</span> bench --site monsite console       <span class="c-com"># un shell Python connecté à ta base</span>
+<span class="c-mut">$</span> bench build                        <span class="c-com"># recompile le JS / CSS</span>
+<span class="c-mut">$</span> bench export-fixtures              <span class="c-com"># exporte les fixtures vers les fichiers</span></code></pre>
+    </div>
+
+    <h3>L'ORM : manipuler les données en Python</h3>
+    <p>Dans la console (et partout dans les <code>.py</code>), tu parles à la base via l'<strong>ORM</strong> de Frappe — sans écrire de SQL. C'est cette même grammaire que tu vois dans tous tes controllers.</p>
+    <div class="code">
+      <div class="code-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-name">bench console</span></div>
+<pre><code><span class="c-com"># Récupérer un document complet</span>
+animal = frappe.<span class="c-fn">get_doc</span>(<span class="c-str">"Animal"</span>, <span class="c-str">"ANI-0001"</span>)
+animal.nom            <span class="c-com"># accès à un champ</span>
+
+<span class="c-com"># Chercher une liste (avec filtres)</span>
+frappe.<span class="c-fn">get_all</span>(<span class="c-str">"Animal"</span>,
+    filters={<span class="c-str">"categorie"</span>: <span class="c-str">"VACHE"</span>},
+    fields=[<span class="c-str">"name"</span>, <span class="c-str">"nom"</span>])
+
+<span class="c-com"># Créer un nouveau document</span>
+doc = frappe.<span class="c-fn">new_doc</span>(<span class="c-str">"Animal"</span>)
+doc.nom = <span class="c-str">"Marguerite"</span>
+doc.<span class="c-fn">insert</span>()</code></pre>
+    </div>
+    <div class="note tip">
+      <span class="ic">✦</span>
+      <span class="lab">Pour apprendre vite</span>
+      La <code>bench console</code> est ton meilleur terrain de jeu : tu peux interroger ta vraie base sans rien casser tant que tu lis (<code>get_doc</code>, <code>get_all</code>). C'est la façon la plus rapide de comprendre comment tes données sont reliées.
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section id="c9" class="reveal">
+    <span class="sec-num">09 — La vue d'ensemble</span>
+    <h2>Le modèle <em>mental</em></h2>
+    <p>Tout ce qu'on vient de voir tient dans un seul schéma. Garde-le en tête, le reste n'est que du détail.</p>
+    <div class="code">
+      <div class="code-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="code-name">la boucle Frappe</span></div>
+<pre><code><span class="c-cls">TU ÉCRIS</span>
+   animal.json  <span class="c-com">(structure)</span>
+ + animal.py    <span class="c-com">(règles serveur)</span>
+ + animal.js    <span class="c-com">(confort de saisie)</span>
+          │
+          ▼
+<span class="c-cls">FRAPPE GÉNÈRE TOUT SEUL</span>
+   table SQL · formulaire · liste · filtres
+ + API REST · permissions · recherche
+          │
+          ▼
+<span class="c-cls">LE CÂBLAGE RELIE LE TOUT</span>
+   hooks.py  <span class="c-com">déclenche les automatismes</span>
+   fixtures  <span class="c-com">livre les données de base</span>
+   patches   <span class="c-com">fait évoluer la base existante</span></code></pre>
+    </div>
+    <p class="pull">Décris tes données, mets tes règles dans le <code>.py</code>, câble dans <code>hooks.py</code>. Frappe s'occupe du reste.</p>
+  </section>
+
+  <!-- 10 -->
+  <section id="c10" class="reveal">
+    <span class="sec-num">10 — Référence</span>
+    <h2>L'<em>antisèche</em></h2>
+    <p>À garder sous le coude. Chaque terme que tu croiseras désormais en lisant le code.</p>
+    <table class="sheet">
+      <thead><tr><th>Terme</th><th>Ce que c'est, en une ligne</th></tr></thead>
+      <tbody>
+        <tr><td>Frappe</td><td>Le framework (la techno) : moteur web + base + API + UI auto-générée.</td></tr>
+        <tr><td>ERPNext</td><td>Une grosse application de gestion, construite avec Frappe.</td></tr>
+        <tr><td>DocType</td><td>Une « table + formulaire + règles ». L'unité de base de tout.</td></tr>
+        <tr><td>Document</td><td>Une instance concrète d'un DocType (un Animal précis, une ligne).</td></tr>
+        <tr><td>Field</td><td>Un champ du DocType (nom, type, étiquette).</td></tr>
+        <tr><td>Link</td><td>Un type de champ qui pointe vers un autre DocType = clé étrangère.</td></tr>
+        <tr><td>Child table</td><td>Un tableau de lignes à l'intérieur d'un document parent.</td></tr>
+        <tr><td>validate()</td><td>Méthode appelée avant chaque sauvegarde — là où vont tes règles.</td></tr>
+        <tr><td>Hook</td><td>Une méthode que Frappe appelle tout seul à un moment du cycle de vie.</td></tr>
+        <tr><td>Submit</td><td>« Officialiser » un document : il devient gelé (state 1).</td></tr>
+        <tr><td>hooks.py</td><td>Le fichier qui câble événements, tâches planifiées et fixtures.</td></tr>
+        <tr><td>Fixtures</td><td>Données livrées avec le code, versionnées dans git.</td></tr>
+        <tr><td>Patch</td><td>Script de migration qui modifie une base existante.</td></tr>
+        <tr><td>ORM</td><td>La façon de parler à la base en Python (get_doc, get_all…).</td></tr>
+        <tr><td>bench</td><td>L'outil en ligne de commande de Frappe.</td></tr>
+        <tr><td>Scheduler</td><td>Les tâches automatiques planifiées (daily, hourly…).</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note ana" style="margin-top:34px">
+      <span class="ic">→</span>
+      <span class="lab">Et maintenant</span>
+      La meilleure suite, c'est d'ouvrir un vrai fichier ensemble — par exemple <code>velage.py</code>, parce qu'il déclenche la plus belle cascade de ton appli (création des veaux + ouverture de lactation + promotion de la mère). Tu y reconnaîtras chaque concept de ce manuel, en vrai.
+    </div>
+  </section>
+
+  </main>
+</div>
+</div>
+
+<footer>
+  <span class="seal">HMD&nbsp;AGRO · manuel d'initiation</span>
+  <span>Frappe v15 · ERPNext · rédigé pour le grand débutant · 2026</span>
+</footer>
+
+<script>
+  // reading progress
+  const bar=document.getElementById('progress');
+  const onScroll=()=>{const h=document.documentElement;
+    const max=h.scrollHeight-h.clientHeight;
+    bar.style.width=(max>0?(h.scrollTop/max*100):0)+'%';};
+  document.addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  // reveal on scroll
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  // hero reveals immediately
+  document.querySelectorAll('header.hero .reveal').forEach(el=>{requestAnimationFrame(()=>el.classList.add('in'));});
+
+  // active TOC link
+  const links=[...document.querySelectorAll('nav.toc a')];
+  const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+  const spy=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){
+    links.forEach(l=>l.classList.remove('active'));
+    const a=map.get(e.target.id); if(a)a.classList.add('active');
+  }});},{rootMargin:'-20% 0px -70% 0px'});
+  document.querySelectorAll('section[id]').forEach(s=>spy.observe(s));
+</script>
+</body>
+</html>

@@ -2,6 +2,16 @@
 
 Custom dairy farm management system for HMD AGRO — animal management, milk production tracking, feeding, reproduction, and health monitoring.
 
+## Passation du module finance
+
+Le [dossier de passation](passation/README.md) regroupe les documents, maquettes,
+captures et outils utiles à la reprise. Commencer par le
+[PDF destiné à Aziz](passation/01_dossier/passation_aziz_2026-09-16.pdf).
+
+Le code finance est sur `finance/socle-comptable` ; le guide de développement
+installe `main` par défaut. Le dossier précise la commande adaptée à la reprise.
+La [passation technique du 06/09/2026](passation_2026-09-06.md) conserve l'historique.
+
 ---
 
 ## Self-Host with Docker

@@ -1,0 +1,3467 @@
+1
+00:00:00,000 --> 00:00:03,600
+Je ne suis pas très capable de faire les résultats possibles.
+
+2
+00:00:03,600 --> 00:00:10,000
+Donc, la comptabilité officielle, c'est pas mal à l'expert comptable ou à l'expert comptable.
+
+3
+00:00:10,000 --> 00:00:17,000
+Il y a des choses qu'on va faire, on va les utiliser maintenant.
+
+4
+00:00:17,000 --> 00:00:25,000
+Nous avons les mêmes valeurs, les dépréciations, les assets.
+
+5
+00:00:25,000 --> 00:00:35,440
+ce soir pour un essai indépendamment ça peut être comme ça peut être un
+
+6
+00:00:35,440 --> 00:00:43,500
+matériel de traite ainsi de suite donc il faudrait donc elle dit quelle partie
+
+7
+00:00:43,500 --> 00:00:50,940
+dépréciation amortissement de l'anglais des prix chenoblens et amortissement
+
+8
+00:00:50,940 --> 00:01:01,320
+les assets ils ont besoin de deux données principales
+
+9
+00:01:01,320 --> 00:01:09,480
+valeur initiale terrain et l'amortissement de l'acquisition en
+
+10
+00:01:09,480 --> 00:01:10,660
+quand est-ce qu'elle a démarré,
+
+11
+00:01:11,140 --> 00:01:13,360
+c'est le nombre de mois
+
+12
+00:01:13,360 --> 00:01:14,280
+de dépréciation
+
+13
+00:01:14,280 --> 00:01:16,420
+d'amortissement.
+
+14
+00:01:18,360 --> 00:01:20,180
+Ça va te permettre
+
+15
+00:01:20,180 --> 00:01:21,100
+de sortir
+
+16
+00:01:21,100 --> 00:01:22,500
+lesquels
+
+17
+00:01:22,500 --> 00:01:24,900
+ça nous permet de comparer
+
+18
+00:01:24,900 --> 00:01:26,720
+ce qu'on a à système par rapport
+
+19
+00:01:26,720 --> 00:01:28,840
+à ce qu'on génère les experts comptables.
+
+20
+00:01:29,400 --> 00:01:30,980
+Les amortissements,
+
+21
+00:01:31,920 --> 00:01:33,000
+on appelle ça
+
+22
+00:01:33,000 --> 00:01:34,120
+un tableau d'amortissement.
+
+23
+00:01:35,720 --> 00:01:36,200
+Puis,
+
+24
+00:01:36,880 --> 00:01:38,480
+sur la gauche,
+
+25
+00:01:38,480 --> 00:01:46,200
+la liste des assets, la date d'acquisition, c'est une qui m'a trouvé.
+
+26
+00:01:46,200 --> 00:01:58,200
+La date d'encrée dans l'actif, la date de sortie, ou le nombre de mois de...
+
+27
+00:01:58,200 --> 00:02:08,200
+Il n'y a pas de tableau mensuel.
+
+28
+00:02:08,200 --> 00:02:14,200
+Il y a un tableau mensuel.
+
+29
+00:02:14,200 --> 00:02:20,200
+Il y a un tableau mensuel.
+
+30
+00:02:20,200 --> 00:02:28,840
+déjà mangé de la fume je pars regarder c'est un tableau d'amortissement ça s'appelle
+
+31
+00:02:28,840 --> 00:02:41,680
+sur elle est celle qu'elle est ce que ça correspond à ce qu'on cherche oui d'ailleurs c'est très bien
+
+32
+00:02:41,680 --> 00:02:51,680
+les cas il ya un autre rôle en banal s'est décédé par eu accès
+
+33
+00:02:51,680 --> 00:03:02,140
+les l'élèves on utilise à m comme indicateur comme à le coût de la ration
+
+34
+00:03:02,140 --> 00:03:13,820
+ça le coup du litre elle mécanique sur semaine ou ainsi de suite on la composition de tous les
+
+35
+00:03:13,820 --> 00:03:22,240
+éléments à d'un coeur comme pas donc non seulement la mérée col non seul le coup de la ration par
+
+36
+00:03:22,240 --> 00:03:34,240
+rapport à la au litre de lait produit dans le coup de fin d'oeuvre ces femmes
+
+37
+00:03:34,240 --> 00:03:41,380
+par exemple jean peu soit les cas on peut un accord qu'on peut comprimer
+
+38
+00:03:41,380 --> 00:04:09,280
+donc on a fait ça un rapport journalier non c'est un rapport mensuel mais on le transfert
+
+39
+00:04:09,280 --> 00:04:15,580
+moment sur l'avenir mort après ma tous les jours comme ça et les hauts à sa combi les actions de
+
+40
+00:04:15,580 --> 00:04:22,520
+changement d'effectifs on prend les liées à ta voix de passe de données comme ça ce qui est ça ce
+
+41
+00:04:22,520 --> 00:04:31,340
+qu'on essaie de remplacer comme ça le fichier les hauts et les actions par fait mal col c'est à dire
+
+42
+00:04:31,340 --> 00:04:40,220
+pas grave et de part de la née avoir des mètres et les rôles et on prend tout ça en action à des
+
+43
+00:04:40,220 --> 00:04:52,880
+gens à produire libre aux jeunes ici dessus on bat on a donné comme ration avec avec le coup
+
+44
+00:04:52,880 --> 00:05:07,040
+associé à chaque ration. Le personnel mécanique, on suit ça chaque semaine au moins.
+
+45
+00:05:07,040 --> 00:05:14,480
+On devrait pouvoir sortir un snapshot journalier. Idéalement, c'est une réunion par semaine.
+
+46
+00:05:14,480 --> 00:05:19,760
+On compare cette semaine avec celle d'avant et on peut générer des graphes.
+
+47
+00:05:19,760 --> 00:05:21,760
+pour la haja comme ça.
+
+48
+00:05:21,760 --> 00:05:23,760
+Il faut les variations.
+
+49
+00:05:23,760 --> 00:05:27,760
+Voilà, le rapport mensuel est...
+
+50
+00:05:27,760 --> 00:05:29,760
+j'en vous dis.
+
+51
+00:05:29,760 --> 00:05:31,760
+C'est que ça...
+
+52
+00:05:31,760 --> 00:05:33,760
+ça résume...
+
+53
+00:05:33,760 --> 00:05:35,760
+Le haja, le même, je m'en joue un peu
+
+54
+00:05:35,760 --> 00:05:37,760
+le rapport avec.
+
+55
+00:05:37,760 --> 00:05:39,760
+L'amortissement.
+
+56
+00:05:39,760 --> 00:05:41,760
+Tu regardes toujours qu'on sort à la fin
+
+57
+00:05:41,760 --> 00:05:43,760
+un coup d'une autre délai
+
+58
+00:05:43,760 --> 00:05:45,760
+hors amortissement.
+
+59
+00:05:45,760 --> 00:05:58,720
+mais la partie la partie maintenant des rapports des paramètres au frère et
+
+60
+00:05:58,720 --> 00:06:03,460
+nombre de les heures concentrées à des semaines dit la vie on a généré par
+
+61
+00:06:03,460 --> 00:06:09,400
+kilos de concentré à l'aise ont fait ça les sur concentrés c'est un bon
+
+62
+00:06:09,400 --> 00:06:13,000
+indicateur à la fad des choses
+
+63
+00:06:13,000 --> 00:06:21,040
+je m'attends pas grave et je m'attends que 50 kg femme
+
+64
+00:06:21,040 --> 00:06:30,040
+ménine filmier méné d'accord voilà on s'il a joué à déclaration de base mal concentré mais le
+
+65
+00:06:30,040 --> 00:06:38,260
+coup principal de la relation était à ou est concentré le l'indicateur les sur concentré
+
+66
+00:06:38,260 --> 00:06:43,000
+comme ma dame n'est mais il ne prend pas le suivi exact comme par des satisfaits un
+
+67
+00:06:43,000 --> 00:06:48,160
+équivalent et bagra et ne jouent à ce qu'un des sartes à consommer par sa taille donc on
+
+68
+00:06:48,160 --> 00:06:53,000
+utilise par exemple les sur concentrés les autres et vite on le voit et des tirs il ya
+
+69
+00:06:53,000 --> 00:07:01,120
+des variations c'est le rouge immédiatement et qui se décoce à temps ça tombe en dessous de
+
+70
+00:07:01,120 --> 00:07:08,460
+1,8 l par kg de concentré distribué et on est dans le rouge.
+
+71
+00:07:08,460 --> 00:07:11,740
+Idéalement, on va d'appeler la défaite.
+
+72
+00:07:11,740 --> 00:07:18,000
+Ok ?
+
+73
+00:07:18,000 --> 00:07:26,980
+Donc, sur le sel était, est-ce qu'il ne va pas ? Je ne sais pas encore.
+
+74
+00:07:26,980 --> 00:07:30,540
+on devienne tout pour les détails
+
+75
+00:07:30,540 --> 00:07:39,220
+les détails à la cible et des montagnes
+
+76
+00:07:44,100 --> 00:07:51,660
+les séparations en lui est du col oui c'est dans la bonne direction
+
+77
+00:07:51,660 --> 00:07:57,580
+c'est pas rien qui me souhaite à l'esprit
+
+78
+00:07:57,580 --> 00:08:14,140
+le vol là que les cinq les cinq chantiers
+
+79
+00:08:14,140 --> 00:08:16,140
+qui est aussi un petit chantier.
+
+80
+00:08:16,140 --> 00:08:18,140
+Il est dans le jardin de la ville ?
+
+81
+00:08:18,140 --> 00:08:20,140
+Il est dans le jardin de la ville ?
+
+82
+00:08:20,140 --> 00:08:22,140
+Il est dans le jardin de la ville ?
+
+83
+00:08:22,140 --> 00:08:24,140
+Il est dans le jardin de la ville ?
+
+84
+00:08:24,140 --> 00:08:26,140
+Il est dans le jardin de la ville ?
+
+85
+00:08:26,140 --> 00:08:28,140
+Il est dans le jardin de la ville ?
+
+86
+00:08:28,140 --> 00:08:30,140
+Il est dans le jardin de la ville ?
+
+87
+00:08:30,140 --> 00:08:32,140
+Il est dans le jardin de la ville ?
+
+88
+00:08:32,140 --> 00:08:34,140
+Il est dans le jardin de la ville ?
+
+89
+00:08:34,140 --> 00:08:36,140
+Il est dans le jardin de la ville ?
+
+90
+00:08:36,140 --> 00:08:38,140
+Il est dans le jardin de la ville ?
+
+91
+00:08:38,140 --> 00:08:40,140
+Il est dans le jardin de la ville ?
+
+92
+00:08:40,140 --> 00:08:42,140
+Il est dans le jardin de la ville ?
+
+93
+00:08:42,140 --> 00:08:45,760
+le baisse n'aie de chez ramé bâche
+
+94
+00:08:46,900 --> 00:08:51,380
+la promo côté social c'est ça
+
+95
+00:08:57,300 --> 00:09:04,320
+ça que le choix a sa place pour les autres et qu'un litre et recettes bon
+
+96
+00:09:04,320 --> 00:09:12,560
+recettes j'ai un commentaire sur recettes c'est très bien d'avoir la grille on avait
+
+97
+00:09:12,560 --> 00:09:24,200
+un coup de colombia ou la libre sur une grille de qualité les la grille elle dépendait de
+
+98
+00:09:24,200 --> 00:09:30,560
+pas des matières protéiques ou à la donc bonification sur la matière protéique une
+
+99
+00:09:30,560 --> 00:09:50,380
+bonification à la métier grâce à l'aïda l'amant de rassault à donc qu'à les deux mais et le
+
+100
+00:09:50,380 --> 00:09:56,440
+calcul on le faisait à la fin du mois c'est à dire faire faire le charme la moyenne de
+
+101
+00:09:56,440 --> 00:10:02,260
+le prix n'est pas calculé de manière journalière et c'était mensuel
+
+102
+00:10:02,260 --> 00:10:08,020
+ok donc
+
+103
+00:10:08,020 --> 00:10:13,020
+Donc, le temps...
+
+104
+00:10:16,020 --> 00:10:23,020
+Mais nous, nous vendons le lait à plusieurs fois.
+
+105
+00:10:27,020 --> 00:10:30,020
+Donc, nous, on peut faire un peu plus de choses.
+
+106
+00:10:30,020 --> 00:10:43,880
+ok mais ça vous allez que je ne vois pas pourquoi est ce qu'on ne voyait en fait
+
+107
+00:10:43,880 --> 00:10:52,160
+on veut la libé de la semaine est la libre les deux les n'a pas de moussouris
+
+108
+00:10:52,160 --> 00:11:02,160
+en levant en interne l'atelier génisse en temps année la libre et m'échelle sera
+
+109
+00:11:02,160 --> 00:11:13,500
+il faudrait le facturer en interne voilà des valeurs entre parenthèses madame il y
+
+110
+00:11:13,500 --> 00:11:22,020
+des choses que on voudrait calculer c'est à décembre je n'y suis qu'elle fait tellement pendant sa vie
+
+111
+00:11:22,020 --> 00:11:32,880
+comme ça et qu'elle est négé mon mari fichard mara flamme mara fesse tachou tachou je sais pas
+
+112
+00:11:32,880 --> 00:11:39,320
+ce qui est raisonnable et ramain que le mordon à la fin on le faisait une fois par an mais on le
+
+113
+00:11:39,320 --> 00:11:52,760
+faisait manuellement c'est à dire je vais se marse pour un ouvrier dédié le côté avec
+
+114
+00:11:52,760 --> 00:11:58,580
+l'élevage des jeunes par exemple narfol le bocati et pour le manuel mécanique
+
+115
+00:11:58,580 --> 00:12:12,620
+d'un des cas on sait qu'à des natures marlées de nature marlée d'équivalent de je sais pas
+
+116
+00:12:12,620 --> 00:12:19,520
+mais là ça on fait du théorique on sait qu'on fait du 6 litres pendant les trois premiers mois
+
+117
+00:12:19,520 --> 00:12:26,480
+où les sept livres pendant les trois premiers en moyenne donc on estime le coup du litre à des
+
+118
+00:12:26,480 --> 00:12:32,220
+donc on multiplie avec amadé quand on va nous y donnent pas de cirque la ration en termes à
+
+119
+00:12:32,220 --> 00:12:40,220
+ta ligne à l'autre rôle 18 mois à peu près l'âge de sortie mais des fois la fratelle m'a
+
+120
+00:12:40,220 --> 00:12:48,560
+calan de fécondation en terre en trois ans on a eu ça une année les lalpha canet la guerre en
+
+121
+00:12:48,560 --> 00:12:53,660
+ukraine d'après le bachamaché que les collègues quand la qualité du concentré qu'on achetait
+
+122
+00:12:53,660 --> 00:12:59,840
+disponible la d'art à la bâche à mâcher que la malle va jamais c'est que le fécondité ou la
+
+123
+00:12:59,840 --> 00:13:07,580
+fertilité des vaches inclut les jeunes mais donc les jeunes formes et rejoint 18 mois à joa 22
+
+124
+00:13:07,580 --> 00:13:17,240
+20 ans donc une période à l'état de manière s'est venu à venir mais la différence entre
+
+125
+00:13:17,240 --> 00:13:23,000
+entre ce que j'ai estimé, où le vétérinaire l'a estimé, où l'ingénieur l'a estimé,
+
+126
+00:13:23,460 --> 00:13:25,380
+c'était très simple et presque.
+
+127
+00:13:26,080 --> 00:13:29,860
+Le bas de la grille jusqu'au plus haut de la grille.
+
+128
+00:13:29,860 --> 00:13:36,620
+Ça serait bien d'avoir quelque chose.
+
+129
+00:13:37,180 --> 00:13:43,560
+Pour l'alginisme en avant, on peut estimer à la coûtée.
+
+130
+00:13:43,620 --> 00:13:45,960
+Et il y a en moyenne ce qu'elle a coûté.
+
+131
+00:13:47,240 --> 00:13:50,440
+parce qu'on ne peut pas être d'entrave de moyenne, il y a des honnêtes de monde.
+
+132
+00:13:51,440 --> 00:13:52,540
+Je vais essayer de faire ça.
+
+133
+00:13:57,240 --> 00:13:57,800
+Ok.
+
+134
+00:14:05,240 --> 00:14:09,660
+Je vais faire une des questions, par exemple, d'un point de vue gestion de chef-tête.
+
+135
+00:14:09,660 --> 00:14:26,160
+est ce que la vente de une nouvelle manière est le plus effective
+
+136
+00:14:26,160 --> 00:14:33,420
+on fait le plus de profits mais si il faut pas l'élever jusqu'à 18 mois
+
+137
+00:14:33,420 --> 00:14:38,180
+balay si on perd de l'argent de ce niveau il peut être qu'il faut il vaut mieux la vendre à trois
+
+138
+00:14:38,180 --> 00:14:48,180
+mois comme toi là à cinq jours un année des cannes et bouches une rabbi à un des amis
+
+139
+00:14:48,180 --> 00:14:55,680
+pour l'air en savoir maintenant les termes les annales avant aujourd'hui comme ça y est
+
+140
+00:14:55,680 --> 00:15:06,000
+les camions amène au zid saur ken le thème laïne ou non ce que par exemple au lieu de 3000
+
+141
+00:15:06,000 --> 00:15:09,240
+peut-être que vous n'avez pas de faire un peu
+
+142
+00:15:09,240 --> 00:15:22,820
+il faut des décisions à domaine de ce genre d'outils
+
+143
+00:15:22,820 --> 00:15:30,960
+ok bon allez des mots donc c'est bon comme si la salle a offert
+
+144
+00:15:30,960 --> 00:15:34,960
+Est-ce que tu as déjà une réponse ?
+
+145
+00:15:34,960 --> 00:15:36,960
+Je vais juste revenir.
+
+146
+00:15:36,960 --> 00:15:42,960
+Donc réellement, le fonctionnement est une réglation.
+
+147
+00:15:42,960 --> 00:15:50,960
+Le calcul, le fonctionnement que nous avons fait,
+
+148
+00:15:50,960 --> 00:15:53,960
+je ne vais pas répondre à ce sujet.
+
+149
+00:15:53,960 --> 00:15:56,960
+Je dois faire une démo, peut-être.
+
+150
+00:15:56,960 --> 00:16:06,640
+Est-ce que le fait que nous avons le calcul du coût du litre ou la ventilation par atelier,
+
+151
+00:16:07,640 --> 00:16:11,960
+ou c'est le choix des indicateurs qui ont mis à l'écran ?
+
+152
+00:16:13,560 --> 00:16:22,960
+Ou on va dire la grille de prise de la centrale ?
+
+153
+00:16:26,960 --> 00:16:27,220
+Voilà.
+
+154
+00:16:27,220 --> 00:16:38,880
+C'est parce que c'est la grille de la centrale.
+
+155
+00:16:39,160 --> 00:16:41,580
+Je n'ai pas compris c'est quoi la grille de la centrale.
+
+156
+00:16:41,940 --> 00:16:42,800
+La grille de prix.
+
+157
+00:16:44,880 --> 00:16:45,900
+La grille de prix.
+
+158
+00:16:46,360 --> 00:16:52,200
+Encore une fois, on ne fait pas à base de qualité.
+
+159
+00:16:53,500 --> 00:16:55,400
+Mais peut-être qu'on y reviendra.
+
+160
+00:16:55,400 --> 00:17:05,400
+Donc, il y a un système, on peut choisir un nombre d'acheteurs.
+
+161
+00:17:05,400 --> 00:17:08,400
+ou à l'inclétal, à l'arbre.
+
+162
+00:17:08,400 --> 00:17:11,400
+Pour vous que vous avez dit qu'à l'écart,
+
+163
+00:17:11,400 --> 00:17:14,400
+vous pouvez choisir
+
+164
+00:17:14,400 --> 00:17:26,400
+le profil d'acheteur,
+
+165
+00:17:26,400 --> 00:17:30,400
+de prix basique ou de prix unique,
+
+166
+00:17:30,400 --> 00:17:32,400
+ou par palier.
+
+167
+00:17:32,400 --> 00:17:42,780
+du coup et du temps en départ allié est ce que est ce qu'on a besoin de faire ça tous les jours
+
+168
+00:17:42,780 --> 00:18:00,400
+jours. Un prix temporaire, le temps, on finalise les prix avec l'acheteur. Des fois, voilà,
+
+169
+00:18:00,400 --> 00:18:10,920
+le troisième c'était le caméa, c'était la quantité. Des fois, ce n'est pas uniquement
+
+170
+00:18:10,920 --> 00:18:16,920
+la qualité du lit mais la quantité fournie c'est à dire ils nous payaient plus cher quand on
+
+171
+00:18:16,920 --> 00:18:27,900
+fournissait plus d'argent plus de l'est on avait un bonus de de quantité donc des fois les prix
+
+172
+00:18:27,900 --> 00:18:34,800
+variables le l'exemple à sal le lieu de faire qu'il m'a trop la théorie du vélo à en roue
+
+173
+00:18:34,800 --> 00:18:41,940
+non pas de foule à l'air qu'on a fait une côté bonification à la zone les armes n'a pas
+
+174
+00:18:41,940 --> 00:18:52,200
+d'un zido manuellement pour ce mois là tu dis ça comme un ajustement normalement
+
+175
+00:18:52,200 --> 00:18:54,200
+Je l'ai enregistré.
+
+176
+00:18:54,200 --> 00:18:56,200
+Je l'ai enregistré.
+
+177
+00:18:56,200 --> 00:18:58,200
+Je l'ai enregistré.
+
+178
+00:18:58,200 --> 00:19:00,200
+Je l'ai enregistré.
+
+179
+00:19:00,200 --> 00:19:02,200
+Je l'ai enregistré.
+
+180
+00:19:02,200 --> 00:19:04,200
+Je l'ai enregistré.
+
+181
+00:19:04,200 --> 00:19:06,200
+Je l'ai enregistré.
+
+182
+00:19:06,200 --> 00:19:08,200
+Je l'ai enregistré.
+
+183
+00:19:08,200 --> 00:19:10,200
+Je l'ai enregistré.
+
+184
+00:19:10,200 --> 00:19:12,200
+Je l'ai enregistré.
+
+185
+00:19:12,200 --> 00:19:14,200
+Je l'ai enregistré.
+
+186
+00:19:14,200 --> 00:19:16,200
+Je l'ai enregistré.
+
+187
+00:19:16,200 --> 00:19:18,200
+Je l'ai enregistré.
+
+188
+00:19:18,200 --> 00:19:20,200
+Je l'ai enregistré.
+
+189
+00:19:20,200 --> 00:19:30,200
+Je vais vous montrer que vous avez besoin de la réaction.
+
+190
+00:19:30,200 --> 00:19:34,200
+Je voudrais que vous n'avez pas d'écrire.
+
+191
+00:19:34,200 --> 00:19:40,200
+Je voudrais que vous n'avez pas d'écrire.
+
+192
+00:19:40,200 --> 00:19:45,200
+Mais on va voir le rapport mensuel.
+
+193
+00:19:49,200 --> 00:19:52,200
+Le rapport mensuel.
+
+194
+00:19:56,200 --> 00:20:02,200
+Donc, il y a un tableau sur le rapport mensuel.
+
+195
+00:20:03,200 --> 00:20:04,200
+Tu me partages encore sur l'écran ?
+
+196
+00:20:04,200 --> 00:20:07,200
+Oui, c'est vrai que je n'ai pas partagé.
+
+197
+00:20:10,200 --> 00:20:12,200
+On va voir le rapport de la réforme.
+
+198
+00:20:12,200 --> 00:20:16,200
+C'est bon.
+
+199
+00:20:16,200 --> 00:20:18,200
+On va voir le rapport de la réforme.
+
+200
+00:20:18,200 --> 00:20:20,200
+On va voir le rapport de la réforme.
+
+201
+00:20:20,200 --> 00:20:22,200
+On va voir le rapport de la réforme.
+
+202
+00:20:22,200 --> 00:20:24,200
+On va voir le rapport de la réforme.
+
+203
+00:20:24,200 --> 00:20:26,200
+On va voir le rapport de la réforme.
+
+204
+00:20:26,200 --> 00:20:28,200
+On va voir le rapport de la réforme.
+
+205
+00:20:28,200 --> 00:20:30,200
+On va voir le rapport de la réforme.
+
+206
+00:20:30,200 --> 00:20:32,200
+On va voir le rapport de la réforme.
+
+207
+00:20:32,200 --> 00:20:34,200
+On va voir le rapport de la réforme.
+
+208
+00:20:34,200 --> 00:20:36,200
+On va voir le rapport de la réforme.
+
+209
+00:20:36,200 --> 00:20:38,200
+On va voir le rapport de la réforme.
+
+210
+00:20:38,200 --> 00:20:39,200
+On va voir le rapport.
+
+211
+00:20:39,200 --> 00:20:48,200
+C'est pas nécessairement mensuel. Indien, c'est un rapport hebdomadaire ou journalier.
+
+212
+00:20:48,200 --> 00:20:55,200
+Oui, oui. On est femme quotidienne, femme hebdomadaire, femme à part quinzaine.
+
+213
+00:20:55,200 --> 00:20:59,200
+Ok.
+
+214
+00:20:59,200 --> 00:21:04,200
+Vraiment, hebdomadaire, elle est...
+
+215
+00:21:04,200 --> 00:21:08,200
+Ça marche ? On fait des trucs de la quête à hebdomadaire ?
+
+216
+00:21:08,200 --> 00:21:22,420
+visiblement justement pas les erreurs donc c'est la clé qu'il faut changer à taquette
+
+217
+00:21:22,420 --> 00:21:32,200
+beaucoup de choses qui ont montré tout à fait l'instant les trucs à débeuguer
+
+218
+00:21:32,200 --> 00:21:34,300
+mais je l'aime
+
+219
+00:21:34,300 --> 00:21:39,760
+j'arrête pour le projet je voulais sortir de
+
+220
+00:21:39,760 --> 00:21:51,000
+vérifier quelques trucs c'était pas clair comment ce que c'est supposé fonctionner
+
+221
+00:21:51,000 --> 00:22:03,640
+bon normalement les données manachement à l'éveil à citer des données donc
+
+222
+00:22:03,640 --> 00:22:12,640
+Donc, je me suis dit, est-ce que je suis dit que le mariage a été mis par hebdomadaire ?
+
+223
+00:22:12,640 --> 00:22:16,640
+Est-ce que les données sont réellement hebdomadaire ou les maladies ?
+
+224
+00:22:16,640 --> 00:22:24,640
+Justement, nous avons mis les données réelles qu'on utilisait.
+
+225
+00:22:24,640 --> 00:22:29,640
+Tu as rejeté à hebdomadaire combien de naissances ?
+
+226
+00:22:29,640 --> 00:22:36,960
+les trucs simples le nombre de villages le nombre de naissances ainsi de suite
+
+227
+00:22:36,960 --> 00:22:50,520
+déjà pas mal quelque part à la vie une fois ce qui passe que c'est tellement
+
+228
+00:22:50,520 --> 00:22:58,020
+il a fait la démo, je laisse mon moyen de faire ça. Donc en principe ça devrait fonctionner.
+
+229
+00:22:58,020 --> 00:23:10,020
+Il y a un journalier ou hebdomadaire ou par quinzaine, il faut que ça soit un peu flexible.
+
+230
+00:23:10,020 --> 00:23:18,520
+Par contre on n'a pas le temps à la complexité de ça.
+
+231
+00:23:18,520 --> 00:23:28,960
+et comme je me suis dit, la génération d'un rapport imprimable fait la base de données.
+
+232
+00:23:28,960 --> 00:23:35,960
+Donc on ferait tout simplement un export des données et le bas n'a pas un type de template,
+
+233
+00:23:35,960 --> 00:23:43,540
+il y a un effet Excel qui gère, qui peut faire rapidement les tableaux,
+
+234
+00:23:43,540 --> 00:23:48,540
+ou avec des locaux pour que l'on ait du collé, ça va vite, c'est plus efficace.
+
+235
+00:23:48,540 --> 00:23:57,540
+Donc, à vérifier partir de là.
+
+236
+00:23:57,540 --> 00:23:59,540
+D'accord.
+
+237
+00:23:59,540 --> 00:24:05,540
+Ensuite, je ne cherche pas à dire est-ce que le seuil de bâtre de loi est allé ?
+
+238
+00:24:05,540 --> 00:24:08,540
+Je vais ouvrir la configuration
+
+239
+00:24:08,540 --> 00:24:14,540
+Je vais ouvrir la démo du seuil qui change de couleur
+
+240
+00:24:14,540 --> 00:24:19,540
+On va prendre la vache lactante par jour
+
+241
+00:24:19,540 --> 00:24:24,540
+IOFC par vache lactante par jour
+
+242
+00:24:24,540 --> 00:24:28,540
+C'est quoi IOFC ?
+
+243
+00:24:28,540 --> 00:24:33,540
+Je ne sais pas ce qui est le cas.
+
+244
+00:24:35,540 --> 00:24:38,540
+Oui, c'est bon.
+
+245
+00:24:39,540 --> 00:24:41,540
+Je vais voir ce qu'on a vu.
+
+246
+00:24:42,540 --> 00:24:51,540
+Mais je veux juste que tu as vu avec le cas de couleur.
+
+247
+00:24:51,540 --> 00:24:55,540
+Je veux juste que tu as vu avec le cas de couleur.
+
+248
+00:24:58,540 --> 00:25:05,540
+euh bien du coup euh HMD configuration je ne me suis pas mal
+
+249
+00:25:05,540 --> 00:25:08,540
+pourquoi pas toi ou l'honneur avec toi
+
+250
+00:25:08,540 --> 00:25:10,540
+en dehors l'excédent
+
+251
+00:25:10,540 --> 00:25:12,540
+euh
+
+252
+00:25:12,540 --> 00:25:14,540
+ok
+
+253
+00:25:14,540 --> 00:25:16,540
+c'est pas mal
+
+254
+00:25:16,540 --> 00:25:18,540
+il y a un
+
+255
+00:25:18,540 --> 00:25:21,540
+income over feed cost
+
+256
+00:25:21,540 --> 00:25:26,540
+voilà
+
+257
+00:25:26,540 --> 00:25:28,540
+Voilà.
+
+258
+00:25:28,540 --> 00:25:30,540
+Ok.
+
+259
+00:25:30,540 --> 00:25:34,540
+Du coup, euh...
+
+260
+00:25:36,540 --> 00:25:40,540
+J'ai mis la chaîne de configuration.
+
+261
+00:25:40,540 --> 00:25:42,540
+Donc, j'ai mis...
+
+262
+00:25:42,540 --> 00:25:44,540
+On va voir quoi.
+
+263
+00:25:49,540 --> 00:25:51,540
+En vrai, juste, là, je vais mettre...
+
+264
+00:25:51,540 --> 00:25:58,540
+d'accord
+
+265
+00:25:58,540 --> 00:25:59,540
+bon
+
+266
+00:25:59,540 --> 00:26:00,540
+bon
+
+267
+00:26:00,540 --> 00:26:01,540
+bon
+
+268
+00:26:01,540 --> 00:26:02,540
+bon
+
+269
+00:26:02,540 --> 00:26:03,540
+bon
+
+270
+00:26:03,540 --> 00:26:04,540
+bon
+
+271
+00:26:04,540 --> 00:26:06,540
+bon
+
+272
+00:26:06,540 --> 00:26:07,540
+bon
+
+273
+00:26:07,540 --> 00:26:08,540
+bon
+
+274
+00:26:08,540 --> 00:26:09,540
+bon
+
+275
+00:26:09,540 --> 00:26:10,540
+bon
+
+276
+00:26:10,540 --> 00:26:11,540
+bon
+
+277
+00:26:11,540 --> 00:26:12,540
+bon
+
+278
+00:26:12,540 --> 00:26:13,540
+bon
+
+279
+00:26:13,540 --> 00:26:14,540
+bon
+
+280
+00:26:14,540 --> 00:26:15,540
+bon
+
+281
+00:26:15,540 --> 00:26:16,540
+bon
+
+282
+00:26:16,540 --> 00:26:17,540
+bon
+
+283
+00:26:17,540 --> 00:26:18,540
+bon
+
+284
+00:26:18,540 --> 00:26:19,540
+bon
+
+285
+00:26:19,540 --> 00:26:20,540
+bon
+
+286
+00:26:20,540 --> 00:26:20,540
+
+
+287
+00:26:20,540 --> 00:26:21,540
+bon
+
+288
+00:26:21,540 --> 00:26:24,540
+on juste l'y a
+
+289
+00:26:51,540 --> 00:26:53,540
+Je vais te faire un peu de la peau
+
+290
+00:27:12,900 --> 00:27:16,900
+Je pense que je vais mettre un peu de la peau
+
+291
+00:27:16,900 --> 00:27:21,900
+On a mis le 3%
+
+292
+00:27:26,900 --> 00:27:27,900
+On a mis le enregistré
+
+293
+00:27:30,900 --> 00:27:36,900
+On a mis le rapport mensuel
+
+294
+00:27:36,900 --> 00:27:48,900
+mensuel. Je ne chauffe pas la production totale.
+
+295
+00:28:06,900 --> 00:28:08,900
+...
+
+296
+00:28:08,900 --> 00:28:10,900
+...
+
+297
+00:28:10,900 --> 00:28:12,900
+...
+
+298
+00:28:12,900 --> 00:28:14,900
+...
+
+299
+00:28:14,900 --> 00:28:16,900
+...
+
+300
+00:28:16,900 --> 00:28:18,900
+...
+
+301
+00:28:18,900 --> 00:28:20,900
+...
+
+302
+00:28:20,900 --> 00:28:22,900
+...
+
+303
+00:28:22,900 --> 00:28:24,900
+...
+
+304
+00:28:24,900 --> 00:28:26,900
+...
+
+305
+00:28:26,900 --> 00:28:28,900
+...
+
+306
+00:28:28,900 --> 00:28:30,900
+...
+
+307
+00:28:30,900 --> 00:28:32,900
+...
+
+308
+00:28:32,900 --> 00:28:34,900
+...
+
+309
+00:28:34,900 --> 00:28:43,900
+Bon, et M. Oumchouf ou comment est-ce qu'on rentre les M. C. les configurations
+
+310
+00:28:43,900 --> 00:28:45,900
+là-même, les F.A.R. et les F.A.B.A.S.
+
+311
+00:28:45,900 --> 00:28:51,900
+Je ne suis pas obligé de faire les données, mais je ne comprends pas les données.
+
+312
+00:28:51,900 --> 00:28:56,900
+Donc, c'est pas grave, c'est pas grave.
+
+313
+00:28:56,900 --> 00:28:59,900
+Mais, elle est qui ?
+
+314
+00:28:59,900 --> 00:29:01,900
+Oui?
+
+315
+00:29:01,900 --> 00:29:03,900
+Oui?
+
+316
+00:29:03,900 --> 00:29:09,900
+On a vu le prix du lait
+
+317
+00:29:09,900 --> 00:29:11,900
+Oui, on a vu le prix
+
+318
+00:29:11,900 --> 00:29:13,900
+On a vu le prix
+
+319
+00:29:13,900 --> 00:29:15,900
+Et on a vu le prix
+
+320
+00:29:15,900 --> 00:29:17,900
+L'HR
+
+321
+00:29:17,900 --> 00:29:19,900
+Le prix du lait
+
+322
+00:29:19,900 --> 00:29:21,900
+Oui, on a vu le prix
+
+323
+00:29:21,900 --> 00:29:23,900
+On a vu le prix
+
+324
+00:29:23,900 --> 00:29:25,900
+On a vu le prix
+
+325
+00:29:25,900 --> 00:29:27,900
+Ok
+
+326
+00:29:27,900 --> 00:29:29,900
+C'est une nouvelle partie.
+
+327
+00:29:29,900 --> 00:29:31,900
+Je vais faire le bilan.
+
+328
+00:29:31,900 --> 00:29:33,900
+Je vais juste voir.
+
+329
+00:29:37,900 --> 00:29:39,900
+Voilà, je pense que je vais avoir une nouvelle grille.
+
+330
+00:29:41,900 --> 00:29:43,900
+C'est une nouvelle partie.
+
+331
+00:29:43,900 --> 00:29:45,900
+On va voir les ressources humaines.
+
+332
+00:29:45,900 --> 00:29:47,900
+On a une dachille au FADEM.
+
+333
+00:29:47,900 --> 00:29:49,900
+Ah, ok.
+
+334
+00:29:49,900 --> 00:29:53,900
+On a un exemple sur le registre des salariés.
+
+335
+00:29:53,900 --> 00:30:03,380
+les salariés ou une question salariés qui me battent le salaire on va dire on fait une
+
+336
+00:30:03,380 --> 00:30:06,080
+augmentation de salaire on perd pas l'historique
+
+337
+00:30:06,080 --> 00:30:09,080
+Merci beaucoup pour les pays, je ne sais pas si je n'ai pas besoin de vous.
+
+338
+00:30:09,080 --> 00:30:11,080
+Non, je ne sais pas.
+
+339
+00:30:11,080 --> 00:30:16,080
+Alors, je vais vous parler.
+
+340
+00:30:16,080 --> 00:30:18,080
+Je vais vous parler.
+
+341
+00:30:20,080 --> 00:30:25,080
+Il y a tous les gens qui ont été créés.
+
+342
+00:30:27,080 --> 00:30:33,080
+Nous avons eu, comme ça, le salaire.
+
+343
+00:30:33,080 --> 00:30:34,080
+Comment ça va ?
+
+344
+00:30:34,080 --> 00:30:37,080
+Ça va aller avec le HMDA, mais le personnel fait.
+
+345
+00:30:37,080 --> 00:30:39,080
+Qui fait ?
+
+346
+00:30:41,080 --> 00:30:42,080
+On va aller avec le HMDA ?
+
+347
+00:30:42,080 --> 00:30:44,080
+Oui, le HMDA.
+
+348
+00:30:45,080 --> 00:30:47,080
+Le personnel est devenue chez nous ?
+
+349
+00:30:47,080 --> 00:30:48,080
+Non.
+
+350
+00:30:48,080 --> 00:30:51,080
+Le personnel est devenu « où ? »
+
+351
+00:30:51,080 --> 00:30:57,080
+Je vais juste mettre le personnel.
+
+352
+00:30:57,080 --> 00:31:09,000
+donc l'année sous le tableau de bord hnt à gros et la navire à chanler la partie
+
+353
+00:31:09,000 --> 00:31:13,700
+financement la semaine à une autre page de lire les entraînes dans la
+
+354
+00:31:13,700 --> 00:31:25,040
+d'accord
+
+355
+00:31:25,040 --> 00:31:42,040
+On peut accéder directement à les registres personnels, registres électriquement.
+
+356
+00:31:42,040 --> 00:31:47,040
+En fait, je crois que nous avons un peu de temps en anglais ou en français.
+
+357
+00:31:47,040 --> 00:32:17,020
+Il y a des questions qui se sont en train de se dire.
+
+358
+00:32:17,040 --> 00:32:24,300
+l'implémentation en carré j'ai rien de pas de l'enfer donc à table l'eau
+
+359
+00:32:24,300 --> 00:32:33,120
+n'aurait pas de blanche et il a développé en anglais et
+
+360
+00:32:33,120 --> 00:32:36,360
+la version l'a en français que le film est uniquement du français
+
+361
+00:32:36,360 --> 00:32:40,620
+belge chien tigre vite l'ancienne version de l'eau à l'échelle d'un
+
+362
+00:32:40,620 --> 00:32:42,160
+développement, je ne sais pas.
+
+363
+00:32:42,580 --> 00:32:44,220
+Ou alors, tu as le choix de...
+
+364
+00:32:44,220 --> 00:32:45,480
+Faites-moi le backup, hein, en fait.
+
+365
+00:32:45,480 --> 00:32:45,860
+Avez-vous.
+
+366
+00:32:48,740 --> 00:32:49,800
+Donc, tailleur d'accounting,
+
+367
+00:32:49,800 --> 00:32:51,380
+comme payables ou receivables.
+
+368
+00:32:51,500 --> 00:32:53,700
+Donc,
+
+369
+00:32:54,620 --> 00:32:55,120
+on va regarder,
+
+370
+00:32:55,500 --> 00:32:55,980
+on va mettre
+
+371
+00:32:55,980 --> 00:32:56,760
+le...
+
+372
+00:32:56,760 --> 00:32:58,060
+d'autres tiens.
+
+373
+00:33:10,620 --> 00:33:12,620
+Personnel, je ne sais pas.
+
+374
+00:33:18,620 --> 00:33:20,620
+C'est pas grave. Je vais mettre le personnel.
+
+375
+00:33:20,620 --> 00:33:22,620
+Je vais me mettre en place.
+
+376
+00:33:22,620 --> 00:33:26,620
+Mais je vais mettre en place un peu.
+
+377
+00:33:26,620 --> 00:33:30,620
+Il y a plusieurs trucs que nous avons mis.
+
+378
+00:33:30,620 --> 00:33:32,620
+On va mettre en place.
+
+379
+00:33:34,620 --> 00:33:35,620
+C'est bon.
+
+380
+00:33:35,620 --> 00:33:37,620
+Tu as fait beaucoup de choses.
+
+381
+00:33:37,620 --> 00:33:40,620
+Donc, il faut que vous ayez son ID.
+
+382
+00:33:40,620 --> 00:33:41,620
+Oui.
+
+383
+00:33:41,620 --> 00:33:44,620
+Qui est le gardien actif.
+
+384
+00:33:44,620 --> 00:33:47,620
+Le salaire brut.
+
+385
+00:33:47,620 --> 00:33:51,620
+Ou le salaire principal à terre.
+
+386
+00:33:51,620 --> 00:33:54,620
+Mais il y a une autre l'année.
+
+387
+00:33:54,620 --> 00:33:57,620
+Je n'ai pas de salaire à terre.
+
+388
+00:34:00,620 --> 00:34:04,620
+Donc, le salaire à terre, vous avez un salaire brut.
+
+389
+00:34:04,620 --> 00:34:13,320
+avec elle soit ou mais pas mal pour son comptage de charges patronales par votre
+
+390
+00:34:13,320 --> 00:34:22,560
+comme ça et le premier hier le sommet à l'housiante dîner mais un doux et
+
+391
+00:34:22,560 --> 00:34:32,120
+presque 30% en paix là non ça je pas de prendre à des cas à ta part défaut
+
+392
+00:34:32,120 --> 00:34:39,980
+c'est un par défaut une valeur qu'on peut configurer à la m et qu'on peut éditer
+
+393
+00:34:39,980 --> 00:34:47,360
+manuellement que le chine pas de poids et n'a pas par défaut 30% et me 7 à 30% mais
+
+394
+00:34:47,360 --> 00:34:56,720
+d'ailleurs des fois la valeur charge un pourcentage de charge patronale valeur de
+
+395
+00:34:56,720 --> 00:35:02,180
+défauts on voit qu'on peut configurer le page de configuration en train de
+
+396
+00:35:02,180 --> 00:35:07,460
+combattre comme à colou et maintenant nous on donne un peu de foule en une
+
+397
+00:35:07,460 --> 00:35:12,860
+prime à moussa voilà c'est que je suis encore une fois
+
+398
+00:35:12,860 --> 00:35:18,800
+donc le domaine est chargé de l'élection une augmentation de salaire
+
+399
+00:35:18,800 --> 00:35:25,460
+à 850 il faut pas que dans la rue 150 les anciens primes talent les deux
+
+400
+00:35:25,460 --> 00:35:36,440
+dans l'historique
+
+401
+00:35:36,440 --> 00:35:42,800
+mais je l'historique mais tu vois et qui n'a pas vraiment une petite fiche
+
+402
+00:35:42,800 --> 00:35:52,020
+tu vas générer les rapports le rapport de madère à portement suis un des thèmes
+
+403
+00:35:52,020 --> 00:35:59,600
+en rapport à monsieur un maïd à coler l'état d'icc a dit qu'un rassin à d'accord
+
+404
+00:35:59,600 --> 00:36:08,840
+comment il est confronté à ce problème les valeurs les charges et c'est une fois
+
+405
+00:36:08,840 --> 00:36:15,080
+calculer ou en lui figé dans le temps à la fin de la journée ou du figé à l'échec à la fête
+
+406
+00:36:15,080 --> 00:36:21,800
+et de kenny n'est pas dans le salaire ont été un bâle de sardes et calculer la date sur ma
+
+407
+00:36:21,800 --> 00:36:27,740
+carrément ta chaleur et n'est pas dit le gilet valoir et il ya pas à c'est bien enfin
+
+408
+00:36:27,740 --> 00:36:36,900
+donc est ce que est ce que est ce que il faut s'assurer qu'on a quitté un mal tu
+
+409
+00:36:36,900 --> 00:36:43,800
+change les valeurs des salaires mais tu vas dans les charges mané en main de
+
+410
+00:36:43,800 --> 00:36:46,280
+tal historique
+
+411
+00:36:46,280 --> 00:37:11,660
+les bénéfices coûte un salarié un de 1 salaire brut pour son page en charge patronale
+
+412
+00:37:11,660 --> 00:37:23,920
+on bat ma z elle a des panneaux les un champ pour les primes
+
+413
+00:37:23,920 --> 00:37:35,900
+donc c'est à dire il ya maintenant un chat et n'est en prime de laïd ou à la prime de
+
+414
+00:37:35,900 --> 00:37:40,280
+deux performances et ainsi de suite
+
+415
+00:37:40,280 --> 00:37:49,620
+pour les navires que lille page d'avant avec les palettes les centrales personnelles
+
+416
+00:37:49,620 --> 00:37:57,380
+il est qu'une ame qu'elle pourrait vite et c'est d'avoir un petit
+
+417
+00:37:57,380 --> 00:38:07,820
+je peux sélectionner à sa réaction d'appliquer prime comme ça ou la donnée
+
+418
+00:38:07,820 --> 00:38:10,940
+de prime comme ça j'ai là pour les actions
+
+419
+00:38:10,940 --> 00:38:18,260
+ok tu vas te faire un petit peu de sélectionner
+
+420
+00:38:18,260 --> 00:38:21,260
+mais on ne peut pas avoir 50 000 primes.
+
+421
+00:38:21,260 --> 00:38:23,260
+Même si on a des mathématiques, 50 000 primes,
+
+422
+00:38:23,260 --> 00:38:25,260
+les gens ne peuvent pas être traités.
+
+423
+00:38:25,260 --> 00:38:27,260
+Sinon, ils ont un peu de temps.
+
+424
+00:38:27,260 --> 00:38:29,260
+Bon, c'est pas un ami d'un ou un,
+
+425
+00:38:29,260 --> 00:38:32,260
+c'est pas tous les jours qu'on donne des primes.
+
+426
+00:38:32,260 --> 00:38:34,260
+Et de quelle image, je vais vous donner à la base,
+
+427
+00:38:34,260 --> 00:38:36,260
+si c'est pas trop,
+
+428
+00:38:36,260 --> 00:38:38,260
+demandez, ça donne un amalier.
+
+429
+00:38:38,260 --> 00:38:39,260
+C'est ça.
+
+430
+00:38:39,260 --> 00:38:41,260
+D'accord.
+
+431
+00:38:41,260 --> 00:38:45,260
+On a fait...
+
+432
+00:38:45,260 --> 00:38:49,620
+Contrôle de cohérence finance.
+
+433
+00:39:02,160 --> 00:39:03,560
+On a malgré.
+
+434
+00:39:08,720 --> 00:39:10,660
+On a malgré l'année par exemple.
+
+435
+00:39:15,260 --> 00:39:18,260
+C'est pour une période ou une date ?
+
+436
+00:39:18,260 --> 00:39:19,260
+C'est pour...
+
+437
+00:39:19,260 --> 00:39:20,260
+C'est pour...
+
+438
+00:39:20,260 --> 00:39:21,260
+C'est pour...
+
+439
+00:39:21,260 --> 00:39:22,260
+C'est pour...
+
+440
+00:39:22,260 --> 00:39:23,260
+C'est pour...
+
+441
+00:39:23,260 --> 00:39:24,260
+C'est pour...
+
+442
+00:39:24,260 --> 00:39:25,260
+C'est pour...
+
+443
+00:39:25,260 --> 00:39:26,260
+C'est pour...
+
+444
+00:39:26,260 --> 00:39:27,260
+C'est pour...
+
+445
+00:39:27,260 --> 00:39:28,260
+C'est pour...
+
+446
+00:39:28,260 --> 00:39:29,260
+C'est pour...
+
+447
+00:39:29,260 --> 00:39:30,260
+C'est pour...
+
+448
+00:39:30,260 --> 00:39:31,260
+C'est pour...
+
+449
+00:39:31,260 --> 00:39:32,260
+C'est pour...
+
+450
+00:39:32,260 --> 00:39:33,260
+C'est pour...
+
+451
+00:39:33,260 --> 00:39:34,260
+C'est pour...
+
+452
+00:39:34,260 --> 00:39:35,260
+C'est pour...
+
+453
+00:39:35,260 --> 00:39:36,260
+C'est pour...
+
+454
+00:39:36,260 --> 00:39:37,260
+C'est pour...
+
+455
+00:39:37,260 --> 00:39:38,260
+C'est pour...
+
+456
+00:39:38,260 --> 00:39:39,260
+C'est pour...
+
+457
+00:39:39,260 --> 00:39:40,260
+C'est pour...
+
+458
+00:39:40,260 --> 00:39:41,260
+C'est pour...
+
+459
+00:39:41,260 --> 00:39:42,260
+C'est pour...
+
+460
+00:39:42,260 --> 00:39:43,260
+C'est pour...
+
+461
+00:39:43,260 --> 00:39:44,260
+C'est pour...
+
+462
+00:39:44,260 --> 00:39:44,260
+
+
+463
+00:39:44,260 --> 00:39:44,260
+
+
+464
+00:39:44,260 --> 00:39:44,260
+
+
+465
+00:39:44,260 --> 00:39:44,260
+
+
+466
+00:39:44,260 --> 00:40:00,260
+C'est ce qui est le dernier ?
+
+467
+00:40:00,260 --> 00:40:10,260
+Oui, c'est ce qui est un exemple de la température.
+
+468
+00:40:14,260 --> 00:40:21,260
+et
+
+469
+00:40:28,500 --> 00:40:31,380
+et d'argent
+
+470
+00:40:31,380 --> 00:40:36,020
+l'équipement
+
+471
+00:40:36,020 --> 00:40:42,640
+maman analyse personnel en principe il devrait y avoir et cet équipement
+
+472
+00:40:42,640 --> 00:40:47,640
+Je ne sais pas comment on voit les tableaux d'amortissement.
+
+473
+00:40:47,640 --> 00:40:51,640
+Oui, c'est parti avec les deux.
+
+474
+00:40:55,640 --> 00:40:58,640
+Comment est-ce qu'on appelle l'anglais ?
+
+475
+00:40:59,640 --> 00:41:02,640
+L'appréciation.
+
+476
+00:41:02,640 --> 00:41:05,640
+L'appréciation.
+
+477
+00:41:05,640 --> 00:41:35,620
+C'est ce qui est le cas.
+
+478
+00:41:35,640 --> 00:41:40,260
+c'est bien les listes des vaches que nous avons mis en animaux ou elle
+
+479
+00:41:40,260 --> 00:41:44,100
+est là
+
+480
+00:41:44,100 --> 00:41:48,780
+voilà je n'ai pas d'accord comment il y en a une nouvelle
+
+481
+00:41:48,780 --> 00:41:52,020
+mordi est là la seule à la vache
+
+482
+00:41:52,020 --> 00:42:08,020
+c'est pas lié à la liste des vaches qu'on a ?
+
+483
+00:42:08,020 --> 00:42:13,020
+si si si c'est lié normalement
+
+484
+00:42:13,020 --> 00:42:27,540
+comment ça se fait en fait je pense que le profil des nerfs c'est l'idée technique alors que
+
+485
+00:42:27,540 --> 00:42:37,740
+ça peut être ça peut l'être c'est pas un gênant et même je sais pas les idées
+
+486
+00:42:37,740 --> 00:42:38,980
+les deux
+
+487
+00:42:38,980 --> 00:42:41,280
+les deux
+
+488
+00:42:41,280 --> 00:42:42,400
+les deux
+
+489
+00:42:42,400 --> 00:42:43,320
+les deux
+
+490
+00:42:43,320 --> 00:42:43,880
+c'est pas
+
+491
+00:42:43,880 --> 00:42:44,940
+le numéro de la vache
+
+492
+00:42:44,940 --> 00:42:45,680
+c'est le
+
+493
+00:42:45,680 --> 00:42:46,060
+id
+
+494
+00:42:46,060 --> 00:42:50,740
+juste
+
+495
+00:42:50,740 --> 00:42:54,300
+une vache
+
+496
+00:42:54,300 --> 00:42:54,800
+une vache
+
+497
+00:42:54,800 --> 00:42:55,160
+mais pas
+
+498
+00:42:55,160 --> 00:42:55,580
+sur la partie
+
+499
+00:42:55,580 --> 00:42:56,220
+dépréciation
+
+500
+00:42:56,220 --> 00:42:57,060
+sur la partie
+
+501
+00:42:57,060 --> 00:43:01,740
+animal
+
+502
+00:43:01,740 --> 00:43:03,740
+ok
+
+503
+00:43:03,740 --> 00:43:13,340
+hmd à gros voilà animaliste tu vois le travail c'est ça
+
+504
+00:43:13,340 --> 00:43:24,360
+tu vois la mer c'est la
+
+505
+00:43:24,360 --> 00:43:25,360
+C'est ça, c'est ça.
+
+506
+00:43:25,360 --> 00:43:26,360
+C'est ça.
+
+507
+00:43:26,360 --> 00:43:27,360
+C'est ça.
+
+508
+00:43:27,360 --> 00:43:28,360
+C'est ça.
+
+509
+00:43:28,360 --> 00:43:29,360
+C'est ça.
+
+510
+00:43:29,360 --> 00:43:30,360
+C'est ça.
+
+511
+00:43:30,360 --> 00:43:31,360
+C'est ça.
+
+512
+00:43:31,360 --> 00:43:32,360
+C'est ça.
+
+513
+00:43:32,360 --> 00:43:33,360
+C'est ça.
+
+514
+00:43:33,360 --> 00:43:34,360
+C'est ça.
+
+515
+00:43:34,360 --> 00:43:35,360
+C'est ça.
+
+516
+00:43:35,360 --> 00:43:36,360
+C'est ça.
+
+517
+00:43:36,360 --> 00:43:37,360
+C'est ça.
+
+518
+00:43:37,360 --> 00:43:38,360
+C'est ça.
+
+519
+00:43:38,360 --> 00:43:39,360
+C'est ça.
+
+520
+00:43:39,360 --> 00:43:40,360
+C'est ça.
+
+521
+00:43:40,360 --> 00:43:41,360
+C'est ça.
+
+522
+00:43:41,360 --> 00:43:42,360
+C'est ça.
+
+523
+00:43:42,360 --> 00:43:43,360
+C'est ça.
+
+524
+00:43:43,360 --> 00:43:44,360
+C'est ça.
+
+525
+00:43:44,360 --> 00:43:45,360
+C'est ça.
+
+526
+00:43:45,360 --> 00:43:46,360
+C'est ça.
+
+527
+00:43:46,360 --> 00:43:47,360
+C'est ça.
+
+528
+00:43:47,360 --> 00:43:48,360
+C'est ça.
+
+529
+00:43:48,360 --> 00:43:49,360
+C'est ça.
+
+530
+00:43:49,360 --> 00:43:50,360
+C'est ça.
+
+531
+00:43:50,360 --> 00:43:51,360
+C'est ça.
+
+532
+00:43:51,360 --> 00:43:52,360
+C'est ça.
+
+533
+00:43:52,360 --> 00:43:53,360
+C'est ça.
+
+534
+00:43:53,360 --> 00:44:15,020
+est ce que c'est pas 9 9 9 0 0 0 0 122 je pense juste pas j'en ai mis ma liste
+
+535
+00:44:15,020 --> 00:44:20,780
+2,122
+
+536
+00:44:20,780 --> 00:44:34,340
+non c'est pas la version
+
+537
+00:44:34,340 --> 00:44:36,340
+Je suis sûr que tu as un service.
+
+538
+00:44:36,340 --> 00:44:37,340
+Oui, juste...
+
+539
+00:44:39,340 --> 00:44:40,340
+Aziz,
+
+540
+00:44:43,340 --> 00:44:45,340
+quelqu'un qui est sur site,
+
+541
+00:44:45,340 --> 00:44:47,340
+tu peux aller sur
+
+542
+00:44:48,340 --> 00:44:49,340
+le film d'abord.
+
+543
+00:44:50,340 --> 00:44:52,340
+Si, on va passer.
+
+544
+00:44:52,340 --> 00:44:54,340
+Si, on va passer.
+
+545
+00:44:54,340 --> 00:44:56,340
+Si, on va passer par le stage
+
+546
+00:44:56,340 --> 00:44:58,340
+FPA Next.
+
+547
+00:45:00,340 --> 00:45:02,340
+Si, on va passer par le téléphone.
+
+548
+00:45:02,340 --> 00:45:32,320
+C'est parti.
+
+549
+00:45:32,340 --> 00:45:34,340
+...
+
+550
+00:45:51,340 --> 00:45:52,340
+...
+
+551
+00:45:52,340 --> 00:45:54,340
+...
+
+552
+00:45:54,340 --> 00:45:56,340
+...
+
+553
+00:45:56,340 --> 00:45:58,340
+...
+
+554
+00:45:58,340 --> 00:46:28,320
+C'est parti.
+
+555
+00:46:28,340 --> 00:46:29,340
+Je ne sais pas.
+
+556
+00:46:29,340 --> 00:46:30,340
+Je ne sais pas.
+
+557
+00:46:30,340 --> 00:46:31,340
+Je ne sais pas.
+
+558
+00:46:31,340 --> 00:46:32,340
+Je ne sais pas.
+
+559
+00:46:32,340 --> 00:46:33,340
+Je ne sais pas.
+
+560
+00:46:33,340 --> 00:46:34,340
+Je ne sais pas.
+
+561
+00:46:34,340 --> 00:46:35,340
+Je ne sais pas.
+
+562
+00:46:35,340 --> 00:46:36,340
+Je ne sais pas.
+
+563
+00:46:36,340 --> 00:46:37,340
+Je ne sais pas.
+
+564
+00:46:37,340 --> 00:46:38,340
+Je ne sais pas.
+
+565
+00:46:38,340 --> 00:46:39,340
+Je ne sais pas.
+
+566
+00:46:39,340 --> 00:46:40,340
+Je ne sais pas.
+
+567
+00:46:40,340 --> 00:46:41,340
+Je ne sais pas.
+
+568
+00:46:41,340 --> 00:46:42,340
+Je ne sais pas.
+
+569
+00:46:42,340 --> 00:46:43,340
+Je ne sais pas.
+
+570
+00:46:43,340 --> 00:46:44,340
+Je ne sais pas.
+
+571
+00:46:44,340 --> 00:46:45,340
+Je ne sais pas.
+
+572
+00:46:45,340 --> 00:46:46,340
+Je ne sais pas.
+
+573
+00:46:46,340 --> 00:46:47,340
+Je ne sais pas.
+
+574
+00:46:47,340 --> 00:46:48,340
+Je ne sais pas.
+
+575
+00:46:48,340 --> 00:46:49,340
+Je ne sais pas.
+
+576
+00:46:49,340 --> 00:46:50,340
+Je ne sais pas.
+
+577
+00:46:50,340 --> 00:46:51,340
+Je ne sais pas.
+
+578
+00:46:51,340 --> 00:46:52,340
+Je ne sais pas.
+
+579
+00:46:52,340 --> 00:46:53,340
+Je ne sais pas.
+
+580
+00:46:53,340 --> 00:46:54,340
+Je ne sais pas.
+
+581
+00:46:54,340 --> 00:46:55,340
+Je ne sais pas.
+
+582
+00:46:55,340 --> 00:46:56,340
+Je ne sais pas.
+
+583
+00:46:56,340 --> 00:46:57,340
+Je ne sais pas.
+
+584
+00:46:57,340 --> 00:47:07,240
+on va supposer que c'est dit on va vérifier que c'est d'y auteur les accents
+
+585
+00:47:07,240 --> 00:47:21,940
+et donc à la bague et moi en fait qui m'a l'identification la naissance
+
+586
+00:47:21,940 --> 00:47:26,180
+l'origine à l'autre est actuel avec à la partie reproduction en terre
+
+587
+00:47:26,180 --> 00:47:36,880
+oui c'est d'un vote mafroo du groupe en valeur la partie finance et
+
+588
+00:47:36,880 --> 00:47:42,560
+Il y a une valeur d'achat et une valeur d'achat.
+
+589
+00:47:42,640 --> 00:47:47,600
+Et si on ne peut pas mettre, il y aura une valeur d'achat.
+
+590
+00:47:47,680 --> 00:47:50,800
+C'est bon.
+
+591
+00:47:50,880 --> 00:47:57,760
+Si on a besoin d'alcool, il y a une valeur d'achat.
+
+592
+00:47:57,760 --> 00:47:59,760
+...
+
+593
+00:48:27,760 --> 00:48:57,740
+C'est comme ça.
+
+594
+00:48:57,760 --> 00:49:05,140
+elle a comme la commissaire de rayon d'un point de vue technique c'est j'ai l'impression que
+
+595
+00:49:05,140 --> 00:49:13,960
+ce sont deux objets différents connectés entre le numéro de la vache la 7 mai
+
+596
+00:49:13,960 --> 00:49:14,960
+C'est le nom.
+
+597
+00:49:18,960 --> 00:49:19,960
+Est-ce que c'est ça?
+
+598
+00:49:19,960 --> 00:49:20,960
+Oui, c'est ça.
+
+599
+00:49:21,960 --> 00:49:23,960
+Donc, tu as une...
+
+600
+00:49:25,960 --> 00:49:27,960
+Le nom est un nom, c'est pas l'ID.
+
+601
+00:49:27,960 --> 00:49:28,960
+C'est ça ou c'est ?
+
+602
+00:49:29,960 --> 00:49:30,960
+C'est juste le donné.
+
+603
+00:49:31,960 --> 00:49:32,960
+Ou le asset.
+
+604
+00:49:32,960 --> 00:49:33,960
+Exactement.
+
+605
+00:49:33,960 --> 00:49:35,960
+C'est pas le...
+
+606
+00:49:35,960 --> 00:49:36,960
+C'est pas le...
+
+607
+00:49:36,960 --> 00:49:37,960
+C'est pas le...
+
+608
+00:49:37,960 --> 00:49:38,960
+C'est pas le...
+
+609
+00:49:38,960 --> 00:49:39,960
+Non, non, je n'aime pas.
+
+610
+00:49:39,960 --> 00:49:40,960
+C'est pas le...
+
+611
+00:49:40,960 --> 00:49:41,960
+C'est pas le...
+
+612
+00:49:41,960 --> 00:49:50,960
+Les hommes sont deux objets connectés à la bien-être.
+
+613
+00:49:50,960 --> 00:49:56,960
+C'est pas le même objet.
+
+614
+00:50:02,960 --> 00:50:04,960
+On a perdu un.
+
+615
+00:50:11,960 --> 00:50:15,960
+C'est quoi ?
+
+616
+00:50:15,960 --> 00:50:17,960
+Ok.
+
+617
+00:50:17,960 --> 00:50:21,960
+C'est quoi ?
+
+618
+00:50:21,960 --> 00:50:25,960
+C'est quoi la liste des animaux ?
+
+619
+00:50:31,960 --> 00:50:33,960
+C'est quoi le bagarre ?
+
+620
+00:50:33,960 --> 00:50:35,960
+Il faut que le bagarre ?
+
+621
+00:50:35,960 --> 00:50:37,960
+C'est quoi ?
+
+622
+00:50:37,960 --> 00:50:39,960
+C'est quoi ?
+
+623
+00:50:39,960 --> 00:50:41,960
+C'est un peu plus.
+
+624
+00:50:41,960 --> 00:50:44,960
+On ne l'a pas dit.
+
+625
+00:50:44,960 --> 00:50:46,960
+C'est un peu plus.
+
+626
+00:50:46,960 --> 00:50:48,960
+C'est un peu plus.
+
+627
+00:50:48,960 --> 00:50:50,960
+C'est un peu plus.
+
+628
+00:50:50,960 --> 00:50:53,960
+C'est un peu plus.
+
+629
+00:50:53,960 --> 00:50:56,960
+C'est un peu plus.
+
+630
+00:50:56,960 --> 00:50:58,960
+C'est un peu plus.
+
+631
+00:50:58,960 --> 00:51:00,960
+C'est un peu plus.
+
+632
+00:51:00,960 --> 00:51:02,960
+C'est un peu plus.
+
+633
+00:51:02,960 --> 00:51:04,960
+C'est un peu plus.
+
+634
+00:51:04,960 --> 00:51:06,960
+C'est un peu plus.
+
+635
+00:51:06,960 --> 00:51:11,960
+On a vu les versions qui vont pouvoir nous réunir.
+
+636
+00:51:11,960 --> 00:51:14,960
+Non mais juste...
+
+637
+00:51:16,960 --> 00:51:20,960
+C'est pas de m'aider.
+
+638
+00:51:20,960 --> 00:51:22,960
+C'est pas de m'aider.
+
+639
+00:51:22,960 --> 00:51:24,960
+Les gens sont tous les souris.
+
+640
+00:51:24,960 --> 00:51:26,960
+Ok ?
+
+641
+00:51:26,960 --> 00:51:28,960
+C'est vrai normalement.
+
+642
+00:51:28,960 --> 00:51:29,960
+Je suis...
+
+643
+00:51:29,960 --> 00:51:31,960
+Mais, arrêtez de l'identification.
+
+644
+00:51:31,960 --> 00:51:33,960
+Ah, c'est la partie d'identification.
+
+645
+00:51:33,960 --> 00:51:34,960
+Rétape à l'écran.
+
+646
+00:51:34,960 --> 00:51:39,960
+L'identification, c'est...
+
+647
+00:51:39,960 --> 00:51:40,960
+Voilà.
+
+648
+00:51:40,960 --> 00:51:42,960
+Allez, allez, allez.
+
+649
+00:51:42,960 --> 00:51:45,960
+T'as vraiment un numéro de travail.
+
+650
+00:51:45,960 --> 00:51:48,960
+T'as vraiment un numéro de travail.
+
+651
+00:51:48,960 --> 00:51:50,960
+T'as vraiment un numéro de travail.
+
+652
+00:51:50,960 --> 00:51:53,960
+T'as vraiment un numéro de travail.
+
+653
+00:51:53,960 --> 00:51:55,960
+T'as vraiment un numéro de travail.
+
+654
+00:51:55,960 --> 00:51:57,960
+T'as vraiment un numéro de travail.
+
+655
+00:51:57,960 --> 00:52:02,960
+Oui, c'est le pays de la France, mais le pays de la France est en France.
+
+656
+00:52:02,960 --> 00:52:04,960
+Oui, le pays de la France est en France.
+
+657
+00:52:04,960 --> 00:52:06,960
+Oui, c'est le pays de la France.
+
+658
+00:52:06,960 --> 00:52:08,960
+Est-ce que c'est le pays de la France ?
+
+659
+00:52:08,960 --> 00:52:10,960
+Oui, c'est vrai que je vous ai dit.
+
+660
+00:52:10,960 --> 00:52:13,960
+Mais on a l'a dit, on peut-être que tu ne sais pas.
+
+661
+00:52:13,960 --> 00:52:15,960
+Tu ne sais pas.
+
+662
+00:52:15,960 --> 00:52:18,960
+Mais il n'y a pas de la France.
+
+663
+00:52:18,960 --> 00:52:20,960
+Oui.
+
+664
+00:52:20,960 --> 00:52:27,960
+Ok.
+
+665
+00:52:27,960 --> 00:52:40,960
+Ok.
+
+666
+00:52:40,960 --> 00:52:50,620
+mais de toutes les manières le display est le 1
+
+667
+00:52:50,620 --> 00:53:00,880
+donc ça veut dire que quelque part
+
+668
+00:53:00,880 --> 00:53:30,860
+C'est pas vrai.
+
+669
+00:53:30,880 --> 00:53:34,880
+Je l'ai pris une version de la version pour les deux mois
+
+670
+00:53:36,880 --> 00:53:40,880
+C'est à partir de 4 diplômes
+
+671
+00:53:40,880 --> 00:53:43,880
+Oui, je ne sais pas comment je vais me le faire
+
+672
+00:53:43,880 --> 00:53:44,880
+Non, je vais me le faire avec vous
+
+673
+00:53:44,880 --> 00:53:48,880
+Non, je vais me faire une sorte de la première fois
+
+674
+00:53:50,880 --> 00:53:52,880
+C'est pas une sorte de la première fois ?
+
+675
+00:53:53,880 --> 00:53:56,880
+Oui, je vais te faire, je vais te faire
+
+676
+00:53:56,880 --> 00:53:59,520
+je vous laisse faire
+
+677
+00:54:02,520 --> 00:54:02,940
+donc
+
+678
+00:54:02,940 --> 00:54:03,120
+donc
+
+679
+00:54:03,120 --> 00:54:07,120
+donc
+
+680
+00:54:07,120 --> 00:54:09,120
+donc
+
+681
+00:54:09,120 --> 00:54:19,800
+il faudra marier les deux
+
+682
+00:54:19,800 --> 00:54:26,520
+donc avec un affaire à suivre la journée partie finance
+
+683
+00:54:26,520 --> 00:54:39,420
+donc
+
+684
+00:54:39,420 --> 00:54:52,740
+donc c'est la même chose le numéro d'identification de la vache
+
+685
+00:54:52,740 --> 00:54:53,740
+là-bas, ok ?
+
+686
+00:54:53,740 --> 00:54:56,740
+Nouvez-vous pas à tourner ?
+
+687
+00:54:56,740 --> 00:55:09,740
+Bon, on perds, hein ?
+
+688
+00:55:09,740 --> 00:55:14,980
+les
+
+689
+00:55:14,980 --> 00:55:20,420
+bon c'est pas grave
+
+690
+00:55:20,420 --> 00:55:24,500
+l'identification et l'intention d'un autre
+
+691
+00:55:24,500 --> 00:55:25,880
+tourne ce match m'a que tout l'année
+
+692
+00:55:25,880 --> 00:55:27,960
+qu'on peut pas le changer
+
+693
+00:55:27,960 --> 00:55:29,340
+apparaît
+
+694
+00:55:29,340 --> 00:55:34,180
+un homme l'eau velage
+
+695
+00:55:34,180 --> 00:55:38,740
+quand on fait un velage
+
+696
+00:55:38,740 --> 00:55:41,620
+un numéro d'identification
+
+697
+00:55:41,620 --> 00:55:42,760
+est là par défaut
+
+698
+00:55:42,760 --> 00:55:45,440
+ça a
+
+699
+00:55:45,440 --> 00:55:47,300
+un numéro de boucle
+
+700
+00:55:47,300 --> 00:55:48,740
+officiel
+
+701
+00:55:48,740 --> 00:55:50,720
+et elle vaut
+
+702
+00:55:50,720 --> 00:55:53,060
+un numéro
+
+703
+00:55:53,060 --> 00:56:01,860
+d'identification tunisienne
+
+704
+00:56:01,860 --> 00:56:03,920
+donc
+
+705
+00:56:03,920 --> 00:56:05,600
+laissé vite pour générer un avis
+
+706
+00:56:05,600 --> 00:56:06,160
+temporaire
+
+707
+00:56:06,160 --> 00:56:08,160
+On ne peut pas faire ça, on ne peut pas faire ça.
+
+708
+00:56:08,160 --> 00:56:10,160
+On ne peut pas faire ça.
+
+709
+00:56:10,160 --> 00:56:12,160
+On ne peut pas faire ça.
+
+710
+00:56:12,160 --> 00:56:14,160
+On ne peut pas faire ça.
+
+711
+00:56:14,160 --> 00:56:16,160
+On ne peut pas faire ça.
+
+712
+00:56:16,160 --> 00:56:18,160
+On ne peut pas faire ça.
+
+713
+00:56:18,160 --> 00:56:20,160
+On ne peut pas faire ça.
+
+714
+00:56:20,160 --> 00:56:22,160
+On ne peut pas faire ça.
+
+715
+00:56:22,160 --> 00:56:24,160
+On ne peut pas faire ça.
+
+716
+00:56:24,160 --> 00:56:26,160
+On ne peut pas faire ça.
+
+717
+00:56:26,160 --> 00:56:28,160
+On ne peut pas faire ça.
+
+718
+00:56:28,160 --> 00:56:30,160
+On ne peut pas faire ça.
+
+719
+00:56:36,160 --> 00:56:37,160
+Merci.
+
+720
+00:57:06,160 --> 00:57:08,160
+C'est un peu de temps.
+
+721
+00:57:08,160 --> 00:57:10,160
+On ne peut pas me dire.
+
+722
+00:57:10,160 --> 00:57:14,160
+Si vous avez un telèxie, vous pouvez nous donner.
+
+723
+00:57:14,160 --> 00:57:16,160
+Juste vous arrêtez, vous avez un peu de temps.
+
+724
+00:57:16,160 --> 00:57:18,160
+Je ne sais pas.
+
+725
+00:57:18,160 --> 00:57:20,160
+Je ne sais pas.
+
+726
+00:57:20,160 --> 00:57:22,160
+Je ne sais pas.
+
+727
+00:57:22,160 --> 00:57:24,160
+Je ne sais pas.
+
+728
+00:57:24,160 --> 00:57:26,160
+Je ne sais pas.
+
+729
+00:57:26,160 --> 00:57:28,160
+Je ne sais pas.
+
+730
+00:57:28,160 --> 00:57:30,160
+Je ne sais pas.
+
+731
+00:57:30,160 --> 00:57:32,160
+Je ne sais pas.
+
+732
+00:57:32,160 --> 00:57:34,160
+Je ne sais pas.
+
+733
+00:57:34,160 --> 00:57:35,160
+Merci.
+
+734
+00:58:04,160 --> 00:58:11,160
+C'est ce qui est la première fois, c'est la notification.
+
+735
+00:58:11,160 --> 00:58:14,160
+C'est la première fois, c'est la première fois ?
+
+736
+00:58:14,160 --> 00:58:18,160
+Oui, c'est la première fois.
+
+737
+00:58:18,160 --> 00:58:21,160
+Il est donc, il est donc, il est donc, il est donc,
+
+738
+00:58:21,160 --> 00:58:23,160
+il est donc, il est donc, il est donc, il est donc, il est donc,
+
+739
+00:58:23,160 --> 00:58:25,160
+il est donc, il est donc, il est donc, il est donc, il est donc,
+
+740
+00:58:25,160 --> 00:58:27,160
+il est donc, il est donc, il est donc, il est donc, il est donc,
+
+741
+00:58:27,160 --> 00:58:29,160
+il est donc, il est donc, il est donc, il est donc,
+
+742
+00:58:29,160 --> 00:58:31,160
+il est donc, il est donc, il est donc, il est donc,
+
+743
+00:58:31,160 --> 00:58:33,160
+Je ne sais pas si c'est bon, mais je ne sais pas si c'est bon.
+
+744
+00:58:33,160 --> 00:58:35,160
+Je ne sais pas si c'est bon.
+
+745
+00:58:35,160 --> 00:58:37,160
+Je ne sais pas si c'est bon.
+
+746
+00:58:37,160 --> 00:58:39,160
+Je ne sais pas si c'est bon.
+
+747
+00:58:39,160 --> 00:58:41,160
+Je ne sais pas si c'est bon.
+
+748
+00:58:41,160 --> 00:58:43,160
+Ok.
+
+749
+00:58:51,160 --> 00:58:53,160
+D'accord, ok.
+
+750
+00:58:53,160 --> 00:58:55,160
+Je ne sais pas si c'est bon.
+
+751
+00:58:55,160 --> 00:58:57,160
+Je ne sais pas si c'est bon.
+
+752
+00:58:57,160 --> 00:58:58,940
+Mohamed Salim, on a donné la cour.
+
+753
+00:59:04,360 --> 00:59:05,160
+Je vais vous donner la cour.
+
+754
+00:59:08,200 --> 00:59:09,100
+Ok.
+
+755
+00:59:12,520 --> 00:59:18,320
+Donc, matériel, comme je vous ai dit, les tracts ou l'équipement
+
+756
+00:59:19,400 --> 00:59:21,480
+qui vous a dit dans la présentation,
+
+757
+00:59:21,480 --> 00:59:29,180
+qu'on fait comme la partie amortissement ou la dépréciation.
+
+758
+00:59:31,700 --> 00:59:41,280
+Comme la partie, il y a un coût de maintenance et ainsi de suite.
+
+759
+00:59:41,720 --> 00:59:42,620
+Je pense qu'on jouait ça.
+
+760
+00:59:42,620 --> 01:00:12,600
+C'est bon.
+
+761
+01:00:12,620 --> 01:00:21,620
+pour l'A7
+
+762
+01:00:21,620 --> 01:00:21,620
+
+
+763
+01:00:21,620 --> 01:00:31,620
+cette liste
+
+764
+01:00:31,620 --> 01:00:39,620
+voilà
+
+765
+01:00:39,620 --> 01:00:42,620
+Alors, on a un démontre un tracteur.
+
+766
+01:00:45,620 --> 01:00:46,620
+Ok.
+
+767
+01:01:01,620 --> 01:01:03,620
+Qui est-ce que tu fais maintenant ?
+
+768
+01:01:05,620 --> 01:01:07,620
+Maintenant...
+
+769
+01:01:07,620 --> 01:01:09,620
+Quelle est-ce que tu as mis en compte ?
+
+770
+01:01:09,620 --> 01:01:14,620
+Quelle est-ce que tu as mis en compte ?
+
+771
+01:01:14,620 --> 01:01:22,620
+Par exemple, le vidange nous a coûté 500 dnr.
+
+772
+01:01:22,620 --> 01:01:26,620
+Quelle est-ce que tu as mis en compte ?
+
+773
+01:01:26,620 --> 01:01:29,620
+Quelle est-ce que tu as mis en compte ?
+
+774
+01:01:29,620 --> 01:01:35,620
+plus
+
+775
+01:01:35,620 --> 01:01:41,620
+le
+
+776
+01:01:41,620 --> 01:01:45,620
+le set n'aimant comme tout par défaut
+
+777
+01:01:45,620 --> 01:01:48,060
+défaut
+
+778
+01:01:48,060 --> 01:01:50,680
+à moi
+
+779
+01:01:55,160 --> 01:01:58,660
+il est vraiment
+
+780
+01:02:03,380 --> 01:02:08,940
+un truc très évident je travaille à la chambre je vois pas ou en hâte le jour le
+
+781
+01:02:08,940 --> 01:02:10,940
+Pour les prix, par exemple.
+
+782
+01:02:10,940 --> 01:02:20,940
+Donc on va mettre les deux tasks et les deux plans
+
+783
+01:02:20,940 --> 01:02:24,940
+Et on peut faire plus de deux
+
+784
+01:02:24,940 --> 01:02:27,940
+Et on peut faire plus de deux
+
+785
+01:02:27,940 --> 01:02:30,940
+Et on peut faire plus de deux
+
+786
+01:02:30,940 --> 01:02:32,940
+Les données
+
+787
+01:02:32,940 --> 01:02:34,940
+C'est bon
+
+788
+01:02:40,940 --> 01:02:45,940
+Il faut voir. Je pense que les femmes,
+
+789
+01:02:45,940 --> 01:02:51,940
+de Quinta maintenant, c'est toujours un coup associé quelque part.
+
+790
+01:02:59,940 --> 01:03:04,940
+Oui, elle est sauf à vérifier la prochaine.
+
+791
+01:03:04,940 --> 01:03:06,940
+OK.
+
+792
+01:03:10,940 --> 01:03:12,940
+Je ne sais pas.
+
+793
+01:03:12,940 --> 01:03:14,940
+Je ne sais pas.
+
+794
+01:03:14,940 --> 01:03:16,940
+Je ne sais pas.
+
+795
+01:03:16,940 --> 01:03:18,940
+Je ne sais pas.
+
+796
+01:03:18,940 --> 01:03:20,940
+Je ne sais pas.
+
+797
+01:03:20,940 --> 01:03:22,940
+Je ne sais pas.
+
+798
+01:03:22,940 --> 01:03:24,940
+Je ne sais pas.
+
+799
+01:03:24,940 --> 01:03:26,940
+Je ne sais pas.
+
+800
+01:03:26,940 --> 01:03:28,940
+Je ne sais pas.
+
+801
+01:03:32,940 --> 01:03:34,940
+Je ne sais pas.
+
+802
+01:03:34,940 --> 01:03:36,940
+Je ne sais pas.
+
+803
+01:03:36,940 --> 01:03:38,940
+Il faut essayer de simuler un TV de courant.
+
+804
+01:03:38,940 --> 01:03:49,620
+les charges d'un qui n'affirme les catégories à ce nom et il faut essayer de le lit le chalé
+
+805
+01:03:49,620 --> 01:04:01,860
+manet dans le sens à une fois que le fatiguera mta j'ai trois temps d'un par ma c'est vrai
+
+806
+01:04:01,860 --> 01:04:07,540
+Je vais essayer de faire une facture ou l'utilisation des médicaments.
+
+807
+01:04:07,540 --> 01:04:10,480
+Il faut essayer de répondre à ces questions-là.
+
+808
+01:04:12,960 --> 01:04:15,420
+Une facture, j'ai une facture.
+
+809
+01:04:23,740 --> 01:04:26,980
+Idéalement, c'est à l'utilisation et non pas à la facturation.
+
+810
+01:04:28,140 --> 01:04:30,880
+Mais il faut avoir la flexibilité de faire les deux.
+
+811
+01:04:30,880 --> 01:04:50,320
+un tracteur qui a maintenant on absorbe le cours on n'amortit pas sur une durée
+
+812
+01:04:50,320 --> 01:05:05,920
+on va pas là on absorbe le coup maintenant
+
+813
+01:05:05,920 --> 01:05:21,580
+qui fasse des facturations qui sont plus conséquentes on les étale sur plusieurs mois
+
+814
+01:05:21,580 --> 01:05:29,680
+donc essaye de simuler qui fiche une d'autres racontes qui vachent une
+
+815
+01:05:29,680 --> 01:05:32,020
+Nous avons vu la charge de maintenance.
+
+816
+01:05:33,020 --> 01:05:34,880
+Nous avons vu tout ce qui est.
+
+817
+01:05:34,880 --> 01:05:39,180
+Est-ce qu'il y a une répercussion sur le coût du litre ?
+
+818
+01:05:39,180 --> 01:05:40,180
+Est-ce que ça ?
+
+819
+01:05:40,180 --> 01:05:42,180
+Oui.
+
+820
+01:05:44,680 --> 01:05:46,180
+Oui, tout le monde.
+
+821
+01:05:46,180 --> 01:05:48,180
+Oui, tout le monde.
+
+822
+01:05:48,180 --> 01:05:48,180
+
+
+823
+01:05:52,180 --> 01:05:53,180
+Allô ?
+
+824
+01:05:53,180 --> 01:05:54,880
+Oui.
+
+825
+01:05:54,880 --> 01:05:54,880
+
+
+826
+01:05:54,880 --> 01:06:24,860
+C'est un peu comme ça.
+
+827
+01:06:24,880 --> 01:06:31,520
+Est-ce que le coup de la tractor est réparti,
+
+828
+01:06:31,520 --> 01:06:38,800
+qui va se mettre à l'utilisation de l'équipement ?
+
+829
+01:06:38,800 --> 01:06:44,220
+Comme la tractor, il s'est fait un jour au courant,
+
+830
+01:06:44,220 --> 01:06:47,480
+ou cinq heures au courant,
+
+831
+01:06:47,580 --> 01:06:49,680
+ou il s'est fait un jour au courant,
+
+832
+01:06:50,340 --> 01:06:53,200
+ou cinq heures au courant dans la journée.
+
+833
+01:06:54,880 --> 01:07:03,000
+Vous avez le temps de faire un coût de maintenance X ou Y,
+
+834
+01:07:03,000 --> 01:07:04,400
+comme le mazot ou l'arrière.
+
+835
+01:07:05,240 --> 01:07:07,000
+Comment est-ce qu'on sort le...
+
+836
+01:07:12,200 --> 01:07:12,500
+Non.
+
+837
+01:07:14,180 --> 01:07:22,840
+Oui, c'est un coût horaire par utilisation.
+
+838
+01:07:22,840 --> 01:07:36,700
+amortissement par défaut le cours horaire d'un maintenance plus mazot plus
+
+839
+01:07:36,700 --> 01:07:44,440
+autre la base et les hauts et c'est un mal sur la base de 25 dinars ou à la
+
+840
+01:07:44,440 --> 01:07:49,480
+l'heure par heure d'utilisation et encore une fois elle du coup avec elle 25
+
+841
+01:07:49,480 --> 01:07:58,360
+d'une supposition pas tous les tracteurs comme le même cours de
+
+842
+01:07:58,360 --> 01:07:59,020
+utilisation
+
+843
+01:07:59,020 --> 01:08:01,020
+Oui, c'est bon.
+
+844
+01:08:01,020 --> 01:08:03,020
+Donc, comment on va faire cette information ?
+
+845
+01:08:05,020 --> 01:08:24,020
+Alors, on va faire la deuxième option, qui est plus simple.
+
+846
+01:08:24,020 --> 01:08:35,020
+OK, je vais vous donner un tour de tous les jours.
+
+847
+01:08:35,020 --> 01:08:49,020
+Je vais vous donner un tour de tous les jours.
+
+848
+01:08:49,020 --> 01:08:57,700
+Je crois que c'est un peu comme le monde qui a la même version.
+
+849
+01:08:57,700 --> 01:08:58,820
+Oui.
+
+850
+01:08:58,820 --> 01:09:00,820
+Mais je trouve que c'est important.
+
+851
+01:09:00,820 --> 01:09:03,820
+C'est un peu comme les mécanismes ou les mécanismes.
+
+852
+01:09:03,820 --> 01:09:08,820
+Donc, je crois que tout le monde a la même version.
+
+853
+01:09:14,220 --> 01:09:15,220
+OK.
+
+854
+01:09:15,220 --> 01:09:16,620
+OK.
+
+855
+01:09:16,620 --> 01:09:19,620
+Oui, c'est la question de la dernière fois ?
+
+856
+01:09:19,620 --> 01:09:23,620
+En tout cas, j'ai fait des questions que j'ai fait,
+
+857
+01:09:23,620 --> 01:09:28,620
+j'ai besoin de me faire un peu de temps
+
+858
+01:09:28,620 --> 01:09:32,620
+et j'ai commencé à s'éteindre tous les jours.
+
+859
+01:09:32,620 --> 01:09:38,620
+Donc j'ai eu une question pour que je ne me déjeune pas
+
+860
+01:09:38,620 --> 01:09:40,620
+pour que je ne me déjeune pas à tous les questions
+
+861
+01:09:40,620 --> 01:09:42,620
+et je ne me déjeune pas à tous les questions.
+
+862
+01:09:42,620 --> 01:09:47,620
+En fonction de chaque remarque, on va envoyer le message direct.
+
+863
+01:09:49,620 --> 01:09:52,620
+Oui, le message est par téléphone.
+
+864
+01:09:53,620 --> 01:09:59,620
+Dès qu'elle m'a dit, c'est que je n'ai pas l'air déjà à l'écran.
+
+865
+01:10:02,620 --> 01:10:06,620
+Je vais mettre un peu pour des problèmes d'interprétation.
+
+866
+01:10:06,620 --> 01:10:07,620
+D'accord.
+
+867
+01:10:07,620 --> 01:10:37,600
+Merci beaucoup.

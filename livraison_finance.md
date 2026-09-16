@@ -136,7 +136,7 @@ fichiers produits à la main :
 
 | Support | Contenu |
 |---|---|
-| `presentation_finance.html` | Deck client, 15 slides, captures réelles du site. `N` = notes du présentateur, `?s=N` ouvre une slide directement. |
+| `passation/04_demonstration/presentation_finance.html` | Deck client, 15 slides, captures réelles du site. `N` = notes du présentateur, `?s=N` ouvre une slide directement. |
 | `~/Downloads/demo_finance_hmd.mp4` | Vidéo narrée 1920×1080, ~10 min — une séquence par slide. |
 | `~/Downloads/demo_finance_hmd_muette.mp4` | Mêmes slides sans voix (8 s chacune), pour commenter en direct. |
 | `jira/backlog_finance.csv` | Backlog complet : 9 epics, 61 issues (40 livrées, 1 en cours, 20 à faire). |

@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Formula = lait produit / MSI with MSI = MS distribuee - refus (kg lait per kg MS ingeree).",
+      "passed": true,
+      "evidence": "efficacite_indicateur.py:16-23 docstring 'Efficacité Alimentaire (sur MS) = Production laitière (L) / MS ingérée (kg)' and 'MS ingérée = ... so \"MS ingérée = MS distribuée − refus\"', unit L lait/kg MS. NOTES.md:32-54 repeats the formula and 'MSI = MS distribuée − refus. Optimal 1.4 L/kg MS'. Formula and the MSI=distribuée−refus identity are both stated correctly (function efficacite_alimentaire(production, ms) implements lait/MS)."
+    },
+    {
+      "text": "Green threshold = pfe_efficacite_min (1.4) and orange = pfe_efficacite_orange_min (1.0), read via get_config (not hardcoded).",
+      "passed": true,
+      "evidence": "efficacite_indicateur.py:104-105 'cfg_eff_min = float(get_config(\"pfe_efficacite_min\", default=1.4))' and 'cfg_eff_omn = float(get_config(\"pfe_efficacite_orange_min\", default=1.0))', with get_config (:40-52) reading HMD Configuration Single via frappe.db.get_single_value. Matches app rapport_mensuel.py:1250-1251 and config defaults (init_pfe_seuils.py:18-19). Not hardcoded into the color branch."
+    },
+    {
+      "text": "Tri-color green/orange/red decision logic is config-driven.",
+      "passed": true,
+      "evidence": "efficacite_indicateur.py:55-76 _kpi_ind higher-is-better branch returns 'Green' (>=green_min), 'Orange' (>=orange_min), 'Red' else, '' for None/0; called as _kpi_ind(valeur, green_min=cfg_eff_min, orange_min=cfg_eff_omn) (:108) with thresholds from get_config (:104-105). rapport_mensuel_formatter.js:27-34 maps Green/Orange/Red to colored cells."
+    },
+    {
+      "text": "Computes over a defined population (presente/lactante) using live_state for effectif; module 'HMD AGRO'.",
+      "passed": false,
+      "evidence": "No reference to live_state, effectif_on_date, présente/lactante populations, or module 'HMD AGRO' anywhere in the without_skill outputs (grep returned zero matches). efficacite_indicateur.py computes a single cheptel-wide value: efficacite_alimentaire(production_litres, ms_ingeree_kg) takes raw scalars; build_efficacite_row (:90-122) takes production/MS directly with no effectif reconstruction and no présente/lactante split. The defined-population + live_state requirement is not met."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  }
+}

@@ -1,0 +1,10 @@
+[
+ {
+  "doctype": "Asset Category",
+  "asset_category_name": "Matériel Agricole HMD",
+  "enable_cwip_accounting": 0,
+  "non_depreciable_category": 1,
+  "accounts": [],
+  "__comment": "ERPNext core 'Asset Category' fixture. Groups HMD farm equipment (tractors, milking machine, milk tank). non_depreciable_category=1: 4 tracked machines do not need fixed-asset depreciation accounting; no depreciation/fixed-asset accounts wired so the fixture imports on any company without account setup. Add depreciation later (Finance EPIC) if needed. This is ERPNext core, NOT an hmd_agro DocType, hence no 'module' field."
+ }
+]

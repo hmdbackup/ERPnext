@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Recommends ERPNext Asset (and Asset Maintenance) as the primary approach for Equipment/Intervention, rather than building them as new custom dairy DocTypes.",
+      "passed": false,
+      "evidence": "without_skill/outputs/NOTES.md builds custom DocTypes as the primary solution (\"What was created: Two DocTypes\") and only mentions ERPNext Asset under \"Architectural alternative (worth flagging before merge)\" — i.e. an alternative, not the recommended/primary approach."
+    },
+    {
+      "text": "Explicitly cites that the spec's EQUIPMENT/INTERVENTION are ERPNext-core or not-built-by-design (the spec to implementation map / golden rule).",
+      "passed": false,
+      "evidence": "without_skill/outputs/NOTES.md contains no reference to the spec-to-implementation-map, golden rule, or any statement that EQUIPMENT/INTERVENTION are ERPNext-core/not-built-by-design. It frames ERPNext Asset as a generic Frappe-native option without citing the project's design mandate."
+    },
+    {
+      "text": "Does NOT present a from-scratch custom 'Equipement'/'Equipment' DocType as the recommended solution.",
+      "passed": false,
+      "evidence": "without_skill/outputs/equipement/equipement.json (name \"Equipement\", module \"HMD AGRO\") and intervention_maintenance/intervention_maintenance.json are full from-scratch custom DocTypes presented as the built/recommended solution: \"The custom DocTypes above were built because the task asked explicitly to 'create the DocType(s)'.\""
+    },
+    {
+      "text": "Any proposed extension uses Custom Fields + module 'HMD AGRO' conventions (and notes the by-name fixture pattern for CFs on core doctypes).",
+      "passed": false,
+      "evidence": "without_skill output proposes new custom DocTypes, not Custom Fields on ERPNext core DocTypes. No Custom Field fixtures are produced and there is no mention of the by-name fixture pattern (Stock Entry-id_lot / SCRUM-123) for CFs on core doctypes."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  }
+}

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assets &amp; Maintenance — ce qui est fait — HMD AGRO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1a1614; --bg2:#221d1a; --card:#2a2320; --line:#3a322d;
+    --ink:#f0e9e0; --ink2:#c4b8aa; --muted:#8c8076;
+    --gold:#e0a85e; --espresso:#7a5c3e;
+    --c-fait:#8fc28f; --c-code:#7fa8d0; --c-rap:#c89bd6; --c-us:#e0a85e; --c-next:#e6c84f;
+    --ok:#8fc28f; --gap:#e08a6e; --warn:#e6c84f;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:linear-gradient(160deg,#1a1614,#211b18);
+    color:var(--ink); font-family:"Newsreader",Georgia,serif;
+    font-size:18px; line-height:1.6; padding:48px 20px 80px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:880px;margin:0 auto}
+  header{text-align:center;margin-bottom:44px;padding-bottom:32px;border-bottom:1px solid var(--line)}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:18px}
+  h1{font-family:"Fraunces",serif;font-weight:800;font-size:clamp(32px,5.4vw,50px);line-height:1.05;letter-spacing:-.01em;color:var(--ink)}
+  .sub{color:var(--ink2);font-style:italic;font-size:19px;margin-top:16px;max-width:620px;margin-left:auto;margin-right:auto}
+  .meta-line{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--muted);margin-top:18px;letter-spacing:.04em}
+
+  .top{background:linear-gradient(135deg,#2c2520,#241e1b);border:1px solid var(--gold);
+    border-radius:var(--radius);padding:30px 34px;margin-bottom:46px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  .top h2{font-family:"Fraunces",serif;font-weight:800;font-size:24px;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .top p{color:var(--ink2);margin-bottom:14px}
+  .top p:last-child{margin-bottom:0}
+  .top b{color:var(--ink);font-weight:600}
+
+  section{margin-bottom:44px}
+  .shead{display:flex;align-items:baseline;gap:14px;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .num{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600;padding:3px 9px;border-radius:7px;color:#1a1614}
+  .shead h2{font-family:"Fraunces",serif;font-weight:600;font-size:26px;color:var(--ink)}
+  .intro{color:var(--ink2);font-style:italic;margin-bottom:20px;font-size:16px}
+  p{margin-bottom:14px;color:var(--ink2)}
+  p b, li b{color:var(--ink);font-weight:600}
+  code{font-family:"JetBrains Mono",monospace;font-size:.82em;background:#16110f;padding:2px 7px;border-radius:5px;color:var(--gold);border:1px solid #34291f;white-space:nowrap}
+
+  .s-fait .num{background:var(--c-fait)} .s-fait .shead{border-color:var(--c-fait)}
+  .s-code .num{background:var(--c-code)} .s-code .shead{border-color:var(--c-code)}
+  .s-rap  .num{background:var(--c-rap)}  .s-rap .shead{border-color:var(--c-rap)}
+  .s-us   .num{background:var(--c-us)}   .s-us .shead{border-color:var(--c-us)}
+  .s-next .num{background:var(--c-next)} .s-next .shead{border-color:var(--c-next)}
+
+  /* blocs story */
+  .story{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--c-code);
+    border-radius:var(--radius);padding:22px 26px;margin-bottom:18px}
+  .story h3{font-family:"Fraunces",serif;font-weight:600;font-size:20px;color:var(--ink);margin-bottom:4px;
+    display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .tag{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:600;letter-spacing:.08em;
+    padding:3px 8px;border-radius:6px;background:#16110f;color:var(--gold);border:1px solid #34291f;white-space:nowrap}
+  .story .path{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--muted);margin-bottom:12px;word-break:break-all}
+  .story ul{list-style:none;margin-top:8px}
+  .story ul li{position:relative;padding:7px 0 7px 22px;color:var(--ink2);font-size:16.5px}
+  .story ul li::before{content:"";position:absolute;left:2px;top:17px;width:7px;height:7px;border-radius:2px;
+    transform:rotate(45deg);background:var(--c-code)}
+
+  .piege{background:#26201c;border:1px dashed var(--gap);border-radius:10px;padding:14px 18px;margin-top:14px;
+    color:var(--ink2);font-size:16px}
+  .piege b{color:var(--gap)}
+
+  /* tableaux */
+  .tw{overflow-x:auto;margin:16px 0 8px;border:1px solid var(--line);border-radius:var(--radius)}
+  table{border-collapse:collapse;width:100%;font-size:16px;min-width:540px}
+  th{background:#241e1b;color:var(--gold);font-family:"JetBrains Mono",monospace;font-size:11.5px;
+    letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:12px 16px;border-bottom:1px solid var(--line)}
+  td{padding:12px 16px;border-bottom:1px solid rgba(58,50,45,.6);color:var(--ink2);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td b{color:var(--ink)}
+  .fn{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--c-code);white-space:nowrap}
+
+  .pill{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .p-ok{background:rgba(143,194,143,.15);color:var(--ok);border:1px solid rgba(143,194,143,.4)}
+  .p-gap{background:rgba(224,138,110,.15);color:var(--gap);border:1px solid rgba(224,138,110,.4)}
+  .p-part{background:rgba(230,200,79,.14);color:var(--warn);border:1px solid rgba(230,200,79,.4)}
+
+  pre{background:#16110f;border:1px solid #34291f;border-radius:10px;padding:16px 18px;overflow-x:auto;margin:14px 0}
+  pre code{background:none;border:none;padding:0;color:var(--ink2);font-size:13.5px;white-space:pre}
+
+  ol.q{list-style:none;counter-reset:q;margin-top:8px}
+  ol.q li{counter-increment:q;position:relative;padding:14px 0 14px 52px;border-bottom:1px dashed var(--line);color:var(--ink2)}
+  ol.q li:last-child{border-bottom:none}
+  ol.q li::before{content:counter(q);position:absolute;left:0;top:12px;
+    width:34px;height:34px;border-radius:50%;background:var(--c-next);color:#1a1614;
+    font-family:"JetBrains Mono",monospace;font-weight:600;font-size:15px;
+    display:flex;align-items:center;justify-content:center}
+  ol.q .meta{display:block;color:var(--muted);font-size:14.5px;font-style:italic;margin-top:4px}
+
+  .schema{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;margin:18px 0}
+  .schema svg{width:100%;height:auto;display:block}
+  .cap{color:var(--muted);font-size:14px;font-style:italic;text-align:center;margin-top:12px}
+
+  footer{text-align:center;color:var(--muted);font-size:14px;font-style:italic;margin-top:56px;padding-top:24px;border-top:1px solid var(--line)}
+
+  @media print{
+    body{background:#fff;color:#1a1614;font-size:11.5pt;padding:0}
+    .top{box-shadow:none;background:#faf6f0;border-color:#caa}
+    header,.shead{border-color:#ccc}
+    h1,.shead h2,.top h2,.story h3,td b,p b,li b{color:#1a1614}
+    .sub,.intro,p,td,.story ul li,ol.q li{color:#333}
+    .story,.schema,.tw{background:#fff;border-color:#ddd;break-inside:avoid}
+    th{background:#f0ebe3;color:#7a5c3e}
+    code,pre{background:#f0ebe3;color:#7a5c3e;border-color:#ddd}
+    pre code{color:#333}
+    .kicker,.tag{color:#7a5c3e}
+    section,li,.story,tr{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">HMD AGRO · Note technique pour Iheb</div>
+    <h1>Assets &amp; Maintenance<br>ce qui est déjà fait</h1>
+    <p class="sub">Réponse détaillée à la question : « chnowa l partie li 3maltha bedhabet » sur les Assets — et ce que ça change pour <b>US-AM-13 · Maintenance thresholds and alerts</b>.</p>
+    <p class="meta-line">app <code>hmd_agro</code> · Frappe/ERPNext v15 · branche <code>finance/socle-comptable</code> · 14/08/2026</p>
+  </header>
+
+  <div class="top">
+    <h2>⭐ La réponse en trois phrases</h2>
+    <p>Le volet Assets a été construit <b>par le bas, depuis la finance</b> : les équipements et le cheptel sont des <code>Asset</code> ERPNext amortis sur un plan comptable SCE, chaque intervention crée un <code>Asset Repair</code> <b>et</b> son écriture au compte 615, les heures d'utilisation valorisent le coût mécanique par atelier, et trois rapports lisent l'ensemble.</p>
+    <p>Le module ERPNext <b>Asset / Asset Maintenance / Asset Repair est utilisé tel quel</b> — aucun DocType « Équipement » ou « Intervention » maison n'a été créé, uniquement des Custom Fields.</p>
+    <p>Ce n'est donc <b>pas</b> un module Asset Management autonome : c'est le socle d'actifs nécessaire au coût de revient du litre de lait. Pour US-AM-13 c'est une bonne nouvelle — <b>les données existent déjà, ce qui manque c'est le déclencheur d'alerte</b>.</p>
+  </div>
+
+  <section class="s-fait">
+    <div class="shead"><span class="num">01</span><h2>Le périmètre en un coup d'œil</h2></div>
+    <p class="intro">Ce qui est livré, ce qui est paramétré mais en attente de décision client, et ce qui n'existe pas.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Brique</th><th>Story</th><th>État</th><th>Support technique</th></tr></thead>
+        <tbody>
+          <tr><td><b>Immobilisations &amp; amortissements</b></td><td>FIN-S30</td><td><span class="pill p-ok">LIVRÉ</span></td><td>5 Asset Categories sur comptes 22x/28x/681</td></tr>
+          <tr><td><b>Interventions &amp; maintenance</b></td><td>FIN-S32</td><td><span class="pill p-ok">LIVRÉ</span></td><td>Asset Repair + Asset Maintenance ERPNext</td></tr>
+          <tr><td><b>Coût horaire / heures d'utilisation</b></td><td>FIN-S96</td><td><span class="pill p-ok">LIVRÉ</span></td><td>DocType maison <code>Utilisation Equipement</code></td></tr>
+          <tr><td><b>Tableau d'amortissement</b></td><td>FIN-S90/S91</td><td><span class="pill p-ok">LIVRÉ</span></td><td>Query Report</td></tr>
+          <tr><td><b>Rapport des interventions</b></td><td>SCRUM-11</td><td><span class="pill p-ok">LIVRÉ</span></td><td>Query Report, 3 blocs</td></tr>
+          <tr><td><b>Cheptel en immobilisation</b></td><td>FIN-S31</td><td><span class="pill p-part">PARAMÉTRÉ</span></td><td>Piloté par <code>cheptel_mode</code>, <code>NON_VALORISE</code> par défaut — décision client en attente</td></tr>
+          <tr><td><b>Seuils au compteur d'heures</b></td><td>US-AM-13</td><td><span class="pill p-gap">À FAIRE</span></td><td>— c'est ta story</td></tr>
+          <tr><td><b>Alerte poussée maintenance</b></td><td>US-AM-13</td><td><span class="pill p-gap">À FAIRE</span></td><td>— c'est ta story</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="s-code">
+    <div class="shead"><span class="num">02</span><h2>Le détail, fichier par fichier</h2></div>
+    <p class="intro">Tout est sous <code>hmd_agro/hmd_agro/</code>. Les chemins sont donnés pour que tu puisses ouvrir directement.</p>
+
+    <div class="story">
+      <h3>Référentiel immobilisations <span class="tag">FIN-S30</span></h3>
+      <p class="path">setup/finance/immobilisations.py — 235 lignes, idempotent</p>
+      <ul>
+        <li><b>5 Asset Categories</b> avec durées et comptes SCE : Constructions 20 ans (222/282) · Installations &amp; Matériel 10 ans (223/283) · Matériel de transport 5 ans (224/284) · Cheptel reproducteur 5 ans (225/285) · Autres 10 ans (228/288). Dotation → 681, <b>linéaire, fréquence 12 mois</b>. Le compte CWIP 23 est renseigné sur les catégories mais <code>enable_cwip_accounting</code> reste à <b>0</b> : aucune écriture CWIP n'est produite.</li>
+        <li><b>Custom Fields sur <code>Asset</code></b> (DocType core → exportés par nom dans <code>hooks.py</code>) : <code>id_batiment</code> (Link Batiment), <code>id_animal</code> (Link Animal, read-only), <code>cout_horaire</code> (Currency, DT/h). Créés par ce script <b>et</b> livrés dans <code>fixtures/custom_field.json</code>, donc réinstallés automatiquement au <code>bench migrate</code>.</li>
+        <li>Location « Ferme HMD », Supplier générique, comptes par Mode of Payment (Cash → 54, virement/chèque → 532), booking automatique des dotations.</li>
+      </ul>
+    </div>
+
+    <div class="story">
+      <h3>Référentiel maintenance <span class="tag">FIN-S32</span></h3>
+      <p class="path">setup/finance/maintenance.py — 187 lignes, idempotent</p>
+      <ul>
+        <li><b>Asset Maintenance Team « Maintenance HMD »</b>, peuplée depuis le registre <code>Personnel</code> : salariés au statut <code>ACTIF</code>, de rôle <code>MAINTENANCE</code> ou <code>TRACTORISTE</code>, rattachés à un compte utilisateur <b>activé</b>. ⚠ Deux niveaux de repli : si aucun ne convient, le manager retombe sur n'importe quel System User assignable, et l'équipe en dernier recours sur <code>Administrator</code> — <b>une équipe peut donc exister sans aucun vrai salarié dedans</b>.</li>
+        <li><b>Custom Fields sur <code>Asset Repair</code></b> : <code>type_intervention</code> (CURATIVE / PREVENTIVE / REVISION / CONTROLE), <code>personnel</code> (Link Personnel), <code>reference_hmd</code> (marqueur d'idempotence pour les imports).</li>
+        <li>Vérifie la présence du compte <b>615 « Entretien et réparations »</b>, celui qui porte la charge des interventions.</li>
+      </ul>
+      <div class="piege"><b>⚠ Piège ERPNext v15 documenté dans le code :</b> un <code>Asset Repair</code> <b>non capitalisé ne produit AUCUNE écriture comptable</b> (cf. <code>asset_repair.before_submit</code>). C'est un simple document de suivi. Sans traitement séparé, on suivrait les pannes sans jamais voir leur coût — d'où la fonction ci-dessous.</div>
+    </div>
+
+    <div class="story">
+      <h3>Le moteur — <code>maintenance_utils</code> <span class="tag">FIN-S32 + FIN-S96</span></h3>
+      <p class="path">utils/maintenance_utils.py — 511 lignes · codes d'erreur ERR-MNT-01 → 08</p>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Fonction</th><th>Ce qu'elle fait</th></tr></thead>
+          <tbody>
+            <tr><td class="fn">enregistrer_intervention()</td><td>crée l'<code>Asset Repair</code> <b>et</b> poste la charge : débit <b>615</b> sur l'atelier passé en argument, à défaut celui de l'équipement, à défaut « Frais Généraux » ; crédit 401 / 54 / 532 selon le mode de règlement. Idempotent via <code>reference</code>. <b>⚠ L'écriture n'est postée que si le coût est strictement positif</b> — une intervention interne à 0 DT crée le repair mais rien au Grand Livre.</td></tr>
+            <tr><td class="fn">annuler_intervention()</td><td>annule le repair <b>et</b> son écriture comptable.</td></tr>
+            <tr><td class="fn">planifier_maintenance()</td><td>le <b>préventif</b> : crée l'<code>Asset Maintenance</code> et ses tâches périodiques (Daily → 3 Yearly) ; ERPNext génère ensuite les <code>Asset Maintenance Log</code> à échéance et les assigne (ToDo).</td></tr>
+            <tr><td class="fn">interventions_planifiees(jours, …)</td><td>tâches <code>Planned</code> / <code>Overdue</code> dues dans l'horizon <b>ou déjà en retard</b>. Filtrable par équipement et par atelier.</td></tr>
+            <tr><td class="fn">interventions_realisees(…)</td><td>la liste détaillée des interventions de la période.</td></tr>
+            <tr><td class="fn">cout_maintenance(…)</td><td>double lecture : compte 615 du Grand Livre <b>et</b> somme des <code>Asset Repair</code> soumis.</td></tr>
+            <tr><td class="fn">cout_horaire()</td><td>retourne le <b>taux horaire seul</b> d'un équipement (<code>Asset.cout_horaire</code>, sinon le défaut de config 25 DT/h) — elle ne multiplie rien.</td></tr>
+            <tr><td class="fn">cout_utilisation()</td><td>agrège les heures et les coûts <b>déjà figés à la saisie</b> sur les lignes « Utilisation Equipement », ventilés par atelier et par équipement.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="piege"><b>⚠ ERR-MNT-08 :</b> ERPNext assigne chaque tâche de maintenance via un <code>ToDo</code> dont <code>allocated_to</code> doit être un <code>User.email</code> existant. Pour <code>Administrator</code> cet email vaut <code>admin@example.com</code> → <code>LinkValidationError</code>. Il faut donc un compte nominatif dont <b>l'email est l'identifiant</b>. Tu tomberas dessus dès que tu planifieras une tâche : le helper <code>utilisateur_assignable()</code> est là pour ça.</div>
+    </div>
+
+    <div class="story">
+      <h3>Heures d'utilisation — DocType <code>Utilisation Equipement</code> <span class="tag">FIN-S96</span></h3>
+      <p class="path">doctype/utilisation_equipement/ — codes d'erreur ERR-UTIL-01 → 05</p>
+      <ul>
+        <li>Décision de la réunion du <b>05/08/2026 (« option 2, la plus simple »)</b> : chaque équipement porte un <b>coût horaire forfaitaire</b> regroupant amortissement + maintenance + mazout — <b>25 DT/h par défaut</b> (<code>equipement_cout_horaire_defaut</code>), surchargeable équipement par équipement via <code>Asset.cout_horaire</code>.</li>
+        <li>On saisit les <b>heures réellement travaillées</b> par jour et par atelier (« le tracteur a travaillé 1 h ou 5 h aujourd'hui »).</li>
+        <li>Contrôles : heures strictement positives (<code>ERR-UTIL-01</code>) · maximum 24 h/jour (<code>ERR-UTIL-02</code>) · <b>équipement soumis</b> dans le registre des immobilisations (<code>ERR-UTIL-03</code>) · <b>date non future</b> (<code>ERR-UTIL-04</code>) · atelier non-groupe (<code>ERR-UTIL-05</code>). Le blocage des équipements vendus / mis au rebut est ailleurs : <code>ERR-MNT-02</code>, côté maintenance.</li>
+      </ul>
+      <div class="piege"><b>⚠ Ce document ne poste AUCUNE écriture</b> — et c'est volontaire. L'amortissement (68x) et l'entretien (615) sont <b>déjà</b> au Grand Livre, donc déjà dans le coût complet du litre. Valoriser les heures et les poster produirait un <b>double comptage</b>. Le coût horaire est une <b>clé de répartition analytique</b> entre ateliers (Lait, Cultures-Fourrage, Traction…), jamais une charge supplémentaire.</div>
+    </div>
+
+    <div class="story">
+      <h3>Le cheptel comme actif <span class="tag">FIN-S31</span></h3>
+      <p class="path">utils/cheptel_valorisation.py — job scheduler mensuel</p>
+      <ul>
+        <li>Une immobilisation par vache (catégorie « Cheptel reproducteur », comptes 225/285), <b>mise en service au premier vêlage</b>, valeur d'entrée = prix d'achat réel ou forfait coût d'élevage, reprise de l'existant avec l'amortissement déjà couru.</li>
+        <li>Sortie de l'animal (vente, mortalité, réforme) → <b>mise au rebut automatique</b> de l'Asset.</li>
+        <li>Piloté par <code>cheptel_mode</code> : <b><code>NON_VALORISE</code> par défaut</b>, donc sans effet tant que le client n'a pas tranché « actif biologique amortissable ou stock ? ».</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="s-rap">
+    <div class="shead"><span class="num">03</span><h2>Les rapports qui exploitent tout ça</h2></div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Rapport</th><th>Contenu</th></tr></thead>
+        <tbody>
+          <tr><td><b>Rapport Interventions</b><br><span class="fn">SCRUM-11</span></td><td>3 blocs : <b>Réalisées</b> (une ligne par intervention + total) · <b>Préventif</b> (tâches dues ou <b>en retard</b>, horizon 30 j) · <b>Rapprochement</b> (écart entre le compte 615 du GL et la somme des Asset Repair).<br>Les filtres Équipement / Atelier sont répercutés en SQL par les blocs Réalisées et Préventif. Le bloc Rapprochement, lui, <b>ne sait pas filtrer</b> (<code>cout_maintenance</code> lit le Grand Livre entier) : dès qu'un filtre est posé, <b>il se masque et affiche la raison</b> plutôt que d'exposer un écart faux.</td></tr>
+          <tr><td><b>Tableau Amortissement</b><br><span class="fn">FIN-S90/S91</span></td><td>durée, mois amortis, cumul, reste à amortir, date de sortie — actifs sortis inclus par défaut (décochable).</td></tr>
+          <tr><td><b>Rapport Performance</b></td><td>« Entretien &amp; Réparations (615) » en DT et « Interventions sur Équipements » en nombre. <b>Aucun ratio ni aucune couleur</b> sur l'entretien.</td></tr>
+          <tr><td><b>Rapport Periodique</b></td><td>c'est <b>ici</b> que vit le ratio <b>« Entretien / Produit Brut »</b> coloré vert-orange-rouge, à partir de <code>maintenance_seuil_pct_ca</code> / <code>maintenance_seuil_alarme_pct_ca</code>.</td></tr>
+          <tr><td><b>Contrôle Cohérence Finance</b><br><span class="fn">FIN-S70</span></td><td>26 contrôles sur une base nominale complète — le nombre est calculé à l'exécution et varie de ~24 à ~29 selon les branches. L'un d'eux, <b>« Tâches de maintenance préventive en retard »</b>, appelle <code>interventions_planifiees(0)</code> et passe en <b>ALERTE dès qu'une échéance est dépassée</b> (OK sinon), en listant les <b>4 premiers</b> équipements concernés.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="piege"><b>Pourquoi le bloc « Rapprochement » existe :</b> une facture d'entretien passée en compta sans <code>Asset Repair</code> gonfle le 615 sans toucher au suivi ; une intervention interne à coût 0 fait l'inverse — elle crée le repair sans jamais poster au Grand Livre (cf. le seuil « coût &gt; 0 » ci-dessus). <b>L'écart est normal</b> — et c'est justement l'information utile : « 400 DT d'entretien rattachés à aucun équipement ». N'afficher qu'un seul des deux montants transformerait un rapport de pilotage en rapport rassurant.</div>
+  </section>
+
+  <section class="s-us">
+    <div class="shead"><span class="num">04</span><h2>Lecture directe pour US-AM-13</h2></div>
+    <p class="intro">Maintenance thresholds and alerts — ce que tu peux réutiliser tel quel, et ce qui reste vraiment à construire.</p>
+
+    <h3 style="font-family:Fraunces,serif;font-size:20px;color:var(--ok);margin:22px 0 10px">✓ Déjà en place — à réutiliser, pas à refaire</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Brique</th><th>Où</th></tr></thead>
+        <tbody>
+          <tr><td><b>Seuils de coût</b> entretien / CA, vert-orange-rouge</td><td><code>HMD Configuration.maintenance_seuil_pct_ca</code> (3 %) et <code>maintenance_seuil_alarme_pct_ca</code> (6 %), lus en <code>rapport_periodique.py:1357-1358</code>. ⚠ Ils colorent <b>une seule cellule</b> : la ligne « Entretien / Produit Brut » — ni le montant 615, ni le nombre d'interventions.</td></tr>
+          <tr><td><b>Détection d'échéance dépassée</b> (calendaire)</td><td><code>interventions_planifiees()</code> → Rapport Interventions bloc 2 + Contrôle Cohérence</td></tr>
+          <tr><td><b>Planification périodique</b></td><td><code>planifier_maintenance()</code> → <code>Asset Maintenance Log</code> ERPNext</td></tr>
+          <tr><td><b>Compteur d'heures</b> par équipement</td><td>DocType <code>Utilisation Equipement</code> — la donnée existe, <b>personne ne la surveille</b></td></tr>
+          <tr><td><b>Pattern d'alerte de l'app</b></td><td>DocType <code>Alerte</code> + job <code>daily</code> <code>alerte.generate_alerts</code> — mais <b>cheptel uniquement</b> : 7 valeurs de <code>type_alerte</code>, toutes animales (CHALEUR_GENISSE, CHALEUR_POST_VELAGE, VERIFICATION_J21, VERIFICATION_J50, TARISSEMENT, VELAGE_IMMINENT, DELVO)</td></tr>
+          <tr><td><b>Équipe destinataire</b></td><td>Asset Maintenance Team « Maintenance HMD », déjà constituée depuis <code>Personnel</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-family:Fraunces,serif;font-size:20px;color:var(--gap);margin:28px 0 10px">✗ Ce qui manque — le vrai périmètre de ta story</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Manque</th><th>Pourquoi c'est bloquant</th></tr></thead>
+        <tbody>
+          <tr><td><b>Seuil au compteur d'heures</b></td><td>rien ne compare le cumul d'heures d'un équipement à un seuil (« vidange toutes les 250 h »). La périodicité ERPNext est <b>purement calendaire</b>. C'est le cœur de la story.</td></tr>
+          <tr><td><b>Alerte poussée</b></td><td>aujourd'hui l'information n'existe que si quelqu'un <b>ouvre</b> un rapport. Aucune Alerte d'équipement, aucune notification, aucun job <code>scheduler</code> maintenance dans <code>hooks.py</code>.</td></tr>
+          <tr><td><b><code>Alerte</code> n'accepte pas les équipements</b></td><td>le Link <code>animal</code> est <b><code>reqd: 1</code></b> — une alerte sans animal est <b>structurellement impossible</b>. Il faut soit étendre le DocType (rendre le lien polymorphe), soit créer un DocType frère. Aucun autre mécanisme d'alerte ni fixture Notification n'existe dans le dépôt.</td></tr>
+          <tr><td><b>Horizon préventif non configurable</b></td><td><code>rapport_interventions.py</code> lit déjà <code>get_config("maintenance_horizon_jours", 30)</code> mais <b>le champ n'existe pas</b> dans HMD Configuration → repli sur 30. <b>Quick win</b> : ajouter le champ et l'horizon devient réglable sans toucher au code.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="s-code">
+    <div class="shead"><span class="num">05</span><h2>Le lien avec la finance (ta deuxième question)</h2></div>
+    <p>Oui, c'est lié — et c'est précisément ce qui contraint la conception d'US-AM-13.</p>
+    <p><b>Une intervention n'est pas qu'un événement de maintenance : c'est une charge.</b> Toute évolution qui crée ou modifie une intervention doit passer par <code>enregistrer_intervention()</code>, sinon le compte 615 et le coût de revient du litre divergent, et le bloc « Rapprochement » du Rapport Interventions se met à crier.</p>
+    <p>Inversement — et c'est ce qui rend la story confortable à démarrer — <b>une alerte de seuil est purement de la lecture</b> : elle ne poste aucune écriture, donc elle est <b>sans risque comptable</b>. US-AM-13 peut avancer sans toucher au Grand Livre.</p>
+    <p>La seule règle à retenir si ton code touche à une intervention : <b>le point d'entrée côté charges, c'est <code>enregistrer_intervention()</code></b> — jamais un <code>Asset Repair</code> créé à la main dans le Desk, qui ne produirait aucune écriture. C'est le principe de tout le socle finance : une fonction dans <code>utils/</code> fait le métier <b>et</b> la comptabilité, jamais l'un sans l'autre. Le <b>Contrôle Cohérence Finance</b> est là pour attraper les écarts quand la règle n'a pas été suivie. En cas de doute sur cette partie, demande-moi plutôt que de poster à la main.</p>
+    <div class="schema">
+      <svg viewBox="0 0 820 250" role="img" aria-label="Schéma : de la saisie terrain aux alertes, en passant par les Assets ERPNext et la comptabilité">
+        <defs>
+          <marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" fill="#8c8076"/>
+          </marker>
+          <marker id="arg" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" fill="#e08a6e"/>
+          </marker>
+        </defs>
+        <g font-family="JetBrains Mono, monospace" font-size="12">
+          <!-- colonne 1 : saisie -->
+          <rect x="8" y="24" width="180" height="52" rx="9" fill="#2a2320" stroke="#7fa8d0"/>
+          <text x="98" y="46" fill="#f0e9e0" text-anchor="middle">Intervention saisie</text>
+          <text x="98" y="63" fill="#8c8076" text-anchor="middle" font-size="10.5">enregistrer_intervention()</text>
+
+          <rect x="8" y="140" width="180" height="52" rx="9" fill="#2a2320" stroke="#7fa8d0"/>
+          <text x="98" y="162" fill="#f0e9e0" text-anchor="middle">Heures saisies</text>
+          <text x="98" y="179" fill="#8c8076" text-anchor="middle" font-size="10.5">Utilisation Equipement</text>
+
+          <!-- colonne 2 : coeur -->
+          <rect x="256" y="24" width="180" height="52" rx="9" fill="#2a2320" stroke="#8fc28f"/>
+          <text x="346" y="46" fill="#f0e9e0" text-anchor="middle">Asset Repair</text>
+          <text x="346" y="63" fill="#8c8076" text-anchor="middle" font-size="10.5">ERPNext (suivi)</text>
+
+          <rect x="256" y="86" width="180" height="46" rx="9" fill="#2a2320" stroke="#8fc28f"/>
+          <text x="346" y="106" fill="#f0e9e0" text-anchor="middle">Asset Maintenance</text>
+          <text x="346" y="122" fill="#8c8076" text-anchor="middle" font-size="10.5">échéances calendaires</text>
+
+          <rect x="256" y="140" width="180" height="52" rx="9" fill="#2a2320" stroke="#8fc28f"/>
+          <text x="346" y="162" fill="#f0e9e0" text-anchor="middle">Asset · cout_horaire</text>
+          <text x="346" y="179" fill="#8c8076" text-anchor="middle" font-size="10.5">clé analytique</text>
+
+          <!-- colonne 3 : sorties -->
+          <rect x="504" y="14" width="180" height="46" rx="9" fill="#2a2320" stroke="#e0a85e"/>
+          <text x="594" y="34" fill="#f0e9e0" text-anchor="middle">Grand Livre 615</text>
+          <text x="594" y="50" fill="#8c8076" text-anchor="middle" font-size="10.5">coût du litre</text>
+
+          <rect x="504" y="74" width="180" height="46" rx="9" fill="#2a2320" stroke="#c89bd6"/>
+          <text x="594" y="94" fill="#f0e9e0" text-anchor="middle">Rapports</text>
+          <text x="594" y="110" fill="#8c8076" text-anchor="middle" font-size="10.5">Interventions · Perf · Cohérence</text>
+
+          <rect x="504" y="146" width="180" height="60" rx="9" fill="#26201c" stroke="#e08a6e" stroke-dasharray="5 4"/>
+          <text x="594" y="170" fill="#e08a6e" text-anchor="middle">US-AM-13</text>
+          <text x="594" y="187" fill="#8c8076" text-anchor="middle" font-size="10.5">seuils + alertes</text>
+          <text x="594" y="201" fill="#8c8076" text-anchor="middle" font-size="10.5">À CONSTRUIRE</text>
+
+          <!-- flèches -->
+          <path d="M188 50 L252 50" stroke="#8c8076" fill="none" marker-end="url(#ar)"/>
+          <path d="M188 166 L252 166" stroke="#8c8076" fill="none" marker-end="url(#ar)"/>
+          <path d="M436 44 L500 34" stroke="#8c8076" fill="none" marker-end="url(#ar)"/>
+          <path d="M436 60 L500 90" stroke="#8c8076" fill="none" marker-end="url(#ar)"/>
+          <path d="M436 109 L500 100" stroke="#8c8076" fill="none" marker-end="url(#ar)"/>
+          <path d="M436 176 L500 112" stroke="#8c8076" fill="none" marker-end="url(#ar)"/>
+          <path d="M436 120 C470 150, 470 160, 500 168" stroke="#e08a6e" fill="none" stroke-dasharray="5 4" marker-end="url(#arg)"/>
+          <path d="M436 186 C470 196, 470 190, 500 182" stroke="#e08a6e" fill="none" stroke-dasharray="5 4" marker-end="url(#arg)"/>
+
+          <text x="98" y="228" fill="#8c8076" text-anchor="middle" font-size="10.5">saisie terrain</text>
+          <text x="346" y="228" fill="#8c8076" text-anchor="middle" font-size="10.5">Assets ERPNext</text>
+          <text x="594" y="228" fill="#8c8076" text-anchor="middle" font-size="10.5">exploitation</text>
+        </g>
+      </svg>
+      <p class="cap">En pointillé orange : ce que US-AM-13 vient brancher — deux sources de déclenchement (échéance calendaire, compteur d'heures), aucune écriture comptable.</p>
+    </div>
+  </section>
+
+  <section class="s-next">
+    <div class="shead"><span class="num">06</span><h2>Les questions ouvertes</h2></div>
+    <p class="intro">Quatre décisions conditionnent l'implémentation — à trancher au moment où tu attaqueras la story.</p>
+    <ol class="q">
+      <li><b>Le seuil est-il en heures, en date, ou les deux ?</b><span class="meta">« les deux, premier atteint » est le comportement standard sur du matériel agricole — mais ça double la complexité du calcul de la prochaine échéance.</span></li>
+      <li><b>Où vit le seuil : Custom Field sur <code>Asset</code>, ou <code>HMD Configuration</code> par catégorie ?</b><span class="meta">Ma préférence : sur l'Asset, avec repli sur la config — exactement le pattern déjà en place pour <code>cout_horaire</code> / <code>equipement_cout_horaire_defaut</code>.</span></li>
+      <li><b>Quel canal pour l'alerte : DocType <code>Alerte</code>, Notification ERPNext, ou badge dans le Rapport Interventions ?</b><span class="meta">Le job scheduler <code>daily</code> existe déjà dans <code>hooks.py</code> — l'accrochage est trivial une fois le canal choisi.</span></li>
+      <li><b>Qui reçoit l'alerte ?</b><span class="meta">L'équipe « Maintenance HMD » est déjà constituée depuis le registre Personnel (rôles MAINTENANCE / TRACTORISTE) — reste à décider si l'alerte va à l'équipe, au manager, ou au gérant.</span></li>
+    </ol>
+  </section>
+
+  <section class="s-fait">
+    <div class="shead"><span class="num">07</span><h2>Pour installer et vérifier de ton côté</h2></div>
+    <pre><code># référentiels (idempotents, re-run safe)
+bench --site hmd.agro execute hmd_agro.hmd_agro.setup.finance.immobilisations.setup_immobilisations
+bench --site hmd.agro execute hmd_agro.hmd_agro.setup.finance.maintenance.setup_maintenance
+
+# tests
+bench --site hmd.agro execute hmd_agro.hmd_agro.tests.test_maintenance.run             # ~42 contrôles
+bench --site hmd.agro execute hmd_agro.hmd_agro.tests.test_tableau_amortissement.run   # 19 (17 sans seed démo)
+
+# une intervention de bout en bout
+bench --site hmd.agro execute hmd_agro.hmd_agro.utils.maintenance_utils.enregistrer_intervention \
+  --kwargs "{'asset': 'ACC-ASS-2026-00001', 'description': 'Vidange',
+             'cout': 320, 'type_intervention': 'PREVENTIVE'}"</code></pre>
+    <p><code>test_maintenance.run()</code> couvre FIN-S32 (sections 1-7) <b>et</b> FIN-S96 (sections 8-10, heures et coût horaire) — environ 42 contrôles. Le « 26/26 » qui traîne dans <code>livraison_finance.md</code> est <b>périmé</b> : il date d'avant FIN-S96.</p>
+    <p>Côté Desk : <b>Rapport Interventions</b>, <b>Tableau Amortissement</b>, <b>Rapport Periodique</b>, <b>Controle Coherence Finance</b>. Tous en lecture seule et réexécutables à volonté.</p>
+  </section>
+
+  <footer>
+    Note préparée par Mohamed Slim · projet HMD AGRO · 14/08/2026<br>
+    Chaque affirmation a été relue contre le code source (fichier + ligne) avant diffusion.<br>
+    Version markdown équivalente : <code>recap_assets_maintenance.md</code> à la racine du dépôt.
+  </footer>
+
+</div>
+</body>
+</html>

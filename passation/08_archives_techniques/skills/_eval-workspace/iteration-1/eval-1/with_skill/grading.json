@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Recognizes vaccination is medical care and considers reusing Traitement (TRAITEMENT_MEDICAL) / Medicament (type VACCIN) rather than an unrelated mechanism.",
+      "passed": true,
+      "evidence": "with_skill/outputs/NOTES.md '## Key decision 1 — new DocType vs. folding into Traitement' explicitly weighs 'A vaccination could be a Traitement (type_traitement = TRAITEMENT_MEDICAL with a VACCIN medicament)' and decides to link the vaccine to Medicament type VACCIN ('## Key decision 2 ... the vaccin field is a Link to Medicament'). Recognizes it as medical care and reuses the existing Medicament/Traitement machinery rather than an unrelated mechanism."
+    },
+    {
+      "text": "If creating a DocType: uses module 'HMD AGRO', French snake_case fields (e.g. date_vaccination / date_rappel), a format: autoname, and a Link to Animal.",
+      "passed": true,
+      "evidence": "with_skill/outputs/vaccination/vaccination.json: \"module\": \"HMD AGRO\"; fields date_vaccination and date_rappel (exact snake_case French examples cited); \"autoname\": \"format:VACC-{animal}-{date_vaccination}-{####}\" (format: style matching codebase e.g. format:EC-{animal}-{date}-{####}); animal field is fieldtype Link, options Animal."
+    },
+    {
+      "text": "Follows code conventions: 4-space Python indent and frappe.throw with an ERR- code and/or get_config for any threshold (no hardcoded tabs/thresholds).",
+      "passed": true,
+      "evidence": "with_skill/outputs/vaccination/vaccination.py uses 4-space indentation throughout (grep -P '\\t' finds no tabs, spaces only). The domain validation validate_vaccin uses frappe.throw with an ERR- code: line 47 _(\"ERR-VAC-01: Le produit {0} n'est pas un vaccin ...\"), matching the codebase convention (insemination.py ERR-IA-01). No hardcoded threshold: date_rappel is user-entered, not auto-derived, so no get_config needed."
+    },
+    {
+      "text": "Links the vaccine to a Medicament of type VACCIN and handles the next-due (rappel) date.",
+      "passed": true,
+      "evidence": "with_skill/outputs/vaccination/vaccination.json: vaccin is fieldtype Link, options Medicament; vaccination.py validate_vaccin enforces type_medicament == 'VACCIN' (ERR-VAC-01). Next-due handled via date_rappel Date field with validate_dates enforcing date_rappel > date_vaccination (vaccination.py:56-57). Medicament VACCIN type verified to exist (medicament.json:40)."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

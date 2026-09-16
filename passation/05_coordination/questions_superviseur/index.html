@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Journal des questions — Superviseur · HMD AGRO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1a1614; --bg2:#221d1a; --card:#2a2320; --card2:#241e1b; --line:#3a322d;
+    --ink:#f0e9e0; --ink2:#c4b8aa; --muted:#8c8076;
+    --gold:#e0a85e; --gold-dim:#b9853f;
+    --c-mcd:#7fa8d0; --c-dom:#8fc28f; --c-arch:#c89bd6; --c-start:#e0a85e; --c-goal:#e6c84f;
+    --ok:#8fc28f; --radius:13px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:linear-gradient(160deg,#1a1614,#211b18);background-attachment:fixed;
+    color:var(--ink); font-family:"Newsreader",Georgia,serif; font-size:17px; line-height:1.55;
+    -webkit-font-smoothing:antialiased; padding:24px 20px 60px;
+  }
+  .app{max-width:1180px;margin:0 auto}
+  a{color:var(--gold)}
+
+  /* ---------- header ---------- */
+  header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;
+    padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:22px}
+  .brand .kicker{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+  .brand h1{font-family:"Fraunces",serif;font-weight:800;font-size:clamp(26px,4vw,40px);line-height:1.02;letter-spacing:-.01em}
+  .brand p{color:var(--ink2);font-style:italic;font-size:15px;margin-top:6px}
+  .saved{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted);opacity:0;transition:opacity .3s}
+  .saved.show{opacity:1;color:var(--ok)}
+
+  /* ---------- toolbar ---------- */
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:22px}
+  .search{position:relative;flex:1;min-width:240px}
+  .search input{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;
+    color:var(--ink);font-family:"Newsreader",serif;font-size:16px;padding:11px 14px 11px 40px}
+  .search input:focus{outline:none;border-color:var(--gold)}
+  .search svg{position:absolute;left:13px;top:12px;width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2}
+  .search .clear{position:absolute;right:10px;top:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;display:none}
+  button.btn,label.btn{font-family:"JetBrains Mono",monospace;font-size:12.5px;font-weight:600;letter-spacing:.02em;
+    background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--ink2);
+    padding:11px 14px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+  button.btn:hover,label.btn:hover{border-color:var(--gold);color:var(--ink)}
+  button.btn.primary{background:var(--gold);color:#1a1614;border-color:var(--gold)}
+  button.btn.primary:hover{background:#eeb96f}
+  label.btn input{display:none}
+
+  /* ---------- layout ---------- */
+  .layout{display:grid;grid-template-columns:288px 1fr;gap:24px;align-items:start}
+  @media(max-width:820px){.layout{grid-template-columns:1fr}}
+
+  /* ---------- sidebar ---------- */
+  .side{position:sticky;top:16px;display:flex;flex-direction:column;gap:18px}
+  @media(max-width:820px){.side{position:static}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .panel h2{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+
+  /* calendar */
+  .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .cal-head .mlabel{font-family:"Fraunces",serif;font-weight:600;font-size:16px;text-transform:capitalize}
+  .cal-head button{background:none;border:1px solid var(--line);border-radius:7px;color:var(--ink2);cursor:pointer;width:26px;height:26px;font-size:14px}
+  .cal-head button:hover{border-color:var(--gold);color:var(--gold)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .cal-grid .dow{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--muted);text-align:center;padding:3px 0}
+  .cal-grid .day{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+    font-size:13px;color:var(--ink2);border-radius:7px;cursor:default;border:1px solid transparent}
+  .cal-grid .day.has{cursor:pointer;color:var(--ink);font-weight:600}
+  .cal-grid .day.has:hover{border-color:var(--gold)}
+  .cal-grid .day.has::after{content:"";position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--gold)}
+  .cal-grid .day.today{box-shadow:inset 0 0 0 1px var(--gold-dim)}
+  .cal-grid .day.sel{background:var(--gold);color:#1a1614}
+  .cal-grid .day.sel::after{background:#1a1614}
+  .cal-grid .day.empty{cursor:default}
+  .cal-foot{margin-top:10px;text-align:center}
+  .cal-foot button{background:none;border:none;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:11px;cursor:pointer;text-decoration:underline}
+  .cal-foot button:hover{color:var(--gold)}
+
+  /* session list */
+  .slist{display:flex;flex-direction:column;gap:7px;max-height:42vh;overflow:auto}
+  .sitem{text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;transition:.12s}
+  .sitem:hover{border-color:var(--gold-dim)}
+  .sitem.active{border-color:var(--gold);background:#2f2722}
+  .sitem .st{font-family:"Fraunces",serif;font-weight:600;font-size:15px;color:var(--ink);margin-bottom:2px;line-height:1.2}
+  .sitem .sd{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--muted)}
+  .sitem .sp{font-size:11px;color:var(--ink2);margin-top:4px}
+  .sitem .bar{height:4px;border-radius:3px;background:var(--line);margin-top:5px;overflow:hidden}
+  .sitem .bar i{display:block;height:100%;background:var(--ok)}
+
+  /* ---------- main ---------- */
+  .session-head{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+  .session-head .titlewrap{flex:1;min-width:200px}
+  .session-head input.stitle{width:100%;background:none;border:none;border-bottom:1px dashed transparent;
+    font-family:"Fraunces",serif;font-weight:800;font-size:clamp(22px,3vw,32px);color:var(--ink);padding:2px 0}
+  .session-head input.stitle:focus{outline:none;border-bottom-color:var(--gold-dim)}
+  .session-head .smeta{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted);margin-top:6px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .session-head .smeta input[type=date]{background:var(--card);border:1px solid var(--line);border-radius:7px;color:var(--ink2);font-family:inherit;font-size:12px;padding:4px 7px;color-scheme:dark}
+  .prog{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--ink2)}
+  .del-s{background:none;border:1px solid var(--line);border-radius:8px;color:var(--muted);cursor:pointer;padding:7px 10px;font-family:"JetBrains Mono",monospace;font-size:11px}
+  .del-s:hover{border-color:#c97b6b;color:#e09182}
+
+  .theme-group{margin-bottom:26px}
+  .theme-group .thead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .theme-group .dot{width:11px;height:11px;border-radius:3px;transform:rotate(45deg)}
+  .theme-group h3{font-family:"Fraunces",serif;font-weight:600;font-size:19px;color:var(--ink)}
+  .theme-group .tcount{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted)}
+
+  .qcard{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:11px;padding:14px 16px;margin-bottom:11px}
+  .qcard.answered{border-left-color:var(--ok)}
+  .qcard.flagged{border-left-color:var(--gold)}
+  .qrow{display:flex;align-items:flex-start;gap:10px}
+  .qrow .star{color:var(--gold);font-size:15px;line-height:1.6;flex-shrink:0}
+  .qtext{flex:1;font-size:16.5px;color:var(--ink);line-height:1.5;padding:2px 4px;border-radius:6px;border:1px solid transparent}
+  .qtext:focus{outline:none;border-color:var(--gold-dim);background:#241e1b}
+  .qtext code{font-family:"JetBrains Mono",monospace;font-size:.8em;background:#16110f;padding:1px 6px;border-radius:5px;color:var(--gold);border:1px solid #34291f}
+  .qactions{display:flex;gap:6px;flex-shrink:0}
+  .qactions button{background:none;border:1px solid var(--line);border-radius:7px;color:var(--muted);cursor:pointer;width:28px;height:28px;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .qactions button:hover{border-color:var(--gold);color:var(--gold)}
+  .qactions button.on{color:var(--gold);border-color:var(--gold-dim)}
+  .qactions button.del:hover{border-color:#c97b6b;color:#e09182}
+  .answer-wrap{margin-top:10px;position:relative}
+  .answer-wrap .lbl{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:block}
+  textarea.answer{width:100%;min-height:54px;background:#1d1714;border:1px solid var(--line);border-radius:9px;
+    color:var(--ink);font-family:"Newsreader",serif;font-size:15.5px;line-height:1.5;padding:10px 12px;resize:vertical}
+  textarea.answer:focus{outline:none;border-color:var(--gold-dim)}
+  textarea.answer::placeholder{color:#6b6058;font-style:italic}
+
+  .addq-form{background:var(--card2);border:1px dashed var(--gold-dim);border-radius:11px;padding:14px 16px;margin-top:8px;display:none}
+  .addq-form.show{display:block}
+  .addq-form select,.addq-form textarea{width:100%;background:#1d1714;border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:inherit;font-size:15px;padding:9px 11px;margin-bottom:9px;color-scheme:dark}
+  .addq-form textarea{min-height:50px;resize:vertical}
+  .addq-form .row{display:flex;gap:9px}
+
+  .empty-state{text-align:center;color:var(--muted);padding:60px 20px;font-style:italic}
+
+  /* search results */
+  .sresult{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted);margin-bottom:16px}
+  .rcard{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:13px 16px;margin-bottom:10px;cursor:pointer;transition:.12s}
+  .rcard:hover{border-color:var(--gold-dim)}
+  .rcard .rmeta{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--muted);margin-bottom:6px;display:flex;gap:10px;align-items:center}
+  .rcard .rtag{padding:1px 7px;border-radius:5px;color:#1a1614;font-weight:600}
+  .rcard .rq{font-size:16px;color:var(--ink);margin-bottom:4px}
+  .rcard .ra{font-size:14.5px;color:var(--ink2);font-style:italic}
+  mark{background:var(--gold);color:#1a1614;border-radius:3px;padding:0 2px}
+
+  footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:13px;font-style:italic}
+
+  @media print{
+    body{background:#fff;color:#000;padding:0}
+    .toolbar,.side,.qactions,.addq-form,.del-s,.cal-foot,.saved,footer{display:none!important}
+    .layout{grid-template-columns:1fr} .qcard,.theme-group{break-inside:avoid}
+    textarea.answer{border:1px solid #ccc;color:#000;background:#fff} .qtext,.brand h1,.session-head input.stitle{color:#000}
+  }
+  ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#3a322d;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <div class="kicker">Stage / PFE · Projet HMD AGRO</div>
+      <h1>Journal des questions</h1>
+      <p>Mes réunions avec le superviseur — questions, réponses, dates &amp; recherche.</p>
+    </div>
+    <div class="saved" id="saved">✓ Enregistré</div>
+  </header>
+
+  <div class="toolbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+      <input id="search" type="text" placeholder="Rechercher dans toutes les questions et réponses…">
+      <button class="clear" id="searchClear">×</button>
+    </div>
+    <button class="btn primary" id="newSession">＋ Nouvelle réunion</button>
+    <button class="btn" id="exportBtn">⤓ Exporter</button>
+    <label class="btn">⤒ Importer<input type="file" id="importInput" accept="application/json"></label>
+    <button class="btn" id="printBtn">⎙ Imprimer / PDF</button>
+  </div>
+
+  <div class="layout">
+    <aside class="side">
+      <div class="panel">
+        <h2>Calendrier</h2>
+        <div class="cal-head">
+          <button id="calPrev">‹</button>
+          <span class="mlabel" id="calLabel"></span>
+          <button id="calNext">›</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-foot"><button id="calAll">Voir toutes les réunions</button></div>
+      </div>
+      <div class="panel">
+        <h2>Réunions</h2>
+        <div class="slist" id="slist"></div>
+      </div>
+    </aside>
+
+    <main class="main" id="main"></main>
+  </div>
+
+  <footer>
+    Données enregistrées automatiquement dans ce navigateur (localStorage).
+    Pense à <b>Exporter</b> régulièrement vers le dossier <code>archives/</code> pour sauvegarder.
+  </footer>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   Journal des questions superviseur — app autonome (vanilla JS)
+   Persistance : localStorage. Export/Import : fichiers JSON.
+   ============================================================ */
+
+const KEY = "hmd_supervisor_qa_v1";
+
+const THEMES = [
+  {key:"mcd",   label:"Écarts MCD ↔ code",       color:"#7fa8d0"},
+  {key:"dom",   label:"Règles métier (laitier)", color:"#8fc28f"},
+  {key:"arch",  label:"Architecture & dev",      color:"#c89bd6"},
+  {key:"start", label:"Mise en route",           color:"#e0a85e"},
+  {key:"goal",  label:"Attentes & objectifs",    color:"#e6c84f"},
+];
+const themeOf = k => THEMES.find(t=>t.key===k) || THEMES[0];
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const uid = () => "q"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const pad = n => String(n).padStart(2,"0");
+const todayKey = () => { const d=new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); };
+function frDate(key){
+  const [y,m,d]=key.split("-").map(Number);
+  return new Date(y,m-1,d).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+}
+function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+/* ---------- seed (première utilisation) ---------- */
+function seed(){
+  const Q=(theme,text,prio=false)=>({id:uid(),theme,text,answer:"",prio,flag:false});
+  return {
+    sessions:[{
+      id:uid(), date:todayKey(), title:"Première réunion d'intégration",
+      questions:[
+        Q("mcd","Le <b>MCD est-il à jour</b>, ou le code a-t-il volontairement divergé ?",true),
+        Q("mcd","<b>PRODUIT / STOCK / MOUVEMENT_STOCK</b> passent par ERPNext natif (<code>Item</code>, <code>Bin</code>, <code>Stock Entry</code>) au lieu de DocTypes custom. Choix volontaire ? Pour une nouvelle fonctionnalité de stock, je passe par ERPNext ou je crée du custom ?"),
+        Q("mcd","<b>EQUIPEMENT / INTERVENTION</b> (famille rouge) ne sont pas implémentés. Prévus plus tard ? Possible tâche pour moi ?"),
+        Q("mcd","<b>COUT / VENTE</b> (finance) sont polymorphes dans le MCD. Comment la finance est-elle gérée aujourd'hui — comptabilité ERPNext, ou pas encore ?"),
+        Q("mcd","<b>PARAGE</b> semble fondu dans <b>Traitement</b> plutôt que séparé. Intentionnel ?"),
+
+        Q("dom","Cycle de vie animal (VELLE → GENISSE → VACHE…) : cas particuliers / exceptions à connaître ?"),
+        Q("dom","<b>Délai d'attente lait</b> après traitement : la durée vient d'où (réglementation, vétérinaire, config) ?"),
+        Q("dom","<b>Allotement</b> par jours en lactation : qui décide des seuils ? Fixes ou configurables ?"),
+        Q("dom","Cascade vêlage (crée veau + ouvre lactation) : des cas où il ne faut <b>PAS</b> la déclencher ?"),
+
+        Q("arch","Où dois-je mettre la logique métier — toujours dans la couche <code>utils/</code> ?",true),
+        Q("arch","Version exacte d'<b>ERPNext / Frappe</b> ?"),
+        Q("arch","Workflow <b>fixtures + patches</b> : comment déployez-vous une modif de schéma ?"),
+        Q("arch","Conventions de nommage (français métier, codes RG/CF/ERR) : à respecter strictement ?"),
+        Q("arch","Niveau d'exigence sur les <b>tests</b> : un test par DocType ?"),
+
+        Q("start","Comment je monte mon <b>environnement de dev</b> (bench, site local) — y a-t-il un guide ?",true),
+        Q("start","Quel est le <b>workflow Git</b> (branches, PR, qui review mon code) ?",true),
+        Q("start","À qui je m'adresse pour les questions <b>techniques</b> vs <b>métier</b> (élevage) ?",true),
+        Q("start","Accès à des <b>données de test / staging</b> ?"),
+        Q("start","<b>Première tâche</b> / ticket simple pour me roder ?"),
+
+        Q("goal","Quelle est ma <b>première tâche / mon objectif concret</b> de stage ?",true),
+        Q("goal","Objectifs concrets du stage / PFE ?"),
+        Q("goal","Livrable attendu à la fin (fonctionnalité, rapport, soutenance) ?"),
+        Q("goal","Comment mon travail sera-t-il évalué ?"),
+      ]
+    }],
+    currentId:null
+  };
+}
+
+/* ---------- state ---------- */
+let S;
+function load(){
+  try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); if(s&&s.sessions) return s; } }catch(e){}
+  return seed();
+}
+let saveTimer=null;
+function save(flash=true){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+  if(flash){ const el=$("#saved"); el.classList.add("show"); clearTimeout(saveTimer); saveTimer=setTimeout(()=>el.classList.remove("show"),1200); }
+}
+
+let view = { searchTerm:"", filterDate:null, cal:null };
+function curSession(){ return S.sessions.find(s=>s.id===S.currentId) || S.sessions[0]; }
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  if(!S.currentId && S.sessions[0]) S.currentId=S.sessions[0].id;
+  renderCalendar();
+  renderSessionList();
+  if(view.searchTerm.trim()) renderSearch(); else renderSession();
+}
+
+/* ---- calendar ---- */
+function sessionsByDate(){ const m={}; S.sessions.forEach(s=>{ (m[s.date]=m[s.date]||[]).push(s); }); return m; }
+function renderCalendar(){
+  if(!view.cal){ const d=new Date(); view.cal={y:d.getFullYear(),m:d.getMonth()}; }
+  const {y,m}=view.cal;
+  $("#calLabel").textContent = new Date(y,m,1).toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
+  const byDate=sessionsByDate();
+  const first=new Date(y,m,1).getDay(); const offset=(first+6)%7; // lundi=0
+  const days=new Date(y,m+1,0).getDate();
+  const dows=["L","M","M","J","V","S","D"];
+  let h=dows.map(d=>`<div class="dow">${d}</div>`).join("");
+  for(let i=0;i<offset;i++) h+=`<div class="day empty"></div>`;
+  for(let d=1;d<=days;d++){
+    const key=y+"-"+pad(m+1)+"-"+pad(d);
+    const has=!!byDate[key];
+    const cls=["day", has?"has":"", key===todayKey()?"today":"", key===view.filterDate?"sel":""].join(" ");
+    h+=`<div class="${cls}" ${has?`data-date="${key}"`:""}>${d}</div>`;
+  }
+  $("#calGrid").innerHTML=h;
+}
+
+/* ---- session list ---- */
+function renderSessionList(){
+  let list=[...S.sessions].sort((a,b)=>b.date.localeCompare(a.date));
+  if(view.filterDate) list=list.filter(s=>s.date===view.filterDate);
+  if(!list.length){ $("#slist").innerHTML=`<div style="color:var(--muted);font-size:13px;font-style:italic">Aucune réunion à cette date.</div>`; return; }
+  $("#slist").innerHTML=list.map(s=>{
+    const tot=s.questions.length, ans=s.questions.filter(q=>q.answer.trim()).length;
+    const pct=tot?Math.round(ans/tot*100):0;
+    return `<button class="sitem ${s.id===S.currentId?"active":""}" data-sid="${s.id}">
+      <div class="st">${esc(s.title)||"(sans titre)"}</div>
+      <div class="sd">${frDate(s.date)}</div>
+      <div class="sp">${ans} / ${tot} répondues</div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+    </button>`;
+  }).join("");
+}
+
+/* ---- one session (main) ---- */
+function renderSession(){
+  const s=curSession();
+  if(!s){ $("#main").innerHTML=`<div class="empty-state">Aucune réunion. Clique « ＋ Nouvelle réunion » pour commencer.</div>`; return; }
+  const tot=s.questions.length, ans=s.questions.filter(q=>q.answer.trim()).length;
+
+  let html=`<div class="session-head">
+    <div class="titlewrap">
+      <input class="stitle" id="stitle" value="${esc(s.title)}" placeholder="Titre de la réunion…">
+      <div class="smeta">
+        <span>📅 <input type="date" id="sdate" value="${s.date}"></span>
+        <span class="prog" id="prog">${ans} / ${tot} répondues</span>
+      </div>
+    </div>
+    <button class="del-s" data-action="del-session">🗑 Supprimer cette réunion</button>
+  </div>`;
+
+  THEMES.forEach(t=>{
+    const qs=s.questions.filter(q=>q.theme===t.key);
+    if(!qs.length) return;
+    html+=`<div class="theme-group">
+      <div class="thead"><span class="dot" style="background:${t.color}"></span><h3>${t.label}</h3><span class="tcount">${qs.length}</span></div>`;
+    qs.forEach(q=>{
+      const done=q.answer.trim()!=="";
+      html+=`<div class="qcard ${done?"answered":""} ${q.flag?"flagged":""}" data-qid="${q.id}">
+        <div class="qrow">
+          ${q.prio?'<span class="star" title="Prioritaire">★</span>':''}
+          <div class="qtext" contenteditable="true" data-action="edit-q">${q.text}</div>
+          <div class="qactions">
+            <button data-action="flag-q" class="${q.flag?"on":""}" title="À suivre">⚑</button>
+            <button data-action="del-q" class="del" title="Supprimer">×</button>
+          </div>
+        </div>
+        <div class="answer-wrap">
+          <span class="lbl">Réponse</span>
+          <textarea class="answer" data-action="answer" placeholder="Note ici la réponse du superviseur…">${esc(q.answer)}</textarea>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+
+  html+=`<button class="btn" id="toggleAddQ" style="margin-top:6px">＋ Ajouter une question</button>
+    <div class="addq-form" id="addqForm">
+      <select id="addqTheme">${THEMES.map(t=>`<option value="${t.key}">${t.label}</option>`).join("")}</select>
+      <textarea id="addqText" placeholder="Écris ta nouvelle question…"></textarea>
+      <div class="row"><button class="btn primary" id="addqSave">Ajouter</button><button class="btn" id="addqCancel">Annuler</button></div>
+    </div>`;
+
+  $("#main").innerHTML=html;
+}
+
+/* ---- search results ---- */
+function renderSearch(){
+  const term=view.searchTerm.trim().toLowerCase();
+  const strip=h=>h.replace(/<[^>]+>/g,"");
+  const hl=txt=>{ const t=esc(strip(txt)); const i=t.toLowerCase().indexOf(term); if(i<0) return t;
+    return t.slice(0,i)+"<mark>"+t.slice(i,i+term.length)+"</mark>"+t.slice(i+term.length); };
+  const res=[];
+  S.sessions.forEach(s=>s.questions.forEach(q=>{
+    const hay=(strip(q.text)+" "+q.answer).toLowerCase();
+    if(hay.includes(term)) res.push({s,q});
+  }));
+  let html=`<div class="sresult">${res.length} résultat(s) pour « ${esc(view.searchTerm)} » — dans ${S.sessions.length} réunion(s).</div>`;
+  if(!res.length) html+=`<div class="empty-state">Rien trouvé. Essaie un autre mot-clé.</div>`;
+  res.forEach(({s,q})=>{
+    const t=themeOf(q.theme);
+    html+=`<div class="rcard" data-goto="${s.id}">
+      <div class="rmeta"><span class="rtag" style="background:${t.color}">${t.label}</span><span>${frDate(s.date)}</span><span>· ${esc(s.title)}</span></div>
+      <div class="rq">${q.prio?"★ ":""}${hl(q.text)}</div>
+      ${q.answer.trim()?`<div class="ra">↳ ${hl(q.answer)}</div>`:`<div class="ra" style="opacity:.6">↳ (pas encore de réponse)</div>`}
+    </div>`;
+  });
+  $("#main").innerHTML=html;
+}
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+function newSession(){
+  const s={id:uid(), date:todayKey(), title:"Réunion du "+new Date().toLocaleDateString("fr-FR"), questions:[]};
+  S.sessions.push(s); S.currentId=s.id; view.searchTerm=""; $("#search").value=""; $("#searchClear").style.display="none";
+  view.filterDate=null;
+  const d=new Date(); view.cal={y:d.getFullYear(),m:d.getMonth()};
+  save(); render();
+}
+function delSession(){
+  const s=curSession(); if(!s) return;
+  if(!confirm("Supprimer la réunion « "+(s.title||"sans titre")+" » et toutes ses questions ?")) return;
+  S.sessions=S.sessions.filter(x=>x.id!==s.id);
+  S.currentId=S.sessions.length?S.sessions[0].id:null;
+  save(); render();
+}
+function addQuestion(){
+  const s=curSession(); if(!s) return;
+  const theme=$("#addqTheme").value, text=$("#addqText").value.trim();
+  if(!text) return;
+  s.questions.push({id:uid(),theme,text,answer:"",prio:false,flag:false});
+  save(); render();
+}
+
+/* ---------- export / import ---------- */
+function exportData(){
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="questions_superviseur_"+todayKey()+".json";
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function importData(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const data=JSON.parse(r.result);
+      if(!data||!Array.isArray(data.sessions)) throw 0;
+      if(!confirm("Importer "+data.sessions.length+" réunion(s) ? Choisis OK pour FUSIONNER avec tes données actuelles, ou Annuler pour ne rien faire.")) return;
+      const have=new Set(S.sessions.map(s=>s.id));
+      data.sessions.forEach(s=>{ if(have.has(s.id)) s.id=uid(); S.sessions.push(s); });
+      save(); render();
+      alert("Import réussi ✓");
+    }catch(e){ alert("Fichier invalide — ce n'est pas un export du journal."); }
+  };
+  r.readAsText(file);
+}
+
+/* ============================================================
+   EVENTS (délégation — survit aux re-render)
+   ============================================================ */
+// search
+$("#search").addEventListener("input",e=>{
+  view.searchTerm=e.target.value;
+  $("#searchClear").style.display=e.target.value?"block":"none";
+  if(view.searchTerm.trim()) renderSearch(); else renderSession();
+});
+$("#searchClear").addEventListener("click",()=>{ view.searchTerm=""; $("#search").value=""; $("#searchClear").style.display="none"; renderSession(); });
+
+// toolbar
+$("#newSession").addEventListener("click",newSession);
+$("#exportBtn").addEventListener("click",exportData);
+$("#printBtn").addEventListener("click",()=>window.print());
+$("#importInput").addEventListener("change",e=>{ if(e.target.files[0]) importData(e.target.files[0]); e.target.value=""; });
+
+// calendar
+$("#calPrev").addEventListener("click",()=>{ let{y,m}=view.cal; m--; if(m<0){m=11;y--;} view.cal={y,m}; renderCalendar(); });
+$("#calNext").addEventListener("click",()=>{ let{y,m}=view.cal; m++; if(m>11){m=0;y++;} view.cal={y,m}; renderCalendar(); });
+$("#calAll").addEventListener("click",()=>{ view.filterDate=null; render(); });
+$("#calGrid").addEventListener("click",e=>{
+  const d=e.target.closest("[data-date]"); if(!d) return;
+  view.filterDate = view.filterDate===d.dataset.date ? null : d.dataset.date;
+  render();
+});
+
+// session list
+$("#slist").addEventListener("click",e=>{
+  const it=e.target.closest("[data-sid]"); if(!it) return;
+  S.currentId=it.dataset.sid; view.searchTerm=""; $("#search").value=""; $("#searchClear").style.display="none";
+  render();
+});
+
+// main (delegation)
+const main=$("#main");
+main.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.matches("textarea.answer")){
+    const card=t.closest("[data-qid]"); const s=curSession();
+    const q=s.questions.find(x=>x.id===card.dataset.qid); if(!q) return;
+    q.answer=t.value;
+    card.classList.toggle("answered", q.answer.trim()!=="");
+    const tot=s.questions.length, ans=s.questions.filter(x=>x.answer.trim()).length;
+    const p=$("#prog"); if(p) p.textContent=ans+" / "+tot+" répondues";
+    clearTimeout(saveTimer); save();
+  }
+  if(t.id==="stitle"){ curSession().title=t.value; clearTimeout(saveTimer); save(); }
+});
+main.addEventListener("change",e=>{
+  if(e.target.id==="sdate"){ const s=curSession(); s.date=e.target.value||todayKey(); save(); renderCalendar(); renderSessionList(); $(".smeta")&&null; }
+});
+main.addEventListener("focusout",e=>{
+  if(e.target.matches(".qtext")){
+    const card=e.target.closest("[data-qid]"); const q=curSession().questions.find(x=>x.id===card.dataset.qid);
+    if(q){ q.text=e.target.innerHTML.trim(); save(); }
+  }
+});
+main.addEventListener("click",e=>{
+  const btn=e.target.closest("[data-action]");
+  // search result click -> open session
+  const r=e.target.closest("[data-goto]");
+  if(r){ S.currentId=r.dataset.goto; view.searchTerm=""; $("#search").value=""; $("#searchClear").style.display="none"; render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
+  if(!btn) {
+    if(e.target.id==="toggleAddQ"){ $("#addqForm").classList.add("show"); $("#addqText").focus(); }
+    else if(e.target.id==="addqSave"){ addQuestion(); }
+    else if(e.target.id==="addqCancel"){ $("#addqForm").classList.remove("show"); $("#addqText").value=""; }
+    return;
+  }
+  const act=btn.dataset.action;
+  if(act==="del-session"){ delSession(); return; }
+  const card=btn.closest("[data-qid]"); if(!card) return;
+  const s=curSession(); const q=s.questions.find(x=>x.id===card.dataset.qid); if(!q) return;
+  if(act==="flag-q"){ q.flag=!q.flag; save(); renderSession(); }
+  else if(act==="del-q"){ if(confirm("Supprimer cette question ?")){ s.questions=s.questions.filter(x=>x.id!==q.id); save(); renderSession(); } }
+});
+
+/* ---------- go ---------- */
+S=load(); render();
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Uses the lactating-cow denominator via live_state.effectif_on_date (Vaches - Lact.), not a naive Animal row count.",
+      "passed": true,
+      "evidence": "dashboard_kpis_addition.py line 50: vl = effectif_on_date(yesterday)[\"Vaches - Lact.\"]. NOTES.md lines 62-66 explain effectif_on_date reconstructs lactating-cow count from herd events and never reads Animal.etat_lactation. Matches the canonical live_state.CATEGORIES bucket."
+    },
+    {
+      "text": "Datasource is a @frappe.whitelist() function returning {'value':..., 'fieldtype':...}, consistent with utils/dashboard_kpis (e.g. get_pl_vl).",
+      "passed": true,
+      "evidence": "dashboard_kpis_addition.py line 32-52: @frappe.whitelist() def get_lait_moyen_par_vl(): ... return {\"value\": moyenne, \"fieldtype\": \"Float\"}. Identical shape to get_pl_vl in utils/dashboard_kpis.py."
+    },
+    {
+      "text": "Registers a Custom Number Card with module 'HMD AGRO' and mentions bench export-fixtures.",
+      "passed": false,
+      "evidence": "lait_moyen_par_vl.json correctly has \"type\": \"Custom\" and \"module\": \"HMD AGRO\", but NOTES.md never mentions bench export-fixtures. Registration steps use 'bench migrate' and 'clear-cache' (lines 141-142) and manually editing fixtures/number_card.json (lines 95-117) instead of the export-fixtures workflow. The compound expectation requiring the bench export-fixtures mention is not satisfied."
+    },
+    {
+      "text": "Computes yesterday's total milk from Traite.",
+      "passed": true,
+      "evidence": "dashboard_kpis_addition.py line 48-49: yesterday = add_days(today(), -1); prod = _prod_sum(yesterday, yesterday). NOTES.md line 52 and 59-61 describe _prod_sum as 'SUM(quantite_litres) on D' summing Traite.quantite_litres over date_traite. Matches the canonical _prod_sum in utils/dashboard_kpis.py."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  }
+}

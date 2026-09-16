@@ -1,5 +1,15 @@
 # Passation — module Finance HMD AGRO
 
+> **Dossier regroupé le 16/09/2026 :** la passation se fera avec Aziz ; le
+> successeur au développement n'est pas encore désigné. Voir le
+> [dossier de réunion avec Aziz](passation/01_dossier/passation_aziz_2026-09-16.md) pour les
+> vérifications récentes, les supports locaux à transférer et la fiche de
+> réception. Les constats ci-dessous restent datés du 06/09, notamment les
+> états Jira, de production et de tests. Les fichiers décrits plus bas comme
+> non versionnés sont désormais regroupés dans [passation/](passation/README.md)
+> pour ceux présents dans cette copie de travail ; voir l’inventaire pour les
+> nouveaux chemins. Les fichiers externes au dépôt restent à récupérer séparément.
+
 **De :** Mohamed Slim (stagiaire, Université Laval, 26/05 → 28/08/2026 ; derniers
 commits le 04/09/2026)
 **À :** Aymen Zarrad (superviseur / lead), Aziz (serveur de production), et la
@@ -47,7 +57,7 @@ qu'il cite ; il ne les recopie pas.
 | **M. Samir** | Client / décideur métier (ferme Borj Essebai, Mateur) | Valider les pourcentages de la clé FG ; trancher les décisions FIN-D01 → D06 |
 | **Aymen Zarrad** | Superviseur de stage, lead technique | Reprendre la revue de SCRUM-10, décider de la fusion vers `main` |
 | **Aziz** (Mohamed Aziz Zarrad) | Serveur de production, sauvegardes, infra (SCRUM-3, 5 → 8) | Fournir une sauvegarde au successeur ; exécuter `runbook_alignement_versions.md` après la fusion |
-| **Iheb** (mohamediheb gouia) | Développeur, Farm Management (SCRUM-78, 79, 87) et assets | Aucun blocage croisé connu ; voir `review_maquettes_fm_iheb.md` et `point_assets_aziz.md` |
+| **Iheb** (mohamediheb gouia) | Développeur, Farm Management (SCRUM-78, 79, 87) et assets | Aucun blocage croisé connu ; voir `passation/05_coordination/review_maquettes_fm_iheb.md` et `passation/05_coordination/point_assets_aziz.md` |
 | **Siwar, Soumaya** | Utilisatrices sur la ferme | Après déploiement : vérifier « Aide › À propos » = HMD Agro 0.2.0 (runbook §2) |
 
 Le rituel : statut WhatsApp de 3 phrases posté **avant** le daily de 10 h
@@ -246,21 +256,21 @@ Tout est à la racine du dépôt sauf mention.
 
 | Pour… | Lire |
 |---|---|
-| Comprendre l'app et ses conventions | `.claude/skills/hmd-agro-dev/SKILL.md` (+ `references/conventions.md`), `hmd_agro_codebase_guide.html` |
+| Comprendre l'app et ses conventions | `.claude/skills/hmd-agro-dev/SKILL.md` (+ `references/conventions.md`), `passation/02_documentation/hmd_agro_codebase_guide.html` |
 | Les règles métier (RG-*, cycle de vie, cascades) | `.claude/skills/hmd-agro-domain/SKILL.md` |
 | Les KPI, rapports, seuils | `.claude/skills/hmd-agro-kpi/SKILL.md` |
 | Le passage obligé d'une User Story (DoR / DoD, réunion du 07/08) | `.claude/skills/user-story-workflow/SKILL.md`, `dod_scrum_9_10_11.md` |
 | Ce qui est livré, commit par commit | `livraison_finance.md` |
 | Le backlog et comment le tenir | `jira/README.md`, `jira/backlog.py` (source unique → régénère les CSV) |
-| La spec fonctionnelle finance d'origine | `spec_finance.html`, `userstories_finance.html`, `plan_finance.html` |
+| La spec fonctionnelle finance d'origine | `passation/02_documentation/spec_finance.html`, `passation/02_documentation/userstories_finance.html`, `passation/02_documentation/plan_finance.html` |
 | La spec de l'atelier génisses (vague 2) | `spec_cout_genisse_facturation_interne.md` |
 | Les réunions client | `reunion_2026-08-05/`, `reunion_2026-08-26/`, `reunion_2026-09-03/` (compte rendu + transcription) |
 | Les maquettes validées | `maquettes_2026-08-26.{excalidraw,html,pdf}`, `plan_maquettes_2026-08-26.md` ; les annotations de M. Samir sont dans les **salons Excalidraw partagés** (liens dans le groupe WhatsApp), pas dans le dépôt |
 | La conception de SCRUM-10 / 11 | `conception_scrum_10_11_2026-08-28.md` (révisée 03/09 et 04/09) |
 | Déployer / aligner les versions | `deploy/DEPLOY.md`, `runbook_alignement_versions.md`, `deploy/apps.json` |
 | La bascule comptable | `hmd_agro/hmd_agro/setup/finance/BASCULE.md` |
-| Présenter au client | `presentation_finance.html` (15 slides, `N` = notes), `demo_finance/` (sources du deck et de la vidéo), `demo_finance/DEMO_scrum_10_11_2026-08-29.md` |
-| Les points faits avec les collègues | `point_assets_aziz.md`, `recap_assets_maintenance.md`, `review_maquettes_fm_iheb.md`, `questions_superviseur.md` |
+| Présenter au client | `passation/04_demonstration/presentation_finance.html` (15 slides, `N` = notes), `demo_finance/` (sources du deck et de la vidéo), `demo_finance/DEMO_scrum_10_11_2026-08-29.md` |
+| Les points faits avec les collègues | `passation/05_coordination/point_assets_aziz.md`, `passation/05_coordination/recap_assets_maintenance.md`, `passation/05_coordination/review_maquettes_fm_iheb.md`, `passation/05_coordination/questions_superviseur.md` |
 
 ---
 
@@ -284,10 +294,10 @@ récupérer sur mon Mac ou sur Drive **avant mon départ** si l'équipe les veut
 |---|---|---|
 | `*.pdf`, `*.png`, `*.excalidraw`, `*.bmpr` | Maquettes, planches d'arbitrage, aperçus | Drive « HMD AGRO / maquettes » — les PDF ont déjà été envoyés dans le groupe |
 | `~/Downloads/demo_finance_hmd*.mp4` | Vidéos de démo (10 min) | Drive ; se régénèrent avec `demo_finance/build_video.sh` |
-| `outils_affiche/`, `conducteur_affiche_*`, `~/Downloads/Affiche_stage_*` | Mon affiche et mes textes de soutenance | Personnel, hors projet |
+| `passation/07_stage/outils_affiche/`, `conducteur_affiche_*`, `~/Downloads/Affiche_stage_*` | Mon affiche et mes textes de soutenance | Personnel, hors projet |
 | `outils_maquette*.py`, `outils_planches*.py`, `outils_presentation*.py` | Générateurs Python des maquettes / planches | Jetables ; les résultats sont dans les `.excalidraw` |
 | `reunion_2026-08-05/transcription.*`, `reunion_2026-08-26/transcription.md` | Transcriptions brutes | Contiennent la voix de M. Samir : ne pas versionner, garder sur Drive privé |
-| `message_*.txt`, `reponse_aumen_ecrans_couts.txt`, `dossier_lundi.html` | Messages déjà envoyés | Jetables |
+| `message_*.txt`, `passation/05_coordination/reponse_aumen_ecrans_couts.txt`, `passation/05_coordination/dossier_lundi.html` | Messages déjà envoyés | Jetables |
 | `.claude/skills/_eval-workspace/`, `_packaged/` | Résidus d'outillage | Jetables |
 
 ---

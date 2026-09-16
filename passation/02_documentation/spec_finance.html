@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HMD AGRO — Module Finance · Spécification (DocTypes · Règles de gestion · Flowcharts · User Stories)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#13110c; --bg2:#191610; --surface:#201c14; --surface2:#262117;
+  --ink:#efe7d6; --ink-soft:#d8cdb6; --muted:#a99b7e; --faint:#6f6450;
+  --rule:#332c1f; --rule-soft:#2a2418;
+  --paper:#f3ecdd; --paper-ink:#241f17;
+  --c-house:#74a9cf;   --c-animal:#a4cb6e;  --c-repro:#c79ddd;
+  --c-prod:#e3a838;    --c-feed:#73c6e0;    --c-equip:#d8765b;
+  --c-finance:#dcc468; --c-user:#bcb097;    --c-frame:#e7b65a;
+  --gold:#e7b65a; --green:#a4cb6e; --terra:#d8765b;
+  --shadow:0 30px 70px -34px rgba(0,0,0,.8);
+  --fdisplay:"Fraunces", Georgia, "Times New Roman", serif;
+  --fbody:"Newsreader", Georgia, serif;
+  --fmono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:30px}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--fbody); font-size:19px; line-height:1.72; font-weight:380;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  background-image:
+    radial-gradient(900px 500px at 88% -5%, rgba(231,182,90,.07), transparent 60%),
+    radial-gradient(800px 600px at -10% 12%, rgba(116,169,207,.06), transparent 55%);
+  background-attachment:fixed;
+}
+::selection{background:rgba(231,182,90,.28); color:#fff}
+a{color:var(--gold); text-decoration:none; border-bottom:1px solid rgba(231,182,90,.3)}
+a:hover{border-color:var(--gold)}
+
+.shell{display:grid; grid-template-columns:300px minmax(0,1fr); gap:0; max-width:1500px; margin:0 auto}
+@media(max-width:1080px){ .shell{grid-template-columns:1fr} }
+nav.toc{
+  position:sticky; top:0; align-self:start; height:100vh; overflow:auto;
+  padding:34px 22px 60px 30px; border-right:1px solid var(--rule);
+  background:linear-gradient(180deg, var(--bg2), var(--bg));
+}
+@media(max-width:1080px){ nav.toc{position:static; height:auto; border-right:none; border-bottom:1px solid var(--rule)} }
+.brandmark{font-family:var(--fmono); font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--gold); margin-bottom:4px}
+.brandsub{font-family:var(--fmono); font-size:10.5px; letter-spacing:.12em; color:var(--faint); margin-bottom:26px}
+nav.toc ol{list-style:none; margin:0; padding:0}
+nav.toc a{display:block; color:var(--muted); border:none; font-family:var(--fmono); font-size:12.5px; letter-spacing:.02em;
+  padding:7px 12px; border-radius:8px; border-left:2px solid transparent; transition:.18s}
+nav.toc a .nm{color:var(--faint); margin-right:9px}
+nav.toc a:hover{color:var(--ink); background:rgba(255,255,255,.03)}
+nav.toc a.active{color:var(--gold); background:rgba(231,182,90,.07); border-left-color:var(--gold)}
+.toc-hint{margin-top:26px; padding:14px; border:1px dashed var(--rule); border-radius:10px; font-size:13.5px; line-height:1.5; color:var(--muted); font-family:var(--fbody)}
+
+main{padding:0 clamp(20px,5vw,84px) 120px; min-width:0}
+section{padding-top:54px; scroll-margin-top:24px}
+.reading{max-width:80ch}
+
+h1,h2,h3,h4{font-family:var(--fdisplay); font-weight:600; line-height:1.08; color:#fbf4e6; letter-spacing:-.01em}
+h2{font-size:clamp(30px,4vw,46px); margin:.2em 0 .15em; font-weight:540}
+h2 .no{font-family:var(--fmono); font-size:.4em; font-weight:500; color:var(--gold); letter-spacing:.2em; vertical-align:middle; margin-right:.9em; opacity:.85}
+h3{font-size:clamp(22px,2.4vw,30px); margin:1.5em 0 .35em; font-weight:520; color:#f3ead8}
+h4{font-size:19px; margin:1.6em 0 .3em; font-family:var(--fmono); font-weight:700; letter-spacing:.02em; color:var(--ink-soft); text-transform:none}
+p{margin:.7em 0}
+.lead{font-size:23px; line-height:1.6; color:var(--ink-soft); font-weight:360}
+.eyebrow{font-family:var(--fmono); font-size:12px; letter-spacing:.28em; text-transform:uppercase; color:var(--gold); margin:0 0 14px}
+.sec-rule{height:1px; background:linear-gradient(90deg,var(--gold),transparent 70%); border:none; margin:6px 0 0; opacity:.5}
+strong,b{color:#fbf4e6; font-weight:600}
+em{color:var(--ink)}
+code, .mono{font-family:var(--fmono); font-size:.86em}
+:not(pre)>code{background:rgba(231,182,90,.1); color:#f0d59a; padding:.08em .42em; border-radius:5px; border:1px solid rgba(231,182,90,.16)}
+ul,ol{padding-left:1.25em}
+li{margin:.34em 0}
+
+.hero{position:relative; padding:12vh 0 5vh; overflow:hidden}
+.hero-eyebrow{font-family:var(--fmono); font-size:13px; letter-spacing:.34em; text-transform:uppercase; color:var(--gold)}
+.hero h1{font-size:clamp(40px,7vw,86px); line-height:.95; font-weight:600; margin:.18em 0 .12em; letter-spacing:-.025em}
+.hero h1 em{font-style:italic; font-weight:340; color:var(--gold); display:block; font-size:.42em; letter-spacing:0; margin-top:.24em}
+.hero .sub{font-size:clamp(19px,2.2vw,23px); color:var(--ink-soft); max-width:60ch; font-weight:340}
+.chips{display:flex; flex-wrap:wrap; gap:9px; margin:28px 0 0}
+.chip{font-family:var(--fmono); font-size:12px; letter-spacing:.04em; color:var(--ink-soft); padding:6px 13px; border:1px solid var(--rule); border-radius:999px; background:var(--surface)}
+.chip b{color:var(--gold); font-weight:700}
+
+.callout{border:1px solid var(--rule); border-left:4px solid var(--gold); background:linear-gradient(100deg,var(--surface),var(--bg2));
+  border-radius:0 12px 12px 0; padding:18px 22px; margin:24px 0; font-size:17.5px; line-height:1.62}
+.callout .tag{display:block; font-family:var(--fmono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; margin-bottom:6px; color:var(--gold)}
+.callout.key{border-left-color:var(--green)} .callout.key .tag{color:var(--green)}
+.callout.warn{border-left-color:var(--terra)} .callout.warn .tag{color:var(--terra)}
+.callout.frame{border-left-color:var(--c-house)} .callout.frame .tag{color:var(--c-house)}
+
+.grid{display:grid; gap:18px}
+.cols-3{grid-template-columns:repeat(3,1fr)} .cols-2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:880px){ .cols-3,.cols-2{grid-template-columns:1fr} }
+.card{background:var(--surface); border:1px solid var(--rule); border-radius:14px; padding:20px 22px; transition:.22s}
+.card:hover{transform:translateY(-3px); border-color:var(--rule-soft); box-shadow:var(--shadow)}
+.card h4{margin-top:0}
+.card .kf{font-family:var(--fmono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint)}
+
+.tbl{width:100%; border-collapse:collapse; font-size:15px; margin:14px 0 4px; font-family:var(--fbody)}
+.tbl th{text-align:left; font-family:var(--fmono); font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--faint); border-bottom:1px solid var(--rule); padding:9px 12px 9px 0; font-weight:500}
+.tbl td{border-bottom:1px solid var(--rule-soft); padding:9px 12px 9px 0; vertical-align:top; color:var(--ink-soft)}
+.tbl td.fld{font-family:var(--fmono); font-size:12.5px; color:#f0d59a; white-space:nowrap}
+.tbl td.code{font-family:var(--fmono); font-size:12px; color:var(--green); white-space:nowrap}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+
+.fileref{font-family:var(--fmono); font-size:12px; color:var(--faint); margin:2px 0 4px; display:inline-block}
+.fileref::before{content:"\2316 "; color:var(--gold)}
+
+.st{font-family:var(--fmono); font-size:10.5px; font-weight:700; padding:2px 9px; border-radius:999px; white-space:nowrap; letter-spacing:.02em}
+.s-ok{background:rgba(164,203,110,.14); color:var(--green); border:1px solid rgba(164,203,110,.4)}
+.s-part{background:rgba(199,157,221,.14); color:var(--c-repro); border:1px solid rgba(199,157,221,.4)}
+.s-no{background:rgba(216,118,91,.14); color:var(--terra); border:1px solid rgba(216,118,91,.42)}
+.s-cfg{background:rgba(116,169,207,.14); color:var(--c-house); border:1px solid rgba(116,169,207,.4)}
+.s-nat{background:rgba(227,168,56,.14); color:var(--c-prod); border:1px solid rgba(227,168,56,.4)}
+
+.maptable{width:100%; border-collapse:collapse; font-size:15px; margin:18px 0; font-family:var(--fbody)}
+.maptable th{text-align:left; font-family:var(--fmono); font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--faint); border-bottom:1px solid var(--rule); padding:10px 12px; font-weight:500}
+.maptable td{border-bottom:1px solid var(--rule-soft); padding:10px 12px; vertical-align:top; color:var(--ink-soft)}
+.maptable td.ent-c{font-family:var(--fmono); font-size:13px; color:#fbf4e6; white-space:nowrap}
+.maptable tr:hover td{background:rgba(255,255,255,.02)}
+
+/* spec additions */
+.legend{display:flex; flex-wrap:wrap; gap:8px 18px; margin:14px 0 2px; font-family:var(--fmono); font-size:12.5px; color:var(--muted)}
+.diagram{background:#0c0a06; border:1px solid var(--rule); border-radius:12px; padding:14px 16px; margin:14px 0; overflow:auto}
+.diagram .cap{font-family:var(--fmono); font-size:11.5px; letter-spacing:.06em; color:var(--gold); margin-bottom:8px; text-transform:uppercase}
+.mermaid{display:flex; justify-content:center}
+.epic{font-family:var(--fmono); font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); margin:34px 0 4px; border-top:1px solid var(--rule); padding-top:18px}
+.epic .ph{color:var(--faint); margin-left:10px; letter-spacing:.1em}
+.story{background:var(--surface); border:1px solid var(--rule); border-left:4px solid var(--c-finance);
+  border-radius:0 12px 12px 0; padding:15px 20px; margin:14px 0}
+.story .sid{font-family:var(--fmono); font-size:11px; letter-spacing:.1em; color:var(--c-finance); font-weight:700}
+.story h4{margin:.15em 0 .45em; font-family:var(--fdisplay); font-size:20px; text-transform:none; letter-spacing:0; color:#fbf4e6}
+.story .us{font-size:16.5px; color:var(--ink-soft); margin:.2em 0 .5em}
+.story .us b{color:var(--gold); font-weight:600}
+.story .aclabel{font-family:var(--fmono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint)}
+.story ul{margin:.3em 0 0; font-size:15.5px}
+.story .tags{margin-top:11px; display:flex; flex-wrap:wrap; gap:6px}
+.tag2{font-family:var(--fmono); font-size:10.5px; padding:2px 9px; border-radius:999px; border:1px solid var(--rule); color:var(--muted); white-space:nowrap}
+.tag2.rg{color:var(--green); border-color:rgba(164,203,110,.4)}
+.tag2.ph{color:var(--c-house); border-color:rgba(116,169,207,.4)}
+
+footer{border-top:1px solid var(--rule); margin-top:80px; padding:40px clamp(20px,5vw,84px); color:var(--faint); font-family:var(--fmono); font-size:13px; line-height:1.8}
+.scrolltop{position:fixed; bottom:22px; right:22px; z-index:60; background:var(--surface2); border:1px solid var(--rule); color:var(--gold);
+  width:46px; height:46px; border-radius:50%; cursor:pointer; font-size:18px; opacity:0; transition:.2s; transform:translateY(10px)}
+.scrolltop.show{opacity:1; transform:none}
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="toc" aria-label="Sommaire">
+    <div class="brandmark">HMD&nbsp;AGRO&nbsp;SA</div>
+    <div class="brandsub">Module Finance · Spécification</div>
+    <ol>
+      <li><a href="#start" class="active"><span class="nm">00</span>Comment lire ce document</a></li>
+      <li><a href="#objets"><span class="nm">01</span>Liste des objets</a></li>
+      <li><a href="#entites"><span class="nm">02</span>Entités &amp; champs (créer / étendre / config)</a></li>
+      <li><a href="#rg"><span class="nm">03</span>Règles de gestion (RG · CF · RC)</a></li>
+      <li><a href="#flows"><span class="nm">04</span>Flowcharts</a></li>
+      <li><a href="#stories"><span class="nm">05</span>User stories (Jira-ready)</a></li>
+      <li><a href="#kpi"><span class="nm">06</span>KPI économiques à livrer</a></li>
+      <li><a href="#backlog"><span class="nm">07</span>Backlog &amp; séquencement</a></li>
+    </ol>
+    <div class="toc-hint">Spécification technique du module Finance. Document <strong>frère</strong> de <code>plan_finance.html</code> (cadrage) — celui-ci descend au niveau <em>buildable</em> : tableaux, règles codifiées, diagrammes, et user stories prêtes pour Jira.</div>
+  </nav>
+
+  <main>
+  <header class="hero">
+    <div class="hero-eyebrow">Module Finance · HMD AGRO · Spécification v1</div>
+    <h1>De « la finance » à un backlog<em>DocTypes, règles de gestion, flowcharts &amp; user stories — ancrés dans le code</em></h1>
+    <p class="sub">Le livrable que le superviseur attend avant la première ligne de code : la liste des objets, ce qu'on crée / étend / configure dans ERPNext, les règles de gestion codifiées, les flux, et les user stories testables — au format Scrum, prêtes à charger dans Jira.</p>
+    <div class="chips">
+      <span class="chip"><b>Socle</b> Frappe / ERPNext v15</span>
+      <span class="chip"><b>Devise</b> TND</span>
+      <span class="chip"><b>Règle d'or</b> 0 DocType finance maison</span>
+      <span class="chip"><b>Quick win</b> coût/litre (Phase&nbsp;2)</span>
+    </div>
+  </header>
+
+  <!-- 00 -->
+  <section id="start">
+    <p class="eyebrow">00 · Mode d'emploi</p>
+    <h2><span class="no">00</span>Comment lire ce document</h2>
+    <hr class="sec-rule">
+    <div class="reading">
+      <p class="lead">Ce document est la <strong>spécification</strong> du module Finance. Il traduit le cadrage (<code>plan_finance.html</code>) et la consigne d'onboarding en unités <em>buildables et testables</em> : la liste des objets, le tableau « créer / étendre / configurer », les règles de gestion codifiées (RG / CF / RC), les flowcharts, et les user stories prêtes pour Jira — exactement les quatre livrables demandés.</p>
+
+      <div class="callout key">
+        <span class="tag">L'idée maîtresse (rappel du cadrage)</span>
+        On ne réécrit pas de comptabilité : <strong>Vente, Dépense, Équipement, Intervention sont de l'ERPNext natif</strong> (Selling / Purchase Invoice / Journal Entry / Asset). Notre code se réduit à des <em>Custom Fields</em>, de la <em>configuration</em> et un peu de <em>glue</em>. Le point d'accroche existe déjà : chaque consommation poste un mouvement de stock — mais à <strong>coût zéro</strong> (<code>basic_rate=0</code>) ; la finance, c'est surtout <strong>brancher de vrais prix sur une mécanique de coûts déjà câblée</strong>.
+      </div>
+
+      <h4>Conventions de codification (maison)</h4>
+      <ul>
+        <li><strong><code>RG-FIN-nn</code></strong> — règle de gestion (business rule).</li>
+        <li><strong><code>CF-FIN-nn</code></strong> — contrainte fonctionnelle (invariant à préserver).</li>
+        <li><strong><code>RC-FIN-nn</code></strong> — règle de calcul (formule d'indicateur).</li>
+        <li><strong><code>ERR-&lt;DT&gt;-nn</code></strong> — code porté par un <code>frappe.throw(...)</code> ; avertissements en <code>msgprint(indicator="orange", alert=True)</code>.</li>
+        <li><strong><code>FIN-Snn</code></strong> — identifiant de user story (sert d'ancre Jira/commit).</li>
+      </ul>
+      <p>Namespace <code>-FIN-</code> choisi pour ne pas entrer en collision avec les RG métier existants (repro/lactation). Vocabulaire <strong>français</strong>, indentation Python <strong>4 espaces</strong>, jamais de valeur en dur (→ <code>get_config()</code> / Item Price).</p>
+
+      <div class="callout key">
+        <span class="tag">Vérifié contre le code · 2026-06-29</span>
+        Tous les champs et chemins <code>fichier.json:ligne</code> cités ont été <strong>confirmés contre le code</strong> (DocTypes, <code>stock_utils</code>, <code>rapport_mensuel</code>, <code>hooks.py</code>, <code>boot.py</code>, scripts <code>setup/</code>). Seule nuance relevée : le <strong>coût/litre (DT/L) est déjà calculé</strong> (<code>rapport_mensuel.py:1293</code>) ; il ne reste qu'à ajouter le <strong>DT/vache</strong> et à brancher la valorisation réelle (EPIC B). Le code reste la source de vérité.
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 -->
+  <section id="objets">
+    <p class="eyebrow">01 · Inventaire</p>
+    <h2><span class="no">01</span>Liste des objets (finance)</h2>
+    <hr class="sec-rule">
+    <div class="reading"><p>L'inventaire de tout ce que la finance manipule, classé par <em>nature de travail</em>. La grande majorité est de l'ERPNext à <strong>configurer</strong> ; le « maison » se limite à des Custom Fields, des seuils de config, et de la glue.</p></div>
+
+    <div class="legend">
+      <span><span class="st s-nat">CORE</span> ERPNext natif à configurer</span>
+      <span><span class="st s-cfg">CF</span> Custom Field</span>
+      <span><span class="st s-ok">CONFIG</span> HMD Configuration (seuil)</span>
+      <span><span class="st s-part">GLUE</span> code de liaison</span>
+      <span><span class="st s-no">REPORT</span> indicateur</span>
+    </div>
+
+    <table class="tbl">
+      <thead><tr><th style="width:24%">Objet</th><th style="width:14%">Nature</th><th>Rôle &amp; remarque</th></tr></thead>
+      <tbody>
+        <tr><td class="fld">Company « hmd-agro »</td><td><span class="st s-nat">CORE</span></td><td>Existe déjà (référencée par tout le stock). <span class="fileref">stock_utils.py:8</span></td></tr>
+        <tr><td class="fld">Chart of Accounts</td><td><span class="st s-nat">CORE</span></td><td>Plan comptable tunisien (SCE) à charger/valider avec le comptable.</td></tr>
+        <tr><td class="fld">Fiscal Year · Devise TND · Tax Templates</td><td><span class="st s-nat">CORE</span></td><td>Exercice, devise unique TND, modèles de TVA (selon assujettissement).</td></tr>
+        <tr><td class="fld">Cost Center</td><td><span class="st s-nat">CORE</span></td><td>Ateliers : <em>Lait</em>, <em>Élevage/Génisses</em>, <em>Cultures/Fourrage</em>, <em>Traction</em>, <em>Frais Généraux</em>.</td></tr>
+        <tr><td class="fld">Accounting Dimension</td><td><span class="st s-nat">CORE</span></td><td>Axes <em>Lot</em>, <em>Bâtiment</em>, <em>Atelier</em> (réutilise le pattern <code>Stock Entry-id_lot</code>).</td></tr>
+        <tr><td class="fld">Customer</td><td><span class="st s-nat">CORE</span></td><td>Centrale laitière, acheteurs d'animaux, acheteur fumier.</td></tr>
+        <tr><td class="fld">Supplier</td><td><span class="st s-nat">CORE</span></td><td>Aliments, vétérinaire, semence, énergie, divers.</td></tr>
+        <tr><td class="fld">Item « Lait » + Item Price / Pricing Rule</td><td><span class="st s-nat">CORE</span></td><td>Prix-qualité indexé TB/TP via Pricing Rule (jamais de prix littéral).</td></tr>
+        <tr><td class="fld">Items « animaux à la vente », « fumier »</td><td><span class="st s-nat">CORE</span></td><td>Un article par flux de recette.</td></tr>
+        <tr><td class="fld">Sales Invoice / Delivery Note</td><td><span class="st s-nat">CORE</span> + <span class="st s-part">GLUE</span></td><td>Recettes lait / animaux / fumier ; la liaison événement→facture est le seul code.</td></tr>
+        <tr><td class="fld">Purchase Invoice / Receipt</td><td><span class="st s-nat">CORE</span></td><td>Achats d'intrants → <code>valuation_rate</code> ; charges hors-stock.</td></tr>
+        <tr><td class="fld">Journal Entry · Payment Entry</td><td><span class="st s-nat">CORE</span></td><td>Écritures diverses, salaires ventilés, encaissements/règlements.</td></tr>
+        <tr><td class="fld">Asset + Asset Category</td><td><span class="st s-nat">CORE</span></td><td>Équipements, bâtiments (cheptel-actif selon décision) → amortissements.</td></tr>
+        <tr><td class="fld">valuation_rate / CMP (Bin · SLE)</td><td><span class="st s-nat">CORE</span> + <span class="st s-part">GLUE</span></td><td>Bascule <code>basic_rate=0 → réel</code> dans <code>stock_utils</code>. <span class="fileref">stock_utils.py:108</span></td></tr>
+        <tr><td class="fld">Custom Fields finance</td><td><span class="st s-cfg">CF</span></td><td>Ex. <code>Sales Invoice-id_lot</code>, <code>Asset-id_batiment</code> — exportés <em>par nom</em> dans <code>hooks.py</code> (pattern SCRUM-123).</td></tr>
+        <tr><td class="fld">HMD Configuration — seuils éco</td><td><span class="st s-ok">CONFIG</span></td><td>Nouveaux champs <code>prix_reference_lait</code>, <code>objectif_cout_litre</code>, <code>pfe_iofc_*</code> (pattern <code>pfe_*</code>).</td></tr>
+        <tr><td class="fld">États financiers</td><td><span class="st s-nat">CORE</span></td><td>Bilan, CPC, Grand livre, Balance, Cash Flow — 0 code.</td></tr>
+        <tr><td class="fld">KPI éco</td><td><span class="st s-no">REPORT</span></td><td>Coût/litre, IOFC, EBE, produit brut, DT/L &amp; DT/vache par poste — sur le rapport mensuel existant.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 02 -->
+  <section id="entites">
+    <p class="eyebrow">02 · Quoi créer / étendre / configurer</p>
+    <h2><span class="no">02</span>Entités &amp; champs</h2>
+    <hr class="sec-rule">
+    <div class="reading"><p>Le tableau de décision : pour chaque besoin, la réalisation ERPNext, les champs/objets précis, les RG associées, et l'état actuel dans le code.</p></div>
+
+    <div class="legend">
+      <span><span class="st s-ok">✓ EXISTE</span></span>
+      <span><span class="st s-part">◐ PARTIEL</span></span>
+      <span><span class="st s-no">✗ ABSENT</span></span>
+      <span><span class="st s-cfg">⚙ À CONFIGURER</span></span>
+    </div>
+
+    <table class="maptable">
+      <thead><tr><th style="width:15%">Besoin</th><th style="width:24%">Réalisation ERPNext</th><th style="width:27%">Champs / objets précis</th><th style="width:12%">RG</th><th>État</th></tr></thead>
+      <tbody>
+        <tr><td class="ent-c">Socle comptable</td><td><span class="st s-nat">Accounts</span> — Chart of Accounts, Fiscal Year, Tax</td><td>Plan SCE tunisien ; exercice ; TVA lait/animaux/intrants</td><td class="code">RG-FIN-01</td><td><span class="st s-cfg">⚙</span></td></tr>
+        <tr><td class="ent-c">Analytique</td><td><span class="st s-nat">Cost Center</span> + <span class="st s-nat">Accounting Dimension</span></td><td>Ateliers ; dimensions Lot / Bâtiment / Atelier</td><td class="code">RG-FIN-40</td><td><span class="st s-no">✗</span></td></tr>
+        <tr><td class="ent-c">Valorisation</td><td><span class="st s-nat">Stock Ledger</span> — valuation_rate / CMP</td><td>Purchase Invoice/Receipt → <code>valuation_rate</code> ; bascule <code>basic_rate</code></td><td class="code">RG-FIN-30 · CF-FIN-31</td><td><span class="st s-part">◐</span> <span class="fileref">seed_demo_prices.py</span></td></tr>
+        <tr><td class="ent-c">Vente lait</td><td><span class="st s-nat">Selling</span> — Sales Invoice + Item Price</td><td>Item « Lait » ; Pricing Rule TB/TP ; job période OU import décompte ; rapprochement <code>lait_vendu</code></td><td class="code">RG-FIN-10/11/12</td><td><span class="st s-no">✗</span> <span class="fileref">bilan_lait_journalier.json:43</span></td></tr>
+        <tr><td class="ent-c">Vente animal</td><td><span class="st s-nat">Selling</span> — Sales Invoice</td><td>Hook <code>statut→VENDU</code> → SInv depuis <code>Animal.prix_vente</code> ; poids via Pesée VENTE</td><td class="code">RG-FIN-20 · CF-FIN-21</td><td><span class="st s-part">◐</span> <span class="fileref">animal.json:248 · live_state.py:268</span></td></tr>
+        <tr><td class="ent-c">Vente fumier / divers</td><td><span class="st s-nat">Selling</span> — Sales Invoice</td><td>Items « fumier », « paille »… ; facture ponctuelle</td><td class="code">RG-FIN-10</td><td><span class="st s-no">✗</span></td></tr>
+        <tr><td class="ent-c">Achats &amp; charges</td><td><span class="st s-nat">Buying / Accounts</span> — Purchase Invoice / JE</td><td>Suppliers ; intrants (boucle valo) ; énergie/loyer/assurances ventilés Cost Center</td><td class="code">RG-FIN-30/40</td><td><span class="st s-no">✗</span></td></tr>
+        <tr><td class="ent-c">Main-d'œuvre</td><td><span class="st s-nat">Payroll</span> (option) ou JE ventilées</td><td>Salaires → Cost Center par atelier (clé de répartition validée client)</td><td class="code">RG-FIN-40</td><td><span class="st s-no">✗</span></td></tr>
+        <tr><td class="ent-c">Immobilisations</td><td><span class="st s-nat">Asset</span> + Asset Category</td><td>Équipements/bâtiments ; <code>Asset-id_batiment</code> (CF) ; durées d'amortissement</td><td class="code">RG-FIN-40 · RC-FIN-53</td><td><span class="st s-no">✗</span></td></tr>
+        <tr><td class="ent-c">Seuils éco</td><td><span class="st s-ok">HMD Configuration</span> (Single)</td><td><code>prix_reference_lait</code>, <code>objectif_cout_litre</code>, <code>pfe_iofc_min</code>… (+ <code>boot.JS_FIELDS</code> si lus en JS)</td><td class="code">RG-FIN-60</td><td><span class="st s-no">✗</span></td></tr>
+        <tr><td class="ent-c">États &amp; KPI</td><td><span class="st s-nat">Accounts</span> natifs + rapport mensuel</td><td>Bilan/CPC/GL natifs ; bloc « Frais &amp; coût » DT/L &amp; DT/vache</td><td class="code">RC-FIN-50/51/52</td><td><span class="st s-part">◐</span> <span class="fileref">rapport_mensuel.py:748 · DT/L déjà calc. :1293</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Custom Fields à ajouter (pattern <code>Stock Entry-id_lot</code>)</h3>
+    <table class="tbl">
+      <thead><tr><th style="width:28%">Custom Field</th><th style="width:16%">Type</th><th>But · fixture</th></tr></thead>
+      <tbody>
+        <tr><td class="fld">Sales Invoice-id_lot</td><td>Link → Lot</td><td>Ventiler une recette par lot. Export <strong>par nom</strong> dans <code>hooks.py</code> (SInv n'est pas un DocType HMD).</td></tr>
+        <tr><td class="fld">Asset-id_batiment</td><td>Link → Batiment</td><td>Relier l'immobilisation au DocType métier <code>Batiment</code> existant.</td></tr>
+        <tr><td class="fld">HMD Configuration.prix_reference_lait</td><td>Currency (TND)</td><td>Prix lait de référence pour la marge ; seed via patch idempotent (Singles).</td></tr>
+        <tr><td class="fld">HMD Configuration.objectif_cout_litre</td><td>Currency (TND)</td><td>Cible coût/litre pour la coloration des indicateurs.</td></tr>
+        <tr><td class="fld">HMD Configuration.pfe_iofc_min / pfe_marge_*</td><td>Float</td><td>Seuils verts/oranges/rouges des KPI éco (pattern <code>pfe_*</code>).</td></tr>
+      </tbody>
+    </table>
+    <div class="callout frame"><span class="tag">Rappel fixtures</span> Tout Custom Field sur un DocType <strong>ERPNext core</strong> (Sales Invoice, Asset…) échappe au filtre <code>dt in HMD_DOCTYPES</code> : il faut l'exporter <strong>explicitement par son nom</strong> dans <code>hooks.py</code>, sinon <code>bench migrate</code> l'efface. Les seuils <code>HMD Configuration</code> se sèment par <strong>patch idempotent</strong> (les Singles ne prennent pas les defaults JSON).</div>
+  </section>
+
+  <!-- 03 -->
+  <section id="rg">
+    <p class="eyebrow">03 · Règles</p>
+    <h2><span class="no">03</span>Règles de gestion (RG · CF · RC)</h2>
+    <hr class="sec-rule">
+    <div class="reading"><p>Les règles que le code devra faire respecter. Les RC (règles de calcul) sont détaillées en §06.</p></div>
+
+    <table class="tbl">
+      <thead><tr><th style="width:13%">Code</th><th style="width:50%">Règle</th><th>Où ça atterrit</th></tr></thead>
+      <tbody>
+        <tr><td class="code">RG-FIN-01</td><td><strong>Aucun prix en dur.</strong> Tout prix vient d'Item Price / Pricing Rule (ERPNext) ou de <code>get_config()</code> (HMD Configuration).</td><td>Item Price · HMD Configuration</td></tr>
+        <tr><td class="code">RG-FIN-02</td><td><strong>Aucun DocType finance maison.</strong> On étend ERPNext core par Custom Field ; Vente/Dépense/Asset = natif.</td><td>Custom Field · fixtures</td></tr>
+        <tr><td class="code">RG-FIN-03</td><td><strong>Coûts figés = immuables.</strong> Toute correction passe par une écriture compensatoire ; <code>on_trash</code> symétrique (comme <code>restore_*_stock</code>).</td><td>Hooks · SInv/JE compensatoires</td></tr>
+        <tr><td class="code">RG-FIN-04</td><td><strong>Jobs récurrents idempotents</strong> avec marqueur dans <code>remarks</code> (comme <code>RATION_DIST_&lt;lot&gt;_&lt;date&gt;</code>).</td><td>Scheduler · facturation lait</td></tr>
+        <tr><td class="code">RG-FIN-10</td><td><strong>Recette lait valorisée par prix-qualité</strong> (fonction de TB/TP), défini en Item Price / Pricing Rule.</td><td>Sales Invoice · Pricing Rule</td></tr>
+        <tr><td class="code">RG-FIN-11</td><td><strong>Si la centrale auto-facture → importer son décompte</strong> (pattern <code>import_rapport.py</code>), ne PAS émettre de facture concurrente (risque de double comptage). Décision = cadrage Q.B.</td><td>Rapport Journalier Importe</td></tr>
+        <tr><td class="code">RG-FIN-12</td><td><strong>Réconciliation volume ↔ recette.</strong> La recette facturée concorde avec <code>Bilan Lait Journalier.lait_vendu</code> ; contrôle de cohérence.</td><td>Contrôle · rapport</td></tr>
+        <tr><td class="code">RG-FIN-20</td><td><strong>Vente animal :</strong> au passage <code>Animal.statut → VENDU/REFORME</code>, émettre une Sales Invoice depuis <code>prix_vente</code> ; <code>count_exits()</code> reste cohérent.</td><td>Hook Animal · Sales Invoice</td></tr>
+        <tr><td class="code">CF-FIN-21</td><td><strong>Annulation symétrique :</strong> supprimer/annuler la vente animal émet l'écriture compensatoire et restaure l'état.</td><td>Animal <code>on_trash</code></td></tr>
+        <tr><td class="code">RG-FIN-30</td><td><strong>Consommation au CMP réel :</strong> dès qu'un achat a posé un <code>valuation_rate</code>, la sortie stock sort au coût réel (bascule <code>basic_rate=0→réel</code>).</td><td><code>stock_utils.py</code></td></tr>
+        <tr><td class="code">CF-FIN-31</td><td><strong>Ne pas casser le stock :</strong> SE soumises &amp; immuables ; <code>allow_negative_stock</code> et le refus batch v15 restent intacts ; bascule testée hors prod.</td><td>Stock · tests</td></tr>
+        <tr><td class="code">RG-FIN-40</td><td><strong>Toute écriture porte sa dimension :</strong> Cost Center (atelier) + dimension Lot/Bâtiment quand pertinent ; clés de répartition <strong>validées par le client</strong>.</td><td>Cost Center · Accounting Dimension</td></tr>
+        <tr><td class="code">RG-FIN-60</td><td><strong>Coloration par seuils :</strong> indicateurs éco colorés vert/orange/rouge via <code>get_config</code> ; champs lus en JS ajoutés à <code>boot.JS_FIELDS</code>.</td><td>HMD Configuration · boot.py</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 04 -->
+  <section id="flows">
+    <p class="eyebrow">04 · Flux</p>
+    <h2><span class="no">04</span>Flowcharts</h2>
+    <hr class="sec-rule">
+    <div class="reading"><p>Les flux à câbler, du terrain jusqu'à l'écriture et l'indicateur. Le flux F1 (valorisation) est le levier à plus fort rendement.</p></div>
+
+    <div class="diagram"><div class="cap">F1 · Boucle de valorisation des coûts — le quick win</div>
+<pre class="mermaid">
+flowchart TD
+  A[Achat intrant] --> B[Purchase Invoice / Receipt]
+  B --> C[Bin.valuation_rate = CMP]
+  D["Consommation quotidienne<br/>ration · traitement · IA"] --> E["Stock Entry<br/>(déjà postée par l'app)"]
+  C -. prix réel .-> E
+  E --> F[Stock Ledger Entry<br/>stock_value_difference]
+  F --> G["Coût aliment/médicament<br/>lu par rapport_mensuel.py"]
+  G --> H["Coût de revient / litre<br/>Marge sur coût alimentaire"]
+</pre></div>
+
+    <div class="diagram"><div class="cap">F2 · Vente du lait — émission vs auto-facturation</div>
+<pre class="mermaid">
+flowchart TD
+  A["Traite quotidienne<br/>litres + TB/TP"] --> B[Bilan Lait Journalier<br/>lait_vendu]
+  B --> C{Qui facture ?}
+  C -->|Ferme facture| D["Job idempotent<br/>agrège la période"]
+  D --> E["Prix-qualité<br/>Item Price / Pricing Rule"]
+  E --> F[Sales Invoice<br/>client centrale]
+  C -->|Centrale auto-facture| G["Import du décompte<br/>pattern import_rapport.py"]
+  F --> H[Rapprochement<br/>volume vs recette]
+  G --> H
+</pre></div>
+
+    <div class="diagram"><div class="cap">F3 · Vente d'un animal</div>
+<pre class="mermaid">
+flowchart TD
+  A["Animal.statut --> VENDU / REFORME"] --> B{Prix au kg ?}
+  B -->|Oui| C["Pesee type VENTE<br/>--> poids"]
+  B -->|Non| D[Animal.prix_vente forfait]
+  C --> E[Sales Invoice]
+  D --> E
+  E --> F["GL: creance + produit"]
+  E --> G["count_exits cohérent"]
+  H["Annulation (on_trash)"] --> I[Écriture compensatoire symétrique]
+</pre></div>
+
+    <div class="diagram"><div class="cap">F4 · Stock → comptabilité (inventaire permanent)</div>
+<pre class="mermaid">
+flowchart LR
+  A[Stock Entry soumise] --> B[Stock Ledger Entry]
+  B --> C["GL Entry<br/>inventaire vs charge / COGS"]
+  C --> D["États financiers natifs<br/>Bilan · CPC · Grand livre"]
+</pre></div>
+
+    <div class="diagram"><div class="cap">F5 · Rollup quotidien → bloc « Frais &amp; coût » du rapport mensuel</div>
+<pre class="mermaid">
+flowchart TD
+  A["Scheduler quotidien<br/>feed_distribution"] --> B["Stock Entry par lot/jour"]
+  B --> C[SLE stock_value_difference]
+  C --> D["rapport_mensuel<br/>Frais Concentré / Fourrage"]
+  D --> E["DT/L et DT/vache<br/>(présente &amp; lactante)"]
+  E --> F["Coloration seuils<br/>HMD Configuration"]
+</pre></div>
+
+    <div class="diagram"><div class="cap">F6 · Amortissement d'un équipement</div>
+<pre class="mermaid">
+flowchart TD
+  A[Achat équipement] --> B[Asset + Asset Category]
+  B --> C[Calendrier d'amortissement]
+  C --> D["Dotation périodique<br/>Journal Entry (auto)"]
+  D --> E["Charge --> Cost Center Atelier"]
+  E --> F[Coût total / litre]
+</pre></div>
+  </section>
+
+  <!-- 05 -->
+  <section id="stories">
+    <p class="eyebrow">05 · Backlog produit</p>
+    <h2><span class="no">05</span>User stories (Jira-ready)</h2>
+    <hr class="sec-rule">
+    <div class="reading"><p>Format Scrum standard, regroupées par EPIC (alignées sur les 7 phases du cadrage). Chaque story porte un ID <code>FIN-Snn</code> à reprendre dans le commit (<code>« FIN-S10 … »</code>) et les RG associées. Critères d'acceptation = <em>Definition of Done</em>.</p></div>
+
+    <div class="epic">EPIC A · Socle comptable <span class="ph">Phase 1</span></div>
+
+    <div class="story">
+      <div class="sid">FIN-S01</div>
+      <h4>Configurer le référentiel comptable tunisien</h4>
+      <p class="us">En tant que <b>comptable</b>, je veux <b>un plan comptable, un exercice et la TVA configurés</b> afin de <b>tenir une comptabilité conforme dans ERPNext</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul>
+        <li>Chart of Accounts tunisien (SCE) chargé sur la Company <code>hmd-agro</code> et validé par le comptable.</li>
+        <li>Fiscal Year + devise TND configurés ; modèles de TVA créés (lait / animaux / intrants).</li>
+        <li>Bilan et CPC s'ouvrent sans erreur (même à zéro).</li>
+      </ul>
+      <div class="tags"><span class="tag2 rg">RG-FIN-01</span><span class="tag2 ph">Phase 1</span><span class="tag2">0 code · config</span></div>
+    </div>
+
+    <div class="story">
+      <div class="sid">FIN-S02</div>
+      <h4>Créer les centres de coûts &amp; dimensions analytiques</h4>
+      <p class="us">En tant que <b>gérant</b>, je veux <b>des ateliers et des axes Lot/Bâtiment/Atelier</b> afin de <b>ventiler charges et produits par activité</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul>
+        <li>Cost Centers créés : Lait, Élevage/Génisses, Cultures/Fourrage, Traction, Frais Généraux.</li>
+        <li>Accounting Dimensions <em>Lot</em>, <em>Bâtiment</em>, <em>Atelier</em> actives sur les écritures.</li>
+        <li>Une écriture de test porte bien Cost Center + dimension Lot.</li>
+      </ul>
+      <div class="tags"><span class="tag2 rg">RG-FIN-40</span><span class="tag2 ph">Phase 1</span></div>
+    </div>
+
+    <div class="epic">EPIC B · Valorisation des coûts <span class="ph">Phase 2 · quick win</span></div>
+
+    <div class="story">
+      <div class="sid">FIN-S10</div>
+      <h4>Saisir les achats d'intrants → valuation_rate</h4>
+      <p class="us">En tant que <b>responsable achats</b>, je veux <b>enregistrer les achats d'aliments/médicaments/semences</b> afin que <b>le CMP de chaque article soit réel</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul>
+        <li>Une Purchase Invoice/Receipt sur un Item met à jour <code>Bin.valuation_rate</code> (≠ 0).</li>
+        <li>Le fournisseur et le compte de charge sont correctement imputés.</li>
+      </ul>
+      <div class="tags"><span class="tag2 rg">RG-FIN-30</span><span class="tag2 ph">Phase 2</span></div>
+    </div>
+
+    <div class="story">
+      <div class="sid">FIN-S11</div>
+      <h4>Basculer la sortie de stock sur le coût réel</h4>
+      <p class="us">En tant que <b>développeur Finance</b>, je veux <b>que <code>stock_utils</code> valorise les consommations au CMP réel</b> afin que <b>les coûts cessent d'être à zéro</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul>
+        <li><code>basic_rate=0</code> remplacé par la valorisation native (ou <code>allow_zero_valuation_rate</code> retiré) — derrière test.</li>
+        <li><code>stock_value_difference</code> devient non nul sur une Material Issue après achat.</li>
+        <li>Le refus batch v15 et <code>allow_negative_stock</code> restent intacts (CF-FIN-31) ; test vert hors prod.</li>
+      </ul>
+      <div class="tags"><span class="tag2 rg">RG-FIN-30</span><span class="tag2 rg">CF-FIN-31</span><span class="tag2 ph">Phase 2</span></div>
+    </div>
+
+    <div class="story">
+      <div class="sid">FIN-S12</div>
+      <h4>Voir le coût/litre réel dans le rapport mensuel</h4>
+      <p class="us">En tant que <b>gérant</b>, je veux <b>le coût alimentaire réel par litre et par vache</b> afin de <b>piloter la rentabilité sans calcul manuel</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul>
+        <li>Le DT/L existant (<code>rapport_mensuel.py:1293</code>) affiche une valeur <strong>réelle</strong> (≠ 0) une fois la valorisation branchée.</li>
+        <li>Ajout du <strong>DT/vache</strong> (présente &amp; lactante) dans le bloc « Frais &amp; coût ».</li>
+        <li>Les valeurs concordent avec un calcul manuel de contrôle sur une journée.</li>
+      </ul>
+      <div class="tags"><span class="tag2 rg">RC-FIN-50</span><span class="tag2 ph">Phase 2</span></div>
+    </div>
+
+    <div class="epic">EPIC C · Recettes <span class="ph">Phase 3</span></div>
+
+    <div class="story">
+      <div class="sid">FIN-S20</div>
+      <h4>Définir l'article Lait &amp; le prix-qualité</h4>
+      <p class="us">En tant que <b>comptable</b>, je veux <b>un article « Lait » avec un prix indexé TB/TP</b> afin de <b>facturer au juste prix qualité</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul>
+        <li>Item « Lait » + Item Price ; Pricing Rule appliquant primes/pénalités TB/TP.</li>
+        <li>Aucun prix en dur dans le code (RG-FIN-01).</li>
+      </ul>
+      <div class="tags"><span class="tag2 rg">RG-FIN-10</span><span class="tag2 rg">RG-FIN-01</span><span class="tag2 ph">Phase 3</span></div>
+    </div>
+
+    <div class="story">
+      <div class="sid">FIN-S21</div>
+      <h4>Facturer (ou importer) la recette lait de la période</h4>
+      <p class="us">En tant que <b>comptable</b>, je veux <b>générer la facture lait de la période — ou importer le décompte de la centrale</b> afin d'<b>enregistrer la recette principale</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul>
+        <li>Si la ferme facture : job idempotent (marqueur <code>remarks</code>) agrège <code>lait_vendu</code> → Sales Invoice ; re-run = no-op.</li>
+        <li>Si auto-facturation : import du décompte (pattern <code>import_rapport.py</code>), aucune facture concurrente (RG-FIN-11).</li>
+        <li>Recette rapprochée du volume saisi (RG-FIN-12).</li>
+      </ul>
+      <div class="tags"><span class="tag2 rg">RG-FIN-10/11/12</span><span class="tag2 rg">RG-FIN-04</span><span class="tag2 ph">Phase 3</span></div>
+    </div>
+
+    <div class="story">
+      <div class="sid">FIN-S22</div>
+      <h4>Émettre une facture à la vente d'un animal</h4>
+      <p class="us">En tant que <b>gérant</b>, je veux <b>qu'une vente d'animal génère sa facture</b> afin de <b>comptabiliser la recette automatiquement</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul>
+        <li>Au passage <code>statut→VENDU/REFORME</code>, Sales Invoice créée depuis <code>prix_vente</code> (poids via Pesée VENTE si prix/kg).</li>
+        <li><code>count_exits()</code> reste cohérent ; suppression = écriture compensatoire (CF-FIN-21).</li>
+      </ul>
+      <div class="tags"><span class="tag2 rg">RG-FIN-20</span><span class="tag2 rg">CF-FIN-21</span><span class="tag2 ph">Phase 3</span></div>
+    </div>
+
+    <div class="story">
+      <div class="sid">FIN-S23</div>
+      <h4>Vendre fumier &amp; produits divers</h4>
+      <p class="us">En tant que <b>gérant</b>, je veux <b>facturer le fumier (et produits annexes)</b> afin de <b>capturer toutes les recettes</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul><li>Items dédiés ; Sales Invoice ponctuelle imputée au bon atelier.</li></ul>
+      <div class="tags"><span class="tag2 rg">RG-FIN-10</span><span class="tag2 ph">Phase 3</span></div>
+    </div>
+
+    <div class="epic">EPIC D · Immobilisations <span class="ph">Phase 4</span></div>
+
+    <div class="story">
+      <div class="sid">FIN-S30</div>
+      <h4>Enregistrer les équipements en immobilisation</h4>
+      <p class="us">En tant que <b>comptable</b>, je veux <b>les équipements en Asset avec amortissement</b> afin que <b>les dotations impactent le résultat</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul>
+        <li>Asset Categories + durées ; un Asset génère son calendrier et ses Journal Entries de dotation.</li>
+        <li>CF <code>Asset-id_batiment</code> reliant l'actif au DocType <code>Batiment</code> (exporté par nom).</li>
+      </ul>
+      <div class="tags"><span class="tag2 rg">RC-FIN-53</span><span class="tag2 ph">Phase 4</span></div>
+    </div>
+
+    <div class="story">
+      <div class="sid">FIN-S31</div>
+      <h4>(Décision) Valoriser le cheptel comme actif biologique</h4>
+      <p class="us">En tant que <b>comptable</b>, je veux <b>trancher le traitement comptable du cheptel</b> afin de <b>valoriser/amortir correctement le troupeau</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul><li>Décision documentée (actif amortissable vs stock) ; paramétrage Asset si retenu. <em>Bloquée par cadrage Q.F.</em></li></ul>
+      <div class="tags"><span class="tag2 ph">Phase 4</span><span class="tag2">décision client</span></div>
+    </div>
+
+    <div class="epic">EPIC E · Charges &amp; main-d'œuvre <span class="ph">Phase 5</span></div>
+
+    <div class="story">
+      <div class="sid">FIN-S40</div>
+      <h4>Saisir les charges diverses ventilées</h4>
+      <p class="us">En tant que <b>comptable</b>, je veux <b>enregistrer énergie/eau/loyer/assurances par atelier</b> afin d'<b>obtenir un coût complet</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul><li>Purchase Invoice / Journal Entry imputées au Cost Center selon la clé validée client (RG-FIN-40).</li></ul>
+      <div class="tags"><span class="tag2 rg">RG-FIN-40</span><span class="tag2 ph">Phase 5</span></div>
+    </div>
+
+    <div class="story">
+      <div class="sid">FIN-S41</div>
+      <h4>Intégrer le coût de la main-d'œuvre</h4>
+      <p class="us">En tant que <b>gérant</b>, je veux <b>le coût du travail ventilé par atelier</b> afin que <b>le coût/litre inclue la MO</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul><li>Payroll ERPNext OU écritures de salaire ventilées sur Cost Centers ; la ligne « MO » apparaît dans le coût total.</li></ul>
+      <div class="tags"><span class="tag2 rg">RG-FIN-40</span><span class="tag2 ph">Phase 5</span></div>
+    </div>
+
+    <div class="epic">EPIC F · Pilotage <span class="ph">Phase 6</span></div>
+
+    <div class="story">
+      <div class="sid">FIN-S50</div>
+      <h4>Tableau de bord économique</h4>
+      <p class="us">En tant que <b>gérant</b>, je veux <b>coût/litre, IOFC, EBE, produit brut et marge</b> afin de <b>décider vite</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul>
+        <li>Number Cards / rapport affichant les RC-FIN-50/51/52 (DT/L &amp; DT/vache par poste).</li>
+        <li>Intégré au rapport mensuel existant (réutilise <code>dashboard_kpis.py</code> / <code>live_state.py</code>).</li>
+      </ul>
+      <div class="tags"><span class="tag2 rg">RC-FIN-50/51/52</span><span class="tag2 ph">Phase 6</span></div>
+    </div>
+
+    <div class="story">
+      <div class="sid">FIN-S51</div>
+      <h4>Seuils éco en config + coloration</h4>
+      <p class="us">En tant que <b>gérant</b>, je veux <b>colorer les indicateurs selon des seuils paramétrables</b> afin de <b>repérer d'un coup d'œil les alertes</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul>
+        <li>Champs <code>prix_reference_lait</code>, <code>objectif_cout_litre</code>, <code>pfe_iofc_*</code> dans HMD Configuration (seed par patch).</li>
+        <li>Coloration vert/orange/rouge via <code>get_config</code> ; champs JS dans <code>boot.JS_FIELDS</code>.</li>
+      </ul>
+      <div class="tags"><span class="tag2 rg">RG-FIN-60</span><span class="tag2 ph">Phase 6</span></div>
+    </div>
+
+    <div class="epic">EPIC G · Bascule <span class="ph">Phase 7 · transverse</span></div>
+
+    <div class="story">
+      <div class="sid">FIN-S60</div>
+      <h4>À-nouveaux / balances d'ouverture</h4>
+      <p class="us">En tant que <b>comptable</b>, je veux <b>reprendre les soldes d'ouverture à la date de bascule</b> afin de <b>démarrer sur des comptes justes</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul><li>Opening Balance saisis ; balance d'ouverture équilibrée à la date convenue.</li></ul>
+      <div class="tags"><span class="tag2 ph">Phase 7</span></div>
+    </div>
+
+    <div class="story">
+      <div class="sid">FIN-S61</div>
+      <h4>Droits par rôle (comptable ≠ éleveur)</h4>
+      <p class="us">En tant qu'<b>administrateur</b>, je veux <b>séparer saisie / validation / consultation</b> afin de <b>respecter la séparation des tâches</b>.</p>
+      <div class="aclabel">Critères d'acceptation</div>
+      <ul><li>Rôles &amp; permissions (Role Permission Manager) ; un éleveur ne peut pas soumettre une écriture comptable.</li></ul>
+      <div class="tags"><span class="tag2 ph">Phase 7</span></div>
+    </div>
+  </section>
+
+  <!-- 06 -->
+  <section id="kpi">
+    <p class="eyebrow">06 · Règles de calcul</p>
+    <h2><span class="no">06</span>KPI économiques à livrer</h2>
+    <hr class="sec-rule">
+    <div class="reading"><p>Les indicateurs que la finance doit produire — formules issues du dispositif Excel et de l'étude PFE. Reportés <strong>par vache présente</strong> et <strong>par vache lactante</strong> (les deux dénominateurs).</p></div>
+
+    <table class="tbl">
+      <thead><tr><th style="width:14%">Code</th><th style="width:26%">Indicateur</th><th style="width:34%">Formule</th><th>Objectif / seuil</th></tr></thead>
+      <tbody>
+        <tr><td class="code">RC-FIN-50</td><td>Coût de revient / litre</td><td>(coût alim + véto + MO + amortissements + frais généraux) ÷ litres ; chaque poste en DT/L et DT/vache</td><td><code>objectif_cout_litre</code> (config)</td></tr>
+        <tr><td class="code">RC-FIN-51</td><td>Marge sur coût alimentaire (IOFC)</td><td>recette lait − coût aliment = prix vente lait (DT/L) − coût alimentaire (DT/L)</td><td><code>pfe_iofc_min</code> (config)</td></tr>
+        <tr><td class="code">RC-FIN-52</td><td>EBE / marge nette</td><td>produits d'exploitation − charges d'exploitation (hors amortissements)</td><td>&gt; 0 ; tendance</td></tr>
+        <tr><td class="code">RC-FIN-53</td><td>Dotation aux amortissements</td><td>plan d'amortissement ERPNext (Asset) → charge périodique par Cost Center</td><td>linéaire (à confirmer)</td></tr>
+        <tr><td class="code">—</td><td>Coût concentré / fourrage / alimentaire</td><td><code>prix_unitaire × quantité distribuée</code> ÷ litres (DT/L) ou ÷ effectif (DT/vache)</td><td>via L/C 2.0–2.4</td></tr>
+        <tr><td class="code">—</td><td>Produit brut</td><td>lait + animaux + fumier + aides</td><td>tendance</td></tr>
+      </tbody>
+    </table>
+    <div class="callout key"><span class="tag">Conséquence du quick win</span> Le rapport mensuel lit <strong>déjà</strong> le coût aliment depuis le grand livre des stocks (<code>rapport_mensuel.py:748</code>) et calcule <strong>déjà le DT/L</strong> (<code>:1293</code>) — il ne reste qu'à ajouter le <strong>DT/vache</strong>. Dès que les achats posent un <code>valuation_rate</code> réel (EPIC B), <strong>RC-FIN-50/51 se mettent à vivre sans nouveau calcul</strong>. Ordre de grandeur 2023 pour calage : CA lait ≈ <strong>893 615 TND/an</strong>.</div>
+  </section>
+
+  <!-- 07 -->
+  <section id="backlog">
+    <p class="eyebrow">07 · Exécution</p>
+    <h2><span class="no">07</span>Backlog &amp; séquencement</h2>
+    <hr class="sec-rule">
+    <div class="reading">
+      <p>Ordre conseillé (détaillé dans <code>plan_finance.html §06</code>). On livre de la valeur tôt : le <strong>coût/litre arrive dès l'EPIC B</strong>.</p>
+      <ol>
+        <li><strong>Phase 0 — Cadrage (bloquant).</strong> Dérouler le questionnaire <code>plan_finance.html §04</code> (A→J) avec le gérant <em>et</em> le comptable. Sortie : document de décisions (référentiel, prix lait, niveau analytique, amortissements, date de bascule).</li>
+        <li><strong>EPIC A</strong> — FIN-S01, FIN-S02 (socle + analytique).</li>
+        <li><strong>EPIC B</strong> — FIN-S10 → S12 (<em>quick win coût/litre</em>).</li>
+        <li><strong>EPIC C</strong> — FIN-S20 → S23 (recettes).</li>
+        <li><strong>EPIC D</strong> — FIN-S30, S31 (immos).</li>
+        <li><strong>EPIC E</strong> — FIN-S40, S41 (charges &amp; MO).</li>
+        <li><strong>EPIC F</strong> — FIN-S50, S51 (pilotage).</li>
+        <li><strong>EPIC G</strong> — FIN-S60, S61 (bascule &amp; rôles, transverse).</li>
+      </ol>
+
+      <div class="callout warn">
+        <span class="tag">Dépendances avant de coder</span>
+        <ul style="margin:6px 0 0">
+          <li><strong>Accès au backup BD</strong> (données réelles) auprès de Sami — l'instance locale est vierge.</li>
+          <li><strong>Repos clonés + dev container</strong> (ERPNext + <code>hmd_agro</code> via <code>frappe_docker</code>, cf. <code>setup_guide.md</code> partie A → <code>http://hmd.localhost:8000</code>).</li>
+          <li><strong>Cadrage Phase 0</strong> tranché : sans les décisions client, on hardcoderait des hypothèses — interdit (RG-FIN-01).</li>
+        </ul>
+      </div>
+
+      <p>Méthode de travail (consigne onboarding) : une <strong>branche par sprint</strong>, jamais de push direct sur <code>main</code>, <strong>unit tests</strong> + validation CI + superviseur, commits au format référençant l'ID story (<code>« FIN-S10 … »</code>), suivi dans <strong>Jira</strong>.</p>
+    </div>
+  </section>
+
+  <footer>
+    HMD AGRO · Module Finance — spécification (DocTypes · RG · flowcharts · user stories)<br>
+    Frère de <span class="mono">plan_finance.html</span> (cadrage). Ancré dans : carte spec→implémentation, <span class="mono">stock_utils.py</span>, <span class="mono">rapport_mensuel.py</span>, <span class="mono">live_state.py</span>, masters Animal/Aliment/Medicament/Semence, étude PFE &amp; dispositif Excel.<br>
+    Principe : configurer ERPNext, relier le métier — ne rien hardcoder. · v1 · 2026
+  </footer>
+  </main>
+</div>
+
+<button class="scrolltop" id="scrolltop" aria-label="Haut de page">↑</button>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({
+      startOnLoad:true, theme:'dark', securityLevel:'loose',
+      flowchart:{curve:'basis', htmlLabels:true},
+      themeVariables:{
+        fontFamily:'JetBrains Mono, monospace', fontSize:'14px',
+        primaryColor:'#201c14', primaryBorderColor:'#e7b65a', primaryTextColor:'#efe7d6',
+        lineColor:'#a99b7e', secondaryColor:'#262117', tertiaryColor:'#191610'
+      }
+    });
+  }
+  (function(){
+    const links = [...document.querySelectorAll('nav.toc a')];
+    const map = {}; links.forEach(a => { map[a.getAttribute('href').slice(1)] = a; });
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting){ links.forEach(l => l.classList.remove('active')); const a = map[e.target.id]; if (a) a.classList.add('active'); } });
+    }, {rootMargin:'-20% 0px -70% 0px', threshold:0});
+    document.querySelectorAll('section[id]').forEach(s => obs.observe(s));
+    const top = document.getElementById('scrolltop');
+    top.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+    window.addEventListener('scroll', () => { top.classList.toggle('show', window.scrollY > 600); }, {passive:true});
+  })();
+</script>
+</body>
+</html>

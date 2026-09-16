@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Blocks insemination when Animal.etat_gestation == 'GESTANTE' (with eligibility VACHE/GENISSE), referencing CF-IA / the guard.",
+      "passed": false,
+      "evidence": "without_skill/outputs/insemination.py validate_animal_not_pregnant() fetches only etat_gestation (line 37: 'etat_gestation = frappe.db.get_value(\"Animal\", self.animal, \"etat_gestation\")') and blocks GESTANTE (lines 38-41, ERR-IA-06). However there is NO VACHE/GENISSE eligibility check anywhere in the file or NOTES.md (no 'categorie' fetch, no 'VACHE'/'GENISSE' reference). The expectation's required '(with eligibility VACHE/GENISSE)' clause is genuinely absent."
+    },
+    {
+      "text": "On REUSSIE computes date_velage_prevue = add_days(date_ia, get_config('periode_velage_jours', 280)).",
+      "passed": true,
+      "evidence": "without_skill/outputs/insemination.py _mark_pregnant() lines 72,75: 'periode_velage = get_config(\"periode_velage_jours\", default=280)' then 'date_velage_prevue = add_days(self.date_ia, periode_velage)'. Reached on REUSSIE via sync_gestation_dates_on_result (line 67)."
+    },
+    {
+      "text": "Computes date_tarissement = add_days(date_velage_prevue, -get_config('tarissement_window_jours', 60)).",
+      "passed": true,
+      "evidence": "without_skill/outputs/insemination.py _mark_pregnant() lines 73,76: 'tarissement_window = get_config(\"tarissement_window_jours\", default=60)' then 'date_tarissement = add_days(date_velage_prevue, -tarissement_window)'."
+    },
+    {
+      "text": "Writes the protected reproduction/gestation fields via flags.ignore_validate and uses get_config (no hardcoded 280/60/9-months).",
+      "passed": true,
+      "evidence": "without_skill/outputs/insemination.py _mark_pregnant() lines 79-86 set id_ia_fecondante, date_velage_prevue, date_tarissement, etat_gestation then 'animal.flags.ignore_validate = True; animal.save()'. Both windows come from get_config (lines 72-73); 280/60 appear only as get_config defaults, no hardcoded literals or 9-months."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  }
+}

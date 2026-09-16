@@ -13,8 +13,8 @@ import re
 import json
 
 RACINE = pathlib.Path(__file__).resolve().parent.parent
-SHOTS = pathlib.Path(__file__).resolve().parent / "captures"
-SORTIE = RACINE / "presentation_finance.html"
+SHOTS = RACINE / "passation/04_demonstration/demo_finance/captures"
+SORTIE = RACINE / "passation/04_demonstration/presentation_finance.html"
 
 # ─── Slides ──────────────────────────────────────────────────────────────────
 

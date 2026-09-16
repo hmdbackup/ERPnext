@@ -14,7 +14,7 @@
 set -euo pipefail
 
 ICI="$(cd "$(dirname "$0")" && pwd)"
-DECK="$(cd "$ICI/.." && pwd)/presentation_finance.html"
+DECK="$(cd "$ICI/.." && pwd)/passation/04_demonstration/presentation_finance.html"
 NARRATION="$ICI/narration.json"
 SORTIE="${SORTIE:-$HOME/Downloads}"
 TRAVAIL="${TMPDIR:-/tmp}/hmd_demo_video"

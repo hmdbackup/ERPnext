@@ -1,0 +1,19 @@
+{
+  "eval_id": 3,
+  "eval_name": "domain-insemination-gestante-calving-date",
+  "skill": "hmd-agro-domain",
+  "skill_path": "/Users/momoslim/Downloads/hmd_agro-main/.claude/skills/hmd-agro-domain",
+  "prompt": "In hmd_agro, make two changes to Insemination: (1) a cow that is already pregnant must not be able to be inseminated, and (2) when an insemination's result is set to successful, automatically compute and store the cow's expected calving date and her dry-off (tarissement) date. Show the controller code.",
+  "assertions": [
+    "Blocks insemination when Animal.etat_gestation == 'GESTANTE' (with eligibility VACHE/GENISSE), referencing CF-IA / the guard.",
+    "On REUSSIE computes date_velage_prevue = add_days(date_ia, get_config('periode_velage_jours', 280)).",
+    "Computes date_tarissement = add_days(date_velage_prevue, -get_config('tarissement_window_jours', 60)).",
+    "Writes the protected reproduction/gestation fields via flags.ignore_validate and uses get_config (no hardcoded 280/60/9-months)."
+  ],
+  "expectations": [
+    "Blocks insemination when Animal.etat_gestation == 'GESTANTE' (with eligibility VACHE/GENISSE), referencing CF-IA / the guard.",
+    "On REUSSIE computes date_velage_prevue = add_days(date_ia, get_config('periode_velage_jours', 280)).",
+    "Computes date_tarissement = add_days(date_velage_prevue, -get_config('tarissement_window_jours', 60)).",
+    "Writes the protected reproduction/gestation fields via flags.ignore_validate and uses get_config (no hardcoded 280/60/9-months)."
+  ]
+}

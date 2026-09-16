@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "path": "../.."
+    },
+    {
+      "path": "../../../hmd_agro_local_deploy"
+    },
+    {
+      "path": "../../../hmd_agro_doc_assets"
+    }
+  ]
+}

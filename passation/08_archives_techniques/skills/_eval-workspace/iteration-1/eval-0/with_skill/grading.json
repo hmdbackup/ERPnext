@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Recommends ERPNext Asset (and Asset Maintenance) as the primary approach for Equipment/Intervention, rather than building them as new custom dairy DocTypes.",
+      "passed": true,
+      "evidence": "with_skill/outputs/NOTES.md TL;DR: \"I did not create custom Equipement / Intervention DocTypes... EQUIPMENT -> ERPNext Asset (classified via Asset Category)\" and \"INTERVENTION -> ERPNext Asset Maintenance + Asset Maintenance Log\". This is presented as THE approach, with custom DocTypes explicitly rejected."
+    },
+    {
+      "text": "Explicitly cites that the spec's EQUIPMENT/INTERVENTION are ERPNext-core or not-built-by-design (the spec to implementation map / golden rule).",
+      "passed": true,
+      "evidence": "with_skill/outputs/NOTES.md \"Why no custom DocType (cited rules)\" cites Golden rule #1 (\"The code is the source of truth; the spec docs are intent\") and spec-to-implementation-map.md §3 \"Spec entities NOT built yet\" naming EQUIPMENT->Asset and INTERVENTION->Asset Maintenance. Verified accurate against SKILL.md and spec-to-implementation-map.md lines 65-66."
+    },
+    {
+      "text": "Does NOT present a from-scratch custom 'Equipement'/'Equipment' DocType as the recommended solution.",
+      "passed": true,
+      "evidence": "with_skill/outputs/NOTES.md: \"I considered authoring Equipement / Intervention JSON+py DocTypes (the literal reading of the task) and rejected it.\" No custom DocType JSON for Equipement/Equipment is in the deliverable; only Asset Category, Custom Fields, and seed patch files exist."
+    },
+    {
+      "text": "Any proposed extension uses Custom Fields + module 'HMD AGRO' conventions (and notes the by-name fixture pattern for CFs on core doctypes).",
+      "passed": true,
+      "evidence": "with_skill/outputs/custom_fields_asset.json proposes CFs (Asset-batiment, Asset Maintenance Log-remarque_intervention) following French snake_case; hooks_fixtures_snippet.py registers them by name and NOTES.md explains the SCRUM-123 by-name pattern: \"a Custom Field on an ERPNext core DocType is not caught by the bulk fixture filter ... unless exported explicitly by name, exactly like the existing Stock Entry-id_lot line.\" Verified against erpnext-integration.md."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

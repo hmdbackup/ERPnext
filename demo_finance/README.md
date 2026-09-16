@@ -6,15 +6,15 @@ ils se **regénèrent** à partir des sources de ce dossier.
 ```
 build_presentation.py   le deck : slides + narration (source unique)
 build_video.sh          les vidéos, à partir du deck + de la narration
-captures/               les captures d'écran de l'application
+../passation/04_demonstration/demo_finance/captures/  les captures d'écran de l'application
 narration.json          la narration exportée (produite par build_presentation.py)
 ```
 
-Produits, à la racine du dépôt / dans `~/Downloads` :
+Produits, dans le dossier de passation / dans `~/Downloads` :
 
 | Fichier | Quoi |
 |---|---|
-| `../presentation_finance.html` | deck autonome, 15 slides, images embarquées (1,2 Mo) |
+| `../passation/04_demonstration/presentation_finance.html` | deck autonome, 15 slides, images embarquées (1,2 Mo) |
 | `~/Downloads/demo_finance_hmd.mp4` | vidéo narrée, 1920×1080, ~10 min |
 | `~/Downloads/demo_finance_hmd_muette.mp4` | mêmes slides sans voix, 8 s chacune |
 
@@ -49,7 +49,7 @@ jamais écrasées par une reprise.
 
 Tout est dans `build_presentation.py` :
 
-- `SLIDES` — le HTML de chaque slide. `{{IMG:nom}}` embarque `captures/nom.jpg`.
+- `SLIDES` — le HTML de chaque slide. `{{IMG:nom}}` embarque `../passation/04_demonstration/demo_finance/captures/nom.jpg`.
 - `NOTES` — ce qui est **dit** sur chaque slide. Sert à la fois aux notes du
   présentateur (touche `N` dans le deck) et à la piste audio de la vidéo.
   Écrites pour être lues à voix haute : nombres en toutes lettres, phrases

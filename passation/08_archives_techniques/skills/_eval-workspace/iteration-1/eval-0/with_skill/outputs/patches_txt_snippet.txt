@@ -1,0 +1,6 @@
+# Add this line to the END of the [post_model_sync] block in
+# hmd_agro/patches.txt (after the existing v1_5 line). It runs the equipment
+# seed patch on `bench migrate`, after the Asset Category + Custom Field
+# fixtures have synced.
+
+hmd_agro.patches.v1_6.seed_equipment_assets

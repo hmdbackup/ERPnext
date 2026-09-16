@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Formula = lait produit / MSI with MSI = MS distribuee - refus (kg lait per kg MS ingeree).",
+      "passed": true,
+      "evidence": "efficacite_alimentaire_indicator.py:60-70 defines `efficacite_alimentaire(lait_litres, ms_kg, refus_kg=0.0)` with `msi = (ms_kg or 0) - (refus_kg or 0)` and `return round((lait_litres or 0) / msi, 2)`; docstring (:63) states 'Skill formula: efficacité = lait ÷ MSI, MSI = MS distribuée − refus.' NOTES.md:25-28 states 'efficacité = lait (L) ÷ MSI / MSI = MS distribuée − refus (MSI = matière sèche ingérée) / MS distribuée = Σ(quantité_distribuée_kg × MS%_de_l_aliment)', unit L lait/kg MS. The − refus term is explicit."
+    },
+    {
+      "text": "Green threshold = pfe_efficacite_min (1.4) and orange = pfe_efficacite_orange_min (1.0), read via get_config (not hardcoded).",
+      "passed": true,
+      "evidence": "efficacite_alimentaire_indicator.py:81-82 'cfg_eff_min = float(get_config(\"pfe_efficacite_min\", default=1.4))' and 'cfg_eff_omn = float(get_config(\"pfe_efficacite_orange_min\", default=1.0))', imported from hmd_agro.hmd_agro.utils.config (:27). Matches app rapport_mensuel.py:1250-1251 verbatim and config defaults (init_pfe_seuils.py:18-19: 1.4 / 1.0). Thresholds passed in, not hardcoded into the color function."
+    },
+    {
+      "text": "Tri-color green/orange/red decision logic is config-driven.",
+      "passed": true,
+      "evidence": "efficacite_alimentaire_indicator.py:45-54 `colorier_efficacite(valeur, green_min, orange_min)` returns 'Green' if valeur>=green_min, 'Orange' if valeur>=orange_min, else 'Red' (and '' for None/0). green_min/orange_min are fed from get_config (:81-82, :116). Mirrors app _kpi_ind (rapport_mensuel.py:1197-1200)."
+    },
+    {
+      "text": "Computes over a defined population (presente/lactante) using live_state for effectif; module 'HMD AGRO'.",
+      "passed": true,
+      "evidence": "efficacite_alimentaire_indicator.py:8-9 (Rule 1 présente/lactante, Rule 2 herd counts from utils.live_state), :88-129 build présente/lactante rows ('Efficacité Alim. / Vache Lactante'), reuses effectif_on_date. NOTES.md:34-37 'Reported for two populations: par vache présente and par vache lactante'; :108-111 'counts come from utils/live_state.py (effectif_on_date)... reuses effectif_on_date(end) for VP/VL denominators'. live_state reconstruction and présente/lactante populations are explicitly wired; HMD AGRO report context referenced (rapport_mensuel)."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

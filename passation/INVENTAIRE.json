@@ -1,0 +1,1184 @@
+[
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/benchmark.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/benchmark.json",
+    "sha256_origine": "73f2a776c7bc8ec38cde4bf0da85c20a08bf173d3142983ab1341596aa458dc1",
+    "sha256_remise": "73f2a776c7bc8ec38cde4bf0da85c20a08bf173d3142983ab1341596aa458dc1"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/eval_metadata.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/eval_metadata.json",
+    "sha256_origine": "34fa4aeb63d314c47ca92253f40eb7f832fe8e389ff5664f899131a0461d488c",
+    "sha256_remise": "34fa4aeb63d314c47ca92253f40eb7f832fe8e389ff5664f899131a0461d488c"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/with_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/with_skill/grading.json",
+    "sha256_origine": "09de13a5ffb172f6ae0d1431c41ac6e61b4d413878470bb73b3797985f5af55d",
+    "sha256_remise": "09de13a5ffb172f6ae0d1431c41ac6e61b4d413878470bb73b3797985f5af55d"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/NOTES.md",
+    "sha256_origine": "ddf7b60104ad8c5a549e3efee671b9cf4dc1dc0f7a7f906450985ecbfaa96fa0",
+    "sha256_remise": "ddf7b60104ad8c5a549e3efee671b9cf4dc1dc0f7a7f906450985ecbfaa96fa0"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/asset_category_materiel_agricole.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/asset_category_materiel_agricole.json",
+    "sha256_origine": "54b4a10fc7f8ff3bdc042e2bf61138ba433ef5cc168a06e89afe2b666876a98d",
+    "sha256_remise": "54b4a10fc7f8ff3bdc042e2bf61138ba433ef5cc168a06e89afe2b666876a98d"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/custom_fields_asset.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/custom_fields_asset.json",
+    "sha256_origine": "7b58f6fc391b299bde0f67f7b2b691d2e9488d850d1e77056229e490f64941aa",
+    "sha256_remise": "7b58f6fc391b299bde0f67f7b2b691d2e9488d850d1e77056229e490f64941aa"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/equipment_maintenance_setup.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/equipment_maintenance_setup.py",
+    "sha256_origine": "014e7da5306a3a09cb83e746bfe634ff27dd4c554b69af5e0527c638868b91a6",
+    "sha256_remise": "014e7da5306a3a09cb83e746bfe634ff27dd4c554b69af5e0527c638868b91a6"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/hooks_fixtures_snippet.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/hooks_fixtures_snippet.py",
+    "sha256_origine": "7027b2149ac65f2d2ef65996b435597083a1ab97bd8e89804f94db9b51efc753",
+    "sha256_remise": "7027b2149ac65f2d2ef65996b435597083a1ab97bd8e89804f94db9b51efc753"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/patches/v1_6/__init__.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/patches/v1_6/__init__.py",
+    "sha256_origine": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sha256_remise": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/patches/v1_6/seed_equipment_assets.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/patches/v1_6/seed_equipment_assets.py",
+    "sha256_origine": "d19d489872ba992048af0636fafd9d72e4b666437d1bac38d89ff45094793440",
+    "sha256_remise": "d19d489872ba992048af0636fafd9d72e4b666437d1bac38d89ff45094793440"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/patches_txt_snippet.txt",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/with_skill/outputs/patches_txt_snippet.txt",
+    "sha256_origine": "f73b68e189588daac1b915476bbc91c2765e9ea11bb9995e7aeb4a302db8f66d",
+    "sha256_remise": "f73b68e189588daac1b915476bbc91c2765e9ea11bb9995e7aeb4a302db8f66d"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/with_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/with_skill/timing.json",
+    "sha256_origine": "f93ed29c7de55fbef3d5e58aac42860c9e04df20ddc641acba76a68512a639f8",
+    "sha256_remise": "f93ed29c7de55fbef3d5e58aac42860c9e04df20ddc641acba76a68512a639f8"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/without_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/without_skill/grading.json",
+    "sha256_origine": "44b4fc88d2357c98bd03ff4bb4b0f80524aeb92a56a70b71c284d1dad9cffbb9",
+    "sha256_remise": "44b4fc88d2357c98bd03ff4bb4b0f80524aeb92a56a70b71c284d1dad9cffbb9"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/NOTES.md",
+    "sha256_origine": "1709bc1d2c0afd6d97343fc0c08b1c8c48a6adbb9974494346503ae8b09c5613",
+    "sha256_remise": "1709bc1d2c0afd6d97343fc0c08b1c8c48a6adbb9974494346503ae8b09c5613"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/equipement/__init__.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/equipement/__init__.py",
+    "sha256_origine": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sha256_remise": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/equipement/equipement.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/equipement/equipement.json",
+    "sha256_origine": "05a8d9fc9eb92161b0d0b370b0b3cc0b3c804a0f86af7e76835975dd3f5952b5",
+    "sha256_remise": "05a8d9fc9eb92161b0d0b370b0b3cc0b3c804a0f86af7e76835975dd3f5952b5"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/equipement/equipement.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/equipement/equipement.py",
+    "sha256_origine": "48dbe834252ab9c59a1f14cf6c73b4c932cb0ec5e5cdc60e87a2e0e0f529f3f7",
+    "sha256_remise": "48dbe834252ab9c59a1f14cf6c73b4c932cb0ec5e5cdc60e87a2e0e0f529f3f7"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/equipement/equipement_list.js",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/equipement/equipement_list.js",
+    "sha256_origine": "a386b5af7d5caf2ba0dac45627037cc112f4545d98e1de4c7d20487000001734",
+    "sha256_remise": "a386b5af7d5caf2ba0dac45627037cc112f4545d98e1de4c7d20487000001734"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/intervention_maintenance/__init__.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/intervention_maintenance/__init__.py",
+    "sha256_origine": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sha256_remise": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/intervention_maintenance/intervention_maintenance.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/intervention_maintenance/intervention_maintenance.json",
+    "sha256_origine": "c2f83a6690e7042353f2351e3846e39f4b600a2de89145fc6c39e5a8fd9dad06",
+    "sha256_remise": "c2f83a6690e7042353f2351e3846e39f4b600a2de89145fc6c39e5a8fd9dad06"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/intervention_maintenance/intervention_maintenance.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/intervention_maintenance/intervention_maintenance.py",
+    "sha256_origine": "87de2bf960ae04f527fc8d9a8bbe34e00729fa613caf22bf2c3799aa2fc6b965",
+    "sha256_remise": "87de2bf960ae04f527fc8d9a8bbe34e00729fa613caf22bf2c3799aa2fc6b965"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/intervention_maintenance/intervention_maintenance_list.js",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/without_skill/outputs/intervention_maintenance/intervention_maintenance_list.js",
+    "sha256_origine": "03b3743272ab8518171a3e173b3b3ffe41b7c8905ea538288084af5efe73a253",
+    "sha256_remise": "03b3743272ab8518171a3e173b3b3ffe41b7c8905ea538288084af5efe73a253"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-0/without_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-0/without_skill/timing.json",
+    "sha256_origine": "217691ec704aa252d89ceb37132fde26a411ea105bc9dbbc1539691fb5154362",
+    "sha256_remise": "217691ec704aa252d89ceb37132fde26a411ea105bc9dbbc1539691fb5154362"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/eval_metadata.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/eval_metadata.json",
+    "sha256_origine": "0c481c0394d21e005559ab3478b92cdc10379a0373172db0613d3ee534db37d9",
+    "sha256_remise": "0c481c0394d21e005559ab3478b92cdc10379a0373172db0613d3ee534db37d9"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/with_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/with_skill/grading.json",
+    "sha256_origine": "9b04f6f549eb1c00a4a728798b169d14f59c0ee02c9a12388cdbdc0223283524",
+    "sha256_remise": "9b04f6f549eb1c00a4a728798b169d14f59c0ee02c9a12388cdbdc0223283524"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/with_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/with_skill/outputs/NOTES.md",
+    "sha256_origine": "d961efeb2969f8663410b07fddb4e2978b09421dd0b5daece97fcdfd08b3be81",
+    "sha256_remise": "d961efeb2969f8663410b07fddb4e2978b09421dd0b5daece97fcdfd08b3be81"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/with_skill/outputs/vaccination/__init__.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/with_skill/outputs/vaccination/__init__.py",
+    "sha256_origine": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sha256_remise": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/with_skill/outputs/vaccination/test_vaccination.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/with_skill/outputs/vaccination/test_vaccination.py",
+    "sha256_origine": "40b3be7bc800cadb8fd09a5b2bb9ccf54c426e027ea10e1a3c8b39d9c93e24fc",
+    "sha256_remise": "40b3be7bc800cadb8fd09a5b2bb9ccf54c426e027ea10e1a3c8b39d9c93e24fc"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/with_skill/outputs/vaccination/vaccination.js",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/with_skill/outputs/vaccination/vaccination.js",
+    "sha256_origine": "a1c28ed13a6faf3bd192c7cf3930714d44e20e7b5dac10e8994919c5242c26f5",
+    "sha256_remise": "a1c28ed13a6faf3bd192c7cf3930714d44e20e7b5dac10e8994919c5242c26f5"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/with_skill/outputs/vaccination/vaccination.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/with_skill/outputs/vaccination/vaccination.json",
+    "sha256_origine": "8894e746fe1496abd1602a7741a973216a1960a9d74a5ceee297e5dc44559b1c",
+    "sha256_remise": "8894e746fe1496abd1602a7741a973216a1960a9d74a5ceee297e5dc44559b1c"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/with_skill/outputs/vaccination/vaccination.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/with_skill/outputs/vaccination/vaccination.py",
+    "sha256_origine": "a8ff7c855cac509e5c9326d68b1a8ed9e84b26e4f3e3b14a04ab33d7ef1b015f",
+    "sha256_remise": "a8ff7c855cac509e5c9326d68b1a8ed9e84b26e4f3e3b14a04ab33d7ef1b015f"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/with_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/with_skill/timing.json",
+    "sha256_origine": "44588fbe8db6719e68acd0f6ed780fa3e5a0f1f621a2914cb1fdfa3a82e34139",
+    "sha256_remise": "44588fbe8db6719e68acd0f6ed780fa3e5a0f1f621a2914cb1fdfa3a82e34139"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/without_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/without_skill/grading.json",
+    "sha256_origine": "ea8ed4a1504f4492f6f944d0aee131cd2c02dc78f552e88a4b9416022d4dda6d",
+    "sha256_remise": "ea8ed4a1504f4492f6f944d0aee131cd2c02dc78f552e88a4b9416022d4dda6d"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/NOTES.md",
+    "sha256_origine": "e180d27c9db47facac6fe02e62617f7413722e65b6fe14dba9380585ddc6949a",
+    "sha256_remise": "e180d27c9db47facac6fe02e62617f7413722e65b6fe14dba9380585ddc6949a"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/animal_button_snippet.js",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/animal_button_snippet.js",
+    "sha256_origine": "660ee31422071748d4adccc0c4de7c484fc625e1683f207bcb1306f005910606",
+    "sha256_remise": "660ee31422071748d4adccc0c4de7c484fc625e1683f207bcb1306f005910606"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/vaccination/__init__.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/vaccination/__init__.py",
+    "sha256_origine": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sha256_remise": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/vaccination/vaccination.js",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/vaccination/vaccination.js",
+    "sha256_origine": "47e69470a19438ccfee6479a6e00fadcdc093538cd339c907e0f49ddf33e73a8",
+    "sha256_remise": "47e69470a19438ccfee6479a6e00fadcdc093538cd339c907e0f49ddf33e73a8"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/vaccination/vaccination.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/vaccination/vaccination.json",
+    "sha256_origine": "d13ef755fa2e7a614ed91f96137d85ad3355c9e1d8e086e7993ada82301c93c4",
+    "sha256_remise": "d13ef755fa2e7a614ed91f96137d85ad3355c9e1d8e086e7993ada82301c93c4"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/vaccination/vaccination.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/vaccination/vaccination.py",
+    "sha256_origine": "48d10940187164e1b24c33dd4ad1620c08797d9c721c4203cb6047ca06ec45c6",
+    "sha256_remise": "48d10940187164e1b24c33dd4ad1620c08797d9c721c4203cb6047ca06ec45c6"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/vaccination/vaccination_list.js",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/without_skill/outputs/vaccination/vaccination_list.js",
+    "sha256_origine": "6385c598b3111f31ce98ff31a4878ffefa7d9ff8def5ca51be51bd0eaffa0749",
+    "sha256_remise": "6385c598b3111f31ce98ff31a4878ffefa7d9ff8def5ca51be51bd0eaffa0749"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-1/without_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-1/without_skill/timing.json",
+    "sha256_origine": "92c646619c9c713ab6899ade9f2a839692dac12ab359725d22cac3d8193c889b",
+    "sha256_remise": "92c646619c9c713ab6899ade9f2a839692dac12ab359725d22cac3d8193c889b"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-2/eval_metadata.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-2/eval_metadata.json",
+    "sha256_origine": "5699605d3d34924c87cd30387af1b47f9fdbd2e0dd1b3768e6afd3cddd08ac11",
+    "sha256_remise": "5699605d3d34924c87cd30387af1b47f9fdbd2e0dd1b3768e6afd3cddd08ac11"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-2/with_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-2/with_skill/grading.json",
+    "sha256_origine": "58f43d28e6718fca4214e092a5ecfd5965be6218c73f797c744746115a9ef25c",
+    "sha256_remise": "58f43d28e6718fca4214e092a5ecfd5965be6218c73f797c744746115a9ef25c"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-2/with_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-2/with_skill/outputs/NOTES.md",
+    "sha256_origine": "691b794959b566883be01244d4334a7d53dde2b0b85e9da4c5595848777f98a0",
+    "sha256_remise": "691b794959b566883be01244d4334a7d53dde2b0b85e9da4c5595848777f98a0"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-2/with_skill/outputs/insemination_rg14_guard.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-2/with_skill/outputs/insemination_rg14_guard.py",
+    "sha256_origine": "48f6e26e8c727d7c4b6f68a3a5186cb505e97aa5f2cc8a212497a0d9e95f2cd6",
+    "sha256_remise": "48f6e26e8c727d7c4b6f68a3a5186cb505e97aa5f2cc8a212497a0d9e95f2cd6"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-2/with_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-2/with_skill/timing.json",
+    "sha256_origine": "197cc4364e3712bd36b683d17ed4aca722f271a63cc0b4bb8b22338c983dfe58",
+    "sha256_remise": "197cc4364e3712bd36b683d17ed4aca722f271a63cc0b4bb8b22338c983dfe58"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-2/without_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-2/without_skill/grading.json",
+    "sha256_origine": "cdb4aaac7815f4afa60fc54165e6478f1f9d55889b476936dc664a0e8fe0c3c5",
+    "sha256_remise": "cdb4aaac7815f4afa60fc54165e6478f1f9d55889b476936dc664a0e8fe0c3c5"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-2/without_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-2/without_skill/outputs/NOTES.md",
+    "sha256_origine": "4d327c96765bbdd0cab94c525cf27e3ebb98c1c6c435b770b410e3812749a0ab",
+    "sha256_remise": "4d327c96765bbdd0cab94c525cf27e3ebb98c1c6c435b770b410e3812749a0ab"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-2/without_skill/outputs/rg14_reference.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-2/without_skill/outputs/rg14_reference.py",
+    "sha256_origine": "4e00539894176b2d342ca2cb1925bb5b07778f431a39047b3c34eb88f8103e9b",
+    "sha256_remise": "4e00539894176b2d342ca2cb1925bb5b07778f431a39047b3c34eb88f8103e9b"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-2/without_skill/outputs/rg14_test_sketch.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-2/without_skill/outputs/rg14_test_sketch.py",
+    "sha256_origine": "4e9c6a644c8473f8741470f2f5b8a54d03ddcaec95b59c1a0a2db71e109e8082",
+    "sha256_remise": "4e9c6a644c8473f8741470f2f5b8a54d03ddcaec95b59c1a0a2db71e109e8082"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-2/without_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-2/without_skill/timing.json",
+    "sha256_origine": "defdc895539ac739f9b2d5f8814d5860c6baf3501ca881ffa4ad8d9c3466c300",
+    "sha256_remise": "defdc895539ac739f9b2d5f8814d5860c6baf3501ca881ffa4ad8d9c3466c300"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-3/eval_metadata.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-3/eval_metadata.json",
+    "sha256_origine": "29ee8e4f408166352b1841204df643325f456821434ec09cdc7e4bb91748383f",
+    "sha256_remise": "29ee8e4f408166352b1841204df643325f456821434ec09cdc7e4bb91748383f"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-3/with_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-3/with_skill/grading.json",
+    "sha256_origine": "9c62b13b28b437a625fd1aa89b865587bfa6e35617614f71bd05ea0b05905f5e",
+    "sha256_remise": "9c62b13b28b437a625fd1aa89b865587bfa6e35617614f71bd05ea0b05905f5e"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-3/with_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-3/with_skill/outputs/NOTES.md",
+    "sha256_origine": "98f8da4a97a318b2bc363f6fccf76a42496834b470c17addbe99228386451125",
+    "sha256_remise": "98f8da4a97a318b2bc363f6fccf76a42496834b470c17addbe99228386451125"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-3/with_skill/outputs/insemination.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-3/with_skill/outputs/insemination.py",
+    "sha256_origine": "188caad1a360053120592546c50fbe44f178af00187846e3bcb981530330ec40",
+    "sha256_remise": "188caad1a360053120592546c50fbe44f178af00187846e3bcb981530330ec40"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-3/with_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-3/with_skill/timing.json",
+    "sha256_origine": "91f0db48b5131e0a52646002d107da5e8114ed364d9e020c07c93bac3dd1727e",
+    "sha256_remise": "91f0db48b5131e0a52646002d107da5e8114ed364d9e020c07c93bac3dd1727e"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-3/without_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-3/without_skill/grading.json",
+    "sha256_origine": "226f9eca3d6dab47a7afee85437657b24ddb065d2a1700948a1fc553469441a4",
+    "sha256_remise": "226f9eca3d6dab47a7afee85437657b24ddb065d2a1700948a1fc553469441a4"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-3/without_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-3/without_skill/outputs/NOTES.md",
+    "sha256_origine": "e0bac2e091b3a3ddc89a4fa9190f4de3126666bfad44803b9b3d23c1cb18ff4a",
+    "sha256_remise": "e0bac2e091b3a3ddc89a4fa9190f4de3126666bfad44803b9b3d23c1cb18ff4a"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-3/without_skill/outputs/insemination.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-3/without_skill/outputs/insemination.py",
+    "sha256_origine": "194c2065e5d2e6197c9e1da3a19fce9611b38d94a1255add51dfd85bae291811",
+    "sha256_remise": "194c2065e5d2e6197c9e1da3a19fce9611b38d94a1255add51dfd85bae291811"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-3/without_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-3/without_skill/timing.json",
+    "sha256_origine": "a26cd0a0763f9593f278960f73ae7cfae5b18edcf22515d0857ab3fd867a0a82",
+    "sha256_remise": "a26cd0a0763f9593f278960f73ae7cfae5b18edcf22515d0857ab3fd867a0a82"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-4/eval_metadata.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-4/eval_metadata.json",
+    "sha256_origine": "d83c20b22222cfda16aaae77865f51009b7a7094a19c4c32476bf39a8e2f84cb",
+    "sha256_remise": "d83c20b22222cfda16aaae77865f51009b7a7094a19c4c32476bf39a8e2f84cb"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-4/with_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-4/with_skill/grading.json",
+    "sha256_origine": "90168f5595883dd7d14358bb6c3cb99fc001e44baf8c5c08f2a7a268d75b4a55",
+    "sha256_remise": "90168f5595883dd7d14358bb6c3cb99fc001e44baf8c5c08f2a7a268d75b4a55"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-4/with_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-4/with_skill/outputs/NOTES.md",
+    "sha256_origine": "faab9397fb540f5e81ac3dfb5de86230885d64a0582f0fcc0741c9b48f685c42",
+    "sha256_remise": "faab9397fb540f5e81ac3dfb5de86230885d64a0582f0fcc0741c9b48f685c42"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-4/with_skill/outputs/efficacite_alimentaire_indicator.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-4/with_skill/outputs/efficacite_alimentaire_indicator.py",
+    "sha256_origine": "2e805d0396ba93afd28ff762af8d6221084a7a897c7a69d742b25854cead2b88",
+    "sha256_remise": "2e805d0396ba93afd28ff762af8d6221084a7a897c7a69d742b25854cead2b88"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-4/with_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-4/with_skill/timing.json",
+    "sha256_origine": "4fc46b3e83558a6a6561b8e2fccdb8a6b0814a18a32611abc8d3123553a4e670",
+    "sha256_remise": "4fc46b3e83558a6a6561b8e2fccdb8a6b0814a18a32611abc8d3123553a4e670"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-4/without_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-4/without_skill/grading.json",
+    "sha256_origine": "46c74c74a947644e1c91de91da66a8247be2909fd251a5037957c1ab480fc119",
+    "sha256_remise": "46c74c74a947644e1c91de91da66a8247be2909fd251a5037957c1ab480fc119"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-4/without_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-4/without_skill/outputs/NOTES.md",
+    "sha256_origine": "4cabfdb7a412983ec9401377c1972b5fd0403323a55008b618d39db160788459",
+    "sha256_remise": "4cabfdb7a412983ec9401377c1972b5fd0403323a55008b618d39db160788459"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-4/without_skill/outputs/efficacite_indicateur.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-4/without_skill/outputs/efficacite_indicateur.py",
+    "sha256_origine": "ac180281249d3a0e2c6df6bf4d8ac0d0e071d57564526fc46fd2d8036753ba44",
+    "sha256_remise": "ac180281249d3a0e2c6df6bf4d8ac0d0e071d57564526fc46fd2d8036753ba44"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-4/without_skill/outputs/rapport_mensuel_formatter.js",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-4/without_skill/outputs/rapport_mensuel_formatter.js",
+    "sha256_origine": "8b788acf19ce5434c29bfe10fcb8a698ba2ad89aebe4566a414f3ee41c6af324",
+    "sha256_remise": "8b788acf19ce5434c29bfe10fcb8a698ba2ad89aebe4566a414f3ee41c6af324"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-4/without_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-4/without_skill/timing.json",
+    "sha256_origine": "706e9ecd2b50e87f506b8e400af1b464f5b2fd476fb58337b0ae4c44db2750f5",
+    "sha256_remise": "706e9ecd2b50e87f506b8e400af1b464f5b2fd476fb58337b0ae4c44db2750f5"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-5/eval_metadata.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-5/eval_metadata.json",
+    "sha256_origine": "a63810838a40f94e7715e1f389c08f7f755ba344fab152835194c769e42fdeb6",
+    "sha256_remise": "a63810838a40f94e7715e1f389c08f7f755ba344fab152835194c769e42fdeb6"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-5/with_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-5/with_skill/grading.json",
+    "sha256_origine": "2252dda3329bc7439892bd93a3014e62e58bc4d547b3337bb452eac65ea9d44c",
+    "sha256_remise": "2252dda3329bc7439892bd93a3014e62e58bc4d547b3337bb452eac65ea9d44c"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-5/with_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-5/with_skill/outputs/NOTES.md",
+    "sha256_origine": "6e1f6aa19d450825b6cefe4746aa0315b707dd9ac1d1f5738b78236d01254e06",
+    "sha256_remise": "6e1f6aa19d450825b6cefe4746aa0315b707dd9ac1d1f5738b78236d01254e06"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-5/with_skill/outputs/dashboard_kpis_snippet.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-5/with_skill/outputs/dashboard_kpis_snippet.py",
+    "sha256_origine": "a30e03d30e8959052a6fa7c3f8351ca0c8578075c4bec9f2fa2975d925658bf5",
+    "sha256_remise": "a30e03d30e8959052a6fa7c3f8351ca0c8578075c4bec9f2fa2975d925658bf5"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-5/with_skill/outputs/moyenne_production_vache_lactante.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-5/with_skill/outputs/moyenne_production_vache_lactante.json",
+    "sha256_origine": "171696d480f2abff1ebea6f6480d06df48864cfe5b7c112bdb9ccbd60e417455",
+    "sha256_remise": "171696d480f2abff1ebea6f6480d06df48864cfe5b7c112bdb9ccbd60e417455"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-5/with_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-5/with_skill/timing.json",
+    "sha256_origine": "addea14e91d19d6609373ab4e0db2c04a3e565f45bed1b41503fb859dbe88e48",
+    "sha256_remise": "addea14e91d19d6609373ab4e0db2c04a3e565f45bed1b41503fb859dbe88e48"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-5/without_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-5/without_skill/grading.json",
+    "sha256_origine": "2e0af1dd105a017f12c9fbb336fff7c524299d08cb1c6af7686a4f520bb77df6",
+    "sha256_remise": "2e0af1dd105a017f12c9fbb336fff7c524299d08cb1c6af7686a4f520bb77df6"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-5/without_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-5/without_skill/outputs/NOTES.md",
+    "sha256_origine": "41b4851aec660dcfb3f3b39b1b0b1362be6f37f14763d433bd137432c52e3d02",
+    "sha256_remise": "41b4851aec660dcfb3f3b39b1b0b1362be6f37f14763d433bd137432c52e3d02"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-5/without_skill/outputs/dashboard_kpis_addition.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-5/without_skill/outputs/dashboard_kpis_addition.py",
+    "sha256_origine": "d1593e128f6c8d596137ca373f090c020dc11ef90551ef989e67a8e38f436ec8",
+    "sha256_remise": "d1593e128f6c8d596137ca373f090c020dc11ef90551ef989e67a8e38f436ec8"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-5/without_skill/outputs/lait_moyen_par_vl.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-5/without_skill/outputs/lait_moyen_par_vl.json",
+    "sha256_origine": "a1aa382b1e6c2c11bbe1ed3c58e117d4915deaf4568f0b236a433c09d509407c",
+    "sha256_remise": "a1aa382b1e6c2c11bbe1ed3c58e117d4915deaf4568f0b236a433c09d509407c"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/eval-5/without_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/eval-5/without_skill/timing.json",
+    "sha256_origine": "6a9a3d765f7be533febde6a942b8818670007caa0898210178341b35c5e78abb",
+    "sha256_remise": "6a9a3d765f7be533febde6a942b8818670007caa0898210178341b35c5e78abb"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-1/feedback.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-1/feedback.json",
+    "sha256_origine": "c2c5144bf42ed80034891c2767d4689c54bae67009f8bfec5fcc8417f01f3cc7",
+    "sha256_remise": "c2c5144bf42ed80034891c2767d4689c54bae67009f8bfec5fcc8417f01f3cc7"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-2/eval-2/eval_metadata.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-2/eval-2/eval_metadata.json",
+    "sha256_origine": "5699605d3d34924c87cd30387af1b47f9fdbd2e0dd1b3768e6afd3cddd08ac11",
+    "sha256_remise": "5699605d3d34924c87cd30387af1b47f9fdbd2e0dd1b3768e6afd3cddd08ac11"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-2/eval-2/with_skill/grading.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-2/eval-2/with_skill/grading.json",
+    "sha256_origine": "c1e51a60a3973e6d7829a980f350310a619cd99501116decd350779d09fc69ed",
+    "sha256_remise": "c1e51a60a3973e6d7829a980f350310a619cd99501116decd350779d09fc69ed"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-2/eval-2/with_skill/outputs/NOTES.md",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-2/eval-2/with_skill/outputs/NOTES.md",
+    "sha256_origine": "6ab81411c6eae6226c595c5db7b5717fcc59fe96b9adb26c8e27040e04766357",
+    "sha256_remise": "6ab81411c6eae6226c595c5db7b5717fcc59fe96b9adb26c8e27040e04766357"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-2/eval-2/with_skill/outputs/proposed_validate_guard.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-2/eval-2/with_skill/outputs/proposed_validate_guard.py",
+    "sha256_origine": "b8b877e5000342cce17304a4d783164730becb8f1677564a37bf40e6a22f21f4",
+    "sha256_remise": "b8b877e5000342cce17304a4d783164730becb8f1677564a37bf40e6a22f21f4"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-2/eval-2/with_skill/outputs/rg14_explanation.py",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-2/eval-2/with_skill/outputs/rg14_explanation.py",
+    "sha256_origine": "6993673bfbbf413c7bba0d5291afc91010f4f50e4b5cadced37a7e4d8340b2b0",
+    "sha256_remise": "6993673bfbbf413c7bba0d5291afc91010f4f50e4b5cadced37a7e4d8340b2b0"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_eval-workspace/iteration-2/eval-2/with_skill/timing.json",
+    "chemin": "passation/08_archives_techniques/skills/_eval-workspace/iteration-2/eval-2/with_skill/timing.json",
+    "sha256_origine": "aded8f26e1ba95aaf03802355fe6b660cb97b77c3e14fdfdf0b6552172c65470",
+    "sha256_remise": "aded8f26e1ba95aaf03802355fe6b660cb97b77c3e14fdfdf0b6552172c65470"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_packaged/hmd-agro-dev.skill",
+    "chemin": "passation/08_archives_techniques/skills/_packaged/hmd-agro-dev.skill",
+    "sha256_origine": "c0609479aa8ae60527ca6a8b97d5b6e9fa618d5dd04baccf7d2d32f3287d8f85",
+    "sha256_remise": "c0609479aa8ae60527ca6a8b97d5b6e9fa618d5dd04baccf7d2d32f3287d8f85"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_packaged/hmd-agro-domain.skill",
+    "chemin": "passation/08_archives_techniques/skills/_packaged/hmd-agro-domain.skill",
+    "sha256_origine": "0d03c7f1acd6c8593cf26f4181b24c6a50291a6b94d9ac9bbed564d2ecbdc925",
+    "sha256_remise": "0d03c7f1acd6c8593cf26f4181b24c6a50291a6b94d9ac9bbed564d2ecbdc925"
+  },
+  {
+    "ancien_chemin": ".claude/skills/_packaged/hmd-agro-kpi.skill",
+    "chemin": "passation/08_archives_techniques/skills/_packaged/hmd-agro-kpi.skill",
+    "sha256_origine": "e97d87047ef4694c03fb41244061ae357b469717352beed619bdf421188180a3",
+    "sha256_remise": "e97d87047ef4694c03fb41244061ae357b469717352beed619bdf421188180a3"
+  },
+  {
+    "ancien_chemin": "Validation_rapports_mensuels_M_Samir.pdf",
+    "chemin": "passation/05_coordination/Validation_rapports_mensuels_M_Samir.pdf",
+    "sha256_origine": "11b0115463236f8d2bec5c00dc7286e98db65cb285fa8e0181b4299f12e9a1b0",
+    "sha256_remise": "11b0115463236f8d2bec5c00dc7286e98db65cb285fa8e0181b4299f12e9a1b0"
+  },
+  {
+    "ancien_chemin": "apprendre_frappe_erpnext.html",
+    "chemin": "passation/02_documentation/apprendre_frappe_erpnext.html",
+    "sha256_origine": "bc0aa00bb016c7e6c764bf9da07deeaaa05819916a45e1ac956433bbdb687f24",
+    "sha256_remise": "bc0aa00bb016c7e6c764bf9da07deeaaa05819916a45e1ac956433bbdb687f24"
+  },
+  {
+    "ancien_chemin": "bilan_finance.html",
+    "chemin": "passation/02_documentation/bilan_finance.html",
+    "sha256_origine": "a214d2abb6fa29a7802211db61a97a11de08542f7ce34ba1d555241ce26995f6",
+    "sha256_remise": "a214d2abb6fa29a7802211db61a97a11de08542f7ce34ba1d555241ce26995f6"
+  },
+  {
+    "ancien_chemin": "bloc_economique.png",
+    "chemin": "passation/03_maquettes/bloc_economique.png",
+    "sha256_origine": "6614a23296eaac223abaad88d6a7d22d570960d4d47a90cafb836e7e37b66591",
+    "sha256_remise": "6614a23296eaac223abaad88d6a7d22d570960d4d47a90cafb836e7e37b66591"
+  },
+  {
+    "ancien_chemin": "conducteur_affiche_photos.html",
+    "chemin": "passation/07_stage/conducteur_affiche_photos.html",
+    "sha256_origine": "77c2f50be7d13e233d8675ee7372163dc19916525b5a3d26f3511e37e226ab4d",
+    "sha256_remise": "4ea07d9f086ac59513d7283aa84483f0b65248ab6c22e7e9a5f0d7739a728e44"
+  },
+  {
+    "ancien_chemin": "conducteur_affiche_stage.md",
+    "chemin": "passation/07_stage/conducteur_affiche_stage.md",
+    "sha256_origine": "bd881e9b6415800afa80847200f462767bc0cc35ff089034cf6d01e8a6b2870b",
+    "sha256_remise": "3288eadd9171e60d7ce05d89f2084be3a75842ce0957036f3660ee43b2c6d2cc"
+  },
+  {
+    "ancien_chemin": "conducteur_presentation_2026-08-25.md",
+    "chemin": "passation/04_demonstration/conducteur_presentation_2026-08-25.md",
+    "sha256_origine": "d930baf9f2a1983938fef698c545348765974f8af0e03c40a02ea43250da6c77",
+    "sha256_remise": "d930baf9f2a1983938fef698c545348765974f8af0e03c40a02ea43250da6c77"
+  },
+  {
+    "ancien_chemin": "demo_finance/captures/cheptel_assets.jpg",
+    "chemin": "passation/04_demonstration/demo_finance/captures/cheptel_assets.jpg",
+    "sha256_origine": "2d4e7fdb0ac981c40a67f9d40589175caecb7d7cb743c357e28bcf3223b8a049",
+    "sha256_remise": "2d4e7fdb0ac981c40a67f9d40589175caecb7d7cb743c357e28bcf3223b8a049"
+  },
+  {
+    "ancien_chemin": "demo_finance/captures/controle_coherence.jpg",
+    "chemin": "passation/04_demonstration/demo_finance/captures/controle_coherence.jpg",
+    "sha256_origine": "f3e04099ded173fa6f52f5c54fc7e0653e880376d18e67716162414c7daf6d75",
+    "sha256_remise": "f3e04099ded173fa6f52f5c54fc7e0653e880376d18e67716162414c7daf6d75"
+  },
+  {
+    "ancien_chemin": "demo_finance/captures/cout_litre.jpg",
+    "chemin": "passation/04_demonstration/demo_finance/captures/cout_litre.jpg",
+    "sha256_origine": "b44f5847fc50f9b5eb3980884c3e8f36ae7f190c7cc191d991312a62a10d6f32",
+    "sha256_remise": "b44f5847fc50f9b5eb3980884c3e8f36ae7f190c7cc191d991312a62a10d6f32"
+  },
+  {
+    "ancien_chemin": "demo_finance/captures/facture_lait.jpg",
+    "chemin": "passation/04_demonstration/demo_finance/captures/facture_lait.jpg",
+    "sha256_origine": "01f06b85717f479c50f4c7548110481058d5b8fc4c94a2eb9608647f176e7a51",
+    "sha256_remise": "01f06b85717f479c50f4c7548110481058d5b8fc4c94a2eb9608647f176e7a51"
+  },
+  {
+    "ancien_chemin": "demo_finance/captures/grille_paliers.jpg",
+    "chemin": "passation/04_demonstration/demo_finance/captures/grille_paliers.jpg",
+    "sha256_origine": "0996248c58a8a115542a6358f005165f1ba46e47af3e4337faf03a168dda460e",
+    "sha256_remise": "0996248c58a8a115542a6358f005165f1ba46e47af3e4337faf03a168dda460e"
+  },
+  {
+    "ancien_chemin": "demo_finance/captures/indicateurs.jpg",
+    "chemin": "passation/04_demonstration/demo_finance/captures/indicateurs.jpg",
+    "sha256_origine": "6b534ae220911a77dd26c2af60fd75567beb8ac5e611a945a565d57b8d49f44d",
+    "sha256_remise": "6b534ae220911a77dd26c2af60fd75567beb8ac5e611a945a565d57b8d49f44d"
+  },
+  {
+    "ancien_chemin": "demo_finance/captures/intervention.jpg",
+    "chemin": "passation/04_demonstration/demo_finance/captures/intervention.jpg",
+    "sha256_origine": "138736f910bc53c3cd05688aae830f0664498178fc4115e2b582ab306cfc95db",
+    "sha256_remise": "138736f910bc53c3cd05688aae830f0664498178fc4115e2b582ab306cfc95db"
+  },
+  {
+    "ancien_chemin": "demo_finance/captures/personnel_liste.jpg",
+    "chemin": "passation/04_demonstration/demo_finance/captures/personnel_liste.jpg",
+    "sha256_origine": "419f840c425ef022c50dd99f43a3486f69b2f2f024d6886102aafe6582ece85b",
+    "sha256_remise": "419f840c425ef022c50dd99f43a3486f69b2f2f024d6886102aafe6582ece85b"
+  },
+  {
+    "ancien_chemin": "demo_finance/captures/plan_comptable.jpg",
+    "chemin": "passation/04_demonstration/demo_finance/captures/plan_comptable.jpg",
+    "sha256_origine": "dfc0dcc0a02a1affe9d251f990d8018302490a714894991b3ba91ff34de8722c",
+    "sha256_remise": "dfc0dcc0a02a1affe9d251f990d8018302490a714894991b3ba91ff34de8722c"
+  },
+  {
+    "ancien_chemin": "demo_finance/captures/salaires_je.jpg",
+    "chemin": "passation/04_demonstration/demo_finance/captures/salaires_je.jpg",
+    "sha256_origine": "9b872168111d2576c65055ca865fdc34e7eb3e44d8b77ffd0a20a19391c37fb5",
+    "sha256_remise": "9b872168111d2576c65055ca865fdc34e7eb3e44d8b77ffd0a20a19391c37fb5"
+  },
+  {
+    "ancien_chemin": "demo_finance/captures/seuils_config.jpg",
+    "chemin": "passation/04_demonstration/demo_finance/captures/seuils_config.jpg",
+    "sha256_origine": "e0cfb40754795da649f0085a9eadf18d12dc016ac5cd6b9d9708ba93d54a16ce",
+    "sha256_remise": "e0cfb40754795da649f0085a9eadf18d12dc016ac5cd6b9d9708ba93d54a16ce"
+  },
+  {
+    "ancien_chemin": "demo_finance/captures/tracteur_amortissement.jpg",
+    "chemin": "passation/04_demonstration/demo_finance/captures/tracteur_amortissement.jpg",
+    "sha256_origine": "d770ef2c94c4427dc10605724687c8d8d4f7e78e72aa93a20c0d6890dfd60e9c",
+    "sha256_remise": "d770ef2c94c4427dc10605724687c8d8d4f7e78e72aa93a20c0d6890dfd60e9c"
+  },
+  {
+    "ancien_chemin": "dossier_lundi.html",
+    "chemin": "passation/05_coordination/dossier_lundi.html",
+    "sha256_origine": "4a228a55558bd07e70cffafccd59027103ee960ddcd97d7078bd8a0444565ab8",
+    "sha256_remise": "4a228a55558bd07e70cffafccd59027103ee960ddcd97d7078bd8a0444565ab8"
+  },
+  {
+    "ancien_chemin": "epic_b_quickwin_plan.md",
+    "chemin": "passation/02_documentation/epic_b_quickwin_plan.md",
+    "sha256_origine": "dc9d4fce52e5181543300146eaeaef271885e8fa3a021731d309026dedd9ea05",
+    "sha256_remise": "dc9d4fce52e5181543300146eaeaef271885e8fa3a021731d309026dedd9ea05"
+  },
+  {
+    "ancien_chemin": "expliquer_les_us.html",
+    "chemin": "passation/04_demonstration/expliquer_les_us.html",
+    "sha256_origine": "38a31d77b1f6386b2bdc0eba6b88d5e59a02842480ec3d774d7533485a3f9b3b",
+    "sha256_remise": "38a31d77b1f6386b2bdc0eba6b88d5e59a02842480ec3d774d7533485a3f9b3b"
+  },
+  {
+    "ancien_chemin": "expliquer_les_us.md",
+    "chemin": "passation/04_demonstration/expliquer_les_us.md",
+    "sha256_origine": "47eabf7f2e999f893deceb433a0da61dd9b3fca5abd91ee48ded11295bf07684",
+    "sha256_remise": "47eabf7f2e999f893deceb433a0da61dd9b3fca5abd91ee48ded11295bf07684"
+  },
+  {
+    "ancien_chemin": "expliquer_les_us.pdf",
+    "chemin": "passation/04_demonstration/expliquer_les_us.pdf",
+    "sha256_origine": "53f3bd3deff04aafdd866b5c66718ab4748efe781890be62c8fe5818b9747b96",
+    "sha256_remise": "53f3bd3deff04aafdd866b5c66718ab4748efe781890be62c8fe5818b9747b96"
+  },
+  {
+    "ancien_chemin": "guide_tests_finance.html",
+    "chemin": "passation/02_documentation/guide_tests_finance.html",
+    "sha256_origine": "6764fba0097290a5bfe5a357210f95a21bbf836561d6ccbb73d2e4299a005938",
+    "sha256_remise": "6764fba0097290a5bfe5a357210f95a21bbf836561d6ccbb73d2e4299a005938"
+  },
+  {
+    "ancien_chemin": "hmd_agro-main.code-workspace",
+    "chemin": "passation/08_archives_techniques/hmd_agro-main.code-workspace",
+    "sha256_origine": "52aad444c571f4ba76d480dc73936148522d8ac10bdefd4d683e1a039e2734ea",
+    "sha256_remise": "ee1da61081fe2233e6af9e0e9f8472b9535dce71ad0ffcad6ced790574921143"
+  },
+  {
+    "ancien_chemin": "hmd_agro_codebase_guide.html",
+    "chemin": "passation/02_documentation/hmd_agro_codebase_guide.html",
+    "sha256_origine": "fea998fe433d180295014088d4079b7d97d0d8f5c3a8695032e64aecb7dae384",
+    "sha256_remise": "fea998fe433d180295014088d4079b7d97d0d8f5c3a8695032e64aecb7dae384"
+  },
+  {
+    "ancien_chemin": "maquette_arbitrage_frais_generaux_2026-08-24.excalidraw",
+    "chemin": "passation/03_maquettes/maquette_arbitrage_frais_generaux_2026-08-24.excalidraw",
+    "sha256_origine": "97aeeabc4792ad2f34a3059dd15738fd71a23fb4aa20ead2cff6021baf98046b",
+    "sha256_remise": "97aeeabc4792ad2f34a3059dd15738fd71a23fb4aa20ead2cff6021baf98046b"
+  },
+  {
+    "ancien_chemin": "maquette_scrum9_annotee_2026-08-24.excalidraw",
+    "chemin": "passation/03_maquettes/maquette_scrum9_annotee_2026-08-24.excalidraw",
+    "sha256_origine": "1cc87d6d8d7bc2151dc84baf16ac35f27bb9008a1ea6295be30591a39ea2e99a",
+    "sha256_remise": "1cc87d6d8d7bc2151dc84baf16ac35f27bb9008a1ea6295be30591a39ea2e99a"
+  },
+  {
+    "ancien_chemin": "maquettes_validees_2026-08-24.excalidraw",
+    "chemin": "passation/03_maquettes/maquettes_validees_2026-08-24.excalidraw",
+    "sha256_origine": "aa3c98f2a08a31f5d315d2a900176fab2c6a393e2f6a73c79e475e6dd91539d1",
+    "sha256_remise": "aa3c98f2a08a31f5d315d2a900176fab2c6a393e2f6a73c79e475e6dd91539d1"
+  },
+  {
+    "ancien_chemin": "maquettes_validees_2026-08-24.html",
+    "chemin": "passation/03_maquettes/maquettes_validees_2026-08-24.html",
+    "sha256_origine": "0603c7993edb12164410cebac6532ba123c4169af10962b6212bac657eca3932",
+    "sha256_remise": "0603c7993edb12164410cebac6532ba123c4169af10962b6212bac657eca3932"
+  },
+  {
+    "ancien_chemin": "maquettes_validees_2026-08-24.pdf",
+    "chemin": "passation/03_maquettes/maquettes_validees_2026-08-24.pdf",
+    "sha256_origine": "e8c84fc72b1e8077b184068de30c1eddffa66a9a26ad25e0ebfa0512d66a297f",
+    "sha256_remise": "e8c84fc72b1e8077b184068de30c1eddffa66a9a26ad25e0ebfa0512d66a297f"
+  },
+  {
+    "ancien_chemin": "mcd_diagram_restored.png",
+    "chemin": "passation/03_maquettes/mcd_diagram_restored.png",
+    "sha256_origine": "2f5b3c5bb26498487472f97478a22c69342e8d4a4cff81b8d7ea1fa1f3acbdf9",
+    "sha256_remise": "2f5b3c5bb26498487472f97478a22c69342e8d4a4cff81b8d7ea1fa1f3acbdf9"
+  },
+  {
+    "ancien_chemin": "message_groupe_maquettes_validees.txt",
+    "chemin": "passation/05_coordination/message_groupe_maquettes_validees.txt",
+    "sha256_origine": "9bf901f10192f7ab445aacf061b908d6663eccc08e69a163c20341bce66f32b1",
+    "sha256_remise": "9bf901f10192f7ab445aacf061b908d6663eccc08e69a163c20341bce66f32b1"
+  },
+  {
+    "ancien_chemin": "message_iheb_assets.txt",
+    "chemin": "passation/05_coordination/message_iheb_assets.txt",
+    "sha256_origine": "d6d4e656b4850c33c8f27e63dba704042a4bd8b9584706ed00ac8650883e65fb",
+    "sha256_remise": "d6d4e656b4850c33c8f27e63dba704042a4bd8b9584706ed00ac8650883e65fb"
+  },
+  {
+    "ancien_chemin": "outils_affiche/affiche_v1_sauvegarde.pptx",
+    "chemin": "passation/07_stage/outils_affiche/affiche_v1_sauvegarde.pptx",
+    "sha256_origine": "59832b1bd4e8a67d2d15a65032c15f12cb40b820f6367d4dfe9306848aa729ec",
+    "sha256_remise": "59832b1bd4e8a67d2d15a65032c15f12cb40b820f6367d4dfe9306848aa729ec"
+  },
+  {
+    "ancien_chemin": "outils_affiche/build_affiche.py",
+    "chemin": "passation/07_stage/outils_affiche/build_affiche.py",
+    "sha256_origine": "8a01d71815a033ce22ffce4851ff4796c06a52e7397828f1f45d14c27eb08655",
+    "sha256_remise": "8a01d71815a033ce22ffce4851ff4796c06a52e7397828f1f45d14c27eb08655"
+  },
+  {
+    "ancien_chemin": "outils_affiche/build_guide_photos.py",
+    "chemin": "passation/07_stage/outils_affiche/build_guide_photos.py",
+    "sha256_origine": "40ad574f0a3909fb031e872d58fa4877225f705b26e621c73b2fc337b8398ba5",
+    "sha256_remise": "40ad574f0a3909fb031e872d58fa4877225f705b26e621c73b2fc337b8398ba5"
+  },
+  {
+    "ancien_chemin": "outils_affiche/captures/cle.jpg",
+    "chemin": "passation/07_stage/outils_affiche/captures/cle.jpg",
+    "sha256_origine": "b73b4aaa1082585609bb203eaf73edea89aba2de435ef0ee70ab5f9a16b958cc",
+    "sha256_remise": "b73b4aaa1082585609bb203eaf73edea89aba2de435ef0ee70ab5f9a16b958cc"
+  },
+  {
+    "ancien_chemin": "outils_affiche/captures/cle_crop.png",
+    "chemin": "passation/07_stage/outils_affiche/captures/cle_crop.png",
+    "sha256_origine": "138a1127e4773849e135aa3bcc78ff4f1ad7e97915d01ce80c9148e459d998ee",
+    "sha256_remise": "138a1127e4773849e135aa3bcc78ff4f1ad7e97915d01ce80c9148e459d998ee"
+  },
+  {
+    "ancien_chemin": "outils_affiche/captures/facture_bandeau.jpg",
+    "chemin": "passation/07_stage/outils_affiche/captures/facture_bandeau.jpg",
+    "sha256_origine": "937d033928104cf6c642edc9546b1a89303f48e3be99eb4e86373fe57ab7add5",
+    "sha256_remise": "937d033928104cf6c642edc9546b1a89303f48e3be99eb4e86373fe57ab7add5"
+  },
+  {
+    "ancien_chemin": "outils_affiche/captures/grand_livre.jpg",
+    "chemin": "passation/07_stage/outils_affiche/captures/grand_livre.jpg",
+    "sha256_origine": "90ce0783fadd813438781262fb5ff59566ab2923e5a10ba61b91912e2cf102cc",
+    "sha256_remise": "90ce0783fadd813438781262fb5ff59566ab2923e5a10ba61b91912e2cf102cc"
+  },
+  {
+    "ancien_chemin": "outils_affiche/captures/grand_livre_crop.png",
+    "chemin": "passation/07_stage/outils_affiche/captures/grand_livre_crop.png",
+    "sha256_origine": "ad7c7deb1fb779ed223c6d96caaad786429cef13eba550c83190a5a8a63e8590",
+    "sha256_remise": "ad7c7deb1fb779ed223c6d96caaad786429cef13eba550c83190a5a8a63e8590"
+  },
+  {
+    "ancien_chemin": "outils_affiche/captures/rapport_fg.jpg",
+    "chemin": "passation/07_stage/outils_affiche/captures/rapport_fg.jpg",
+    "sha256_origine": "7599ad4dce3902a4ff9b0658444e608953d0e9ebf837138ef96abc5b1f072d7b",
+    "sha256_remise": "7599ad4dce3902a4ff9b0658444e608953d0e9ebf837138ef96abc5b1f072d7b"
+  },
+  {
+    "ancien_chemin": "outils_affiche/captures/rapport_fg_crop.png",
+    "chemin": "passation/07_stage/outils_affiche/captures/rapport_fg_crop.png",
+    "sha256_origine": "9c72d9dd0e37f9b34777aebf0ec1742efce53caf45be9ad54180bd05525f9e16",
+    "sha256_remise": "9c72d9dd0e37f9b34777aebf0ec1742efce53caf45be9ad54180bd05525f9e16"
+  },
+  {
+    "ancien_chemin": "outils_affiche/export_keynote.scpt",
+    "chemin": "passation/07_stage/outils_affiche/export_keynote.scpt",
+    "sha256_origine": "3fc8fef0cf8efa37311252d738806dc88b81e6f7222f50dd313637e1c4a9eca0",
+    "sha256_remise": "3fc8fef0cf8efa37311252d738806dc88b81e6f7222f50dd313637e1c4a9eca0"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/108.jpg",
+    "chemin": "passation/07_stage/outils_affiche/photos/108.jpg",
+    "sha256_origine": "dfc0dcc0a02a1affe9d251f990d8018302490a714894991b3ba91ff34de8722c",
+    "sha256_remise": "dfc0dcc0a02a1affe9d251f990d8018302490a714894991b3ba91ff34de8722c"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/113.jpg",
+    "chemin": "passation/07_stage/outils_affiche/photos/113.jpg",
+    "sha256_origine": "6b534ae220911a77dd26c2af60fd75567beb8ac5e611a945a565d57b8d49f44d",
+    "sha256_remise": "6b534ae220911a77dd26c2af60fd75567beb8ac5e611a945a565d57b8d49f44d"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/114.jpg",
+    "chemin": "passation/07_stage/outils_affiche/photos/114.jpg",
+    "sha256_origine": "b44f5847fc50f9b5eb3980884c3e8f36ae7f190c7cc191d991312a62a10d6f32",
+    "sha256_remise": "b44f5847fc50f9b5eb3980884c3e8f36ae7f190c7cc191d991312a62a10d6f32"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/117.jpg",
+    "chemin": "passation/07_stage/outils_affiche/photos/117.jpg",
+    "sha256_origine": "01f06b85717f479c50f4c7548110481058d5b8fc4c94a2eb9608647f176e7a51",
+    "sha256_remise": "01f06b85717f479c50f4c7548110481058d5b8fc4c94a2eb9608647f176e7a51"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/118.jpg",
+    "chemin": "passation/07_stage/outils_affiche/photos/118.jpg",
+    "sha256_origine": "d770ef2c94c4427dc10605724687c8d8d4f7e78e72aa93a20c0d6890dfd60e9c",
+    "sha256_remise": "d770ef2c94c4427dc10605724687c8d8d4f7e78e72aa93a20c0d6890dfd60e9c"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/121.jpg",
+    "chemin": "passation/07_stage/outils_affiche/photos/121.jpg",
+    "sha256_origine": "2d4e7fdb0ac981c40a67f9d40589175caecb7d7cb743c357e28bcf3223b8a049",
+    "sha256_remise": "2d4e7fdb0ac981c40a67f9d40589175caecb7d7cb743c357e28bcf3223b8a049"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/123.png",
+    "chemin": "passation/07_stage/outils_affiche/photos/123.png",
+    "sha256_origine": "138a1127e4773849e135aa3bcc78ff4f1ad7e97915d01ce80c9148e459d998ee",
+    "sha256_remise": "138a1127e4773849e135aa3bcc78ff4f1ad7e97915d01ce80c9148e459d998ee"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/124.png",
+    "chemin": "passation/07_stage/outils_affiche/photos/124.png",
+    "sha256_origine": "ad7c7deb1fb779ed223c6d96caaad786429cef13eba550c83190a5a8a63e8590",
+    "sha256_remise": "ad7c7deb1fb779ed223c6d96caaad786429cef13eba550c83190a5a8a63e8590"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/127.png",
+    "chemin": "passation/07_stage/outils_affiche/photos/127.png",
+    "sha256_origine": "9c72d9dd0e37f9b34777aebf0ec1742efce53caf45be9ad54180bd05525f9e16",
+    "sha256_remise": "9c72d9dd0e37f9b34777aebf0ec1742efce53caf45be9ad54180bd05525f9e16"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/17.jpg",
+    "chemin": "passation/07_stage/outils_affiche/photos/17.jpg",
+    "sha256_origine": "0dcca5a977f85db53d5c30f38e23bf3cba9796df817a281fd0910ab068449bc4",
+    "sha256_remise": "0dcca5a977f85db53d5c30f38e23bf3cba9796df817a281fd0910ab068449bc4"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/21.jpg",
+    "chemin": "passation/07_stage/outils_affiche/photos/21.jpg",
+    "sha256_origine": "bf5f517ecd2fec9c229015b5ff544cb8eaa906f8bc7b25cac4e94f1be77eccfa",
+    "sha256_remise": "bf5f517ecd2fec9c229015b5ff544cb8eaa906f8bc7b25cac4e94f1be77eccfa"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/30.jpg",
+    "chemin": "passation/07_stage/outils_affiche/photos/30.jpg",
+    "sha256_origine": "2702af5ad97ac31777c40ef9a84388466a16bf70b6d6d527ae3846e54b3b8e01",
+    "sha256_remise": "2702af5ad97ac31777c40ef9a84388466a16bf70b6d6d527ae3846e54b3b8e01"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/4.png",
+    "chemin": "passation/07_stage/outils_affiche/photos/4.png",
+    "sha256_origine": "8cbd359e98a37b472d9a33087b8b35bd80fb44ba80978fc6ae95f819916b9fbe",
+    "sha256_remise": "8cbd359e98a37b472d9a33087b8b35bd80fb44ba80978fc6ae95f819916b9fbe"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/50.jpg",
+    "chemin": "passation/07_stage/outils_affiche/photos/50.jpg",
+    "sha256_origine": "feeff39257e2e579e0a97e39f736c467aa2dbeea5673379ff3dfddcba3b8d560",
+    "sha256_remise": "feeff39257e2e579e0a97e39f736c467aa2dbeea5673379ff3dfddcba3b8d560"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/6.png",
+    "chemin": "passation/07_stage/outils_affiche/photos/6.png",
+    "sha256_origine": "f6ffdffb65836fe98c7dac75967c97aa973e7096a2e20bd32c1b68b220602724",
+    "sha256_remise": "f6ffdffb65836fe98c7dac75967c97aa973e7096a2e20bd32c1b68b220602724"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/7.jpg",
+    "chemin": "passation/07_stage/outils_affiche/photos/7.jpg",
+    "sha256_origine": "e1b07268d9dfe241088c9d18d8bbbdd11166d9259153acf522c95e4369639447",
+    "sha256_remise": "e1b07268d9dfe241088c9d18d8bbbdd11166d9259153acf522c95e4369639447"
+  },
+  {
+    "ancien_chemin": "outils_affiche/photos/96.jpg",
+    "chemin": "passation/07_stage/outils_affiche/photos/96.jpg",
+    "sha256_origine": "0596aa8b2c61cdcb0b702f7f10e41b468b99b41141612ff07aef1dbda85703bf",
+    "sha256_remise": "0596aa8b2c61cdcb0b702f7f10e41b468b99b41141612ff07aef1dbda85703bf"
+  },
+  {
+    "ancien_chemin": "outils_affiche/prompteur/Prompteur.app/Contents/Info.plist",
+    "chemin": "passation/07_stage/outils_affiche/prompteur/Prompteur.app/Contents/Info.plist",
+    "sha256_origine": "5374e2f07755dc90f5bc6a8f11161320bba1ea1d8e26be83eac1a9a80a5563d0",
+    "sha256_remise": "5374e2f07755dc90f5bc6a8f11161320bba1ea1d8e26be83eac1a9a80a5563d0"
+  },
+  {
+    "ancien_chemin": "outils_affiche/prompteur/Prompteur.app/Contents/MacOS/Prompteur",
+    "chemin": "passation/07_stage/outils_affiche/prompteur/Prompteur.app/Contents/MacOS/Prompteur",
+    "sha256_origine": "64dd452adb03a095a450f2e7cc8f8ab3ccc2e3d80afe3c570f2f03b26a377acd",
+    "sha256_remise": "64dd452adb03a095a450f2e7cc8f8ab3ccc2e3d80afe3c570f2f03b26a377acd"
+  },
+  {
+    "ancien_chemin": "outils_affiche/prompteur/Prompteur.app/Contents/Resources/prompteur.json",
+    "chemin": "passation/07_stage/outils_affiche/prompteur/Prompteur.app/Contents/Resources/prompteur.json",
+    "sha256_origine": "cc6e5130e9149f3b8e6426dee12ab8eb926bb7d40920147f24be2b0bb8c07afe",
+    "sha256_remise": "cc6e5130e9149f3b8e6426dee12ab8eb926bb7d40920147f24be2b0bb8c07afe"
+  },
+  {
+    "ancien_chemin": "outils_affiche/prompteur/Prompteur.app/Contents/_CodeSignature/CodeResources",
+    "chemin": "passation/07_stage/outils_affiche/prompteur/Prompteur.app/Contents/_CodeSignature/CodeResources",
+    "sha256_origine": "63ced79edf889d2eda3bef97f456bf64ab4f7cc16d94a5f7d1ac38380512ba3a",
+    "sha256_remise": "63ced79edf889d2eda3bef97f456bf64ab4f7cc16d94a5f7d1ac38380512ba3a"
+  },
+  {
+    "ancien_chemin": "outils_affiche/prompteur/Prompteur.swift",
+    "chemin": "passation/07_stage/outils_affiche/prompteur/Prompteur.swift",
+    "sha256_origine": "e4efa52bcb0809b3461416b9542d9369cf900b3e0686a0a8b41e91f1c7e1984e",
+    "sha256_remise": "e4efa52bcb0809b3461416b9542d9369cf900b3e0686a0a8b41e91f1c7e1984e"
+  },
+  {
+    "ancien_chemin": "outils_affiche/prompteur/README.md",
+    "chemin": "passation/07_stage/outils_affiche/prompteur/README.md",
+    "sha256_origine": "b750b6a8853b5a58a9710e7abeacb7b2cf06e21c9a4c0f07f44e72269efa39c9",
+    "sha256_remise": "a1988e8cd3d6bbed41ee4b38da2842ab2ab72923f883f5b2f5631728087eeed6"
+  },
+  {
+    "ancien_chemin": "outils_affiche/prompteur/build_app.sh",
+    "chemin": "passation/07_stage/outils_affiche/prompteur/build_app.sh",
+    "sha256_origine": "d6a2441ba9a4952bc07b19d8916939b75a1f28dd3f26c79df3102fa248eac7b7",
+    "sha256_remise": "d6a2441ba9a4952bc07b19d8916939b75a1f28dd3f26c79df3102fa248eac7b7"
+  },
+  {
+    "ancien_chemin": "outils_affiche/prompteur/prompteur.json",
+    "chemin": "passation/07_stage/outils_affiche/prompteur/prompteur.json",
+    "sha256_origine": "cc6e5130e9149f3b8e6426dee12ab8eb926bb7d40920147f24be2b0bb8c07afe",
+    "sha256_remise": "cc6e5130e9149f3b8e6426dee12ab8eb926bb7d40920147f24be2b0bb8c07afe"
+  },
+  {
+    "ancien_chemin": "outils_maquette_arbitrage_excalidraw.py",
+    "chemin": "passation/06_outils/outils_maquette_arbitrage_excalidraw.py",
+    "sha256_origine": "5f79dec55b946a22fa9bb2b25ac3d85290fdcc1e7a7c63a337ecb2ef1f72280e",
+    "sha256_remise": "b5900c609ac11cbf93250ca7e27dd304b8625fe86f5ce623050e6b5290b6d550"
+  },
+  {
+    "ancien_chemin": "outils_maquette_scrum9_excalidraw.py",
+    "chemin": "passation/06_outils/outils_maquette_scrum9_excalidraw.py",
+    "sha256_origine": "90eab18fb0029177f20efad1b5dde0a7609e7eb2ac381f5d5ef98f040192289f",
+    "sha256_remise": "2bee6f53a41a7c6c0cda86ccd56071687a8869bf0edaefa298c12214a2a82dd4"
+  },
+  {
+    "ancien_chemin": "outils_maquette_svg.py",
+    "chemin": "passation/06_outils/outils_maquette_svg.py",
+    "sha256_origine": "f6c8b241c72b64eb5874f43547fb0f998196d423737e380658c48a5da723d0ac",
+    "sha256_remise": "94214e2b5be9648a7dcd17ff30b70a8c810706ee892ffd7748842f46f98a2711"
+  },
+  {
+    "ancien_chemin": "outils_maquettes_validees.py",
+    "chemin": "passation/06_outils/outils_maquettes_validees.py",
+    "sha256_origine": "353e04e098eee5159affc90c9191755d16b83e2b1d347d5dc7b733943c03a66c",
+    "sha256_remise": "e2058a0ee627d1d178d31233c4d111a95c34db4395242093e5071df9ccace6ea"
+  },
+  {
+    "ancien_chemin": "outils_maquettes_validees_excalidraw.py",
+    "chemin": "passation/06_outils/outils_maquettes_validees_excalidraw.py",
+    "sha256_origine": "0d76645ee9a8f81f531131b36aa7bebcaf73a7dd3b193a48e9056b40fc31a5a6",
+    "sha256_remise": "2cbb9ddbae185962814ab39832fb608c2e8fa8e08356e53ca77654ca2228a49e"
+  },
+  {
+    "ancien_chemin": "outils_presentation_us.py",
+    "chemin": "passation/06_outils/outils_presentation_us.py",
+    "sha256_origine": "677414b63f4d440aa3bd59a06ffa64ae12919a5fc037b72eafbc9f0751b9a327",
+    "sha256_remise": "d9e41e5f0500c7921b159bc7c1d8045f41b86dee44827f0e2bf3230009443596"
+  },
+  {
+    "ancien_chemin": "output/pdf/passation_aziz_2026-09-16.pdf",
+    "chemin": "passation/01_dossier/passation_aziz_2026-09-16.pdf",
+    "sha256_origine": "8b3109c843ffaec63180afbae321d074ae42f548f5c6b89b328d0831bfae4dbf",
+    "sha256_remise": "157180c941b475dc01c32aa721ed201487b4637cff976d467e4b8ecc3d61b09a"
+  },
+  {
+    "ancien_chemin": "passation_aziz_2026-09-16.md",
+    "chemin": "passation/01_dossier/passation_aziz_2026-09-16.md",
+    "sha256_origine": "ba5f0371f69f6e59745c80ba9f45c19f96f45ca398f837c91f477cbbd4767b79",
+    "sha256_remise": "b2700fe000a75a87133d351a49f5ed62a15a2565b8da902c21732cf1dc658a34"
+  },
+  {
+    "ancien_chemin": "plan_finance.html",
+    "chemin": "passation/02_documentation/plan_finance.html",
+    "sha256_origine": "aa3ede885e3d244fda9faa5b26a9ebef8b5226efb131cdc3479b5a52a322d35b",
+    "sha256_remise": "aa3ede885e3d244fda9faa5b26a9ebef8b5226efb131cdc3479b5a52a322d35b"
+  },
+  {
+    "ancien_chemin": "point_assets_aziz.html",
+    "chemin": "passation/05_coordination/point_assets_aziz.html",
+    "sha256_origine": "2c93c7ece55d9c7e917f35e9237711e5e5349430e8f74f796d075baa675cfd7a",
+    "sha256_remise": "2c93c7ece55d9c7e917f35e9237711e5e5349430e8f74f796d075baa675cfd7a"
+  },
+  {
+    "ancien_chemin": "point_assets_aziz.md",
+    "chemin": "passation/05_coordination/point_assets_aziz.md",
+    "sha256_origine": "fffbd26cf8ae618edde45f672ee90be02a9ca887cb561ee0c2edff39b866a0da",
+    "sha256_remise": "64d0de46eea7fd3653b2261121f3e9e1ad8c2a40199cec0c5b19fb5cf43855b5"
+  },
+  {
+    "ancien_chemin": "point_assets_aziz.pdf",
+    "chemin": "passation/05_coordination/point_assets_aziz.pdf",
+    "sha256_origine": "00e4196b86b5014441b50dfb6b95fbeb98940645dc8c82b8d2c04900d8432b0d",
+    "sha256_remise": "00e4196b86b5014441b50dfb6b95fbeb98940645dc8c82b8d2c04900d8432b0d"
+  },
+  {
+    "ancien_chemin": "presentation_finance.html",
+    "chemin": "passation/04_demonstration/presentation_finance.html",
+    "sha256_origine": "5b18ae2a4f76898b65ad4e9d6cc93f135fd618ebd3a23fe52212d63190c1a2a2",
+    "sha256_remise": "5b18ae2a4f76898b65ad4e9d6cc93f135fd618ebd3a23fe52212d63190c1a2a2"
+  },
+  {
+    "ancien_chemin": "questions_superviseur.html",
+    "chemin": "passation/05_coordination/questions_superviseur.html",
+    "sha256_origine": "3885b743b41175732ff38b3dd1cac0b1a9837fc474824e013c08437bd05cedb8",
+    "sha256_remise": "3885b743b41175732ff38b3dd1cac0b1a9837fc474824e013c08437bd05cedb8"
+  },
+  {
+    "ancien_chemin": "questions_superviseur.md",
+    "chemin": "passation/05_coordination/questions_superviseur.md",
+    "sha256_origine": "d153cb740bb36e7b9de1133c3ce90dc299a143ee0e78a2c56600444924a4d1c8",
+    "sha256_remise": "d153cb740bb36e7b9de1133c3ce90dc299a143ee0e78a2c56600444924a4d1c8"
+  },
+  {
+    "ancien_chemin": "questions_superviseur/README.md",
+    "chemin": "passation/05_coordination/questions_superviseur/README.md",
+    "sha256_origine": "466ab9ac9cd34de0f3cb29c3469c1465b2d2d90589d0b0ab7a2bf1f0dfe757f5",
+    "sha256_remise": "466ab9ac9cd34de0f3cb29c3469c1465b2d2d90589d0b0ab7a2bf1f0dfe757f5"
+  },
+  {
+    "ancien_chemin": "questions_superviseur/archives/.keep",
+    "chemin": "passation/05_coordination/questions_superviseur/archives/.keep",
+    "sha256_origine": "07dadbd7d679f03a355b2be9a7e2b79fc5649d0d57e3abfc6b3af8fb5a1878c1",
+    "sha256_remise": "07dadbd7d679f03a355b2be9a7e2b79fc5649d0d57e3abfc6b3af8fb5a1878c1"
+  },
+  {
+    "ancien_chemin": "questions_superviseur/index.html",
+    "chemin": "passation/05_coordination/questions_superviseur/index.html",
+    "sha256_origine": "c7fddc0fae68d9d8b9ccfac63cd69709011666b646c6ef4407aa1d1655101e4e",
+    "sha256_remise": "c7fddc0fae68d9d8b9ccfac63cd69709011666b646c6ef4407aa1d1655101e4e"
+  },
+  {
+    "ancien_chemin": "recap_assets_maintenance.html",
+    "chemin": "passation/05_coordination/recap_assets_maintenance.html",
+    "sha256_origine": "b9de13f6ad7c815bd401d77a14844086dd66eb5882e1c8266dcc2893bb2edaf0",
+    "sha256_remise": "b9de13f6ad7c815bd401d77a14844086dd66eb5882e1c8266dcc2893bb2edaf0"
+  },
+  {
+    "ancien_chemin": "recap_assets_maintenance.md",
+    "chemin": "passation/05_coordination/recap_assets_maintenance.md",
+    "sha256_origine": "c2d1d31315011a8167417936ccfb714e6b83c22367b69df52a7a9e08dd197ea6",
+    "sha256_remise": "c2d1d31315011a8167417936ccfb714e6b83c22367b69df52a7a9e08dd197ea6"
+  },
+  {
+    "ancien_chemin": "recap_assets_maintenance.pdf",
+    "chemin": "passation/05_coordination/recap_assets_maintenance.pdf",
+    "sha256_origine": "708bfc068a85b38c1b81d109d78599ea8ecdd8715376f8db05f94131317609d0",
+    "sha256_remise": "708bfc068a85b38c1b81d109d78599ea8ecdd8715376f8db05f94131317609d0"
+  },
+  {
+    "ancien_chemin": "reponse_aumen_ecrans_couts.txt",
+    "chemin": "passation/05_coordination/reponse_aumen_ecrans_couts.txt",
+    "sha256_origine": "41a0b91c01f478e898041b516079cd07e0b951efc3fd4587085ea6ecc67033f9",
+    "sha256_remise": "41a0b91c01f478e898041b516079cd07e0b951efc3fd4587085ea6ecc67033f9"
+  },
+  {
+    "ancien_chemin": "reunion_2026-08-05/transcription.srt",
+    "chemin": "passation/05_coordination/reunion_2026-08-05/transcription.srt",
+    "sha256_origine": "641fb520c4c00a9eb6ea1d43171ff5e0e31843afbd689a11e20b94d610509507",
+    "sha256_remise": "52eecc7cd5adc17a964dcfe1deaead19585b51c8194f0bc8011b34bda91b80ec"
+  },
+  {
+    "ancien_chemin": "reunion_2026-08-05/transcription.txt",
+    "chemin": "passation/05_coordination/reunion_2026-08-05/transcription.txt",
+    "sha256_origine": "228495778155d286214fed33356cb6e56cfce067554320abd0c7b8f25a28f5c1",
+    "sha256_remise": "228495778155d286214fed33356cb6e56cfce067554320abd0c7b8f25a28f5c1"
+  },
+  {
+    "ancien_chemin": "review_maquettes_fm_iheb.md",
+    "chemin": "passation/05_coordination/review_maquettes_fm_iheb.md",
+    "sha256_origine": "c460c132b3968e5c5294f4892809ecb76fb4f9c0ce10fd4ee8794fe56fa80383",
+    "sha256_remise": "c460c132b3968e5c5294f4892809ecb76fb4f9c0ce10fd4ee8794fe56fa80383"
+  },
+  {
+    "ancien_chemin": "sauvegarde_scene_navigateur_2026-08-24.excalidraw",
+    "chemin": "passation/03_maquettes/sauvegarde_scene_navigateur_2026-08-24.excalidraw",
+    "sha256_origine": "703817f222df8a79da13d6b5e46ee8dbc61aa5f27926edd940865f5abd64b499",
+    "sha256_remise": "703817f222df8a79da13d6b5e46ee8dbc61aa5f27926edd940865f5abd64b499"
+  },
+  {
+    "ancien_chemin": "spec_finance.html",
+    "chemin": "passation/02_documentation/spec_finance.html",
+    "sha256_origine": "443a71e7b12cf141c60c46918041f5912dffbe36f809ec0fa295350103f8b0ee",
+    "sha256_remise": "443a71e7b12cf141c60c46918041f5912dffbe36f809ec0fa295350103f8b0ee"
+  },
+  {
+    "ancien_chemin": "tmp/pdfs/build_passation.py",
+    "chemin": "passation/09_sources_pdf/build_passation.py",
+    "sha256_origine": "5642998670af8655427fb9b4931580b416d902c7fa682a79c0a0a6bdf28b36b3",
+    "sha256_remise": "45f8edf825975316b38b1f095287ed82bcb3cdf3eb8fccfb41e161389747fddc"
+  },
+  {
+    "ancien_chemin": "tmp/pdfs/passation-1.png",
+    "chemin": "passation/09_sources_pdf/rendus/passation-1.png",
+    "sha256_origine": "a2d2bf5dfb5c9a22e2e430c14ee1ca1799596efe87cede110cf57a6740384556",
+    "sha256_remise": "f87f8cb3731cc7dc03fe82cc8608f87a1e0b95b0634cbc97b178e5f1799edfc3"
+  },
+  {
+    "ancien_chemin": "tmp/pdfs/passation-2.png",
+    "chemin": "passation/09_sources_pdf/rendus/passation-2.png",
+    "sha256_origine": "373de94f01677f472722164f336fa90faa6f3bc7e533c0cdeb58c3399682e1d2",
+    "sha256_remise": "373de94f01677f472722164f336fa90faa6f3bc7e533c0cdeb58c3399682e1d2"
+  },
+  {
+    "ancien_chemin": "tmp/pdfs/passation-3.png",
+    "chemin": "passation/09_sources_pdf/rendus/passation-3.png",
+    "sha256_origine": "2684cfaa7e292e43a3f270f782d6e5a9b79a21958c077ec2b8b51521d519780e",
+    "sha256_remise": "ef1ce70b7b64c2214b8873c80a28dbca697bda8eafefbddae7ff22263533407e"
+  },
+  {
+    "ancien_chemin": "tmp/pdfs/passation-4.png",
+    "chemin": "passation/09_sources_pdf/rendus/passation-4.png",
+    "sha256_origine": "c28a182ad2876f529ef91f340e884e97fd1e4b290914528ea7ade0733b950ff1",
+    "sha256_remise": "ce5a45ba606413ff2c797089204d366f20e5e76d7ce2f9909da37c0434a8acb5"
+  },
+  {
+    "ancien_chemin": "tmp/pdfs/passation-5.png",
+    "chemin": "passation/09_sources_pdf/rendus/passation-5.png",
+    "sha256_origine": "7800d48d1e3984d6466a33563484f19232fb9ebb59178ed2a7840eb7e5dddf25",
+    "sha256_remise": "bf565a924714177cc5a8add2c837886b48fc515f3448a998f98fc479cc3ace25"
+  },
+  {
+    "ancien_chemin": "userstories_finance.html",
+    "chemin": "passation/02_documentation/userstories_finance.html",
+    "sha256_origine": "012d7c4588b9982ee79ab3794045249d707144d596e29b3fabab57605b2a7969",
+    "sha256_remise": "012d7c4588b9982ee79ab3794045249d707144d596e29b3fabab57605b2a7969"
+  },
+  {
+    "ancien_chemin": "validation_samir_rapports_mensuels.md",
+    "chemin": "passation/05_coordination/validation_samir_rapports_mensuels.md",
+    "sha256_origine": "2c04fd7091f73afeb132c49a2ae4f9a260166b77d589577acaad2b94c6c094fd",
+    "sha256_remise": "2c04fd7091f73afeb132c49a2ae4f9a260166b77d589577acaad2b94c6c094fd"
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Blocks insemination when Animal.etat_gestation == 'GESTANTE' (with eligibility VACHE/GENISSE), referencing CF-IA / the guard.",
+      "passed": true,
+      "evidence": "with_skill/outputs/insemination.py validate_animal_eligible() fetches both categorie and etat_gestation (lines 66-68: frappe.db.get_value(\"Animal\", self.animal, [\"categorie\", \"etat_gestation\"])), rejects non-VACHE/GENISSE (line 71: 'if categorie not in (\"VACHE\", \"GENISSE\")' -> ERR-IA-01) and blocks GESTANTE (line 79: 'if self.is_new() and etat_gestation == \"GESTANTE\"' -> ERR-IA-06). NOTES.md cites the guard: 'CF-ANI-04 / CF-IA ... only an ACTIF, female VACHE/GENISSE is repro-eligible; ... a GESTANTE animal is excluded.'"
+    },
+    {
+      "text": "On REUSSIE computes date_velage_prevue = add_days(date_ia, get_config('periode_velage_jours', 280)).",
+      "passed": true,
+      "evidence": "with_skill/outputs/insemination.py lines 117-120: 'periode_velage = get_config(\"periode_velage_jours\", default=280)' then 'animal.date_velage_prevue = frappe.utils.add_days(self.date_ia, periode_velage)', inside the 'if self.resultat == \"REUSSIE\"' branch."
+    },
+    {
+      "text": "Computes date_tarissement = add_days(date_velage_prevue, -get_config('tarissement_window_jours', 60)).",
+      "passed": true,
+      "evidence": "with_skill/outputs/insemination.py lines 123-126: 'tarissement_window = get_config(\"tarissement_window_jours\", default=60)' then 'animal.date_tarissement = frappe.utils.add_days(animal.date_velage_prevue, -tarissement_window)'."
+    },
+    {
+      "text": "Writes the protected reproduction/gestation fields via flags.ignore_validate and uses get_config (no hardcoded 280/60/9-months).",
+      "passed": true,
+      "evidence": "with_skill/outputs/insemination.py lines 128-133 set id_ia_fecondante, etat_gestation, date_velage_prevue, date_tarissement then 'animal.flags.ignore_validate = True; animal.save()'. Both windows come from get_config (lines 117, 123); 280/60 appear only as get_config defaults, no hardcoded literals or 9-months."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

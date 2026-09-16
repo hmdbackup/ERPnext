@@ -1,0 +1,19 @@
+{
+  "eval_id": 4,
+  "eval_name": "kpi-efficacite-alimentaire-colored",
+  "skill": "hmd-agro-kpi",
+  "skill_path": "/Users/momoslim/Downloads/hmd_agro-main/.claude/skills/hmd-agro-kpi",
+  "prompt": "Add an 'efficacité alimentaire' indicator to the hmd_agro dairy reporting, and color it green / orange / red according to the farm's thresholds. Explain the formula and show how the coloring is decided.",
+  "assertions": [
+    "Formula = lait produit / MSI with MSI = MS distribuee - refus (kg lait per kg MS ingeree).",
+    "Green threshold = pfe_efficacite_min (1.4) and orange = pfe_efficacite_orange_min (1.0), read via get_config (not hardcoded).",
+    "Tri-color green/orange/red decision logic is config-driven.",
+    "Computes over a defined population (presente/lactante) using live_state for effectif; module 'HMD AGRO'."
+  ],
+  "expectations": [
+    "Formula = lait produit / MSI with MSI = MS distribuee - refus (kg lait per kg MS ingeree).",
+    "Green threshold = pfe_efficacite_min (1.4) and orange = pfe_efficacite_orange_min (1.0), read via get_config (not hardcoded).",
+    "Tri-color green/orange/red decision logic is config-driven.",
+    "Computes over a defined population (presente/lactante) using live_state for effectif; module 'HMD AGRO'."
+  ]
+}

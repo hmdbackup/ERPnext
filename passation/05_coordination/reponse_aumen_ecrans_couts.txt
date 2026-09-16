@@ -1,0 +1,39 @@
+Salut Aymen,
+
+*1. Les 2 rapports partagés = écrans EXISTANTS*, pas des nouveaux.
+Ce sont des Script Reports déjà dans l'app : rapport_performance (SCRUM-10),
+rapport_interventions (SCRUM-11), rapport_periodique (SCRUM-9).
+Les maquettes montrent leur évolution après les arbitrages de M. Samir :
+séparer Pièces / Main-d'œuvre (aujourd'hui une seule colonne « cout »),
+ajouter la colonne État du matériel (elle n'existe nulle part), et passer
+d'une clé de répartition unique à une clé par dépense.
+
+*2. Écrans de saisie des coûts : il n'y en a AUCUN côté HMD.*
+Nos seules pages custom : Saisie Traite, Import Traites, Saisie Alimentation,
+Centre Alertes. Les coûts entrent par les écrans natifs ERPNext :
+Purchase Invoice, Journal Entry, Stock Entry, Asset Repair (→ 615), Paie (→ 64x).
+Les rapports relisent ensuite les GL Entry.
+
+*3. « Catégorie de coûts » : pas de doctype dédié.*
+La catégorie = le COMPTE du plan SCE (601 aliments, 602 véto, 615 entretien,
+64x personnel, 68x amortissements…).
+L'atelier = le COST CENTER (Lait, Génisses, Fourrage, Traction, Frais Généraux).
++ 2 dimensions analytiques : Lot et Bâtiment.
+
+*Le point qui reste ouvert*
+Contexte : les frais généraux (gardiennage, électricité, assurances, administratif)
+ne se rattachent à aucun atelier. Il faut donc décider quelle part revient au Lait.
+M. Samir a tranché CAS PAR CAS : pas de clé unique, chaque dépense porte la sienne —
+soit au prorata de ce que l'atelier dépense (61,98 %), soit au prorata de ce qu'il
+rapporte (90 %). Sur juin : gardiennage et administratif en clé recettes,
+électricité et assurances en clé dépenses → 7 583,89 DT sur 9 840 DT reviennent au
+Lait, et c'est ce montant qui entre dans le coût du litre.
+
+Or ce choix n'a nulle part où s'inscrire : ni champ sur la dépense, ni écran pour
+arbitrer les frais généraux du mois. Reste donc à décider où il se fait :
+• à la saisie → un simple champ sur Purchase Invoice / Journal Entry
+• à la clôture → un écran nouveau, la liste des frais généraux du mois avec la clé
+  à choisir pour chacun
+
+C'est le seul endroit de tout le lot qui pourrait demander un écran neuf plutôt
+qu'une évolution d'écran existant. Je peux le maquetter si besoin.

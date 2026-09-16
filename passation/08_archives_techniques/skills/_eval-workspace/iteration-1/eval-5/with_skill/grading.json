@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Uses the lactating-cow denominator via live_state.effectif_on_date (Vaches - Lact.), not a naive Animal row count.",
+      "passed": true,
+      "evidence": "dashboard_kpis_snippet.py line 87 and 106: vl = effectif_on_date(yesterday)[\"Vaches - Lact.\"] (the inlined equivalent and the delegated get_pl_vl). NOTES.md line 38-40 explicitly state the denominator is the 'Vaches - Lact.' bucket of effectif_on_date, reconstructed from events, never reading Animal.etat_lactation. Matches the canonical live_state.CATEGORIES bucket in utils/live_state.py."
+    },
+    {
+      "text": "Datasource is a @frappe.whitelist() function returning {'value':..., 'fieldtype':...}, consistent with utils/dashboard_kpis (e.g. get_pl_vl).",
+      "passed": true,
+      "evidence": "dashboard_kpis_snippet.py line 53-79: @frappe.whitelist() def get_moyenne_production_vache_lactante(): ... return get_pl_vl(); inlined equivalent line 89 returns {\"value\": moyenne, \"fieldtype\": \"Float\"}. get_pl_vl itself returns {\"value\": ratio, \"fieldtype\": \"Float\"} (verified in utils/dashboard_kpis.py). The card JSON method points at this whitelisted function."
+    },
+    {
+      "text": "Registers a Custom Number Card with module 'HMD AGRO' and mentions bench export-fixtures.",
+      "passed": true,
+      "evidence": "moyenne_production_vache_lactante.json: \"type\": \"Custom\", \"module\": \"HMD AGRO\", method pointing at the datasource. NOTES.md line 113: 'bench export-fixtures --app hmd_agro', and lines 104-109 explain the hooks fixtures filter [[\"module\", \"=\", \"HMD AGRO\"]]."
+    },
+    {
+      "text": "Computes yesterday's total milk from Traite.",
+      "passed": true,
+      "evidence": "dashboard_kpis_snippet.py line 47-50: _prod_sum returns float(frappe.db.sql(\"SELECT SUM(quantite_litres) FROM `tabTraite` WHERE date_traite BETWEEN %s AND %s\", (start, end))...), called with yesterday = add_days(today(), -1) (line 85). Matches the canonical _prod_sum in utils/dashboard_kpis.py."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

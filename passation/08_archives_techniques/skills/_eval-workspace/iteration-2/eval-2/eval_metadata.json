@@ -1,0 +1,19 @@
+{
+  "eval_id": 2,
+  "eval_name": "domain-rg14-semence-zero-stock",
+  "skill": "hmd-agro-domain",
+  "skill_path": "/Users/momoslim/Downloads/hmd_agro-main/.claude/skills/hmd-agro-domain",
+  "prompt": "In the hmd_agro dairy app, implement the rule that when a bull's semence (semen) stock reaches zero, it can no longer be used for an insemination (this is spec rule RG14). Where does this logic belong and how should it behave? Show the approach.",
+  "assertions": [
+    "Places the rule in the Insemination semence-stock flow, not a naive standalone 'disponible' boolean as the literal spec implies.",
+    "References the ERPNext v15 batch-level negative-stock behavior (a depleted batch is refused; the IA still saves but the stock write is skipped/blocked).",
+    "Cites RG14 and flags the spec-vs-code delta.",
+    "Keeps stock in ERPNext (Batch/Bin/Stock Entry), not a re-architected custom stock store."
+  ],
+  "expectations": [
+    "Places the rule in the Insemination semence-stock flow, not a naive standalone 'disponible' boolean as the literal spec implies.",
+    "References the ERPNext v15 batch-level negative-stock behavior (a depleted batch is refused; the IA still saves but the stock write is skipped/blocked).",
+    "Cites RG14 and flags the spec-vs-code delta.",
+    "Keeps stock in ERPNext (Batch/Bin/Stock Entry), not a re-architected custom stock store."
+  ]
+}

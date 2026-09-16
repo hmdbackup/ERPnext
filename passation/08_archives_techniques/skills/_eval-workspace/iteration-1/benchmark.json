@@ -1,0 +1,545 @@
+{
+  "metadata": {
+    "skill_name": "hmd-agro (dev / domain / kpi)",
+    "skill_path": "/Users/momoslim/Downloads/hmd_agro-main/.claude/skills",
+    "executor_model": "claude-opus-4-8",
+    "timestamp": "2026-06-03T00:00:00Z",
+    "evals_run": [
+      "dev-equipment-asset-not-doctype",
+      "dev-vaccination-conventions",
+      "domain-rg14-semence-zero-stock",
+      "domain-insemination-gestante-calving-date",
+      "kpi-efficacite-alimentaire-colored",
+      "kpi-prod-par-vache-lactante-card"
+    ],
+    "runs_per_configuration": 1,
+    "note": "eval-2 with_skill reflects iteration-2 (post RG14 fix)"
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "eval_name": "dev-equipment-asset-not-doctype",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 373.5,
+        "tokens": 56739,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends ERPNext Asset (and Asset Maintenance) as the primary approach for Equipment/Intervention, rather than building them as new custom dairy DocTypes.",
+          "passed": true,
+          "evidence": "with_skill/outputs/NOTES.md TL;DR: \"I did not create custom Equipement / Intervention DocTypes... EQUIPMENT -> ERPNext Asset (classified via Asset Category)\" and \"INTERVENTION -> ERPNext Asset Maintenance + Asset Maintenance Log\". This is presented as THE approach, with custom DocTypes explicitly rejected."
+        },
+        {
+          "text": "Explicitly cites that the spec's EQUIPMENT/INTERVENTION are ERPNext-core or not-built-by-design (the spec to implementation map / golden rule).",
+          "passed": true,
+          "evidence": "with_skill/outputs/NOTES.md \"Why no custom DocType (cited rules)\" cites Golden rule #1 (\"The code is the source of truth; the spec docs are intent\") and spec-to-implementation-map.md §3 \"Spec entities NOT built yet\" naming EQUIPMENT->Asset and INTERVENTION->Asset Maintenance. Verified accurate against SKILL.md and spec-to-implementation-map.md lines 65-66."
+        },
+        {
+          "text": "Does NOT present a from-scratch custom 'Equipement'/'Equipment' DocType as the recommended solution.",
+          "passed": true,
+          "evidence": "with_skill/outputs/NOTES.md: \"I considered authoring Equipement / Intervention JSON+py DocTypes (the literal reading of the task) and rejected it.\" No custom DocType JSON for Equipement/Equipment is in the deliverable; only Asset Category, Custom Fields, and seed patch files exist."
+        },
+        {
+          "text": "Any proposed extension uses Custom Fields + module 'HMD AGRO' conventions (and notes the by-name fixture pattern for CFs on core doctypes).",
+          "passed": true,
+          "evidence": "with_skill/outputs/custom_fields_asset.json proposes CFs (Asset-batiment, Asset Maintenance Log-remarque_intervention) following French snake_case; hooks_fixtures_snippet.py registers them by name and NOTES.md explains the SCRUM-123 by-name pattern: \"a Custom Field on an ERPNext core DocType is not caught by the bulk fixture filter ... unless exported explicitly by name, exactly like the existing Stock Entry-id_lot line.\" Verified against erpnext-integration.md."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "eval_name": "dev-equipment-asset-not-doctype",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 177.4,
+        "tokens": 90921,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends ERPNext Asset (and Asset Maintenance) as the primary approach for Equipment/Intervention, rather than building them as new custom dairy DocTypes.",
+          "passed": false,
+          "evidence": "without_skill/outputs/NOTES.md builds custom DocTypes as the primary solution (\"What was created: Two DocTypes\") and only mentions ERPNext Asset under \"Architectural alternative (worth flagging before merge)\" — i.e. an alternative, not the recommended/primary approach."
+        },
+        {
+          "text": "Explicitly cites that the spec's EQUIPMENT/INTERVENTION are ERPNext-core or not-built-by-design (the spec to implementation map / golden rule).",
+          "passed": false,
+          "evidence": "without_skill/outputs/NOTES.md contains no reference to the spec-to-implementation-map, golden rule, or any statement that EQUIPMENT/INTERVENTION are ERPNext-core/not-built-by-design. It frames ERPNext Asset as a generic Frappe-native option without citing the project's design mandate."
+        },
+        {
+          "text": "Does NOT present a from-scratch custom 'Equipement'/'Equipment' DocType as the recommended solution.",
+          "passed": false,
+          "evidence": "without_skill/outputs/equipement/equipement.json (name \"Equipement\", module \"HMD AGRO\") and intervention_maintenance/intervention_maintenance.json are full from-scratch custom DocTypes presented as the built/recommended solution: \"The custom DocTypes above were built because the task asked explicitly to 'create the DocType(s)'.\""
+        },
+        {
+          "text": "Any proposed extension uses Custom Fields + module 'HMD AGRO' conventions (and notes the by-name fixture pattern for CFs on core doctypes).",
+          "passed": false,
+          "evidence": "without_skill output proposes new custom DocTypes, not Custom Fields on ERPNext core DocTypes. No Custom Field fixtures are produced and there is no mention of the by-name fixture pattern (Stock Entry-id_lot / SCRUM-123) for CFs on core doctypes."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "dev-vaccination-conventions",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 395.3,
+        "tokens": 61363,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recognizes vaccination is medical care and considers reusing Traitement (TRAITEMENT_MEDICAL) / Medicament (type VACCIN) rather than an unrelated mechanism.",
+          "passed": true,
+          "evidence": "with_skill/outputs/NOTES.md '## Key decision 1 — new DocType vs. folding into Traitement' explicitly weighs 'A vaccination could be a Traitement (type_traitement = TRAITEMENT_MEDICAL with a VACCIN medicament)' and decides to link the vaccine to Medicament type VACCIN ('## Key decision 2 ... the vaccin field is a Link to Medicament'). Recognizes it as medical care and reuses the existing Medicament/Traitement machinery rather than an unrelated mechanism."
+        },
+        {
+          "text": "If creating a DocType: uses module 'HMD AGRO', French snake_case fields (e.g. date_vaccination / date_rappel), a format: autoname, and a Link to Animal.",
+          "passed": true,
+          "evidence": "with_skill/outputs/vaccination/vaccination.json: \"module\": \"HMD AGRO\"; fields date_vaccination and date_rappel (exact snake_case French examples cited); \"autoname\": \"format:VACC-{animal}-{date_vaccination}-{####}\" (format: style matching codebase e.g. format:EC-{animal}-{date}-{####}); animal field is fieldtype Link, options Animal."
+        },
+        {
+          "text": "Follows code conventions: 4-space Python indent and frappe.throw with an ERR- code and/or get_config for any threshold (no hardcoded tabs/thresholds).",
+          "passed": true,
+          "evidence": "with_skill/outputs/vaccination/vaccination.py uses 4-space indentation throughout (grep -P '\\t' finds no tabs, spaces only). The domain validation validate_vaccin uses frappe.throw with an ERR- code: line 47 _(\"ERR-VAC-01: Le produit {0} n'est pas un vaccin ...\"), matching the codebase convention (insemination.py ERR-IA-01). No hardcoded threshold: date_rappel is user-entered, not auto-derived, so no get_config needed."
+        },
+        {
+          "text": "Links the vaccine to a Medicament of type VACCIN and handles the next-due (rappel) date.",
+          "passed": true,
+          "evidence": "with_skill/outputs/vaccination/vaccination.json: vaccin is fieldtype Link, options Medicament; vaccination.py validate_vaccin enforces type_medicament == 'VACCIN' (ERR-VAC-01). Next-due handled via date_rappel Date field with validate_dates enforcing date_rappel > date_vaccination (vaccination.py:56-57). Medicament VACCIN type verified to exist (medicament.json:40)."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "dev-vaccination-conventions",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 111.2,
+        "tokens": 40254,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recognizes vaccination is medical care and considers reusing Traitement (TRAITEMENT_MEDICAL) / Medicament (type VACCIN) rather than an unrelated mechanism.",
+          "passed": true,
+          "evidence": "without_skill/outputs/NOTES.md mirrors the existing per-animal medical event records ('it mirrors ... Insemination, Traitement, Pesee ...') and under '## Key decisions' states '\"Vaccine product\" = Medicament, not a new master ... type_medicament Select includes VACCIN ... vaccin links to Medicament and both the JS query filter and the Python validate() restrict it to type_medicament == VACCIN'. Treats it as medical care reusing Medicament/Traitement, not an unrelated mechanism."
+        },
+        {
+          "text": "If creating a DocType: uses module 'HMD AGRO', French snake_case fields (e.g. date_vaccination / date_rappel), a format: autoname, and a Link to Animal.",
+          "passed": true,
+          "evidence": "without_skill/outputs/vaccination/vaccination.json: \"module\": \"HMD AGRO\"; French snake_case fields date_vaccination and date_prochaine (the e.g. example date_rappel is satisfied by date_vaccination plus an equivalent snake_case next-due field); \"autoname\": \"format:VAC-{YYYY}-{#####}\" (format: style matching codebase e.g. format:TRT-{YYYY}-{#####}); animal field is fieldtype Link, options Animal."
+        },
+        {
+          "text": "Follows code conventions: 4-space Python indent and frappe.throw with an ERR- code and/or get_config for any threshold (no hardcoded tabs/thresholds).",
+          "passed": false,
+          "evidence": "without_skill/outputs/vaccination/vaccination.py uses 4-space indent (spaces only, no tabs), but NO frappe.throw carries an ERR- code anywhere. The analogous non-VACCIN medicament check (lines 21-25) raises a bare frappe.throw(f\"Le médicament '{self.vaccin}' n'est pas un vaccin ...\") with no ERR- code — the very same validation that with_skill and the codebase tag (with_skill ERR-VAC-01; insemination.py ERR-IA-01, avortement.py ERR-AVO-01; SKILL.md:143). The convention requires frappe.throw with an ERR- code (get_config N/A as there is no threshold); it is absent, so this expectation fails."
+        },
+        {
+          "text": "Links the vaccine to a Medicament of type VACCIN and handles the next-due (rappel) date.",
+          "passed": true,
+          "evidence": "without_skill/outputs/vaccination/vaccination.json: vaccin is fieldtype Link, options Medicament; vaccination.py validate_vaccin_type enforces type_medicament == 'VACCIN' (lines 19-25). Next-due handled via date_prochaine Date field with validate_dates enforcing date_prochaine > date_vaccination (lines 27-33). Medicament VACCIN type verified to exist (medicament.json:40)."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "domain-rg14-semence-zero-stock",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 247.7,
+        "tokens": 93525,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Places the rule in the Insemination semence-stock flow, not a naive standalone 'disponible' boolean as the literal spec implies.",
+          "passed": true,
+          "evidence": "NOTES.md: logic in Insemination.decrement_semence_stock / _pick_semence_batch (not a disponible flag)."
+        },
+        {
+          "text": "References the ERPNext v15 batch-level negative-stock behavior (a depleted batch is refused; the IA still saves but the stock write is skipped/blocked).",
+          "passed": true,
+          "evidence": "NOTES.md L21-22: 'ERPNext v15 refuses to take a batch negative ... batch_qty hits 0' — v15 mechanism described."
+        },
+        {
+          "text": "Cites RG14 and flags the spec-vs-code delta.",
+          "passed": true,
+          "evidence": "NOTES.md cites RG14 + the code-vs-spec delta; rg14_explanation.py documents it."
+        },
+        {
+          "text": "Keeps stock in ERPNext (Batch/Bin/Stock Entry), not a re-architected custom stock store.",
+          "passed": true,
+          "evidence": "Stock stays in ERPNext Batch/Bin/Stock Entry; proposed_validate_guard.py L20 'DO NOT introduce a disponible boolean'."
+        }
+      ],
+      "notes": [
+        "iteration-2: re-run after the RG14 framing fix (was 3/4 in iteration-1)"
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "domain-rg14-semence-zero-stock",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 269.9,
+        "tokens": 47300,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Places the rule in the Insemination semence-stock flow, not a naive standalone 'disponible' boolean as the literal spec implies.",
+          "passed": true,
+          "evidence": "without_skill/NOTES.md lines 8-13 name the naive boolean reading and state 'That is the wrong implementation.' Lines 16-22 place the logic in 'insemination.py ... Insemination.after_insert -> decrement_semence_stock() hook (plus its helper _pick_semence_batch)'. Anti-pattern table row (line 104) reiterates: 'a custom disponible boolean / re-architecting stock outside ERPNext'. Rule is in the Insemination semence-stock flow, boolean rejected."
+        },
+        {
+          "text": "References the ERPNext v15 batch-level negative-stock behavior (a depleted batch is refused; the IA still saves but the stock write is skipped/blocked).",
+          "passed": true,
+          "evidence": "without_skill/NOTES.md lines 41-48: 'ERPNext v15 enforces batch-level negative stock independently of Item.allow_negative_stock ... a depleted Batch cannot be consumed. Issuing -1 from a batch_qty = 0 batch is refused by the Serial-and-Batch Bundle validation.' Lines 69-74: 'The IA record itself still saves ... the consumption write is skipped'. Both prongs (v15 batch-level refusal of depleted batch; IA saves but stock write skipped) explicitly present. Consistent with insemination.py lines 248-259."
+        },
+        {
+          "text": "Cites RG14 and flags the spec-vs-code delta.",
+          "passed": true,
+          "evidence": "without_skill/NOTES.md lines 5-7 quote RG14 verbatim; section 'How it actually behaves (the code-vs-spec delta)' (lines 32-59) and 'Code wins over spec where they diverge (documented delta RG14)' (line 87). RG14 cited and the spec-vs-code delta explicitly flagged."
+        },
+        {
+          "text": "Keeps stock in ERPNext (Batch/Bin/Stock Entry), not a re-architected custom stock store.",
+          "passed": true,
+          "evidence": "without_skill/NOTES.md lines 35-40: 'Stock for semen is not a custom integer field on Semence. Each Semence record is an ERPNext Batch (batch_no = Semence.name), and per-batch quantity is tabBatch.batch_qty.' Summary table line 101 'Stock source of truth | ERPNext Batch.batch_qty ... no custom field' and anti-pattern line 104 reject 're-architecting stock outside ERPNext'. Stock stays in ERPNext Batch/Stock Entry."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "domain-insemination-gestante-calving-date",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 196.8,
+        "tokens": 46986,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Blocks insemination when Animal.etat_gestation == 'GESTANTE' (with eligibility VACHE/GENISSE), referencing CF-IA / the guard.",
+          "passed": true,
+          "evidence": "with_skill/outputs/insemination.py validate_animal_eligible() fetches both categorie and etat_gestation (lines 66-68: frappe.db.get_value(\"Animal\", self.animal, [\"categorie\", \"etat_gestation\"])), rejects non-VACHE/GENISSE (line 71: 'if categorie not in (\"VACHE\", \"GENISSE\")' -> ERR-IA-01) and blocks GESTANTE (line 79: 'if self.is_new() and etat_gestation == \"GESTANTE\"' -> ERR-IA-06). NOTES.md cites the guard: 'CF-ANI-04 / CF-IA ... only an ACTIF, female VACHE/GENISSE is repro-eligible; ... a GESTANTE animal is excluded.'"
+        },
+        {
+          "text": "On REUSSIE computes date_velage_prevue = add_days(date_ia, get_config('periode_velage_jours', 280)).",
+          "passed": true,
+          "evidence": "with_skill/outputs/insemination.py lines 117-120: 'periode_velage = get_config(\"periode_velage_jours\", default=280)' then 'animal.date_velage_prevue = frappe.utils.add_days(self.date_ia, periode_velage)', inside the 'if self.resultat == \"REUSSIE\"' branch."
+        },
+        {
+          "text": "Computes date_tarissement = add_days(date_velage_prevue, -get_config('tarissement_window_jours', 60)).",
+          "passed": true,
+          "evidence": "with_skill/outputs/insemination.py lines 123-126: 'tarissement_window = get_config(\"tarissement_window_jours\", default=60)' then 'animal.date_tarissement = frappe.utils.add_days(animal.date_velage_prevue, -tarissement_window)'."
+        },
+        {
+          "text": "Writes the protected reproduction/gestation fields via flags.ignore_validate and uses get_config (no hardcoded 280/60/9-months).",
+          "passed": true,
+          "evidence": "with_skill/outputs/insemination.py lines 128-133 set id_ia_fecondante, etat_gestation, date_velage_prevue, date_tarissement then 'animal.flags.ignore_validate = True; animal.save()'. Both windows come from get_config (lines 117, 123); 280/60 appear only as get_config defaults, no hardcoded literals or 9-months."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "domain-insemination-gestante-calving-date",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 75.9,
+        "tokens": 37238,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Blocks insemination when Animal.etat_gestation == 'GESTANTE' (with eligibility VACHE/GENISSE), referencing CF-IA / the guard.",
+          "passed": false,
+          "evidence": "without_skill/outputs/insemination.py validate_animal_not_pregnant() fetches only etat_gestation (line 37: 'etat_gestation = frappe.db.get_value(\"Animal\", self.animal, \"etat_gestation\")') and blocks GESTANTE (lines 38-41, ERR-IA-06). However there is NO VACHE/GENISSE eligibility check anywhere in the file or NOTES.md (no 'categorie' fetch, no 'VACHE'/'GENISSE' reference). The expectation's required '(with eligibility VACHE/GENISSE)' clause is genuinely absent."
+        },
+        {
+          "text": "On REUSSIE computes date_velage_prevue = add_days(date_ia, get_config('periode_velage_jours', 280)).",
+          "passed": true,
+          "evidence": "without_skill/outputs/insemination.py _mark_pregnant() lines 72,75: 'periode_velage = get_config(\"periode_velage_jours\", default=280)' then 'date_velage_prevue = add_days(self.date_ia, periode_velage)'. Reached on REUSSIE via sync_gestation_dates_on_result (line 67)."
+        },
+        {
+          "text": "Computes date_tarissement = add_days(date_velage_prevue, -get_config('tarissement_window_jours', 60)).",
+          "passed": true,
+          "evidence": "without_skill/outputs/insemination.py _mark_pregnant() lines 73,76: 'tarissement_window = get_config(\"tarissement_window_jours\", default=60)' then 'date_tarissement = add_days(date_velage_prevue, -tarissement_window)'."
+        },
+        {
+          "text": "Writes the protected reproduction/gestation fields via flags.ignore_validate and uses get_config (no hardcoded 280/60/9-months).",
+          "passed": true,
+          "evidence": "without_skill/outputs/insemination.py _mark_pregnant() lines 79-86 set id_ia_fecondante, date_velage_prevue, date_tarissement, etat_gestation then 'animal.flags.ignore_validate = True; animal.save()'. Both windows come from get_config (lines 72-73); 280/60 appear only as get_config defaults, no hardcoded literals or 9-months."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "eval_name": "kpi-efficacite-alimentaire-colored",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 136.2,
+        "tokens": 102304,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Formula = lait produit / MSI with MSI = MS distribuee - refus (kg lait per kg MS ingeree).",
+          "passed": true,
+          "evidence": "efficacite_alimentaire_indicator.py:60-70 defines `efficacite_alimentaire(lait_litres, ms_kg, refus_kg=0.0)` with `msi = (ms_kg or 0) - (refus_kg or 0)` and `return round((lait_litres or 0) / msi, 2)`; docstring (:63) states 'Skill formula: efficacité = lait ÷ MSI, MSI = MS distribuée − refus.' NOTES.md:25-28 states 'efficacité = lait (L) ÷ MSI / MSI = MS distribuée − refus (MSI = matière sèche ingérée) / MS distribuée = Σ(quantité_distribuée_kg × MS%_de_l_aliment)', unit L lait/kg MS. The − refus term is explicit."
+        },
+        {
+          "text": "Green threshold = pfe_efficacite_min (1.4) and orange = pfe_efficacite_orange_min (1.0), read via get_config (not hardcoded).",
+          "passed": true,
+          "evidence": "efficacite_alimentaire_indicator.py:81-82 'cfg_eff_min = float(get_config(\"pfe_efficacite_min\", default=1.4))' and 'cfg_eff_omn = float(get_config(\"pfe_efficacite_orange_min\", default=1.0))', imported from hmd_agro.hmd_agro.utils.config (:27). Matches app rapport_mensuel.py:1250-1251 verbatim and config defaults (init_pfe_seuils.py:18-19: 1.4 / 1.0). Thresholds passed in, not hardcoded into the color function."
+        },
+        {
+          "text": "Tri-color green/orange/red decision logic is config-driven.",
+          "passed": true,
+          "evidence": "efficacite_alimentaire_indicator.py:45-54 `colorier_efficacite(valeur, green_min, orange_min)` returns 'Green' if valeur>=green_min, 'Orange' if valeur>=orange_min, else 'Red' (and '' for None/0). green_min/orange_min are fed from get_config (:81-82, :116). Mirrors app _kpi_ind (rapport_mensuel.py:1197-1200)."
+        },
+        {
+          "text": "Computes over a defined population (presente/lactante) using live_state for effectif; module 'HMD AGRO'.",
+          "passed": true,
+          "evidence": "efficacite_alimentaire_indicator.py:8-9 (Rule 1 présente/lactante, Rule 2 herd counts from utils.live_state), :88-129 build présente/lactante rows ('Efficacité Alim. / Vache Lactante'), reuses effectif_on_date. NOTES.md:34-37 'Reported for two populations: par vache présente and par vache lactante'; :108-111 'counts come from utils/live_state.py (effectif_on_date)... reuses effectif_on_date(end) for VP/VL denominators'. live_state reconstruction and présente/lactante populations are explicitly wired; HMD AGRO report context referenced (rapport_mensuel)."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "eval_name": "kpi-efficacite-alimentaire-colored",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 142.3,
+        "tokens": 69599,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Formula = lait produit / MSI with MSI = MS distribuee - refus (kg lait per kg MS ingeree).",
+          "passed": true,
+          "evidence": "efficacite_indicateur.py:16-23 docstring 'Efficacité Alimentaire (sur MS) = Production laitière (L) / MS ingérée (kg)' and 'MS ingérée = ... so \"MS ingérée = MS distribuée − refus\"', unit L lait/kg MS. NOTES.md:32-54 repeats the formula and 'MSI = MS distribuée − refus. Optimal 1.4 L/kg MS'. Formula and the MSI=distribuée−refus identity are both stated correctly (function efficacite_alimentaire(production, ms) implements lait/MS)."
+        },
+        {
+          "text": "Green threshold = pfe_efficacite_min (1.4) and orange = pfe_efficacite_orange_min (1.0), read via get_config (not hardcoded).",
+          "passed": true,
+          "evidence": "efficacite_indicateur.py:104-105 'cfg_eff_min = float(get_config(\"pfe_efficacite_min\", default=1.4))' and 'cfg_eff_omn = float(get_config(\"pfe_efficacite_orange_min\", default=1.0))', with get_config (:40-52) reading HMD Configuration Single via frappe.db.get_single_value. Matches app rapport_mensuel.py:1250-1251 and config defaults (init_pfe_seuils.py:18-19). Not hardcoded into the color branch."
+        },
+        {
+          "text": "Tri-color green/orange/red decision logic is config-driven.",
+          "passed": true,
+          "evidence": "efficacite_indicateur.py:55-76 _kpi_ind higher-is-better branch returns 'Green' (>=green_min), 'Orange' (>=orange_min), 'Red' else, '' for None/0; called as _kpi_ind(valeur, green_min=cfg_eff_min, orange_min=cfg_eff_omn) (:108) with thresholds from get_config (:104-105). rapport_mensuel_formatter.js:27-34 maps Green/Orange/Red to colored cells."
+        },
+        {
+          "text": "Computes over a defined population (presente/lactante) using live_state for effectif; module 'HMD AGRO'.",
+          "passed": false,
+          "evidence": "No reference to live_state, effectif_on_date, présente/lactante populations, or module 'HMD AGRO' anywhere in the without_skill outputs (grep returned zero matches). efficacite_indicateur.py computes a single cheptel-wide value: efficacite_alimentaire(production_litres, ms_ingeree_kg) takes raw scalars; build_efficacite_row (:90-122) takes production/MS directly with no effectif reconstruction and no présente/lactante split. The defined-population + live_state requirement is not met."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "eval_name": "kpi-prod-par-vache-lactante-card",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 250.3,
+        "tokens": 45040,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses the lactating-cow denominator via live_state.effectif_on_date (Vaches - Lact.), not a naive Animal row count.",
+          "passed": true,
+          "evidence": "dashboard_kpis_snippet.py line 87 and 106: vl = effectif_on_date(yesterday)[\"Vaches - Lact.\"] (the inlined equivalent and the delegated get_pl_vl). NOTES.md line 38-40 explicitly state the denominator is the 'Vaches - Lact.' bucket of effectif_on_date, reconstructed from events, never reading Animal.etat_lactation. Matches the canonical live_state.CATEGORIES bucket in utils/live_state.py."
+        },
+        {
+          "text": "Datasource is a @frappe.whitelist() function returning {'value':..., 'fieldtype':...}, consistent with utils/dashboard_kpis (e.g. get_pl_vl).",
+          "passed": true,
+          "evidence": "dashboard_kpis_snippet.py line 53-79: @frappe.whitelist() def get_moyenne_production_vache_lactante(): ... return get_pl_vl(); inlined equivalent line 89 returns {\"value\": moyenne, \"fieldtype\": \"Float\"}. get_pl_vl itself returns {\"value\": ratio, \"fieldtype\": \"Float\"} (verified in utils/dashboard_kpis.py). The card JSON method points at this whitelisted function."
+        },
+        {
+          "text": "Registers a Custom Number Card with module 'HMD AGRO' and mentions bench export-fixtures.",
+          "passed": true,
+          "evidence": "moyenne_production_vache_lactante.json: \"type\": \"Custom\", \"module\": \"HMD AGRO\", method pointing at the datasource. NOTES.md line 113: 'bench export-fixtures --app hmd_agro', and lines 104-109 explain the hooks fixtures filter [[\"module\", \"=\", \"HMD AGRO\"]]."
+        },
+        {
+          "text": "Computes yesterday's total milk from Traite.",
+          "passed": true,
+          "evidence": "dashboard_kpis_snippet.py line 47-50: _prod_sum returns float(frappe.db.sql(\"SELECT SUM(quantite_litres) FROM `tabTraite` WHERE date_traite BETWEEN %s AND %s\", (start, end))...), called with yesterday = add_days(today(), -1) (line 85). Matches the canonical _prod_sum in utils/dashboard_kpis.py."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "eval_name": "kpi-prod-par-vache-lactante-card",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 111.5,
+        "tokens": 43699,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses the lactating-cow denominator via live_state.effectif_on_date (Vaches - Lact.), not a naive Animal row count.",
+          "passed": true,
+          "evidence": "dashboard_kpis_addition.py line 50: vl = effectif_on_date(yesterday)[\"Vaches - Lact.\"]. NOTES.md lines 62-66 explain effectif_on_date reconstructs lactating-cow count from herd events and never reads Animal.etat_lactation. Matches the canonical live_state.CATEGORIES bucket."
+        },
+        {
+          "text": "Datasource is a @frappe.whitelist() function returning {'value':..., 'fieldtype':...}, consistent with utils/dashboard_kpis (e.g. get_pl_vl).",
+          "passed": true,
+          "evidence": "dashboard_kpis_addition.py line 32-52: @frappe.whitelist() def get_lait_moyen_par_vl(): ... return {\"value\": moyenne, \"fieldtype\": \"Float\"}. Identical shape to get_pl_vl in utils/dashboard_kpis.py."
+        },
+        {
+          "text": "Registers a Custom Number Card with module 'HMD AGRO' and mentions bench export-fixtures.",
+          "passed": false,
+          "evidence": "lait_moyen_par_vl.json correctly has \"type\": \"Custom\" and \"module\": \"HMD AGRO\", but NOTES.md never mentions bench export-fixtures. Registration steps use 'bench migrate' and 'clear-cache' (lines 141-142) and manually editing fixtures/number_card.json (lines 95-117) instead of the export-fixtures workflow. The compound expectation requiring the bench export-fixtures mention is not satisfied."
+        },
+        {
+          "text": "Computes yesterday's total milk from Traite.",
+          "passed": true,
+          "evidence": "dashboard_kpis_addition.py line 48-49: yesterday = add_days(today(), -1); prod = _prod_sum(yesterday, yesterday). NOTES.md line 52 and 59-61 describe _prod_sum as 'SUM(quantite_litres) on D' summing Traite.quantite_litres over date_traite. Matches the canonical _prod_sum in utils/dashboard_kpis.py."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 266.6333,
+        "stddev": 100.4892,
+        "min": 136.2,
+        "max": 395.3
+      },
+      "tokens": {
+        "mean": 67659.5,
+        "stddev": 24360.6407,
+        "min": 45040,
+        "max": 102304
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.6667,
+        "stddev": 0.3416,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 148.0333,
+        "stddev": 68.7624,
+        "min": 75.9,
+        "max": 269.9
+      },
+      "tokens": {
+        "mean": 54835.1667,
+        "stddev": 21086.5919,
+        "min": 37238,
+        "max": 90921
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.33",
+      "time_seconds": "+118.6",
+      "tokens": "+12824"
+    }
+  },
+  "notes": [
+    "FINAL (post iteration-2): with_skill 1.00 vs without_skill 0.67 (+0.33).",
+    "eval-0 (equipment) decisive: without_skill 0/4 built duplicate custom Equipement/Intervention DocTypes; with_skill 4/4 routed to ERPNext Asset via the spec->implementation map.",
+    "eval-2 (RG14) was the iteration-1 regression (with_skill 3/4 < baseline 4/4): the with_skill run added a proactive guard but omitted the v15 batch-negative-stock mechanism. FIXED in iteration-2 by sharpening the domain skill's RG14 entry ('already realized by the stock layer; describe v15, don't add a disponible flag') -> with_skill now 4/4.",
+    "Both configs are full agents WITH repo access, so the baseline often recovers answers by reading code; the skills' marginal value concentrates on architecture decisions and avoiding wrong defaults.",
+    "Cost: with_skill averages slightly more tokens (reads SKILL.md + references). Wall-clock durations are CONFOUNDED (runs executed concurrently) — tokens are the cleaner cost signal.",
+    "User feedback (iteration-1, partial): positive on eval-0/eval-1 ('worked well with skills, didn't work without')."
+  ]
+}

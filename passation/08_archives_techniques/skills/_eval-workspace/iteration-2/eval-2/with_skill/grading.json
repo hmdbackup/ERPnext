@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Places the rule in the Insemination semence-stock flow, not a naive standalone 'disponible' boolean as the literal spec implies.",
+      "passed": true,
+      "evidence": "NOTES.md: logic in Insemination.decrement_semence_stock / _pick_semence_batch (not a disponible flag)."
+    },
+    {
+      "text": "References the ERPNext v15 batch-level negative-stock behavior (a depleted batch is refused; the IA still saves but the stock write is skipped/blocked).",
+      "passed": true,
+      "evidence": "NOTES.md L21-22: 'ERPNext v15 refuses to take a batch negative ... batch_qty hits 0' — v15 mechanism described."
+    },
+    {
+      "text": "Cites RG14 and flags the spec-vs-code delta.",
+      "passed": true,
+      "evidence": "NOTES.md cites RG14 + the code-vs-spec delta; rg14_explanation.py documents it."
+    },
+    {
+      "text": "Keeps stock in ERPNext (Batch/Bin/Stock Entry), not a re-architected custom stock store.",
+      "passed": true,
+      "evidence": "Stock stays in ERPNext Batch/Bin/Stock Entry; proposed_validate_guard.py L20 'DO NOT introduce a disponible boolean'."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

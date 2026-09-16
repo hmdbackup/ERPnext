@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Recognizes vaccination is medical care and considers reusing Traitement (TRAITEMENT_MEDICAL) / Medicament (type VACCIN) rather than an unrelated mechanism.",
+      "passed": true,
+      "evidence": "without_skill/outputs/NOTES.md mirrors the existing per-animal medical event records ('it mirrors ... Insemination, Traitement, Pesee ...') and under '## Key decisions' states '\"Vaccine product\" = Medicament, not a new master ... type_medicament Select includes VACCIN ... vaccin links to Medicament and both the JS query filter and the Python validate() restrict it to type_medicament == VACCIN'. Treats it as medical care reusing Medicament/Traitement, not an unrelated mechanism."
+    },
+    {
+      "text": "If creating a DocType: uses module 'HMD AGRO', French snake_case fields (e.g. date_vaccination / date_rappel), a format: autoname, and a Link to Animal.",
+      "passed": true,
+      "evidence": "without_skill/outputs/vaccination/vaccination.json: \"module\": \"HMD AGRO\"; French snake_case fields date_vaccination and date_prochaine (the e.g. example date_rappel is satisfied by date_vaccination plus an equivalent snake_case next-due field); \"autoname\": \"format:VAC-{YYYY}-{#####}\" (format: style matching codebase e.g. format:TRT-{YYYY}-{#####}); animal field is fieldtype Link, options Animal."
+    },
+    {
+      "text": "Follows code conventions: 4-space Python indent and frappe.throw with an ERR- code and/or get_config for any threshold (no hardcoded tabs/thresholds).",
+      "passed": false,
+      "evidence": "without_skill/outputs/vaccination/vaccination.py uses 4-space indent (spaces only, no tabs), but NO frappe.throw carries an ERR- code anywhere. The analogous non-VACCIN medicament check (lines 21-25) raises a bare frappe.throw(f\"Le médicament '{self.vaccin}' n'est pas un vaccin ...\") with no ERR- code — the very same validation that with_skill and the codebase tag (with_skill ERR-VAC-01; insemination.py ERR-IA-01, avortement.py ERR-AVO-01; SKILL.md:143). The convention requires frappe.throw with an ERR- code (get_config N/A as there is no threshold); it is absent, so this expectation fails."
+    },
+    {
+      "text": "Links the vaccine to a Medicament of type VACCIN and handles the next-due (rappel) date.",
+      "passed": true,
+      "evidence": "without_skill/outputs/vaccination/vaccination.json: vaccin is fieldtype Link, options Medicament; vaccination.py validate_vaccin_type enforces type_medicament == 'VACCIN' (lines 19-25). Next-due handled via date_prochaine Date field with validate_dates enforcing date_prochaine > date_vaccination (lines 27-33). Medicament VACCIN type verified to exist (medicament.json:40)."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  }
+}

@@ -1,0 +1,23 @@
+Bonjour à tous 👋
+
+Retour de la validation des maquettes avec M. Samir, lundi 24/08. Sur les trois écrans présentés, *deux sont validés* et partent en construction. Le détail complet, colonne par colonne, est dans le PDF joint.
+
+*1 — Charges par atelier et coût du litre*
+Deux décisions, et elles changent le calcul :
+• Les frais généraux ne sont plus répartis par une clé unique. *Chaque dépense est arbitrée individuellement* — au prorata de ce que dépense chaque atelier, ou au prorata de ce qu'il rapporte. Le rapport affiche la clé retenue, dépense par dépense.
+• *Plus de catégorie « non imputé »*. Toute charge reçoit son atelier au moment de la saisie ; la ligne ne reste que comme contrôle à zéro.
+
+*2 — Parc et interventions*
+• Un seul champ pour l'état du matériel : *Prêt · En panne · En attente de maintenance*. Pas de case « disponible » à côté.
+• Fenêtre du préventif : *30 jours*.
+• Le coût d'une intervention se saisit désormais en deux parts, *pièces et main-d'œuvre*, avec le type — c'est ce qui permettra de dire « on paye trop cher la main-d'œuvre extérieure ».
+• Chaque ligne du rapport ouvre le détail de l'intervention.
+
+*3 — Production laitière : non validé*
+L'écran reste à revoir dans une prochaine séance. Un point est quand même acquis : l'écart entre les deux comptages du lait n'est pas un sujet pour le métier — donc aucune alerte à construire dessus, c'est autant de moins à développer.
+
+*Ce qui reste ouvert et peut bloquer*
+• Qui arbitre la clé de chaque dépense générale, et à quel moment — à la saisie ou à la clôture ? Sans réponse, le coût du litre attend.
+• Les déclencheurs de l'entretien préventif : jours calendaires, heures de marche, ou fréquence ? La périodicité ERPNext est purement calendaire aujourd'hui.
+
+Les chiffres du dossier sont des illustrations cohérentes entre elles, sauf les 45 444 litres de juin et les interventions de juin-juillet, qui sont réels. Ce qui est validé, ce sont les règles d'affichage.

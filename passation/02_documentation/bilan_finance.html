@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HMD AGRO — Finance · Bilan : fait / reste à faire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900&family=Newsreader:ital,opsz,wght@0,6..72,300..600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#13110c; --bg2:#191610; --surface:#201c14; --surface2:#262117;
+  --ink:#efe7d6; --ink-soft:#d8cdb6; --muted:#a99b7e; --faint:#6f6450;
+  --rule:#332c1f; --rule-soft:#2a2418;
+  --gold:#e7b65a; --green:#a4cb6e; --terra:#d8765b; --blue:#73c6e0; --violet:#c79ddd;
+  --shadow:0 30px 70px -34px rgba(0,0,0,.8);
+  --fdisplay:"Fraunces", Georgia, serif;
+  --fbody:"Newsreader", Georgia, serif;
+  --fmono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:30px}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--fbody); font-size:18.5px; line-height:1.7; font-weight:380;
+  -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(900px 500px at 88% -5%, rgba(231,182,90,.07), transparent 60%),
+    radial-gradient(800px 600px at -10% 12%, rgba(116,169,207,.06), transparent 55%);
+  background-attachment:fixed;
+}
+::selection{background:rgba(231,182,90,.28); color:#fff}
+a{color:var(--gold); text-decoration:none; border-bottom:1px solid rgba(231,182,90,.3)}
+a:hover{border-color:var(--gold)}
+.wrap{max-width:1060px; margin:0 auto; padding:56px 30px 110px}
+header.hero{margin-bottom:44px}
+.brandmark{font-family:var(--fmono); font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--gold)}
+h1{font-family:var(--fdisplay); font-weight:560; font-size:clamp(34px,5vw,52px); line-height:1.08; margin:14px 0 12px}
+.lede{color:var(--ink-soft); font-size:20px; max-width:56ch}
+.meta{font-family:var(--fmono); font-size:12px; color:var(--faint); margin-top:16px; letter-spacing:.05em}
+.statgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin:36px 0 8px}
+.stat{background:var(--surface); border:1px solid var(--rule); border-radius:14px; padding:18px 20px; box-shadow:var(--shadow)}
+.stat b{display:block; font-family:var(--fdisplay); font-size:34px; font-weight:560; color:var(--gold); line-height:1.1}
+.stat span{font-family:var(--fmono); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+h2{font-family:var(--fdisplay); font-weight:540; font-size:30px; margin:64px 0 6px; letter-spacing:.01em}
+h2 .nm{font-family:var(--fmono); font-size:13px; color:var(--gold); vertical-align:middle; margin-right:10px; letter-spacing:.15em}
+.h2sub{color:var(--muted); margin:0 0 24px; font-size:17px}
+.epic{background:var(--surface); border:1px solid var(--rule); border-left:4px solid var(--gold); border-radius:14px; padding:20px 24px; margin:16px 0; box-shadow:var(--shadow)}
+.epic h3{margin:0 0 6px; font-family:var(--fdisplay); font-weight:540; font-size:21px}
+.epic h3 .done{font-family:var(--fmono); font-size:11px; letter-spacing:.1em; color:var(--green); border:1px solid rgba(164,203,110,.4); border-radius:99px; padding:3px 10px; margin-left:10px; vertical-align:middle}
+.epic .stories{font-family:var(--fmono); font-size:11.5px; color:var(--faint); letter-spacing:.05em; margin-bottom:8px}
+.epic p{margin:8px 0; color:var(--ink-soft)}
+.epic .files{font-family:var(--fmono); font-size:12px; color:var(--muted); margin-top:10px; line-height:1.9}
+code, .k{font-family:var(--fmono); font-size:.82em; background:var(--surface2); border:1px solid var(--rule-soft); border-radius:6px; padding:2px 7px; color:var(--ink-soft); white-space:nowrap}
+pre{background:var(--bg2); border:1px solid var(--rule); border-radius:12px; padding:18px 20px; overflow-x:auto; font-family:var(--fmono); font-size:13px; line-height:1.75; color:var(--ink-soft)}
+pre code{background:none; border:none; padding:0; white-space:pre}
+table{width:100%; border-collapse:collapse; margin:18px 0; font-size:16.5px}
+th{font-family:var(--fmono); font-size:11.5px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); text-align:left; padding:10px 12px; border-bottom:1px solid var(--rule)}
+td{padding:11px 12px; border-bottom:1px solid var(--rule-soft); vertical-align:top; color:var(--ink-soft)}
+tr td:first-child{white-space:nowrap}
+.tablewrap{overflow-x:auto}
+.todo{background:var(--surface); border:1px solid var(--rule); border-radius:14px; padding:20px 24px; margin:16px 0; box-shadow:var(--shadow)}
+.todo.now{border-left:4px solid var(--terra)}
+.todo.client{border-left:4px solid var(--blue)}
+.todo.next{border-left:4px solid var(--violet)}
+.todo h3{margin:0 0 10px; font-family:var(--fdisplay); font-weight:540; font-size:21px}
+.todo ul{margin:0; padding-left:22px}
+.todo li{margin:9px 0; color:var(--ink-soft)}
+.todo li b{color:var(--ink)}
+.badge{font-family:var(--fmono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; border-radius:99px; padding:3px 10px; margin-left:8px; vertical-align:2px}
+.badge.red{color:var(--terra); border:1px solid rgba(216,118,91,.45)}
+.badge.blue{color:var(--blue); border:1px solid rgba(115,198,224,.45)}
+.badge.violet{color:var(--violet); border:1px solid rgba(199,157,221,.45)}
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin:20px 0}
+.kpi{background:var(--bg2); border:1px solid var(--rule); border-radius:12px; padding:14px 16px}
+.kpi .lbl{font-family:var(--fmono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.kpi .val{font-family:var(--fdisplay); font-size:24px; font-weight:560; margin-top:4px}
+.kpi .val.red{color:var(--terra)} .kpi .val.green{color:var(--green)} .kpi .val.gold{color:var(--gold)}
+.note{border-left:3px solid var(--gold); background:rgba(231,182,90,.06); border-radius:0 10px 10px 0; padding:14px 18px; margin:22px 0; color:var(--ink-soft); font-size:17px}
+footer{margin-top:80px; padding-top:24px; border-top:1px solid var(--rule); font-family:var(--fmono); font-size:12px; color:var(--faint); letter-spacing:.05em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="brandmark">HMD AGRO · Module Finance</div>
+  <h1>Bilan du chantier finance<br>— fait &amp; reste à faire</h1>
+  <p class="lede">Contrôle de gestion sur l'ERPNext natif : coûts réels, recettes,
+  immobilisations, pilotage économique. Les 7 epics du backlog sont implémentés,
+  testés et démontrés sur l'instance locale.</p>
+  <div class="meta">Branche <code>finance/socle-comptable</code> (base origin/main) · 19 juillet 2026 · Slim — partie Finance</div>
+</header>
+
+<div class="statgrid">
+  <div class="stat"><b>7/7</b><span>epics livrés (A→G)</span></div>
+  <div class="stat"><b>17</b><span>stories FIN-S* couvertes</span></div>
+  <div class="stat"><b>86/86</b><span>tests verts (8 modules)</span></div>
+  <div class="stat"><b>7</b><span>commits, 1 par epic</span></div>
+</div>
+
+<!-- ══════════════════════════════ FAIT ══════════════════════════════ -->
+<h2><span class="nm">01</span>Ce qui a été fait</h2>
+<p class="h2sub">Un commit par epic, chaque commit référence ses stories Jira (backlog <code>finance_backlog_jira.csv</code>).</p>
+
+<div class="epic">
+  <h3>Epic A — Socle comptable tunisien <span class="done">✓ 40d8593</span></h3>
+  <div class="stories">FIN-S01 · FIN-S02 — RG-FIN-01 / RG-FIN-40</div>
+  <p>La company devient <code>hmd-agro</code> (l'abréviation <code>HMD</code> est conservée
+  → les entrepôts <code>* - HMD</code> du code stock restent valides), devise <b>TND</b>,
+  pays Tunisie. Le plan comptable canadien du wizard est remplacé par un <b>plan SCE
+  français de 76 comptes</b> (classes 1→7). Modèles TVA 19/13/7/0&nbsp;%, exercice fiscal,
+  <b>5 Cost Centers ateliers</b> (Lait, Élevage-Génisses, Cultures-Fourrage, Traction,
+  Frais Généraux) et dimensions analytiques <b>Lot</b> / <b>Bâtiment</b> sur toutes les écritures.</p>
+  <div class="files">setup/finance/socle_comptable.py · plan_comptable_sce.py — idempotent, refuse un livre non vierge (ERR-FIN-01/02/03)</div>
+</div>
+
+<div class="epic">
+  <h3>Epic B — Coût réel des consommations <span class="done">✓ 2de4c06</span></h3>
+  <div class="stories">FIN-S10 · FIN-S11 · FIN-S12 — RG-FIN-30 / CF-FIN-31 / RC-FIN-50</div>
+  <p>Le cœur du quick win : <code>stock_utils</code> ne force plus <code>basic_rate=0</code>.
+  Chaque consommation (ration quotidienne, traitement, IA) est valorisée au
+  <b>CMP natif ERPNext</b> → le <b>DT/L déjà câblé du rapport mensuel affiche enfin un vrai
+  chiffre</b>, sans nouveau calcul. Ajout du <b>DT/vache</b> (présente <i>et</i> lactante,
+  pattern deux populations). Les restaurations <code>on_trash</code> repostent à la valeur
+  d'origine (symétrie). <b>Garde-fou</b> : un article jamais acheté (CMP=0) retombe sur
+  l'ancien comportement — la saisie terrain n'est jamais bloquée.</p>
+  <div class="files">utils/stock_utils.py · utils/feed_distribution.py · report/rapport_mensuel — tests/test_valorisation_cmp.py (7/7)</div>
+</div>
+
+<div class="epic">
+  <h3>Epic C — Recettes <span class="done">✓ 587d60b</span></h3>
+  <div class="stories">FIN-S20 · FIN-S21 · FIN-S22 · FIN-S23 — RG-FIN-10/11/12/20 / CF-FIN-21</div>
+  <p>Items de vente <code>LAIT-CRU</code> (701), <code>ANIMAL-VENTE</code> (702),
+  <code>FUMIER</code> (708), clients Centrale Laitière / Divers. <b>Facture lait de
+  période</b> : agrège <code>lait_vendu</code> du Bilan Lait Journalier, prix = Item Price
+  + primes/pénalités <b>TB/TP</b> (moyennes pondérées volume, barème en config — aucun prix
+  en dur), idempotente par marqueur, job mensuel planifié. <b>Vente d'animal</b> : le passage
+  au statut VENDU/RÉFORMÉ émet la facture depuis <code>prix_vente</code> (atelier selon
+  catégorie) ; un retour arrière ou une suppression <b>annule la facture</b> (écriture
+  compensatoire) ; jamais bloquant pour la saisie.</p>
+  <div class="files">utils/facturation_lait.py · utils/vente_animal.py · setup/finance/recettes.py — tests/test_recettes.py (15/15)</div>
+</div>
+
+<div class="epic">
+  <h3>Epic D — Immobilisations <span class="done">✓ 6949776</span></h3>
+  <div class="stories">FIN-S30 · (FIN-S31 préparée) — RC-FIN-53</div>
+  <p>5 catégories d'actifs mappées sur le SCE (Constructions 222/282 · Installations
+  223/283 · Transport 224/284 · <b>Cheptel reproducteur 225/285</b> · Autres 228/288),
+  dotation 681, amortissement <b>linéaire automatique</b>. Champ <code>Asset → Bâtiment</code>
+  (fixture exportée). Un actif soumis génère son calendrier d'amortissement complet
+  (vérifié : 12 000 TND / 10 ans = 10 dotations de 1 200).</p>
+  <div class="files">setup/finance/immobilisations.py — tests/test_immobilisations.py (13/13)</div>
+</div>
+
+<div class="epic">
+  <h3>Epic E — Charges &amp; main-d'œuvre <span class="done">✓ 6949776</span></h3>
+  <div class="stories">FIN-S40 · FIN-S41 — RG-FIN-40</div>
+  <p>Les charges diverses (eau, énergie, loyer, assurances) se saisissent en Purchase
+  Invoice / Journal Entry sur les comptes 60x-62x, ventilées par atelier. Pour la MO,
+  <code>post_salaires</code> poste <b>une écriture mensuelle 640/421 ventilée par Cost
+  Center</b>, idempotente — la ligne MO remonte dans le coût complet sans module Payroll.</p>
+  <div class="files">utils/charges_utils.py · fournisseur générique · modes de paiement Cash→54, virement/chèque→532</div>
+</div>
+
+<div class="epic">
+  <h3>Epic F — Pilotage économique <span class="done">✓ 81da51e</span></h3>
+  <div class="stories">FIN-S50 · FIN-S51 — RC-FIN-50/51/52 / RG-FIN-60</div>
+  <p>Nouveau bloc économique dans le Rapport Mensuel → Indicateurs, calculé depuis le
+  <b>Grand Livre</b> (historique figé) : CA Lait, Produit brut, Charges, MO, Dotations,
+  <b>EBE</b>, Résultat, <b>Coût complet/L</b>, <b>IOFC</b> et IOFC/VL/jour — avec colonne M-1
+  et Δ%. Coloration <b>vert/orange/rouge</b> par seuils configurables dans
+  <code>HMD Configuration → Seuils Finance</code> (prix de référence lait, TB/TP de référence
+  en %, primes par point, objectif coût/L, seuils IOFC), seedés par le patch <code>v1_6</code>.</p>
+  <div class="files">utils/finance_kpis.py · patches/v1_6/init_seuils_finance.py · boot.JS_FIELDS — tests/test_finance_kpis.py (14/14)</div>
+</div>
+
+<div class="epic">
+  <h3>Epic G — Droits &amp; bascule <span class="done">✓ 5d0e03b</span></h3>
+  <div class="stories">FIN-S60 · FIN-S61</div>
+  <p>Rôle <b>« Éleveur HMD »</b> : saisie complète du troupeau, <b>zéro accès comptable</b>
+  (testé : ne peut ni créer ni soumettre une écriture ; le comptable = rôles standards
+  Accounts User/Manager). <b>Procédure de bascule</b> documentée dans <code>BASCULE.md</code> :
+  Opening Entry via le compte d'attente 471, Opening Invoice Tool pour les encours tiers,
+  Stock Reconciliation valorisée, actifs existants avec amortissements cumulés.</p>
+  <div class="files">setup/finance/roles.py · BASCULE.md — tests/test_roles_finance.py (8/8)</div>
+</div>
+
+<!-- ══════════════════════════════ DÉMO ══════════════════════════════ -->
+<h2><span class="nm">02</span>La preuve qui tourne (démo locale)</h2>
+<p class="h2sub">Site <code>hmd.agro</code> (https://localhost) — seed E2E rejouable :
+<code>setup/finance/seed_demo_finance.run</code>. Rapport Mensuel → Indicateurs, juillet 2026 :</p>
+
+<div class="kpis">
+  <div class="kpi"><div class="lbl">Production (01→18/07)</div><div class="val">1 109 L</div></div>
+  <div class="kpi"><div class="lbl">Coût alimentaire / L</div><div class="val red">2.88 DT — rouge</div></div>
+  <div class="kpi"><div class="lbl">CA Lait (facture période)</div><div class="val gold">1 650 TND</div></div>
+  <div class="kpi"><div class="lbl">Vente animal</div><div class="val gold">2 500 TND</div></div>
+  <div class="kpi"><div class="lbl">EBE</div><div class="val green">+527 TND</div></div>
+  <div class="kpi"><div class="lbl">IOFC / VL / jour</div><div class="val red">−14.3 DT — rouge</div></div>
+</div>
+
+<p>Le scénario complet est en base : 26 animaux, une semaine de ration <b>valorisée au CMP</b>
+(achats seedés à prix réels), 84 traites, bilans lait quotidiens, facture lait, un taurillon
+vendu, salaires ventilés sur 3 ateliers, électricité, et un tracteur de 45 000 TND amorti sur
+5 ans. Les rouges sont <i>logiques</i> (ration de 26 têtes pour 6 lactantes de démo) — c'est
+exactement le genre de signal que le tableau de bord doit donner à Samir.</p>
+
+<div class="note">Chaque script de setup est <b>idempotent</b> (re-run = no-op) et refuse de
+toucher un livre comptable non vierge. L'ordre d'exécution sur une instance neuve est dans
+<code>livraison_finance.md</code>.</div>
+
+<!-- ══════════════════════════════ RESTE ══════════════════════════════ -->
+<h2><span class="nm">03</span>Ce qu'il nous reste à faire</h2>
+<p class="h2sub">Trois horizons : ce qui dépend de nous tout de suite, ce qui attend une décision client, et les chantiers d'après.</p>
+
+<div class="todo now">
+  <h3>Immédiat — à nous <span class="badge red">cette semaine</span></h3>
+  <ul>
+    <li><b>Pousser la branche &amp; ouvrir la PR</b> vers <code>main</code> (hmdbackup/ERPnext) :
+      <code>git push -u origin finance/socle-comptable</code> — jamais de push direct sur main,
+      PR après CI verte + validation Samir (règle maison).</li>
+    <li><b>Reporter les stories dans Jira</b> (les commits référencent déjà FIN-S01→S61) et
+      passer les tickets en Done.</li>
+    <li><b>Préparer la démo pour Samir</b> : dérouler le scénario sur l'instance locale
+      (rapport Indicateurs + factures + tracteur), avec <code>bilan_finance.html</code> comme support.</li>
+    <li><b>Relancer Sami pour le backup BD réelle</b> — valider la mécanique sur les données de
+      production (effectif réel ≈ 200 têtes) au lieu du seed démo.</li>
+  </ul>
+</div>
+
+<div class="todo client">
+  <h3>Décisions client — bloquantes pour affiner <span class="badge blue">à trancher avec Samir</span></h3>
+  <ul>
+    <li><b>Grille qualité lait de la centrale</b> : renseigner les primes/pénalités TB/TP réelles
+      (<code>lait_prime_tb_par_point</code> / <code>tp</code>, aujourd'hui 0 = prix plat) et le
+      vrai prix de référence du litre.</li>
+    <li><b>Mode de facturation lait</b> : la ferme facture (job mensuel actif) <b>ou</b> import du
+      décompte de la centrale — jamais les deux en parallèle (RG-FIN-12).</li>
+    <li><b>FIN-S31 — cheptel</b> : actif biologique amortissable (catégorie « Cheptel reproducteur »
+      225/285 déjà paramétrée) ou stock ? Décision comptable à documenter.</li>
+    <li><b>Clé de ventilation des charges communes</b> (eau/énergie entre ateliers) à valider
+      avec le comptable.</li>
+    <li><b>Date de bascule + balances d'ouverture réelles</b> pour dérouler
+      <code>BASCULE.md</code> (a-nouveaux, encours tiers, stocks valorisés, parc matériel réel).</li>
+  </ul>
+</div>
+
+<div class="todo next">
+  <h3>Chantiers suivants — après validation <span class="badge violet">itérations futures</span></h3>
+  <ul>
+    <li><b>Boucle d'achat réelle</b> : basculer le seed « Material Receipt » vers de vraies
+      Purchase Invoices fournisseurs (TVA déductible, dettes 401) — la mécanique CMP est déjà branchée.</li>
+    <li><b>Import du décompte centrale</b> (si ce mode est retenu) sur le pattern
+      <code>import_rapport.py</code>.</li>
+    <li><b>Number Cards / Dashboard</b> économiques (CA lait du mois, coût/L) en plus du rapport —
+      les valeurs existent déjà dans <code>finance_kpis</code>.</li>
+    <li><b>Paie réelle</b> : remplacer l'écriture mensuelle ventilée par le module Payroll si le
+      client le souhaite (la ligne MO du coût complet ne changera pas).</li>
+    <li><b>Pesée VENTE</b> : facturer les animaux au prix/kg via la dernière pesée (aujourd'hui :
+      prix forfaitaire <code>prix_vente</code>).</li>
+    <li><b>Formation</b> : comptable (saisie achats/charges, rapprochements) et éleveur
+      (BLJ quotidien — c'est lui qui alimente le CA lait).</li>
+  </ul>
+</div>
+
+<!-- ══════════════════════════════ TESTS ══════════════════════════════ -->
+<h2><span class="nm">04</span>Preuves — la suite de tests</h2>
+<div class="tablewrap">
+<table>
+  <tr><th>Module</th><th>Couvre</th><th>Résultat</th></tr>
+  <tr><td><code>test_valorisation_cmp</code></td><td>CMP réel, garde-fou CMP=0, restauration symétrique</td><td>7/7</td></tr>
+  <tr><td><code>test_cost_flow</code></td><td>achat → conso → agrégation coût du rapport</td><td>9/9</td></tr>
+  <tr><td><code>test_semence_dual_write</code></td><td>non-régression stock semence (FIFO, batch v15)</td><td>13/13</td></tr>
+  <tr><td><code>test_stock_integration</code></td><td>non-régression stock médicament/aliment</td><td>7/7</td></tr>
+  <tr><td><code>test_recettes</code></td><td>facture lait (TB/TP, idempotence), vente animal, annulation</td><td>15/15</td></tr>
+  <tr><td><code>test_immobilisations</code></td><td>catégories SCE, calendrier d'amortissement, salaires ventilés</td><td>13/13</td></tr>
+  <tr><td><code>test_finance_kpis</code></td><td>CA/EBE/résultat depuis le GL, coloration des seuils</td><td>14/14</td></tr>
+  <tr><td><code>test_roles_finance</code></td><td>éleveur sans accès comptable, comptable avec</td><td>8/8</td></tr>
+</table>
+</div>
+<pre><code>> bench --site hmd.agro execute hmd_agro.hmd_agro.tests.&lt;module&gt;.run
+TOTAL : 86/86 passés, 0 échoué</code></pre>
+
+<footer>
+HMD AGRO · module finance — bilan au 19/07/2026 · branche finance/socle-comptable ·
+voir aussi : plan_finance.html (cadrage) · spec_finance.html (spécification) · livraison_finance.md (runbook)
+</footer>
+
+</div>
+</body>
+</html>

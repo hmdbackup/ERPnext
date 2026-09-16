@@ -1,0 +1,15 @@
+Bonjour Iheb 👋
+
+Pour répondre à ta question sur la partie Assets : je te mets tout le détail dans le fichier, mais en résumé.
+
+Les équipements et le cheptel sont des Assets ERPNext — je n'ai créé aucun DocType « Équipement » ou « Intervention » maison, juste des Custom Fields. Chaque intervention crée un Asset Repair *et* son écriture comptable au compte 615, les immobilisations sont amorties sur le plan comptable, et les heures d'utilisation donnent le coût mécanique par atelier. Trois rapports lisent l'ensemble : Interventions, Tableau Amortissement, Contrôle Cohérence.
+
+Et oui, tu as raison, c'est lié à la finance : une intervention n'est pas qu'un événement de maintenance, c'est aussi une charge.
+
+Pour ton US-AM-13 précisément : *les données existent déjà* (échéances préventives, heures par équipement, seuils de coût entretien/CA). Ce qui manque :
+
+• le seuil au *compteur d'heures* — la périodicité ERPNext est purement calendaire
+• l'alerte poussée — aujourd'hui l'info n'apparaît que si quelqu'un ouvre un rapport
+• le DocType Alerte existe mais il est cheptel uniquement, avec le lien vers Animal obligatoire
+
+Le fichier détaille les fichiers concernés, les pièges ERPNext que j'ai rencontrés, et les questions ouvertes. Si tu as des questions dessus, n'hésite pas 👍

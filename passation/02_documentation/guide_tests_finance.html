@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grand Livre des tests — Finance hmd_agro</title>
+<style>
+  :root {
+    --couverture: #17392b;
+    --couverture-fonce: #10291f;
+    --or: #c8a44a;
+    --papier: #fbf9f1;
+    --papier-fonce: #f3efe2;
+    --encre: #22312b;
+    --encre-douce: #5d6b64;
+    --regle: #c9d8e4;
+    --marge-rouge: #bd4436;
+    --tampon-vert: #2f7a4d;
+    --tag-stock: #35618d;
+    --tag-compta: #2f7a4d;
+    --tag-kpi: #a07618;
+    --tag-droits: #bd4436;
+    --tag-calcul: #6a4d8f;
+    --tag-detect: #b05f21;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--papier);
+    color: var(--encre);
+    font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  code, .mono {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  /* ============ Couverture ============ */
+  .couverture {
+    background: linear-gradient(160deg, var(--couverture) 0%, var(--couverture-fonce) 100%);
+    color: #ece5d2;
+    padding: 4.5rem 1.5rem 4rem;
+  }
+  .couverture-cadre {
+    max-width: 880px;
+    margin: 0 auto;
+    border: 1px solid rgba(200,164,74,.55);
+    outline: 1px solid rgba(200,164,74,.25);
+    outline-offset: 5px;
+    padding: 3.2rem 2rem 2.6rem;
+    text-align: center;
+    position: relative;
+  }
+  .couverture .eyebrow {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .72rem;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: var(--or);
+    margin-bottom: 1.6rem;
+  }
+  .couverture h1 {
+    font-family: "Didot", "Bodoni 72", "Baskerville", Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(2.6rem, 6.5vw, 4.6rem);
+    line-height: 1.05;
+    letter-spacing: .01em;
+    color: #f4eeda;
+  }
+  .couverture h1 em { font-style: italic; color: var(--or); }
+  .couverture .sous-titre {
+    margin: 1.3rem auto 0;
+    max-width: 34em;
+    font-size: .98rem;
+    color: rgba(236,229,210,.82);
+  }
+  .sceau {
+    display: inline-block;
+    margin-top: 2.2rem;
+    padding: .55rem 1.3rem;
+    border: 2.5px solid rgba(120,200,150,.85);
+    border-radius: 8px;
+    color: #9fd8b4;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 1.05rem;
+    letter-spacing: .18em;
+    transform: rotate(-3deg);
+  }
+  .couverture .meta {
+    margin-top: 2.4rem;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .72rem;
+    letter-spacing: .06em;
+    color: rgba(236,229,210,.6);
+  }
+  .couverture .meta span { white-space: nowrap; }
+
+  /* ============ Navigation onglets ============ */
+  .onglets {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--papier-fonce);
+    border-bottom: 1px solid var(--regle);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .onglets ul {
+    display: flex;
+    gap: .25rem;
+    list-style: none;
+    padding: .5rem 1rem;
+    max-width: 1080px;
+    margin: 0 auto;
+    white-space: nowrap;
+  }
+  .onglets a {
+    display: block;
+    padding: .3rem .65rem;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .68rem;
+    color: var(--encre-douce);
+    text-decoration: none;
+    border-top: 3px solid transparent;
+    border-radius: 0 0 4px 4px;
+  }
+  .onglets a:hover, .onglets a:focus-visible {
+    color: var(--encre);
+    border-top-color: var(--marge-rouge);
+    background: var(--papier);
+  }
+
+  /* ============ Corps ============ */
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+  }
+  section { scroll-margin-top: 4.2rem; }
+
+  h2 {
+    font-family: "Didot", "Bodoni 72", "Baskerville", Georgia, serif;
+    font-weight: 400;
+    font-size: 1.9rem;
+    margin-bottom: 1rem;
+  }
+  .filet {
+    height: 1px;
+    background: var(--regle);
+    margin: 3.2rem 0;
+  }
+
+  /* Mode d'emploi */
+  .mode-demploi {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  .mode-demploi p { margin-bottom: .9rem; color: var(--encre); }
+  .mode-demploi p strong { font-weight: 600; }
+  .bloc-commande {
+    background: #21302b;
+    color: #d9e6dd;
+    border-radius: 6px;
+    padding: 1rem 1.2rem;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .78rem;
+    overflow-x: auto;
+    margin: .6rem 0 1rem;
+  }
+  .bloc-commande .c { color: #7fa38c; }
+  .avertissement {
+    border: 2.5px solid var(--marge-rouge);
+    border-radius: 8px;
+    color: var(--marge-rouge);
+    padding: 1rem 1.2rem;
+    transform: rotate(-1.2deg);
+    max-width: 26rem;
+  }
+  .avertissement .titre-tampon {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .8rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: .4rem;
+  }
+  .avertissement p { font-size: .85rem; line-height: 1.5; color: #8c3a30; }
+
+  /* Légende des types */
+  .legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .9rem 1.6rem;
+    margin-top: 1.4rem;
+  }
+  .legende .item { font-size: .82rem; color: var(--encre-douce); }
+
+  .tag {
+    display: inline-block;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .62rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: .18rem .5rem .14rem;
+    border-radius: 3px;
+    color: #fff;
+    vertical-align: middle;
+  }
+  .tag-stock  { background: var(--tag-stock); }
+  .tag-compta { background: var(--tag-compta); }
+  .tag-kpi    { background: var(--tag-kpi); }
+  .tag-droits { background: var(--tag-droits); }
+  .tag-calcul { background: var(--tag-calcul); }
+  .tag-detect { background: var(--tag-detect); }
+
+  /* Sommaire */
+  .sommaire { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  .sommaire th {
+    text-align: left;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .66rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--encre-douce);
+    font-weight: 500;
+    padding: .5rem .6rem;
+    border-bottom: 2px solid var(--encre);
+  }
+  .sommaire td {
+    padding: .55rem .6rem;
+    border-bottom: 1px solid var(--regle);
+    vertical-align: middle;
+  }
+  .sommaire td.num, .sommaire th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sommaire a { color: var(--encre); text-decoration: none; border-bottom: 1px dotted var(--encre-douce); }
+  .sommaire a:hover { color: var(--marge-rouge); border-bottom-color: var(--marge-rouge); }
+  .sommaire tr.total td {
+    border-bottom: 3px double var(--encre);
+    border-top: 2px solid var(--encre);
+    font-weight: 600;
+  }
+  .table-scroll { overflow-x: auto; }
+
+  /* ============ Feuillets ============ */
+  .feuillet {
+    border-left: 6px double var(--marge-rouge);
+    padding: 1.8rem 0 2.2rem 1.6rem;
+    margin-bottom: 3.2rem;
+    position: relative;
+  }
+  .feuillet-entete {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.4rem;
+    flex-wrap: wrap;
+  }
+  .feuillet .numero {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .66rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--marge-rouge);
+    display: block;
+    margin-bottom: .45rem;
+  }
+  .feuillet h3 {
+    font-family: "SF Mono", Menlo, monospace;
+    font-weight: 600;
+    font-size: 1.32rem;
+    letter-spacing: -.01em;
+  }
+  .feuillet .devise {
+    font-family: "Didot", "Bodoni 72", "Baskerville", Georgia, serif;
+    font-style: italic;
+    font-size: 1.08rem;
+    color: var(--encre-douce);
+    margin-top: .3rem;
+    max-width: 34em;
+  }
+  .tampon {
+    flex-shrink: 0;
+    border: 2.5px solid var(--tampon-vert);
+    border-radius: 7px;
+    color: var(--tampon-vert);
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .82rem;
+    letter-spacing: .14em;
+    padding: .45rem .85rem;
+    transform: rotate(3deg);
+    text-align: center;
+    line-height: 1.35;
+    margin-top: .4rem;
+  }
+  .tampon small { display: block; font-size: .58rem; letter-spacing: .2em; }
+
+  .fiche {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+    gap: .7rem 1.6rem;
+    margin: 1.3rem 0 1.2rem;
+    padding: .9rem 1.1rem;
+    background: var(--papier-fonce);
+    border-radius: 6px;
+    font-size: .8rem;
+  }
+  .fiche dt {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .6rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--encre-douce);
+    margin-bottom: .15rem;
+  }
+  .fiche dd { word-break: break-word; }
+  .fiche dd code { font-size: .74rem; }
+
+  .feuillet .expose { max-width: 46em; margin-bottom: 1.2rem; color: var(--encre); }
+
+  .verifs { list-style: none; max-width: 46em; }
+  .verifs .groupe {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .64rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--encre-douce);
+    padding: 1.1rem 0 .3rem;
+  }
+  .verifs .ligne {
+    display: flex;
+    align-items: baseline;
+    gap: .5rem;
+    padding: .42rem 0 .3rem;
+    border-bottom: 1px solid var(--regle);
+    font-size: .9rem;
+  }
+  .verifs .ligne .lib { flex-shrink: 1; }
+  .verifs .ligne .pointille {
+    flex: 1;
+    min-width: 1.5rem;
+    border-bottom: 2px dotted #cfc7ae;
+    transform: translateY(-4px);
+  }
+  .verifs .ligne .val {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .78rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--encre);
+  }
+  .verifs .ligne .val.ok { color: var(--tampon-vert); }
+  .verifs .ligne .val.err { color: var(--marge-rouge); }
+
+  .note {
+    max-width: 44em;
+    margin-top: 1.1rem;
+    font-size: .82rem;
+    color: #8c3a30;
+    border-left: 3px solid var(--marge-rouge);
+    padding-left: .8rem;
+  }
+  .note .n {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .62rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  /* Balance finale */
+  .balance {
+    background: var(--couverture);
+    color: #ece5d2;
+    border-radius: 8px;
+    padding: 2.2rem 2rem;
+    text-align: center;
+  }
+  .balance .titre {
+    font-family: "Didot", "Bodoni 72", "Baskerville", Georgia, serif;
+    font-size: 1.7rem;
+  }
+  .balance .detail {
+    margin-top: .7rem;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .78rem;
+    color: rgba(236,229,210,.75);
+  }
+  .balance .detail b { color: #9fd8b4; font-weight: 600; }
+
+  footer {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 1.5rem 3rem;
+    font-size: .74rem;
+    color: var(--encre-douce);
+    text-align: center;
+  }
+
+  @media (max-width: 720px) {
+    .mode-demploi { grid-template-columns: 1fr; }
+    .avertissement { transform: none; max-width: none; }
+    .feuillet { padding-left: 1rem; margin-bottom: 2.4rem; }
+    .tampon { transform: rotate(0); }
+    .verifs .ligne { flex-wrap: wrap; }
+    .verifs .ligne .pointille { display: none; }
+    .verifs .ligne .val { width: 100%; padding-left: 1rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header class="couverture">
+  <div class="couverture-cadre">
+    <p class="eyebrow">HMD Agro · Contrôle de gestion · finance/socle-comptable</p>
+    <h1>Grand Livre<br>des <em>tests finance</em></h1>
+    <p class="sous-titre">Treize feuillets, un par module de vérification. Chaque assertion y est
+      inscrite comme une écriture : ce que le code promet à gauche, ce que le site prouve à droite.</p>
+    <div class="sceau">206 / 206 VERTS</div>
+    <p class="meta"><span>13 modules</span> · <span>hmd_agro/hmd_agro/tests/</span> · <span>PR&nbsp;#1 hmdbackup/ERPnext</span> · <span>recompté assertion par assertion</span></p>
+  </div>
+</header>
+
+<nav class="onglets" aria-label="Modules">
+  <ul>
+    <li><a href="#mode-demploi">Mode d'emploi</a></li>
+    <li><a href="#f01">valorisation_cmp</a></li>
+    <li><a href="#f02">cost_flow</a></li>
+    <li><a href="#f03">semence_dual_write</a></li>
+    <li><a href="#f04">stock_integration</a></li>
+    <li><a href="#f05">recettes</a></li>
+    <li><a href="#f06">immobilisations</a></li>
+    <li><a href="#f07">finance_kpis</a></li>
+    <li><a href="#f08">roles_finance</a></li>
+    <li><a href="#f09">personnel</a></li>
+    <li><a href="#f10">maintenance</a></li>
+    <li><a href="#f11">grille_lait</a></li>
+    <li><a href="#f12">cheptel</a></li>
+    <li><a href="#f13">controle_coherence</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <!-- ==================== MODE D'EMPLOI ==================== -->
+  <section id="mode-demploi">
+    <h2>Ce que sont ces tests, et comment les lire</h2>
+    <div class="mode-demploi">
+      <div>
+        <p>Ce ne sont <strong>pas des tests unitaires</strong> : ce sont des
+          <strong>scripts de vérification de bout en bout</strong>. Chaque module expose une fonction
+          <code>run()</code> qu'on lance à la main sur un site Frappe vivant. Le script crée ses
+          propres données (animaux, salariés, factures de test), déroule un scénario réel — de vraies
+          écritures comptables, de vraies factures ERPNext — puis compte ses assertions avec
+          <code>_check(condition,&nbsp;message)</code>. À la fin il affiche <code>N/N</code>.
+          <strong>Les « 206 tests » sont donc 206 assertions vérifiées</strong>, et un crash compte
+          comme un échec.</p>
+        <div class="bloc-commande">
+<span class="c"># Lancer un module (exemple)</span><br>
+bench --site &lt;site&gt; execute hmd_agro.hmd_agro.tests.test_personnel.run<br>
+<span class="c"># → affiche le détail de chaque assertion puis {"pass": 28, "fail": 0}</span>
+        </div>
+        <p><strong>Prérequis</strong> : un site bench migré (<code>bench migrate</code>) avec le socle
+          comptable installé (<code>setup_socle_comptable</code> et suivants — l'ordre complet est dans
+          <code>livraison_finance.md</code>). Sans site bench, rien ne tourne : il n'y a
+          <strong>pas d'exécution en CI</strong> pour l'instant.</p>
+        <p><strong>Où ils vivent</strong> : tous dans
+          <code>hmd_agro/hmd_agro/tests/</code>, un fichier par module, préfixe
+          <code>test_</code>. Les 13 modules finance cohabitent avec une vingtaine de modules
+          troupeau/rapports plus anciens qui ne font pas partie du décompte des 206.</p>
+      </div>
+      <div>
+        <div class="avertissement" role="note">
+          <span class="titre-tampon">⚠ Site de test uniquement</span>
+          <p>Certains nettoyages de fin de test suppriment des données par marqueur ou sans filtre
+            (bilans lait, écriture de paie du mois courant). Relevé par la review de la PR&nbsp;#1 —
+            ne jamais lancer la suite sur la base réelle de la ferme tant que ce n'est pas corrigé.</p>
+        </div>
+        <div class="legende">
+          <span class="item"><span class="tag tag-stock">Stock</span> mouvements &amp; valorisation</span>
+          <span class="item"><span class="tag tag-compta">Compta</span> écritures &amp; factures réelles</span>
+          <span class="item"><span class="tag tag-kpi">KPI</span> agrégats du Grand Livre</span>
+          <span class="item"><span class="tag tag-droits">Droits</span> permissions par rôle</span>
+          <span class="item"><span class="tag tag-calcul">Calcul</span> règles métier (prix, prorata)</span>
+          <span class="item"><span class="tag tag-detect">Détection</span> anomalies injectées puis retrouvées</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="filet"></div>
+
+  <!-- ==================== SOMMAIRE ==================== -->
+  <section id="sommaire">
+    <h2>Sommaire du registre</h2>
+    <div class="table-scroll">
+    <table class="sommaire">
+      <thead>
+        <tr><th>Feuillet</th><th>Module</th><th>Type</th><th>Story</th><th class="num">Assertions</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>01</td><td><a href="#f01">test_valorisation_cmp</a></td><td><span class="tag tag-stock">Stock</span></td><td>FIN-S11</td><td class="num">7</td></tr>
+        <tr><td>02</td><td><a href="#f02">test_cost_flow</a></td><td><span class="tag tag-stock">Stock</span> <span class="tag tag-kpi">KPI</span></td><td>ST5-09/10 · FIN-S12</td><td class="num">9</td></tr>
+        <tr><td>03</td><td><a href="#f03">test_semence_dual_write</a></td><td><span class="tag tag-stock">Stock</span></td><td>ST5 Phase C · FIN-S11</td><td class="num">13</td></tr>
+        <tr><td>04</td><td><a href="#f04">test_stock_integration</a></td><td><span class="tag tag-stock">Stock</span></td><td>ST5 Phase C · FIN-S11</td><td class="num">7</td></tr>
+        <tr><td>05</td><td><a href="#f05">test_recettes</a></td><td><span class="tag tag-compta">Compta</span></td><td>FIN-S20→S22</td><td class="num">16</td></tr>
+        <tr><td>06</td><td><a href="#f06">test_immobilisations</a></td><td><span class="tag tag-compta">Compta</span></td><td>FIN-S30 · S41</td><td class="num">13</td></tr>
+        <tr><td>07</td><td><a href="#f07">test_finance_kpis</a></td><td><span class="tag tag-kpi">KPI</span></td><td>FIN-S50 · S51</td><td class="num">14</td></tr>
+        <tr><td>08</td><td><a href="#f08">test_roles_finance</a></td><td><span class="tag tag-droits">Droits</span></td><td>FIN-S61</td><td class="num">8</td></tr>
+        <tr><td>09</td><td><a href="#f09">test_personnel</a></td><td><span class="tag tag-calcul">Calcul</span> <span class="tag tag-compta">Compta</span></td><td>FIN-S42</td><td class="num">28</td></tr>
+        <tr><td>10</td><td><a href="#f10">test_maintenance</a></td><td><span class="tag tag-compta">Compta</span></td><td>FIN-S32</td><td class="num">26</td></tr>
+        <tr><td>11</td><td><a href="#f11">test_grille_lait</a></td><td><span class="tag tag-calcul">Calcul</span></td><td>FIN-S24 · S25</td><td class="num">28</td></tr>
+        <tr><td>12</td><td><a href="#f12">test_cheptel</a></td><td><span class="tag tag-compta">Compta</span></td><td>FIN-S31</td><td class="num">22</td></tr>
+        <tr><td>13</td><td><a href="#f13">test_controle_coherence</a></td><td><span class="tag tag-detect">Détection</span></td><td>FIN-S70</td><td class="num">15</td></tr>
+        <tr class="total"><td></td><td>Balance</td><td></td><td>13 modules</td><td class="num">206</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <div class="filet"></div>
+
+  <!-- ==================== FEUILLET 01 ==================== -->
+  <section class="feuillet" id="f01">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 01 · Stock</span>
+        <h3>test_valorisation_cmp</h3>
+        <p class="devise">Chaque kilo consommé vaut son coût moyen pondéré réel — jamais zéro inventé, jamais une saisie bloquée.</p>
+      </div>
+      <div class="tampon">7 / 7 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_valorisation_cmp.py</code></dd></div>
+      <div><dt>Type</dt><dd>Intégration stock ↔ valorisation (site vivant)</dd></div>
+      <div><dt>Story</dt><dd>FIN-S11 — RG-FIN-30, CF-FIN-31</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_valorisation_cmp.run</code></dd></div>
+    </dl>
+    <p class="expose">Le module achète un aliment de test à prix connu, le consomme, le restaure,
+      puis attaque le cas limite : un article jamais acheté. Il prouve que la valorisation passe par
+      la mécanique native d'ERPNext (coût moyen pondéré) et que le garde-fou « CMP&nbsp;=&nbsp;0
+      jamais bloquant » tient : l'éleveur enregistre toujours l'événement réel, la valeur suit.</p>
+    <ul class="verifs">
+      <li class="groupe">Chemin nominal</li>
+      <li class="ligne"><span class="lib">Achat 40 kg à 12,5 → CMP du stock</span><span class="pointille"></span><span class="val">= 12,50 DT/kg</span></li>
+      <li class="ligne"><span class="lib">Sortie sans prix forcé, valorisée au CMP</span><span class="pointille"></span><span class="val">− 500,00 DT</span></li>
+      <li class="ligne"><span class="lib">Restauration symétrique de la sortie</span><span class="pointille"></span><span class="val">+ 500,00 DT</span></li>
+      <li class="ligne"><span class="lib">CMP inchangé après la restauration</span><span class="pointille"></span><span class="val">= 12,50 DT/kg</span></li>
+      <li class="groupe">Garde-fou CF-FIN-31</li>
+      <li class="ligne"><span class="lib">Article jamais acheté : la sortie passe quand même</span><span class="pointille"></span><span class="val ok">non bloquée</span></li>
+      <li class="ligne"><span class="lib">Sortie à valorisation nulle, pas de valeur inventée</span><span class="pointille"></span><span class="val">0,00 DT</span></li>
+      <li class="ligne"><span class="lib">Restauration d'un article non valorisé</span><span class="pointille"></span><span class="val">0,00 DT</span></li>
+    </ul>
+  </section>
+
+  <!-- ==================== FEUILLET 02 ==================== -->
+  <section class="feuillet" id="f02">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 02 · Stock → Rapport</span>
+        <h3>test_cost_flow</h3>
+        <p class="devise">Du bon de réception jusqu'à la colonne « Frais » du Rapport Mensuel, le coût ne se perd pas en route.</p>
+      </div>
+      <div class="tampon">9 / 9 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_cost_flow.py</code></dd></div>
+      <div><dt>Type</dt><dd>Intégration chaîne de coûts, de l'écriture de stock à l'agrégat</dd></div>
+      <div><dt>Story</dt><dd>ST5-09 / ST5-10 — socle réutilisé par FIN-S12</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_cost_flow.run</code></dd></div>
+    </dl>
+    <p class="expose">Test de traçabilité : une réception à prix connu doit laisser une ligne de
+      stock (SLE) à la bonne valeur, la consommation doit laisser la ligne négative correspondante,
+      et les agrégateurs <code>_frais_consumption()</code> doivent retrouver ce coût par période et
+      le rattacher au bon aliment. C'est exactement la chaîne qui alimente « Frais Concentré » et
+      « Coût période » dans le Rapport Mensuel — si ce module est vert, ces colonnes sont dignes de confiance.</p>
+    <ul class="verifs">
+      <li class="groupe">Écritures de stock</li>
+      <li class="ligne"><span class="lib">Réception : ligne SLE valorisée</span><span class="pointille"></span><span class="val">= qté × prix</span></li>
+      <li class="ligne"><span class="lib">Consommation : ligne SLE négative (coût de la sortie)</span><span class="pointille"></span><span class="val">− qté × CMP</span></li>
+      <li class="groupe">Agrégation par période</li>
+      <li class="ligne"><span class="lib">Coût aliments cumulé sur la plage de dates</span><span class="pointille"></span><span class="val ok">retrouvé</span></li>
+      <li class="ligne"><span class="lib">Ventilé concentré / fourrage (deux familles)</span><span class="pointille"></span><span class="val ok">exact</span></li>
+      <li class="ligne"><span class="lib">Coût rattaché à la fiche Aliment d'origine</span><span class="pointille"></span><span class="val ok">exact</span></li>
+      <li class="ligne"><span class="lib">Plage sans mouvement : aliments et concentrés</span><span class="pointille"></span><span class="val">0,00 DT</span></li>
+    </ul>
+  </section>
+
+  <!-- ==================== FEUILLET 03 ==================== -->
+  <section class="feuillet" id="f03">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 03 · Stock</span>
+        <h3>test_semence_dual_write</h3>
+        <p class="devise">Une insémination consomme la bonne paillette : le lot le plus ancien d'abord, et l'événement s'enregistre même à stock nul.</p>
+      </div>
+      <div class="tampon">13 / 13 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_semence_dual_write.py</code></dd></div>
+      <div><dt>Type</dt><dd>Intégration stock par lots (batch FIFO)</dd></div>
+      <div><dt>Story</dt><dd>Sprint 5 Phase C — chemin unique Stock Entry (base de FIN-S11)</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_semence_dual_write.run</code></dd></div>
+    </dl>
+    <p class="expose">Historiquement les semences avaient une double écriture (champ maison +
+      stock ERPNext) ; ce module verrouille le chemin unique qui l'a remplacée. Deux lots de
+      semences sont créés, puis des inséminations et suppressions s'enchaînent pour prouver le
+      FIFO, les compensations, et le principe « on enregistre les événements réels » même quand
+      tout est épuisé.</p>
+    <ul class="verifs">
+      <li class="groupe">Mouvement et compensation</li>
+      <li class="ligne"><span class="lib">Insémination → sortie de stock sur le lot (batch = Semence)</span><span class="pointille"></span><span class="val">Bin − 1</span></li>
+      <li class="ligne"><span class="lib">Suppression de l'insémination → réception compensatoire</span><span class="pointille"></span><span class="val">Bin restauré</span></li>
+      <li class="groupe">Choix du lot (FIFO)</li>
+      <li class="ligne"><span class="lib">Le lot le plus ancien encore en stock est décrémenté</span><span class="pointille"></span><span class="val ok">ancien − 1</span></li>
+      <li class="ligne"><span class="lib">Le lot récent reste intact tant que l'ancien a du stock</span><span class="pointille"></span><span class="val ok">intact</span></li>
+      <li class="ligne"><span class="lib">Ancien épuisé → bascule sur le lot suivant</span><span class="pointille"></span><span class="val ok">bascule</span></li>
+      <li class="groupe">Stock à zéro</li>
+      <li class="ligne"><span class="lib">Tous les lots à 0 : l'insémination s'enregistre quand même</span><span class="pointille"></span><span class="val ok">jamais bloqué</span></li>
+      <li class="ligne"><span class="lib">Aucun mouvement de stock fantôme n'est créé</span><span class="pointille"></span><span class="val">0 Stock Entry</span></li>
+    </ul>
+  </section>
+
+  <!-- ==================== FEUILLET 04 ==================== -->
+  <section class="feuillet" id="f04">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 04 · Stock</span>
+        <h3>test_stock_integration</h3>
+        <p class="devise">Un traitement vétérinaire sort le médicament du stock ; sa suppression le remet — au flacon près.</p>
+      </div>
+      <div class="tampon">7 / 7 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_stock_integration.py</code></dd></div>
+      <div><dt>Type</dt><dd>Intégration stock médicaments (chemin unique Stock Entry)</dd></div>
+      <div><dt>Story</dt><dd>Sprint 5 Phase C — base de FIN-S11</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_stock_integration.run</code></dd></div>
+    </dl>
+    <p class="expose">Le pendant du feuillet 03 pour les médicaments : un stock de 10 est posé,
+      puis le module suit chaque unité à travers création, suppression, épuisement et passage en
+      négatif. Le cas tordu — un médicament sans article de stock lié — doit être ignoré proprement,
+      sans exception.</p>
+    <ul class="verifs">
+      <li class="ligne"><span class="lib">Stock initial posé</span><span class="pointille"></span><span class="val">Bin = 10</span></li>
+      <li class="ligne"><span class="lib">Création d'un Traitement → sortie d'une unité</span><span class="pointille"></span><span class="val">Bin = 9</span></li>
+      <li class="ligne"><span class="lib">La sortie laisse sa ligne de stock (SLE)</span><span class="pointille"></span><span class="val">1 ligne</span></li>
+      <li class="ligne"><span class="lib">Suppression du Traitement → stock restauré</span><span class="pointille"></span><span class="val">Bin = 10</span></li>
+      <li class="ligne"><span class="lib">Consommation jusqu'à épuisement</span><span class="pointille"></span><span class="val">Bin = 0</span></li>
+      <li class="ligne"><span class="lib">Traitement sur stock vide : accepté, stock négatif</span><span class="pointille"></span><span class="val ok">jamais bloqué</span></li>
+      <li class="ligne"><span class="lib">Médicament sans article lié</span><span class="pointille"></span><span class="val ok">ignoré proprement</span></li>
+    </ul>
+  </section>
+
+  <!-- ==================== FEUILLET 05 ==================== -->
+  <section class="feuillet" id="f05">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 05 · Compta</span>
+        <h3>test_recettes</h3>
+        <p class="devise">La facture lait agrège les vrais litres au vrai prix, une seule fois — et vendre une vache facture tout seul.</p>
+      </div>
+      <div class="tampon">16 / 16 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_recettes.py</code></dd></div>
+      <div><dt>Type</dt><dd>Intégration facturation (Sales Invoice réelles)</dd></div>
+      <div><dt>Story</dt><dd>FIN-S20, S21, S22 (+ repli prix de FIN-S24)</dd></div>
+      <div><dt>Prérequis</dt><dd>socle_comptable + setup recettes</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_recettes.run</code></dd></div>
+    </dl>
+    <p class="expose">Trois scénarios : le calcul du prix du litre (avec et sans grille qualité),
+      la facture lait de période — 1 500 L de bilans lait agrégés en une Sales Invoice sur le compte
+      701, relançable sans doublon — et la facture automatique à la vente d'un animal, avec son
+      annulation compensatoire quand la vente est annulée.</p>
+    <ul class="verifs">
+      <li class="groupe">Prix du litre</li>
+      <li class="ligne"><span class="lib">Sans donnée qualité : prix = Item Price</span><span class="pointille"></span><span class="val ok">exact</span></li>
+      <li class="ligne"><span class="lib">Sans grille, primes config à zéro → taux inchangé</span><span class="pointille"></span><span class="val">PRIX_PLAT</span></li>
+      <li class="ligne"><span class="lib">Grille active → prix indexé sur TB/TP</span><span class="pointille"></span><span class="val ok">indexé</span></li>
+      <li class="groupe">Facture lait de période — FIN-S21</li>
+      <li class="ligne"><span class="lib">Facture créée puis soumise</span><span class="pointille"></span><span class="val ok">docstatus 1</span></li>
+      <li class="ligne"><span class="lib">Volume agrégé depuis les bilans lait</span><span class="pointille"></span><span class="val">1 500 L</span></li>
+      <li class="ligne"><span class="lib">Produit imputé au compte des ventes de lait</span><span class="pointille"></span><span class="val">701</span></li>
+      <li class="ligne"><span class="lib">Re-run → même facture, pas de doublon (RG-FIN-11)</span><span class="pointille"></span><span class="val ok">no-op</span></li>
+      <li class="ligne"><span class="lib">Une seule facture active pour la période</span><span class="pointille"></span><span class="val">count = 1</span></li>
+      <li class="groupe">Vente d'animal — FIN-S22</li>
+      <li class="ligne"><span class="lib">Statut → VENDU : facture émise au prix de vente</span><span class="pointille"></span><span class="val">= prix_vente</span></li>
+      <li class="ligne"><span class="lib">Une VACHE s'impute sur l'atelier Lait</span><span class="pointille"></span><span class="val">CC Lait</span></li>
+      <li class="ligne"><span class="lib">Retour du statut → facture annulée (CF-FIN-21)</span><span class="pointille"></span><span class="val">docstatus 2</span></li>
+      <li class="ligne"><span class="lib">RÉFORMÉ sans prix : pas de facture, sortie enregistrée</span><span class="pointille"></span><span class="val ok">jamais bloqué</span></li>
+    </ul>
+    <p class="note"><span class="n">Note de review</span> — si aucune grille n'est active sur le
+      site, le check « prix indexé » se contente de le signaler sans tester (assertion toujours
+      verte). À corriger pour que l'indexation soit testée inconditionnellement.</p>
+  </section>
+
+  <!-- ==================== FEUILLET 06 ==================== -->
+  <section class="feuillet" id="f06">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 06 · Compta</span>
+        <h3>test_immobilisations</h3>
+        <p class="devise">Un équipement de 12 000 DT sur 10 ans, c'est dix dotations de 1 200 — pas une de plus, pas un dinar d'écart.</p>
+      </div>
+      <div class="tampon">13 / 13 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_immobilisations.py</code></dd></div>
+      <div><dt>Type</dt><dd>Intégration Asset + écritures de paie</dd></div>
+      <div><dt>Story</dt><dd>FIN-S30, S41 — RC-FIN-53</dd></div>
+      <div><dt>Prérequis</dt><dd>socle_comptable + setup immobilisations</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_immobilisations.run</code></dd></div>
+    </dl>
+    <p class="expose">Deux volets. D'abord les immobilisations : les catégories d'actifs portent les
+      bons comptes du plan SCE et un Asset soumis génère son calendrier d'amortissement linéaire
+      complet. Ensuite la paie « montants forcés » (le chemin de reprise d'historique de FIN-S41) :
+      une écriture de salaires ventilée par atelier, équilibrée et idempotente.</p>
+    <ul class="verifs">
+      <li class="groupe">Immobilisations — FIN-S30</li>
+      <li class="ligne"><span class="lib">Catégorie d'actifs sur les comptes SCE</span><span class="pointille"></span><span class="val">223 / 283 / 681</span></li>
+      <li class="ligne"><span class="lib">Asset de test soumis, relié à son bâtiment</span><span class="pointille"></span><span class="val">CF id_batiment</span></li>
+      <li class="ligne"><span class="lib">Calendrier d'amortissement généré</span><span class="pointille"></span><span class="val ok">créé</span></li>
+      <li class="ligne"><span class="lib">Nombre de dotations annuelles</span><span class="pointille"></span><span class="val">10</span></li>
+      <li class="ligne"><span class="lib">Dotation linéaire 12 000 / 10</span><span class="pointille"></span><span class="val">1 200,00 DT</span></li>
+      <li class="groupe">Paie ventilée (montants forcés) — FIN-S41</li>
+      <li class="ligne"><span class="lib">Écriture de salaires créée puis soumise</span><span class="pointille"></span><span class="val ok">docstatus 1</span></li>
+      <li class="ligne"><span class="lib">Total ventilé par ateliers, écriture équilibrée</span><span class="pointille"></span><span class="val">4 000,00 DT</span></li>
+      <li class="ligne"><span class="lib">Débits 640 répartis sur les bons centres de coût</span><span class="pointille"></span><span class="val ok">par atelier</span></li>
+      <li class="ligne"><span class="lib">Re-run → même écriture</span><span class="pointille"></span><span class="val ok">idempotent</span></li>
+    </ul>
+  </section>
+
+  <!-- ==================== FEUILLET 07 ==================== -->
+  <section class="feuillet" id="f07">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 07 · KPI</span>
+        <h3>test_finance_kpis</h3>
+        <p class="devise">L'EBE affiché n'est pas une opinion : c'est le Grand Livre relu, compte par compte, et coloré selon les seuils de la config.</p>
+      </div>
+      <div class="tampon">14 / 14 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_finance_kpis.py</code></dd></div>
+      <div><dt>Type</dt><dd>Agrégats du Grand Livre + coloration par seuils</dd></div>
+      <div><dt>Story</dt><dd>FIN-S50, S51 — RC-FIN-50/51/52</dd></div>
+      <div><dt>Prérequis</dt><dd>socle + recettes + patch v1_6 (bench migrate)</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_finance_kpis.run</code></dd></div>
+    </dl>
+    <p class="expose">Le module poste lui-même une facture lait et une écriture de salaires, puis
+      vérifie que <code>gl_sums</code> relit exactement ce qu'il vient d'écrire : chaque famille de
+      comptes va dans le bon agrégat, et les formules (EBE, résultat) tombent juste. Deuxième volet :
+      la coloration vert/orange/rouge du coût du litre et de l'IOFC suit bien les seuils, et ces
+      seuils viennent de la configuration seedée par le patch v1_6 — pas de valeur en dur.</p>
+    <ul class="verifs">
+      <li class="groupe">Agrégats gl_sums</li>
+      <li class="ligne"><span class="lib">Données posées : facture lait + salaires</span><span class="pointille"></span><span class="val ok">2 pièces</span></li>
+      <li class="ligne"><span class="lib">CA lait = somme du compte des ventes de lait</span><span class="pointille"></span><span class="val">701</span></li>
+      <li class="ligne"><span class="lib">Main-d'œuvre = famille des charges de personnel</span><span class="pointille"></span><span class="val">64x</span></li>
+      <li class="ligne"><span class="lib">Produits = CA lait (seule recette de la période)</span><span class="pointille"></span><span class="val ok">exact</span></li>
+      <li class="ligne"><span class="lib">EBE = produits − charges d'exploitation décaissables</span><span class="pointille"></span><span class="val ok">exact</span></li>
+      <li class="ligne"><span class="lib">Résultat = produits − toutes charges</span><span class="pointille"></span><span class="val ok">exact</span></li>
+      <li class="groupe">Seuils et coloration — FIN-S51</li>
+      <li class="ligne"><span class="lib">Seuils coût/L présents (seedés par v1_6)</span><span class="pointille"></span><span class="val ok">config</span></li>
+      <li class="ligne"><span class="lib">Coût du litre : sous l'objectif / entre / au-delà</span><span class="pointille"></span><span class="val">vert · orange · rouge</span></li>
+      <li class="ligne"><span class="lib">IOFC par vache et par jour : trois zones</span><span class="pointille"></span><span class="val">vert · orange · rouge</span></li>
+    </ul>
+  </section>
+
+  <!-- ==================== FEUILLET 08 ==================== -->
+  <section class="feuillet" id="f08">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 08 · Droits</span>
+        <h3>test_roles_finance</h3>
+        <p class="devise">L'éleveur trait, soigne et pèse — mais ne touche jamais une écriture comptable. Le comptable, si.</p>
+      </div>
+      <div class="tampon">8 / 8 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_roles_finance.py</code></dd></div>
+      <div><dt>Type</dt><dd>Test de permissions (deux utilisateurs de test)</dd></div>
+      <div><dt>Story</dt><dd>FIN-S61 — séparation des tâches</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_roles_finance.run</code></dd></div>
+    </dl>
+    <p class="expose">Le module crée deux utilisateurs — un « Éleveur HMD » et un comptable
+      (Accounts User) — et interroge la matrice de permissions dans les deux sens : ce que l'éleveur
+      doit pouvoir faire sur le troupeau, ce qu'il ne doit surtout pas pouvoir faire en comptabilité,
+      et ce que le comptable doit pouvoir faire à sa place.</p>
+    <ul class="verifs">
+      <li class="groupe">L'éleveur peut (métier troupeau)</li>
+      <li class="ligne"><span class="lib">Créer une Traite</span><span class="pointille"></span><span class="val ok">autorisé</span></li>
+      <li class="ligne"><span class="lib">Modifier un Animal</span><span class="pointille"></span><span class="val ok">autorisé</span></li>
+      <li class="ligne"><span class="lib">Créer un Bilan Lait Journalier</span><span class="pointille"></span><span class="val ok">autorisé</span></li>
+      <li class="groupe">L'éleveur ne peut pas (comptabilité)</li>
+      <li class="ligne"><span class="lib">Créer une écriture (Journal Entry)</span><span class="pointille"></span><span class="val err">refusé</span></li>
+      <li class="ligne"><span class="lib">Soumettre une écriture</span><span class="pointille"></span><span class="val err">refusé</span></li>
+      <li class="ligne"><span class="lib">Créer une facture (Sales Invoice)</span><span class="pointille"></span><span class="val err">refusé</span></li>
+      <li class="groupe">Le comptable peut</li>
+      <li class="ligne"><span class="lib">Créer et soumettre une écriture</span><span class="pointille"></span><span class="val ok">autorisé × 2</span></li>
+    </ul>
+    <p class="note"><span class="n">Note de review</span> — ce test vérifie les permissions des
+      DocTypes ; il ne couvre pas les endpoints API whitelistés relevés par la review de la
+      PR&nbsp;#1, qui contournent aujourd'hui cette matrice. Les deux correctifs vont ensemble.</p>
+  </section>
+
+  <!-- ==================== FEUILLET 09 ==================== -->
+  <section class="feuillet" id="f09">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 09 · Calcul + Compta</span>
+        <h3>test_personnel</h3>
+        <p class="devise">La paie n'est plus un montant tapé à la main : c'est le registre, proratisé au jour près, posté en écriture équilibrée au centime.</p>
+      </div>
+      <div class="tampon">28 / 28 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_personnel.py</code></dd></div>
+      <div><dt>Type</dt><dd>Calcul métier (prorata) + intégration comptable</dd></div>
+      <div><dt>Story</dt><dd>FIN-S42 — RG-FIN-41, RC-FIN-41/42</dd></div>
+      <div><dt>Prérequis</dt><dd>socle comptable (comptes 640/647/421/453)</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_personnel.run</code></dd></div>
+    </dl>
+    <p class="expose">Le plus gros module de la suite. Il crée un petit registre de salariés de
+      test — dont un entré en cours de mois, un réparti sur deux ateliers et un non assujetti à la
+      CNSS — puis vérifie la saisie, les sept garde-fous, la reconstruction de la masse salariale et
+      l'écriture comptable finale, jusqu'à relire le Grand Livre pour confirmer que le total 64x
+      vaut brut + charges.</p>
+    <ul class="verifs">
+      <li class="groupe">Saisie et validation</li>
+      <li class="ligne"><span class="lib">L'atelier se propose selon le rôle (ouvrier de traite → Lait)</span><span class="pointille"></span><span class="val ok">proposé</span></li>
+      <li class="ligne"><span class="lib">Coût employeur = brut + charges patronales</span><span class="pointille"></span><span class="val">+ 16,57 %</span></li>
+      <li class="ligne"><span class="lib">Date de sortie renseignée → statut basculé</span><span class="pointille"></span><span class="val">SORTI</span></li>
+      <li class="groupe">Garde-fous (chacun doit lever sa propre erreur)</li>
+      <li class="ligne"><span class="lib">Salaire négatif, sortie avant embauche, répartition ≠ 100 %, atelier inconnu, taux d'activité hors bornes, SORTI sans date, atelier en double</span><span class="pointille"></span><span class="val err">ERR-PERS-01→07</span></li>
+      <li class="groupe">Masse salariale reconstruite</li>
+      <li class="ligne"><span class="lib">Entrée en cours de mois : brut proratisé au jour près</span><span class="pointille"></span><span class="val ok">prorata exact</span></li>
+      <li class="ligne"><span class="lib">Salarié non assujetti → aucune charge patronale</span><span class="pointille"></span><span class="val">0,00 DT</span></li>
+      <li class="ligne"><span class="lib">Répartition 70/30 : la part Traction tombe juste</span><span class="pointille"></span><span class="val ok">ventilé</span></li>
+      <li class="ligne"><span class="lib">Sorti le dernier jour du mois : compté sur le mois</span><span class="pointille"></span><span class="val ok">compté</span></li>
+      <li class="groupe">Écriture comptable</li>
+      <li class="ligne"><span class="lib">Écriture 640/647 ↔ 421/453 créée, soumise, équilibrée</span><span class="pointille"></span><span class="val ok">au centime</span></li>
+      <li class="ligne"><span class="lib">Re-post de la même période</span><span class="pointille"></span><span class="val ok">no-op</span></li>
+      <li class="ligne"><span class="lib">Grand Livre relu : total 64x = brut + charges</span><span class="pointille"></span><span class="val ok">exact</span></li>
+      <li class="ligne"><span class="lib">Chemin « montants forcés » (reprise d'historique) intact</span><span class="pointille"></span><span class="val">2 000,00 DT</span></li>
+    </ul>
+    <p class="note"><span class="n">Note de review</span> — le nettoyage de fin de test supprime
+      l'écriture de paie de la période via le même marqueur que la production : sur une base réelle
+      où la vraie paie du mois est postée, le test l'effacerait. Site de test uniquement.</p>
+  </section>
+
+  <!-- ==================== FEUILLET 10 ==================== -->
+  <section class="feuillet" id="f10">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 10 · Compta</span>
+        <h3>test_maintenance</h3>
+        <p class="devise">Chaque panne laisse deux traces : l'Asset Repair pour l'historique machine, la charge 615 pour le compte de résultat de l'atelier.</p>
+      </div>
+      <div class="tampon">26 / 26 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_maintenance.py</code></dd></div>
+      <div><dt>Type</dt><dd>Intégration Asset Repair + écritures de charge</dd></div>
+      <div><dt>Story</dt><dd>FIN-S32 — RG-FIN-30/31, RC-FIN-54</dd></div>
+      <div><dt>Prérequis</dt><dd>socle comptable + setup maintenance</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_maintenance.run</code></dd></div>
+    </dl>
+    <p class="expose">En ERPNext v15, un Asset Repair non capitalisé ne produit <em>aucune</em>
+      écriture comptable — d'où la double trace posée par <code>enregistrer_intervention</code>, que
+      ce module vérifie sous tous les angles : les trois modes de règlement, l'intervention interne
+      gratuite, l'idempotence par référence, les agrégats qui relisent le 615, le plan préventif aux
+      échéances réellement datées, et l'annulation symétrique.</p>
+    <ul class="verifs">
+      <li class="groupe">Intervention et écriture</li>
+      <li class="ligne"><span class="lib">Asset Repair créé, soumis, marqué terminé</span><span class="pointille"></span><span class="val ok">Completed</span></li>
+      <li class="ligne"><span class="lib">Atelier hérité de l'équipement, type d'intervention posé</span><span class="pointille"></span><span class="val ok">hérité</span></li>
+      <li class="ligne"><span class="lib">Charge d'entretien débitée</span><span class="pointille"></span><span class="val">615 · 450,00 DT</span></li>
+      <li class="groupe">Trois modes de règlement</li>
+      <li class="ligne"><span class="lib">Fournisseur : crédit avec le tiers renseigné</span><span class="pointille"></span><span class="val">401</span></li>
+      <li class="ligne"><span class="lib">Caisse</span><span class="pointille"></span><span class="val">54</span></li>
+      <li class="ligne"><span class="lib">Banque</span><span class="pointille"></span><span class="val">532</span></li>
+      <li class="groupe">Cas limites et garde-fous</li>
+      <li class="ligne"><span class="lib">Intervention interne à coût nul → suivi sans écriture</span><span class="pointille"></span><span class="val">0 écriture</span></li>
+      <li class="ligne"><span class="lib">Même référence relancée → pas de doublon</span><span class="pointille"></span><span class="val ok">idempotent</span></li>
+      <li class="ligne"><span class="lib">Entrées invalides refusées avec le bon code</span><span class="pointille"></span><span class="val err">ERR-MNT</span></li>
+      <li class="groupe">Agrégats et préventif</li>
+      <li class="ligne"><span class="lib">Coût maintenance de la période : 450 + 60 + 90</span><span class="pointille"></span><span class="val">600,00 DT</span></li>
+      <li class="ligne"><span class="lib">gl_sums['entretien'] relit le compte 615</span><span class="pointille"></span><span class="val ok">exact</span></li>
+      <li class="ligne"><span class="lib">Plan préventif : échéances générées et toutes datées</span><span class="pointille"></span><span class="val ok">datées</span></li>
+      <li class="ligne"><span class="lib">Périodicité semestrielle → prochaine échéance</span><span class="pointille"></span><span class="val">≈ 6 mois</span></li>
+      <li class="groupe">Annulation</li>
+      <li class="ligne"><span class="lib">Annuler l'intervention annule aussi l'écriture</span><span class="pointille"></span><span class="val ok">symétrique</span></li>
+    </ul>
+  </section>
+
+  <!-- ==================== FEUILLET 11 ==================== -->
+  <section class="feuillet" id="f11">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 11 · Calcul</span>
+        <h3>test_grille_lait</h3>
+        <p class="devise">Le prix du litre se lit palier par palier — et les litres qui manquent à l'appel sont chiffrés au même prix que ceux qu'on vend.</p>
+      </div>
+      <div class="tampon">28 / 28 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_grille_lait.py</code></dd></div>
+      <div><dt>Type</dt><dd>Calcul métier (barème qualité, écart lait)</dd></div>
+      <div><dt>Story</dt><dd>FIN-S24, S25 — RG-FIN-10/13, RC-FIN-13/14</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_grille_lait.run</code></dd></div>
+    </dl>
+    <p class="expose">Les deux stories partagent le même moteur : l'écart lait est valorisé au prix
+      du litre de la période, donc à la grille qualité. Le module crée une grille de test à
+      1,500 DT de base et vérifie le calcul valeur par valeur, du palier de pénalité au plancher de
+      prix, puis passe à l'écart lait avec ses litres perdus, ses écarts négatifs jamais valorisés
+      et sa période vide qui rend un zéro honnête.</p>
+    <ul class="verifs">
+      <li class="groupe">Garde-fous de la grille</li>
+      <li class="ligne"><span class="lib">Bornes incohérentes, paliers chevauchants, deux grilles actives…</span><span class="pointille"></span><span class="val err">ERR-GRL-01→05</span></li>
+      <li class="groupe">Prix du litre, palier par palier</li>
+      <li class="ligne"><span class="lib">Sans donnée qualité → prix de base</span><span class="pointille"></span><span class="val">1,500</span></li>
+      <li class="ligne"><span class="lib">TB 3,2 → palier de pénalité</span><span class="pointille"></span><span class="val">1,450</span></li>
+      <li class="ligne"><span class="lib">TB 3,7 → palier de prime</span><span class="pointille"></span><span class="val">1,520</span></li>
+      <li class="ligne"><span class="lib">TB 4,5 → palier ouvert vers le haut</span><span class="pointille"></span><span class="val">1,560</span></li>
+      <li class="ligne"><span class="lib">Borne basse incluse : TB 4,0 relève du palier supérieur</span><span class="pointille"></span><span class="val ok">inclus</span></li>
+      <li class="ligne"><span class="lib">TP sans palier → indexation linéaire</span><span class="pointille"></span><span class="val">0,5 pt × 0,010</span></li>
+      <li class="ligne"><span class="lib">Plafond de prime appliqué</span><span class="pointille"></span><span class="val">1,530</span></li>
+      <li class="ligne"><span class="lib">Plancher de prix malgré la pénalité</span><span class="pointille"></span><span class="val">1,480</span></li>
+      <li class="ligne"><span class="lib">Le détail trace la grille, son statut, chaque prime</span><span class="pointille"></span><span class="val ok">tracé</span></li>
+      <li class="groupe">Résolution par date</li>
+      <li class="ligne"><span class="lib">La grille en vigueur à la date est retrouvée</span><span class="pointille"></span><span class="val ok">résolue</span></li>
+      <li class="ligne"><span class="lib">Grille expirée ignorée ; aucune grille → repli prix plat</span><span class="pointille"></span><span class="val">PRIX_PLAT</span></li>
+      <li class="groupe">Écart lait — FIN-S25</li>
+      <li class="ligne"><span class="lib">L'écart se calcule quelle que soit la source de saisie</span><span class="pointille"></span><span class="val ok">toujours</span></li>
+      <li class="ligne"><span class="lib">Litres perdus : 30 + 10, l'écart négatif exclu</span><span class="pointille"></span><span class="val">40 L</span></li>
+      <li class="ligne"><span class="lib">Écarts négatifs comptés à part (erreur de saisie)</span><span class="pointille"></span><span class="val err">jamais valorisés</span></li>
+      <li class="ligne"><span class="lib">Valorisation 40 L × 1,5</span><span class="pointille"></span><span class="val">60,00 DT</span></li>
+      <li class="ligne"><span class="lib">Part de la production, cohérence jours/volumes</span><span class="pointille"></span><span class="val ok">exact</span></li>
+      <li class="ligne"><span class="lib">Période sans bilan lait</span><span class="pointille"></span><span class="val">0 honnête</span></li>
+    </ul>
+  </section>
+
+  <!-- ==================== FEUILLET 12 ==================== -->
+  <section class="feuillet" id="f12">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 12 · Compta</span>
+        <h3>test_cheptel</h3>
+        <p class="devise">Une vache, une immobilisation — mise en service au premier vêlage, mise au rebut à la sortie, et rien du tout tant qu'on n'a pas tranché.</p>
+      </div>
+      <div class="tampon">22 / 22 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_cheptel.py</code></dd></div>
+      <div><dt>Type</dt><dd>Intégration Asset (cycle de vie du cheptel)</dd></div>
+      <div><dt>Story</dt><dd>FIN-S31 — RG-FIN-32/33, CF-FIN-33</dd></div>
+      <div><dt>Prérequis</dt><dd>socle + immobilisations (catégorie Cheptel, CF id_animal)</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_cheptel.run</code></dd></div>
+    </dl>
+    <p class="expose">La décision comptable (actif biologique ou pas) appartient au client — le
+      module vérifie donc d'abord que le mode par défaut est inoffensif, puis déroule tout le cycle
+      en mode actif : valeur d'entrée selon l'origine de la vache, reprise de l'amortissement déjà
+      couru pour les vêlages anciens, idempotence stricte, périmètre d'éligibilité, et sortie qui ne
+      bloque jamais l'enregistrement métier.</p>
+    <ul class="verifs">
+      <li class="groupe">Le mode pilote tout</li>
+      <li class="ligne"><span class="lib">NON_VALORISE : aucune immobilisation créée, sync sans effet</span><span class="pointille"></span><span class="val ok">inerte</span></li>
+      <li class="ligne"><span class="lib">valeur_cheptel expose le mode courant</span><span class="pointille"></span><span class="val ok">exposé</span></li>
+      <li class="groupe">Valeur d'entrée et mise en service</li>
+      <li class="ligne"><span class="lib">Vache née sur la ferme → forfait coût d'élevage</span><span class="pointille"></span><span class="val">forfait config</span></li>
+      <li class="ligne"><span class="lib">Vache achetée → son prix d'achat réel</span><span class="pointille"></span><span class="val">prix réel</span></li>
+      <li class="ligne"><span class="lib">Mise en service = date du premier vêlage</span><span class="pointille"></span><span class="val ok">1ᵉʳ vêlage</span></li>
+      <li class="ligne"><span class="lib">Immobilisation créée et soumise dans la bonne catégorie</span><span class="pointille"></span><span class="val">Cheptel reproducteur</span></li>
+      <li class="groupe">Amortissement et reprise d'existant</li>
+      <li class="ligne"><span class="lib">Vêlage récent (6 mois) → aucune annuité déjà courue</span><span class="pointille"></span><span class="val">0 annuité</span></li>
+      <li class="ligne"><span class="lib">Vêlage ancien (30 mois) → annuités reprises en ouverture</span><span class="pointille"></span><span class="val">2 annuités</span></li>
+      <li class="ligne"><span class="lib">Durée et nombre de dotations conformes à la config</span><span class="pointille"></span><span class="val ok">exact</span></li>
+      <li class="groupe">Idempotence et périmètre</li>
+      <li class="ligne"><span class="lib">Re-création → la même immobilisation (clé id_animal)</span><span class="pointille"></span><span class="val ok">une seule</span></li>
+      <li class="ligne"><span class="lib">Une génisse n'entre pas ; seules les VACHE actives</span><span class="pointille"></span><span class="val ok">filtré</span></li>
+      <li class="ligne"><span class="lib">Vache à durée épuisée : hors périmètre, signalée</span><span class="pointille"></span><span class="val">comptée à part</span></li>
+      <li class="groupe">Valeur et sortie</li>
+      <li class="ligne"><span class="lib">valeur_cheptel : brut − amortissements</span><span class="pointille"></span><span class="val">= VNC</span></li>
+      <li class="ligne"><span class="lib">Vente de la vache → immobilisation au rebut, sortie enregistrée</span><span class="pointille"></span><span class="val ok">jamais bloqué</span></li>
+    </ul>
+  </section>
+
+  <!-- ==================== FEUILLET 13 ==================== -->
+  <section class="feuillet" id="f13">
+    <div class="feuillet-entete">
+      <div>
+        <span class="numero">Feuillet n° 13 · Détection</span>
+        <h3>test_controle_coherence</h3>
+        <p class="devise">On ne teste pas un détecteur en lui montrant des données propres : on lui injecte de vraies anomalies et on vérifie qu'il les trouve.</p>
+      </div>
+      <div class="tampon">15 / 15 ✓<small>vérifié</small></div>
+    </div>
+    <dl class="fiche">
+      <div><dt>Fichier</dt><dd><code>hmd_agro/hmd_agro/tests/test_controle_coherence.py</code></dd></div>
+      <div><dt>Type</dt><dd>Test de détection — anomalies injectées puis retrouvées</dd></div>
+      <div><dt>Story</dt><dd>FIN-S70 — RG-FIN-70</dd></div>
+      <div><dt>Commande</dt><dd><code>…tests.test_controle_coherence.run</code></dd></div>
+    </dl>
+    <p class="expose">Le rapport « Contrôle Cohérence Finance » est l'outil qui validera la base
+      réelle de la ferme après restauration du backup. Son test suit une logique inversée : il
+      fabrique des anomalies — une sur-affectation de lait, une vache vendue avec un prix mais sans
+      facture — et vérifie que le rapport les remonte en ERREUR, chiffrées, sans jamais inventer de
+      problème sur une période saine.</p>
+    <ul class="verifs">
+      <li class="groupe">Structure et exécution</li>
+      <li class="ligne"><span class="lib">Colonnes conformes, lignes produites, statuts admis</span><span class="pointille"></span><span class="val">OK · ALERTE · ERREUR</span></li>
+      <li class="ligne"><span class="lib">La couleur suit le statut, la synthèse ouvre le rapport</span><span class="pointille"></span><span class="val ok">conforme</span></li>
+      <li class="ligne"><span class="lib">Le contrôle Grand Livre est présent</span><span class="pointille"></span><span class="val ok">présent</span></li>
+      <li class="groupe">Période vierge (base sans écriture)</li>
+      <li class="ligne"><span class="lib">Alerte explicite, aucun plantage</span><span class="pointille"></span><span class="val">ALERTE</span></li>
+      <li class="ligne"><span class="lib">Aucune erreur inventée sur des données saines</span><span class="pointille"></span><span class="val">0 ERREUR</span></li>
+      <li class="groupe">Anomalies injectées</li>
+      <li class="ligne"><span class="lib">Sur-affectation du lait (vendu + conso &gt; produit)</span><span class="pointille"></span><span class="val err">ERREUR détectée</span></li>
+      <li class="ligne"><span class="lib">Le volume sur-affecté est chiffré</span><span class="pointille"></span><span class="val ok">chiffré</span></li>
+      <li class="ligne"><span class="lib">Sortie d'animal valorisée sans facture</span><span class="pointille"></span><span class="val err">ERREUR détectée</span></li>
+      <li class="groupe">Cohérence interne</li>
+      <li class="ligne"><span class="lib">La synthèse remonte le bon nombre d'erreurs</span><span class="pointille"></span><span class="val ok">exact</span></li>
+      <li class="ligne"><span class="lib">run() console et rapport desk comptent pareil</span><span class="pointille"></span><span class="val ok">identiques</span></li>
+    </ul>
+  </section>
+
+  <!-- ==================== BALANCE ==================== -->
+  <div class="balance">
+    <p class="titre">Balance du registre : équilibrée.</p>
+    <p class="detail">13 modules · <b>206 assertions vertes</b> · recomptées une à une lors de la review de la PR #1<br>
+    7 + 9 + 13 + 7 + 16 + 13 + 14 + 8 + 28 + 26 + 28 + 22 + 15 = 206</p>
+  </div>
+
+</main>
+
+<footer>
+  <p>hmd_agro · branche finance/socle-comptable · les lignes de vérification résument les assertions
+    de chaque module ; le décompte officiel est celui du tampon, confirmé par exécution.<br>
+    Document de référence généré depuis le code source — voir aussi livraison_finance.md.</p>
+</footer>
+
+</body>
+</html>
