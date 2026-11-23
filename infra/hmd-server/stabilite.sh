@@ -6,8 +6,9 @@
 #  2. Journaux en RAM (log2ram ou journald volatile) + plafond journald
 #  3. Docker : rotation des logs conteneurs + delai d'arret pour MariaDB
 #  4. Service hmd-erpnext : demarrage au boot + arret propre avant Docker
-#  5. Surveillance SMART (smartd) des disques
-#  6. Controle /etc/fstab du disque USB (nofail) — avertissement seulement
+#  5. Rapport de demarrage par e-mail (arret brutal -> controle dpkg -V)
+#  6. Surveillance SMART (smartd) des disques
+#  7. Controle /etc/fstab des disques USB (nofail) — avertissement seulement
 #
 # Idempotent. Les fichiers modifies sont sauvegardes une fois en *.orig-hmd.
 # Usage :  sudo ./stabilite.sh [--skip-logs] [--skip-docker] [--skip-grub]
@@ -100,6 +101,9 @@ setup_logs() {
 
   # Le journal persistant vit dans /var/log/journal -> en RAM via log2ram,
   # synchronise sur disque. Plafond strict pour tenir dans le tmpfs.
+  # Le drop-in ci-dessous prime sur un Storage=volatile pose a la main dans journald.conf.
+  grep -qE '^\s*Storage=volatile' /etc/systemd/journald.conf 2>/dev/null \
+    && log "journald.conf contient Storage=volatile : remplace par persistent (plafonne) via drop-in"
   setup_journald persistent SystemMaxUse
   journalctl --vacuum-size="$JOURNAL_MAX_USE" >/dev/null 2>&1 || true
 
@@ -154,8 +158,24 @@ PY
 
   # Service systemd ERPNext
   if [[ ! -f "$COMPOSE_DIR/$COMPOSE_ENV_FILE" ]]; then
-    warn "$COMPOSE_DIR/$COMPOSE_ENV_FILE introuvable : hmd-erpnext.service non installe (verifier COMPOSE_DIR)"
-    return
+    # Detection : projet compose en cours d'execution (docker compose ls)
+    local found
+    found="$(docker compose ls --all --format json 2>/dev/null | python3 -c '
+import json, os, sys
+try:
+    projs = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+dirs = [os.path.dirname(p["ConfigFiles"].split(",")[0]) for p in projs if p.get("ConfigFiles")]
+best = [d for d in dirs if "frappe_docker" in d] or dirs
+print(best[0] if best else "")')"
+    if [[ -n "$found" && -f "$found/$COMPOSE_ENV_FILE" ]]; then
+      warn "COMPOSE_DIR=$COMPOSE_DIR absent : projet detecte -> $found (a reporter dans config.sh)"
+      COMPOSE_DIR="$found"
+    else
+      warn "$COMPOSE_DIR/$COMPOSE_ENV_FILE introuvable : hmd-erpnext.service non installe (verifier COMPOSE_DIR)"
+      return
+    fi
   fi
   mkdir -p "$HMD_ETC"
   cat >"$HMD_ETC/erpnext.env" <<EOF
@@ -169,6 +189,21 @@ EOF
   # enable sans --now : la pile tourne deja ; le service prendra la main au reboot
   systemctl enable hmd-erpnext.service >/dev/null 2>&1
   ok "hmd-erpnext.service actif au boot (arret propre ${COMPOSE_STOP_TIMEOUT}s avant Docker)"
+}
+
+# -----------------------------------------------------------------------------
+setup_boot_report() {
+  install -m 0755 "$HERE/files/hmd-notify"     /usr/local/sbin/hmd-notify
+  install -m 0755 "$HERE/files/hmd-boot-check" /usr/local/sbin/hmd-boot-check
+  install -m 0644 "$HERE/files/hmd-boot-check.service" /etc/systemd/system/hmd-boot-check.service
+  systemctl daemon-reload
+  systemctl enable --now hmd-boot-check.service >/dev/null 2>&1
+  ok "hmd-boot-check : e-mail au boot apres arret brutal (+ dpkg -V) ou extinction onduleur"
+  if [[ ! -r /etc/hmd-backup/credentials/gmail.env && ! -r "$HMD_ETC/notify.env" ]]; then
+    warn "gmail.env de la chaine de sauvegarde absent : alertes journalisees seulement"
+  else
+    log "Test d'envoi : sudo /usr/local/sbin/hmd-notify 'Test alerte' 'Message de test'"
+  fi
 }
 
 # -----------------------------------------------------------------------------
@@ -189,26 +224,32 @@ EOF
 
 # -----------------------------------------------------------------------------
 check_fstab_usb() {
-  # Une entree fstab sans nofail vers un disque USB absent bloque le boot (emergency mode)
-  local line bad=0
-  while read -r line; do
-    [[ -z "$line" || "$line" == \#* ]] && continue
-    # shellcheck disable=SC2086
-    set -- $line
-    [[ "$2" == "/" || "$2" == "/boot"* || "$2" == "none" || "$3" == "swap" ]] && continue
-    case "$3" in tmpfs|proc|sysfs|devpts) continue ;; esac
-    if [[ "$4" != *nofail* ]]; then
-      warn "fstab : '$2' ($1) sans 'nofail' — si c'est le disque USB, ajouter : nofail,x-systemd.device-timeout=10s"
-      bad=1
+  # Un disque USB absent au boot sans 'nofail' => emergency mode. On ne vise QUE l'USB :
+  # nofail sur un disque interne (ex. /mnt/data) laisserait Samba/les sauvegardes ecrire
+  # dans le dossier vide sur la racine.
+  local src mnt opts dev disk tran
+  while read -r src mnt _ opts _; do
+    [[ -z "$src" || "$src" == \#* || "$mnt" == "/" || "$mnt" == none ]] && continue
+    dev="$(findfs "$src" 2>/dev/null || true)"
+    [[ -b "$dev" ]] || continue
+    disk="$(lsblk -no PKNAME "$dev" 2>/dev/null | head -1)"
+    tran="$(lsblk -dno TRAN "/dev/${disk:-${dev#/dev/}}" 2>/dev/null)"
+    [[ "$tran" == usb ]] || continue
+    if [[ "$opts" == *nofail* ]]; then
+      ok "fstab : $mnt (USB) en nofail"
+    else
+      warn "fstab : $mnt est sur un disque USB sans 'nofail' : ajouter nofail,x-systemd.device-timeout=10s"
+
     fi
   done </etc/fstab
-  (( bad )) || ok "fstab : montages secondaires en nofail"
+  return 0
 }
 
 # -----------------------------------------------------------------------------
 setup_fsck
 setup_logs
 setup_docker
+setup_boot_report
 setup_smart
 check_fstab_usb
 

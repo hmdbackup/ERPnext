@@ -1,0 +1,116 @@
+#!/usr/bin/python3 -I
+"""hmd-notify "<sujet>" ["<corps>"]  — journalise (tag hmd-server) et envoie un e-mail.
+
+Reutilise la configuration Gmail de la chaine de sauvegarde :
+  /etc/hmd-backup/credentials/gmail.env   (identifiant + mot de passe d'application)
+  /etc/hmd-backup/backup.conf             (MAIL_TO)
+Chemins et noms de variables surchargeables dans /etc/hmd-server/notify.env :
+  MAIL_ENV, MAIL_CONF, MAIL_TO, MAIL_USER_VAR, MAIL_PASS_VAR
+Ne bloque jamais plus de ~30 s (coupure secteur = souvent plus d'Internet).
+Code retour : 0 envoye, 1 non envoye (le message reste dans le journal).
+"""
+import smtplib
+import socket
+import ssl
+import sys
+import syslog
+from email.message import EmailMessage
+from email.utils import formatdate
+
+TIMEOUT = 10
+
+
+def read_env(path):
+    """Lit un fichier KEY=VALUE facon shell (sans l'executer), tolere CRLF/export/guillemets."""
+    out = {}
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                line = line.replace("\r", "").strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                if line.startswith("export "):
+                    line = line[7:].lstrip()
+                k, v = line.split("=", 1)
+                v = v.strip()
+                if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+                    v = v[1:-1]
+                out[k.strip()] = v
+    except OSError:
+        pass
+    return out
+
+
+def pick(env, explicit, keywords, need_at=False):
+    if explicit and env.get(explicit):
+        return env[explicit]
+    for k, v in env.items():
+        ku = k.upper()
+        if any(w in ku for w in keywords) and v and (not need_at or "@" in v):
+            return v
+    return ""
+
+
+def settings():
+    local = read_env("/etc/hmd-server/notify.env")
+    mail_env = read_env(local.get("MAIL_ENV", "/etc/hmd-backup/credentials/gmail.env"))
+    conf = read_env(local.get("MAIL_CONF", "/etc/hmd-backup/backup.conf"))
+    user = pick(mail_env, local.get("MAIL_USER_VAR"), ("USER", "FROM", "LOGIN", "ADDR", "EMAIL", "MAIL"), True)
+    pwd = pick(mail_env, local.get("MAIL_PASS_VAR"), ("PASS", "PWD", "SECRET"))
+    to = local.get("MAIL_TO") or conf.get("MAIL_TO") or mail_env.get("MAIL_TO") or user
+    # mot de passe d'application Gmail : affiche par Google avec des espaces
+    return user, pwd.replace(" ", ""), to
+
+
+def send(subject, body):
+    user, pwd, to = settings()
+    if not (user and pwd and to):
+        return "configuration e-mail introuvable (gmail.env / MAIL_TO)"
+    msg = EmailMessage()
+    host = socket.gethostname()
+    msg["Subject"] = f"[{host}] {subject}"
+    msg["From"] = user
+    msg["To"] = to
+    msg["Date"] = formatdate(localtime=True)
+    msg.set_content(f"{body}\n\n-- \n{host} — hmd-notify (infra/hmd-server)\n")
+    ctx = ssl.create_default_context()
+    last = ""
+    for port in (465, 587):
+        try:
+            if port == 465:
+                smtp = smtplib.SMTP_SSL("smtp.gmail.com", port, timeout=TIMEOUT, context=ctx)
+            else:
+                smtp = smtplib.SMTP("smtp.gmail.com", port, timeout=TIMEOUT)
+                smtp.starttls(context=ctx)
+            with smtp:
+                smtp.ehlo()
+                # PLAIN explicite : le repli LOGIN de smtplib masque les erreurs 534/535
+                smtp.user, smtp.password = user, pwd
+                smtp.auth("PLAIN", smtp.auth_plain, initial_response_ok=True)
+                smtp.send_message(msg)
+            return ""
+        except smtplib.SMTPAuthenticationError as exc:
+            return f"authentification Gmail refusee ({exc.smtp_code})"
+        except Exception as exc:  # reseau absent pendant une coupure : attendu
+            last = f"{type(exc).__name__}: {exc}"
+    return last
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__.strip(), file=sys.stderr)
+        return 2
+    subject = sys.argv[1]
+    body = sys.argv[2] if len(sys.argv) > 2 else subject
+    syslog.openlog("hmd-server", 0, syslog.LOG_DAEMON)
+    syslog.syslog(syslog.LOG_NOTICE, f"{subject} | {body.splitlines()[0] if body else ''}")
+    err = send(subject, body)
+    if err:
+        syslog.syslog(syslog.LOG_WARNING, f"e-mail non envoye ({subject}) : {err}")
+        print(f"e-mail non envoye : {err}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

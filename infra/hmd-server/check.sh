@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
 # check.sh — Bilan de sante du serveur HMD (lecture seule, ne modifie rien)
-# Usage :  sudo ./check.sh
+# Usage :  sudo ./check.sh              bilan
+#          sudo ./check.sh --mail       bilan + envoi par e-mail (test des alertes)
 # =============================================================================
 set -uo pipefail
 
@@ -11,6 +12,14 @@ source "$HERE/config.sh"
 # shellcheck source=../hmd-fileserver/lib.sh
 source "$HERE/../hmd-fileserver/lib.sh"
 require_root
+MAIL=0; [[ "${1:-}" == --mail ]] && MAIL=1
+if (( MAIL )); then
+  out="$("$0" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')"; rc=$?
+  printf '%s\n' "$out"
+  /usr/local/sbin/hmd-notify "Bilan serveur ($([[ $rc == 0 ]] && echo OK || echo 'A CORRIGER'))" "$out" \
+    && ok "Bilan envoye par e-mail" || warn "E-mail non envoye (journalctl -t hmd-server)"
+  exit "$rc"
+fi
 
 FAIL=0
 chk() { # chk "<libelle>" <commande...>
@@ -30,6 +39,21 @@ fi
 log "Erreurs noyau (I/O, ext4, USB) :"
 dmesg -T 2>/dev/null | grep -iE 'i/o error|ext4-fs (error|warning)|buffer i/o|reset (high|super)-speed usb|blk_update_request' \
   | tail -n 10 | sed 's/^/      /' || true
+
+log "Integrite des binaires critiques (dpkg -V) :"
+pkgs="$(for f in /usr/bin/containerd /usr/bin/dockerd /usr/sbin/runc /usr/bin/docker /usr/sbin/smbd \
+            /usr/sbin/sshd /usr/lib/systemd/systemd /usr/bin/python3 /sbin/upsmon /usr/bin/rclone; do
+          [[ -e "$f" ]] && dpkg -S "$(readlink -f "$f")" 2>/dev/null | cut -d: -f1
+        done | tr ', ' '\n\n' | sort -u | grep -v '^$')"
+bad="$(dpkg -V $pkgs libc6 2>/dev/null | awk '$2 != "c" && $1 ~ /5/')"
+if [[ -n "$bad" ]]; then
+  warn "Fichiers corrompus (reinstaller le paquet : apt install --reinstall <paquet>) :"
+  printf '%s\n' "$bad" | sed 's/^/      /'; FAIL=1
+else
+  ok "Binaires intacts : $(echo $pkgs libc6 | tr '\n' ' ')"
+fi
+chk "Rapport de demarrage (hmd-boot-check) actif" systemctl is-enabled --quiet hmd-boot-check.service
+[[ -f /var/lib/hmd-server/running ]] && log "Demarrage enregistre : $(cat /var/lib/hmd-server/running)"
 
 section "Disques (SMART)"
 chk "smartd actif" systemctl is-active --quiet smartmontools

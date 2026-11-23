@@ -182,13 +182,16 @@ EOF
 
   install -m 0755 "$HERE/files/hmd-ups-shutdown"  /usr/local/sbin/hmd-ups-shutdown
   install -m 0755 "$HERE/files/hmd-upssched-cmd"  /usr/local/sbin/hmd-upssched-cmd
+  install -m 0755 "$HERE/files/hmd-notify"        /usr/local/sbin/hmd-notify
 
-  # upssched tourne en 'nut' ; upsmon -c fsd doit signaler le processus root
+  # upssched tourne en 'nut' : upsmon -c fsd doit signaler le processus root,
+  # hmd-notify doit lire les identifiants Gmail (root uniquement)
   local s=/etc/sudoers.d/hmd-nut
-  echo 'nut ALL=(root) NOPASSWD: /sbin/upsmon -c fsd' >"$s.tmp"
+  printf '%s\n' 'nut ALL=(root) NOPASSWD: /sbin/upsmon -c fsd' \
+                 'nut ALL=(root) NOPASSWD: /usr/local/sbin/hmd-notify' >"$s.tmp"
   chmod 440 "$s.tmp"
   visudo -cf "$s.tmp" >/dev/null && mv "$s.tmp" "$s"
-  ok "Scripts installes : /usr/local/sbin/hmd-ups-shutdown, hmd-upssched-cmd"
+  ok "Scripts installes : /usr/local/sbin/hmd-ups-shutdown, hmd-upssched-cmd, hmd-notify"
 }
 
 set_dry_run() {
