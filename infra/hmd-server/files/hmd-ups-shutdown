@@ -1,0 +1,14 @@
+#!/bin/sh
+# SHUTDOWNCMD de upsmon (execute en root). L'arret propre d'ERPNext est assure
+# par hmd-erpnext.service (ExecStop) pendant la sequence d'arret systemd.
+# Mode test : touch /etc/hmd-server/ups-dry-run  -> journalise sans eteindre.
+TAG=hmd-ups
+if [ -f /etc/hmd-server/ups-dry-run ]; then
+  rm -f /etc/killpower   # sinon le prochain arret normal couperait l onduleur
+  logger -t "$TAG" -p daemon.warning "DRY-RUN : extinction demandee par upsmon (ignoree)"
+  wall "HMD onduleur : DRY-RUN, extinction ignoree" 2>/dev/null || true
+  exit 0
+fi
+logger -t "$TAG" -p daemon.crit "Extinction du serveur demandee par l'onduleur"
+sync
+exec /sbin/shutdown -h +0 "Coupure de courant : extinction par l'onduleur"

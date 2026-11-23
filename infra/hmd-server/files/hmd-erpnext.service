@@ -1,0 +1,22 @@
+# Demarre ERPNext au boot et l'arrete PROPREMENT avant Docker a chaque arret
+# (reboot, upsmon, shutdown manuel). Sans cela, `docker compose stop` laisse les
+# conteneurs "unless-stopped" arretes au boot suivant, et l'arret du daemon
+# Docker tue MariaDB apres quelques secondes.
+[Unit]
+Description=HMD ERPNext (docker compose)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=@HMD_ETC@/erpnext.env
+WorkingDirectory=@COMPOSE_DIR@
+ExecStart=/usr/bin/docker compose --env-file ${COMPOSE_ENV_FILE} up -d --remove-orphans
+ExecStop=/usr/bin/docker compose --env-file ${COMPOSE_ENV_FILE} stop -t ${COMPOSE_STOP_TIMEOUT}
+TimeoutStartSec=300
+TimeoutStopSec=@STOP_TIMEOUT_SEC@
+
+[Install]
+WantedBy=multi-user.target
