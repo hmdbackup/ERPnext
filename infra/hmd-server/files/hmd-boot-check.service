@@ -1,0 +1,16 @@
+# Detecte un arret brutal ou une extinction par l'onduleur et previent par e-mail.
+[Unit]
+Description=HMD - rapport de demarrage (arret brutal / onduleur)
+Wants=network-online.target
+After=network-online.target local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/hmd-boot-check
+# Arret propre : le temoin disparait. S'il est encore la au boot suivant = arret brutal.
+ExecStop=/bin/rm -f /var/lib/hmd-server/running
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target

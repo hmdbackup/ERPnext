@@ -1,0 +1,33 @@
+#!/bin/sh
+# CMDSCRIPT de upssched (execute en utilisateur nut). Recu : nom du timer/evenement.
+# E-mails via hmd-notify (root, regle /etc/sudoers.d/hmd-nut), en arriere-plan.
+TAG=hmd-ups
+mail() { sudo -n /usr/local/sbin/hmd-notify "$1" "$2" >/dev/null 2>&1 & }
+case "$1" in
+  onbatt)
+    logger -t "$TAG" -p daemon.warning "Secteur coupe : serveur sur batterie"
+    mail "Coupure de courant : serveur sur batterie" "Extinction automatique si le courant ne revient pas (delai ou batterie faible)." ;;
+  online)
+    logger -t "$TAG" -p daemon.notice  "Secteur retabli : extinction annulee"
+    mail "Courant retabli" "Le serveur est reste allume, extinction annulee." ;;
+  lowbatt)
+    logger -t "$TAG" -p daemon.crit    "Batterie faible : extinction en cours" ;;
+  commbad)
+    logger -t "$TAG" -p daemon.err     "Communication avec l'onduleur perdue"
+    mail "Onduleur injoignable" "Plus de communication USB avec l'onduleur : le serveur n'est plus protege. Verifier le cable." ;;
+  commok)
+    logger -t "$TAG" -p daemon.notice  "Communication avec l'onduleur retablie" ;;
+  replbatt)
+    logger -t "$TAG" -p daemon.err     "Batterie de l'onduleur a remplacer"
+    mail "Batterie de l'onduleur a remplacer" "L'onduleur signale une batterie usee : l'autonomie n'est plus garantie." ;;
+  onbatt_timeout)
+    if [ -f /etc/hmd-server/ups-dry-run ]; then
+      logger -t "$TAG" -p daemon.warning "DRY-RUN : delai sur batterie depasse, FSD non declenche"
+      exit 0
+    fi
+    logger -t "$TAG" -p daemon.crit "Delai sur batterie depasse : declenchement FSD"
+    # upsmon tourne en root : passage par sudo (regle /etc/sudoers.d/hmd-nut)
+    sudo -n /sbin/upsmon -c fsd || logger -t "$TAG" -p daemon.err "Echec upsmon -c fsd" ;;
+  *)
+    logger -t "$TAG" "Evenement inconnu : $1" ;;
+esac

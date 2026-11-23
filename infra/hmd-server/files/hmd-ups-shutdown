@@ -1,0 +1,21 @@
+#!/bin/sh
+# SHUTDOWNCMD de upsmon (execute en root). L'arret propre d'ERPNext est assure
+# par hmd-erpnext.service (ExecStop) pendant la sequence d'arret systemd.
+# Mode test : touch /etc/hmd-server/ups-dry-run  -> journalise sans eteindre.
+TAG=hmd-ups
+STATUS="$(upsc hmdups@localhost ups.status 2>/dev/null) charge=$(upsc hmdups@localhost battery.charge 2>/dev/null)% autonomie=$(upsc hmdups@localhost battery.runtime 2>/dev/null)s"
+if [ -f /etc/hmd-server/ups-dry-run ]; then
+  rm -f /etc/killpower   # sinon le prochain arret normal couperait l onduleur
+  logger -t "$TAG" -p daemon.warning "DRY-RUN : extinction demandee par upsmon (ignoree) [$STATUS]"
+  wall "HMD onduleur : DRY-RUN, extinction ignoree" 2>/dev/null || true
+  exit 0
+fi
+logger -t "$TAG" -p daemon.crit "Extinction du serveur demandee par l'onduleur [$STATUS]"
+# Temoin lu au boot suivant par hmd-boot-check (e-mail "redemarre apres onduleur")
+mkdir -p /var/lib/hmd-server
+date '+%F %T %Z' >/var/lib/hmd-server/ups-shutdown
+# E-mail best effort, 15 s maximum : la box Internet est peut-etre deja coupee
+timeout 15 /usr/local/sbin/hmd-notify "Extinction par l'onduleur" \
+  "Coupure de courant prolongee : extinction propre en cours. [$STATUS]" >/dev/null 2>&1 || true
+sync
+exec /sbin/shutdown -h +0 "Coupure de courant : extinction par l'onduleur"

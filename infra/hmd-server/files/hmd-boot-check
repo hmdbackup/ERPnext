@@ -1,0 +1,87 @@
+#!/bin/bash
+# hmd-boot-check — ExecStart de hmd-boot-check.service (au boot, apres le reseau).
+# Detecte comment le serveur s'est arrete la fois precedente et previent par e-mail :
+#   - extinction par l'onduleur   (/var/lib/hmd-server/ups-shutdown, ecrit par hmd-ups-shutdown)
+#   - arret BRUTAL                (/var/lib/hmd-server/running toujours present = pas d'ExecStop)
+# Apres un arret brutal : verification d'integrite des paquets (dpkg -V), car une coupure
+# peut corrompre un binaire (cas du 13/11 : /usr/bin/containerd -> Docker ne demarrait plus).
+set -uo pipefail
+STATE=/var/lib/hmd-server
+mkdir -p "$STATE"
+NOTIFY=/usr/local/sbin/hmd-notify
+
+# --- Mode rapport (unite transitoire, hors chemin critique du boot) ---------
+if [[ "${1:-}" == --report ]]; then
+  reason="$2"; when="$3"
+else
+  reason=""; when=""
+  if [[ -f $STATE/ups-shutdown ]]; then
+    reason=ups; when="$(cat "$STATE/ups-shutdown" 2>/dev/null)"
+  elif [[ -f $STATE/running ]]; then
+    reason=brutal; when="$(cat "$STATE/running" 2>/dev/null)"
+  fi
+  rm -f "$STATE/ups-shutdown"
+  date '+%F %T %Z' >"$STATE/running"
+  [[ -z "$reason" ]] && exit 0
+  # Rapport en arriere-plan : ne retarde pas le boot (dpkg -V et attente reseau)
+  systemd-run --no-block --quiet --unit="hmd-boot-report-$(date +%s)" \
+    /usr/local/sbin/hmd-boot-check --report "$reason" "$when"
+  exit 0
+fi
+
+# Envoi avec nouvelles tentatives : apres une coupure, la box Internet redemarre aussi
+notify() {
+
+  for _ in 1 2 3 4 5 6; do
+    $NOTIFY "$1" "$2" && return 0
+    sleep 120
+  done
+  return 1
+}
+
+summary() {
+  echo "Demarrage actuel : $(uptime -s 2>/dev/null) ($(uptime -p 2>/dev/null))"
+  echo
+  echo "== Messages fsck / ext4 de ce demarrage"
+  journalctl -b -o short-iso --no-pager 2>/dev/null | grep -iE 'fsck|ext4-fs|orphan|recovering journal' | tail -n 15
+  echo
+  echo "== Services en echec"
+  systemctl --failed --no-legend --plain 2>/dev/null | head -n 20
+  echo
+  echo "== Onduleur"
+  upsc hmdups@localhost 2>/dev/null | grep -E '^(ups\.status|battery\.charge|battery\.runtime):' || echo "(indisponible)"
+  echo
+  echo "== ERPNext"
+  docker ps --format '{{.Names}}  {{.Status}}' 2>/dev/null | head -n 12 || echo "(docker indisponible)"
+}
+
+integrity() {
+  echo "== Integrite des paquets (dpkg -V, hors fichiers de configuration)"
+  local out
+  out="$(timeout 900 nice -n 19 ionice -c3 dpkg -V 2>/dev/null | awk '$2 != "c" && $1 ~ /5/')"
+  if [[ -n "$out" ]]; then
+    echo "FICHIERS CORROMPUS (somme MD5 differente du paquet) :"
+    echo "$out"
+    echo
+    echo "Reparer : sudo apt install --reinstall \$(dpkg -S <fichier> | cut -d: -f1)"
+  else
+    echo "OK : aucun binaire modifie"
+  fi
+}
+
+sleep 60   # laisser demarrer Docker/ERPNext avant le bilan
+if [[ $reason == ups ]]; then
+  notify "Redemarre apres extinction par l'onduleur" \
+    "Le serveur a ete eteint proprement par l'onduleur ($when), puis a redemarre au retour du courant.
+
+$(summary)"
+else
+  notify "ALERTE : arret brutal detecte" \
+    "Le serveur ne s'est pas arrete proprement (coupure sans onduleur, plantage ou bouton).
+Dernier demarrage connu : $when
+Verification d'integrite des paquets en cours : resultat dans un second e-mail.
+
+$(summary)"
+  notify "Integrite apres arret brutal" "$(integrity)"
+fi
+exit 0
